@@ -49,7 +49,8 @@ Vehículos y Maquinaria, Equipo y Herramienta (con combustible, bitácoras, pré
   - Costos: **CC → Zona → Área**, solo si el CC tiene `cfg.centros_costo.usa_zonas` (migr. `20261110130000`; hoy Mantto. Fraccionamiento). `zonasCat.ccUsaZonas(cc)`.
   - Ingresos: **CI → Zona → Sección**, solo si el CI es de cuotas (agrupador `es_cuotas_fraccionamiento`) con `tipo_desglose='secciones'`. `zonasCat.ciUsaZonas(ci)`.
   - Al cambiar de centro se limpia la Zona. Páginas sin filtro de CC (Consumo por Sección/Frente, Combustible) muestran Zona directo.
-- Al crear una página nueva con filtro de Sección o Área, seguir esta jerarquía.
+- Captura (Requisición, OC, OP encabezado y líneas de distribución de un solo CC): **CC → Zona → Área** con `<CampoZonaCaptura>`. La Zona **no se guarda**: solo filtra las áreas; al editar se preselecciona si el área está en una sola zona. En OP modo "CC distintos" no hay Zona por línea.
+- Al crear una página nueva con filtro o captura de Sección o Área, seguir esta jerarquía.
 
 ## Ramas
 - Rama principal: `main`

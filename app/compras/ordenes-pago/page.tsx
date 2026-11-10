@@ -18,7 +18,7 @@ import { OPDetail, Sec, DI, URGENCIA_COLOR } from '@/components/compras/OPDetail
 
 import Paginador from '@/components/ui/Paginador'
 import CamposCFE, { DETALLE_CFE_VACIO, detalleCFEPayload, type DetalleCFE } from '@/components/servicios/CamposCFE'
-import { useZonas, SelectZona } from '@/lib/zonas'
+import { useZonas, SelectZona, CampoZonaCaptura } from '@/lib/zonas'
 const PAGE_SIZES = [10, 25, 50, 100]
 
 type RolTipoOp = { id_tipo_gasto_fk: number; modo: string; solo_propios: boolean }
@@ -444,7 +444,7 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
   )
   const [ocCCPreview, setOcCCPreview] = useState<{ cc: string; sec: string; frente: string } | null>(null)
   const [ocCCId, setOcCCId]           = useState<number | null>(opEdit?.id_centro_costo_fk ?? null)
-  type DetLine = { tempId: number; descripcion: string; id_area_fk: string; id_frente_fk: string; monto: string }
+  type DetLine = { tempId: number; descripcion: string; id_area_fk: string; id_frente_fk: string; monto: string; zona?: string }
   const [detLines, setDetLines]       = useState<DetLine[]>([])
   const [nextTempId, setNextTempId]   = useState(0)
   // Modo de asignación de CC/Área/Frente (solo aplica sin OC — con OC siempre
@@ -785,7 +785,7 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
   const removeDetLine = (tid: number) => setDetLines(l => l.filter(x => x.tempId !== tid))
   const updateDetLine = (tid: number, field: string, value: string) =>
     setDetLines(l => l.map(x => x.tempId === tid
-      ? { ...x, [field]: value, ...(field === 'id_area_fk' ? { id_frente_fk: '' } : {}) }
+      ? { ...x, [field]: value, ...(field === 'id_area_fk' ? { id_frente_fk: '' } : {}), ...(field === 'zona' ? { id_area_fk: '', id_frente_fk: '' } : {}) }
       : x))
   const detTotal   = detLines.reduce((a, l) => a + (Number(l.monto) || 0), 0)
   // Combustible/Perimetrales/Mantenimiento de Vehículos: el monto se sugiere
@@ -1136,6 +1136,17 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
     )
   }
 
+  // Captura CC → Zona → Área (Zona solo si el CC la usa; no se guarda, filtra las áreas)
+  const zonasCap = useZonas()
+  const [zonaCap, setZonaCap] = useState('')
+  useEffect(() => {
+    if (!zonaCap && form.id_area_fk) { const z = zonasCap.zonaUnicaDeArea(form.id_area_fk); if (z) setZonaCap(String(z)) }
+  }, [zonasCap]) // eslint-disable-line react-hooks/exhaustive-deps
+  const areasDelCCCap = ccAreas.filter(a => a.id_centro_costo_fk === Number(form.id_centro_costo_fk)).map(a => a.id)
+  // Líneas de distribución de un solo CC (mismo CC o con OC): Zona por línea si ese CC usa zonas
+  const lineasConZona = !(!conOC && modoDist === 'multi_cc') && zonasCap.ccUsaZonas(headerCCId)
+  const areasHeaderCC = ccAreas.filter(a => a.id_centro_costo_fk === headerCCId).map(a => a.id)
+
   return (
     <ModalShell modulo="compras" titulo={isEdit ? 'Editar Orden de Pago' : duplicar ? 'Duplicar Orden de Pago' : 'Nueva Orden de Pago'}
       subtitulo={duplicar ? `Copia de ${opEdit?.folio ?? 'OP'} — revisa monto, fechas y factura` : !isEdit ? (conOC ? '📦 Con OC vinculada' : '◇ Sin OC — Servicio / Gasto directo') : undefined}
@@ -1282,15 +1293,17 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
 
             {/* Único CC/Área/Frente (modo "normal") */}
             {!conOC && modoDist === 'normal' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: zonasCap.ccUsaZonas(form.id_centro_costo_fk) ? '1fr 1fr 1fr 1fr' : '1fr 1fr 1fr', gap: 10 }}>
                 <div>
                   <label className="label">Centro de Costo *</label>
                   <select className="select" value={form.id_centro_costo_fk}
-                    onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' }))}>
+                    onChange={e => { setAreaId(''); setZonaCap(''); setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' })) }}>
                     <option value="">— Seleccionar —</option>
                     {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                   </select>
                 </div>
+                <CampoZonaCaptura zonasCat={zonasCap} cc={form.id_centro_costo_fk} areaIds={areasDelCCCap} value={zonaCap}
+                  onChange={v => { setZonaCap(v); setAreaId(''); setForm(f => ({ ...f, id_area_fk: '', id_frente_fk: '' })) }} />
                 <div>
                   <label className="label">Área *</label>
                   <select className="select" value={areaId}
@@ -1299,6 +1312,7 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
                     <option value="">— {form.id_centro_costo_fk ? 'Seleccionar' : 'Elige CC primero'} —</option>
                     {ccAreas
                       .filter(s => !form.id_centro_costo_fk || s.id_centro_costo_fk === Number(form.id_centro_costo_fk))
+                      .filter(s => !zonasCap.ccUsaZonas(form.id_centro_costo_fk) || zonasCap.areaEnZona(zonaCap, s.id))
                       .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                   </select>
                 </div>
@@ -1348,6 +1362,7 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
                       <thead>
                         <tr style={{ background: '#f8fafc' }}>
                           <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.04em' }}>Descripción</th>
+                          {lineasConZona && <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.04em' }}>Zona</th>}
                           <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.04em' }}>Área</th>
                           <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.04em' }}>Frente</th>
                           <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.04em' }}>Monto</th>
@@ -1362,6 +1377,13 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
                                 placeholder="Descripción" value={line.descripcion}
                                 onChange={e => updateDetLine(line.tempId, 'descripcion', e.target.value)} />
                             </td>
+                            {lineasConZona && (
+                              <td style={{ padding: '4px 6px' }}>
+                                <CampoZonaCaptura compacto zonasCat={zonasCap} cc={headerCCId} areaIds={areasHeaderCC}
+                                  value={line.zona ?? (zonasCap.zonaUnicaDeArea(line.id_area_fk)?.toString() ?? '')}
+                                  onChange={v => updateDetLine(line.tempId, 'zona', v)} />
+                              </td>
+                            )}
                             <td style={{ padding: '4px 6px' }}>
                               <select className="select" style={{ padding: '4px 6px', fontSize: 12 }}
                                 value={line.id_area_fk}
@@ -1381,6 +1403,7 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
                                       ) : null
                                     })
                                   : ccAreas.filter(a => a.id_centro_costo_fk === headerCCId)
+                                      .filter(a => !lineasConZona || zonasCap.areaEnZona(line.zona ?? zonasCap.zonaUnicaDeArea(line.id_area_fk)?.toString() ?? '', a.id))
                                       .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                               </select>
                               {!conOC && modoDist === 'multi_cc' && line.id_area_fk && (
@@ -1412,7 +1435,7 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
                       </tbody>
                       <tfoot>
                         <tr style={{ borderTop: '2px solid #e2e8f0', background: '#f8fafc' }}>
-                          <td colSpan={3} style={{ padding: '6px 8px', fontSize: 11, color: 'var(--text-muted)' }}>Total distribución</td>
+                          <td colSpan={lineasConZona ? 4 : 3} style={{ padding: '6px 8px', fontSize: 11, color: 'var(--text-muted)' }}>Total distribución</td>
                           <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--blue)' }}>{fmt(detTotal)}</td>
                           <td></td>
                         </tr>

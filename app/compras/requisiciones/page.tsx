@@ -14,7 +14,7 @@ import { type Articulo, fmt, fmtFecha, folioGen, StatusBadge, UNIDADES } from '.
 
 
 import Paginador from '@/components/ui/Paginador'
-import { useZonas, SelectZona } from '@/lib/zonas'
+import { useZonas, SelectZona, CampoZonaCaptura } from '@/lib/zonas'
 type Det = { id?: number; id_articulo_fk: number | null; descripcion: string; cantidad: string; unidad: string; notas: string }
 
 const ESTADOS_NO_CANCELABLES = ['Cancelada', 'Rechazada', 'Cerrada']
@@ -548,6 +548,14 @@ function RequisicionModal({ row, esAdminPleno, onClose, onSaved }: { row: any | 
     setSaving(false); onSaved()
   }
 
+  // Captura CC → Zona → Área (Zona solo si el CC la usa; no se guarda, filtra las áreas)
+  const zonasCap = useZonas()
+  const [zonaCap, setZonaCap] = useState('')
+  useEffect(() => {
+    if (!zonaCap && form.id_area_fk) { const z = zonasCap.zonaUnicaDeArea(form.id_area_fk); if (z) setZonaCap(String(z)) }
+  }, [zonasCap]) // eslint-disable-line react-hooks/exhaustive-deps
+  const areasDelCCCap = ccAreas.filter(a => a.id_centro_costo_fk === Number(form.id_centro_costo_fk)).map(a => a.id)
+
   return (
     <ModalShell modulo="compras" titulo={isNew ? 'Nueva Requisición' : `Editar ${row.folio}`} onClose={onClose} maxWidth={700}
       footer={<>
@@ -596,11 +604,13 @@ function RequisicionModal({ row, esAdminPleno, onClose, onSaved }: { row: any | 
               <div>
                 <label className="label">Centro Costo*</label>
                 <select className="select" value={form.id_centro_costo_fk}
-                  onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' }))}>
+                  onChange={e => { setZonaCap(''); setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' })) }}>
                   <option value="">— Seleccionar —</option>
                   {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                 </select>
               </div>
+              <CampoZonaCaptura zonasCat={zonasCap} cc={form.id_centro_costo_fk} areaIds={areasDelCCCap} value={zonaCap}
+                onChange={v => { setZonaCap(v); setForm(f => ({ ...f, id_area_fk: '', id_frente_fk: '' })) }} />
               <div>
                 <label className="label">Área *</label>
                 <select className="select" value={form.id_area_fk}
@@ -609,6 +619,7 @@ function RequisicionModal({ row, esAdminPleno, onClose, onSaved }: { row: any | 
                   <option value="">— {form.id_centro_costo_fk ? 'Seleccionar' : 'Elige CC primero'} —</option>
                   {ccAreas
                     .filter(s => !form.id_centro_costo_fk || s.id_centro_costo_fk === Number(form.id_centro_costo_fk))
+                    .filter(s => !zonasCap.ccUsaZonas(form.id_centro_costo_fk) || zonasCap.areaEnZona(zonaCap, s.id))
                     .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                 </select>
               </div>

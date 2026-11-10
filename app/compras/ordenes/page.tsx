@@ -15,7 +15,7 @@ import PageHeader from '@/components/layout/PageHeader'
 
 
 import Paginador from '@/components/ui/Paginador'
-import { useZonas, SelectZona } from '@/lib/zonas'
+import { useZonas, SelectZona, CampoZonaCaptura } from '@/lib/zonas'
 export default function OrdenesPage() {
   const { authUser, canWrite, canAuth: canAuthFn } = useAuth()
   const router = useRouter()
@@ -451,6 +451,14 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
     setSaving(false); onSaved()
   }
 
+  // Captura CC → Zona → Área (Zona solo si el CC la usa; no se guarda, filtra las áreas)
+  const zonasCap = useZonas()
+  const [zonaCap, setZonaCap] = useState('')
+  useEffect(() => {
+    if (!zonaCap && form.id_area_fk) { const z = zonasCap.zonaUnicaDeArea(form.id_area_fk); if (z) setZonaCap(String(z)) }
+  }, [zonasCap]) // eslint-disable-line react-hooks/exhaustive-deps
+  const areasDelCCCap = ccAreas.filter(a => a.id_centro_costo_fk === Number(form.id_centro_costo_fk)).map(a => a.id)
+
   return (
     <ModalShell modulo="compras" titulo={isNew ? 'Nueva Orden de Compra' : `Editar OC ${row.folio}`} onClose={onClose} maxWidth={720}
       footer={<>
@@ -530,15 +538,17 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
                 </select>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: zonasCap.ccUsaZonas(form.id_centro_costo_fk) ? '1fr 1fr 1fr 1fr' : '1fr 1fr 1fr', gap: 10 }}>
               <div>
                 <label className="label">Centro de Costo *</label>
                 <select className="select" value={form.id_centro_costo_fk}
-                  onChange={e => { setAreaId(''); setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' })) }}>
+                  onChange={e => { setAreaId(''); setZonaCap(''); setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' })) }}>
                   <option value="">— Seleccionar —</option>
                   {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                 </select>
               </div>
+              <CampoZonaCaptura zonasCat={zonasCap} cc={form.id_centro_costo_fk} areaIds={areasDelCCCap} value={zonaCap}
+                onChange={v => { setZonaCap(v); setAreaId(''); setForm(f => ({ ...f, id_area_fk: '', id_frente_fk: '' })) }} />
               <div>
                 <label className="label">Área *</label>
                 <select className="select" value={areaId}
@@ -547,6 +557,7 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
                   <option value="">— {form.id_centro_costo_fk ? 'Seleccionar' : 'Elige CC primero'} —</option>
                   {ccAreas
                     .filter(s => !form.id_centro_costo_fk || s.id_centro_costo_fk === Number(form.id_centro_costo_fk))
+                    .filter(s => !zonasCap.ccUsaZonas(form.id_centro_costo_fk) || zonasCap.areaEnZona(zonaCap, s.id))
                     .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                 </select>
               </div>

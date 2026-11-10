@@ -98,7 +98,12 @@ export function useZonas() {
     const ccUsaZonas = (cc: string | number | null | undefined) => !!cc && ccsZona.has(Number(cc))
     /** El nivel Zona aplica bajo este Centro de Ingreso */
     const ciUsaZonas = (ci: string | number | null | undefined) => !!ci && cisZona.has(Number(ci))
-    return { zonas, seccionesDeZona, areasDeZona, seccionEnZona, areaEnZona, zonasDeSeccion, ccUsaZonas, ciUsaZonas }
+    /** Zona del área si pertenece a exactamente una (para preseleccionar al editar) */
+    const zonaUnicaDeArea = (idArea: string | number | null | undefined): number | null => {
+      const zs = idArea ? (areaZonas.get(Number(idArea)) ?? []) : []
+      return zs.length === 1 ? zs[0] : null
+    }
+    return { zonas, seccionesDeZona, areasDeZona, seccionEnZona, areaEnZona, zonasDeSeccion, ccUsaZonas, ciUsaZonas, zonaUnicaDeArea }
   }, [data])
 }
 
@@ -118,4 +123,31 @@ export function SelectZona({ value, onChange, zonas, style, className = 'select'
       {zonas.map(z => <option key={z.id} value={z.id}>{z.nombre}</option>)}
     </select>
   )
+}
+
+type ZonasCat = ReturnType<typeof useZonas>
+
+/**
+ * Captura CC → Zona → Área: select de Zona que solo aparece si el CC usa zonas.
+ * Filtra las áreas; no se guarda (el registro sigue siendo CC + Área).
+ * `areaIds` = áreas del CC, para ofrecer solo zonas con áreas de ese CC.
+ */
+export function CampoZonaCaptura({ zonasCat, cc, areaIds, value, onChange, compacto }: {
+  zonasCat: ZonasCat
+  cc: string | number | null | undefined
+  areaIds: number[]
+  value: string
+  onChange: (v: string) => void
+  compacto?: boolean
+}) {
+  if (!zonasCat.ccUsaZonas(cc)) return null
+  const opts = zonasCat.zonas.filter(z => areaIds.some(a => zonasCat.areaEnZona(z.id, a)))
+  const sel = (
+    <select className="select" value={value} onChange={e => onChange(e.target.value)}
+      style={compacto ? { padding: '4px 6px', fontSize: 12 } : undefined}>
+      <option value="">{compacto ? '— Zona —' : '— Todas —'}</option>
+      {opts.map(z => <option key={z.id} value={z.id}>{z.nombre}</option>)}
+    </select>
+  )
+  return compacto ? sel : <div><label className="label">Zona</label>{sel}</div>
 }
