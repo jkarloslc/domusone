@@ -86,7 +86,7 @@ export default function CXPPage() {
   const [centros, setCentros]   = useState<any[]>([])
   const [areas, setAreas]       = useState<any[]>([])
   const [frentes, setFrentes]   = useState<any[]>([])
-  const [lineasOP, setLineasOP] = useState<Record<number, { id_area_fk: number | null; id_frente_fk: number | null; monto: number }[]>>({})
+  const [lineasOP, setLineasOP] = useState<Record<number, { id_area_fk: number | null; id_cuadrante_fk?: number | null; id_frente_fk: number | null; monto: number }[]>>({})
   const [filterCC, setFilterCC]         = useState('')
   const [filterArea, setFilterArea]     = useState('')
   const [filtroZona, setFiltroZona] = useState('')
@@ -118,11 +118,11 @@ export default function CXPPage() {
     setFrentes(frs ?? [])
     // OP con distribución por líneas: CC/Área/Frente viven en ordenes_pago_det
     const ids = (allOps ?? []).map((o: any) => o.id)
-    const lm: Record<number, { id_area_fk: number | null; id_frente_fk: number | null; monto: number }[]> = {}
+    const lm: Record<number, { id_area_fk: number | null; id_cuadrante_fk?: number | null; id_frente_fk: number | null; monto: number }[]> = {}
     for (let i = 0; i < ids.length; i += 200) {
       const { data: dets } = await dbComp.from('ordenes_pago_det')
-        .select('id_op_fk, id_area_fk, id_frente_fk, monto').in('id_op_fk', ids.slice(i, i + 200)).limit(5000)
-      ;(dets ?? []).forEach((d: any) => { (lm[d.id_op_fk] ??= []).push({ id_area_fk: d.id_area_fk, id_frente_fk: d.id_frente_fk, monto: Number(d.monto) || 0 }) })
+        .select('*').in('id_op_fk', ids.slice(i, i + 200)).limit(5000)
+      ;(dets ?? []).forEach((d: any) => { (lm[d.id_op_fk] ??= []).push({ id_area_fk: d.id_area_fk, id_cuadrante_fk: d.id_cuadrante_fk ?? null, id_frente_fk: d.id_frente_fk, monto: Number(d.monto) || 0 }) })
     }
     setLineasOP(lm)
     const am: Record<number,string> = {}
@@ -168,19 +168,19 @@ export default function CXPPage() {
   // proporcional; si no, el encabezado aporta el 100%.
   const fraccionOP = useCallback((o: any) => {
     if (!filterCC && !filtroZona && !filterArea && !filterFrente) return 1
-    const ok = (cc: number | null | undefined, area: number | null, frente: number | null) =>
+    const ok = (cc: number | null | undefined, area: number | null, frente: number | null, zona?: number | null) =>
       (!filterCC || cc === Number(filterCC)) &&
-      (!filtroZona || zonasCat.areaEnZona(filtroZona, area)) &&
+      (!filtroZona || zonasCat.docEnZona(filtroZona, { id_cuadrante_fk: zona, id_area_fk: area })) &&
       (!filterArea || area === Number(filterArea)) &&
       (!filterFrente || frente === Number(filterFrente))
     const lineas = lineasOP[o.id] ?? []
     if (lineas.length === 0) {
-      return ok(o.id_centro_costo_fk ?? (o.id_area_fk ? areaCC[o.id_area_fk] : null), o.id_area_fk, o.id_frente_fk) ? 1 : 0
+      return ok(o.id_centro_costo_fk ?? (o.id_area_fk ? areaCC[o.id_area_fk] : null), o.id_area_fk, o.id_frente_fk, o.id_cuadrante_fk) ? 1 : 0
     }
     const total = lineas.reduce((a, l) => a + l.monto, 0) || Number(o.monto ?? 0) || 1
     return lineas.reduce((a, l) => {
       const cc = l.id_area_fk != null ? (areaCC[l.id_area_fk] ?? o.id_centro_costo_fk) : o.id_centro_costo_fk
-      return ok(cc, l.id_area_fk, l.id_frente_fk) ? a + l.monto / total : a
+      return ok(cc, l.id_area_fk, l.id_frente_fk, l.id_cuadrante_fk) ? a + l.monto / total : a
     }, 0)
   }, [filterCC, filtroZona, zonasCat, filterArea, filterFrente, areaCC, lineasOP])
   const opCoincide = useCallback((o: any) => fraccionOP(o) > 0, [fraccionOP])

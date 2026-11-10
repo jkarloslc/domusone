@@ -103,7 +103,15 @@ export function useZonas() {
       const zs = idArea ? (areaZonas.get(Number(idArea)) ?? []) : []
       return zs.length === 1 ? zs[0] : null
     }
-    return { zonas, seccionesDeZona, areasDeZona, seccionEnZona, areaEnZona, zonasDeSeccion, ccUsaZonas, ciUsaZonas, zonaUnicaDeArea }
+    /** Documento (Req/OC/OP/línea) en la zona: usa su zona guardada; si no tiene, la de su área */
+    const docEnZona = (zona: string | number | null | undefined, doc: { id_cuadrante_fk?: number | null; id_area_fk?: number | null }) =>
+      !zona || (doc.id_cuadrante_fk != null ? Number(doc.id_cuadrante_fk) === Number(zona) : areaEnZona(zona, doc.id_area_fk))
+    /** Filtro PostgREST (.or) equivalente a docEnZona */
+    const orDocEnZona = (zona: string | number) => {
+      const az = Array.from(areasDeZona(zona) ?? [])
+      return `id_cuadrante_fk.eq.${Number(zona)},and(id_cuadrante_fk.is.null,id_area_fk.in.(${az.length ? az.join(',') : -1}))`
+    }
+    return { zonas, seccionesDeZona, areasDeZona, seccionEnZona, areaEnZona, zonasDeSeccion, ccUsaZonas, ciUsaZonas, zonaUnicaDeArea, docEnZona, orDocEnZona }
   }, [data])
 }
 

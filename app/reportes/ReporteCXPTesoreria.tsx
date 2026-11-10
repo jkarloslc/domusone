@@ -49,7 +49,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'remesas',      label: 'Remesas de Pago' },
 ]
 
-type Linea = { id_area_fk: number | null; id_frente_fk: number | null; monto: number }
+type Linea = { id_area_fk: number | null; id_cuadrante_fk?: number | null; id_frente_fk: number | null; monto: number }
 
 export default function ReporteCXPTesoreria() {
   const [tab, setTab]           = useState<Tab>('programacion')
@@ -98,8 +98,8 @@ export default function ReporteCXPTesoreria() {
     const lm: Record<number, Linea[]> = {}
     for (let i = 0; i < ids.length; i += 200) {
       const { data: dets } = await dbComp.from('ordenes_pago_det')
-        .select('id_op_fk, id_area_fk, id_frente_fk, monto').in('id_op_fk', ids.slice(i, i + 200)).limit(5000)
-      ;(dets ?? []).forEach((d: any) => { (lm[d.id_op_fk] ??= []).push({ id_area_fk: d.id_area_fk, id_frente_fk: d.id_frente_fk, monto: Number(d.monto) || 0 }) })
+        .select('*').in('id_op_fk', ids.slice(i, i + 200)).limit(5000)
+      ;(dets ?? []).forEach((d: any) => { (lm[d.id_op_fk] ??= []).push({ id_area_fk: d.id_area_fk, id_cuadrante_fk: d.id_cuadrante_fk ?? null, id_frente_fk: d.id_frente_fk, monto: Number(d.monto) || 0 }) })
     }
     setLineasOP(lm)
 
@@ -137,19 +137,19 @@ export default function ReporteCXPTesoreria() {
   // Fracción del saldo que corresponde a los filtros CC/Área/Frente (igual que la página CXP)
   const fraccionOP = useCallback((o: any) => {
     if (!filterCC && !filtroZona && !filterArea && !filterFrente) return 1
-    const ok = (cc: number | null | undefined, area: number | null, frente: number | null) =>
+    const ok = (cc: number | null | undefined, area: number | null, frente: number | null, zona?: number | null) =>
       (!filterCC || cc === Number(filterCC)) &&
-      (!filtroZona || zonasCat.areaEnZona(filtroZona, area)) &&
+      (!filtroZona || zonasCat.docEnZona(filtroZona, { id_cuadrante_fk: zona, id_area_fk: area })) &&
       (!filterArea || area === Number(filterArea)) &&
       (!filterFrente || frente === Number(filterFrente))
     const lineas = lineasOP[o.id] ?? []
     if (lineas.length === 0) {
-      return ok(o.id_centro_costo_fk ?? (o.id_area_fk ? areaCC[o.id_area_fk] : null), o.id_area_fk, o.id_frente_fk) ? 1 : 0
+      return ok(o.id_centro_costo_fk ?? (o.id_area_fk ? areaCC[o.id_area_fk] : null), o.id_area_fk, o.id_frente_fk, o.id_cuadrante_fk) ? 1 : 0
     }
     const total = lineas.reduce((a, l) => a + l.monto, 0) || Number(o.monto ?? 0) || 1
     return lineas.reduce((a, l) => {
       const cc = l.id_area_fk != null ? (areaCC[l.id_area_fk] ?? o.id_centro_costo_fk) : o.id_centro_costo_fk
-      return ok(cc, l.id_area_fk, l.id_frente_fk) ? a + l.monto / total : a
+      return ok(cc, l.id_area_fk, l.id_frente_fk, l.id_cuadrante_fk) ? a + l.monto / total : a
     }, 0)
   }, [filterCC, filtroZona, zonasCat, filterArea, filterFrente, areaCC, lineasOP])
   const sd = useCallback((o: any) => Number(o.saldo ?? o.monto ?? 0) * fraccionOP(o), [fraccionOP])

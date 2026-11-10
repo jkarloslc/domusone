@@ -50,7 +50,7 @@ export default function OrdenesPage() {
     if (filterStatus) q = q.eq('status', filterStatus)
     if (filterCC) q = q.eq('id_centro_costo_fk', Number(filterCC))
     if (filterArea) q = q.eq('id_area_fk', Number(filterArea))
-    else if (filtroZona) { const az = zonasCat.areasDeZona(filtroZona)!; q = q.in('id_area_fk', az.size > 0 ? Array.from(az) : [-1]) }
+    else if (filtroZona) q = q.or(zonasCat.orDocEnZona(filtroZona))
     if (filterProv) q = q.eq('id_proveedor_fk', Number(filterProv))
     if (filterFechaDesde) q = q.gte('created_at', `${filterFechaDesde}T00:00:00`)
     if (filterFechaHasta) q = q.lte('created_at', `${filterFechaHasta}T23:59:59`)
@@ -321,12 +321,13 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
 
     // 2. CC / Área / Frente desde la requisición vinculada
     const { data: rfqData } = await dbComp.from('rfq')
-      .select('id_requisicion_fk, requisiciones(id_centro_costo_fk, id_area_fk, id_frente_fk)')
+      .select('id_requisicion_fk, requisiciones(id_centro_costo_fk, id_area_fk, id_frente_fk, id_cuadrante_fk)')
       .eq('id', Number(rfqId)).maybeSingle()
     const req = (rfqData as any)?.requisiciones
     if (req) {
       const aId = req.id_area_fk?.toString() ?? ''
       setAreaId(aId)
+      setZonaCap(req.id_cuadrante_fk?.toString() ?? '')
       setForm(f => ({
         ...f,
         id_centro_costo_fk: req.id_centro_costo_fk?.toString() ?? f.id_centro_costo_fk,
@@ -411,6 +412,7 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
       id_centro_costo_fk:    form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
       id_area_fk:            form.id_area_fk ? Number(form.id_area_fk) : null,
       id_frente_fk:          form.id_frente_fk ? Number(form.id_frente_fk) : null,
+      ...zonaPayload(),
       notas:                 form.notas.trim() || null,
       fecha_factura:         form.fecha_factura || null,
       folio_factura:         form.folio_factura.trim() || null,
@@ -451,9 +453,11 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
     setSaving(false); onSaved()
   }
 
-  // Captura CC → Zona → Área (Zona solo si el CC la usa; no se guarda, filtra las áreas)
+  // Captura CC → Zona → Área (Zona solo si el CC la usa; se guarda en id_cuadrante_fk)
   const zonasCap = useZonas()
-  const [zonaCap, setZonaCap] = useState('')
+  const [zonaCap, setZonaCap] = useState<string>(row?.id_cuadrante_fk?.toString() ?? '')
+  const zonaPayload = () => (zonasCap.ccUsaZonas(form.id_centro_costo_fk) || (row && 'id_cuadrante_fk' in row))
+    ? { id_cuadrante_fk: zonasCap.ccUsaZonas(form.id_centro_costo_fk) && zonaCap ? Number(zonaCap) : null } : {}
   useEffect(() => {
     if (!zonaCap && form.id_area_fk) { const z = zonasCap.zonaUnicaDeArea(form.id_area_fk); if (z) setZonaCap(String(z)) }
   }, [zonasCap]) // eslint-disable-line react-hooks/exhaustive-deps

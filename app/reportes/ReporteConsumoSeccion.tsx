@@ -26,7 +26,7 @@ export default function ReporteConsumoSeccion() {
       dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
       dbComp.from('proveedores').select('id, nombre').order('nombre'),
       dbComp.from('ordenes_pago')
-        .select('id, folio, id_area_fk, id_proveedor_fk, concepto, id_tipo_gasto_fk, monto, saldo, fecha_op, status')
+        .select('id, folio, id_area_fk, id_cuadrante_fk, id_proveedor_fk, concepto, id_tipo_gasto_fk, monto, saldo, fecha_op, status')
         .not('id_area_fk', 'is', null)
         .neq('status', 'Cancelada')
         .order('fecha_op', { ascending: false }),
@@ -43,7 +43,7 @@ export default function ReporteConsumoSeccion() {
 
     // Filtrar
     let opsFiltradas = ops ?? []
-    if (filtroZona) opsFiltradas = opsFiltradas.filter((r: any) => zonasCat.areaEnZona(filtroZona, r.id_area_fk))
+    if (filtroZona) opsFiltradas = opsFiltradas.filter((r: any) => zonasCat.docEnZona(filtroZona, r))
     if (filtroArea)  opsFiltradas = opsFiltradas.filter((r: any) => r.id_area_fk === Number(filtroArea))
     if (filtroTipo) opsFiltradas = opsFiltradas.filter((r: any) => String(r.id_tipo_gasto_fk ?? '') === filtroTipo)
     if (filtroDe)   opsFiltradas = opsFiltradas.filter((r: any) => r.fecha_op >= filtroDe)

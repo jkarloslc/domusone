@@ -29,6 +29,7 @@ type OP = {
   id_proveedor_fk: number | null
   id_centro_costo_fk: number | null
   id_area_fk: number | null
+  id_cuadrante_fk?: number | null
   _detIdx?: number // distingue las filas sintéticas de una misma OP distribuida (ver explotarPorArea)
 }
 
@@ -44,7 +45,7 @@ type OP = {
 // Presupuestos con estas mismas OP distribuidas).
 function explotarPorArea(
   ops: OP[],
-  detByOp: Record<number, { id_area_fk: number | null; monto: number }[]>,
+  detByOp: Record<number, { id_area_fk: number | null; id_cuadrante_fk?: number | null; monto: number }[]>,
   areaCCMap: Record<number, number>
 ): OP[] {
   const res: OP[] = []
@@ -56,7 +57,7 @@ function explotarPorArea(
     lineas.forEach((l, idx) => {
       const share = l.monto / totalLineas
       const ccLinea = l.id_area_fk != null ? (areaCCMap[l.id_area_fk] ?? op.id_centro_costo_fk) : op.id_centro_costo_fk
-      res.push({ ...op, id_centro_costo_fk: ccLinea, id_area_fk: l.id_area_fk, monto: l.monto, saldo: saldoOP * share, _detIdx: idx })
+      res.push({ ...op, id_centro_costo_fk: ccLinea, id_area_fk: l.id_area_fk, id_cuadrante_fk: l.id_cuadrante_fk ?? null, monto: l.monto, saldo: saldoOP * share, _detIdx: idx })
     })
   }
   return res
@@ -123,10 +124,10 @@ export default function ReporteAntiguedadOPporCC() {
       dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
       dbComp.from('proveedores').select('id, nombre').order('nombre'),
       dbComp.from('ordenes_pago')
-        .select('id, folio, concepto, monto, saldo, fecha_op, fecha_vencimiento, status, id_proveedor_fk, id_centro_costo_fk, id_area_fk')
+        .select('id, folio, concepto, monto, saldo, fecha_op, fecha_vencimiento, status, id_proveedor_fk, id_centro_costo_fk, id_area_fk, id_cuadrante_fk')
         .not('status', 'in', '("Pagada","Cancelada","Rechazada","Sustituida","Pendiente Auth","Pendiente Auth Finanzas")')
         .order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
-      dbComp.from('ordenes_pago_det').select('id_op_fk, id_area_fk, monto'),
+      dbComp.from('ordenes_pago_det').select('id_op_fk, id_area_fk, id_cuadrante_fk, monto'),
     ])
 
     setCentros((ccs ?? []) as any)
@@ -136,10 +137,10 @@ export default function ReporteAntiguedadOPporCC() {
     ;(ps ?? []).forEach((p: any) => { pm[p.id] = p.nombre })
     setProvMap(pm)
 
-    const detByOp: Record<number, { id_area_fk: number | null; monto: number }[]> = {}
+    const detByOp: Record<number, { id_area_fk: number | null; id_cuadrante_fk?: number | null; monto: number }[]> = {}
     ;(detData ?? []).forEach((d: any) => {
       if (!detByOp[d.id_op_fk]) detByOp[d.id_op_fk] = []
-      detByOp[d.id_op_fk].push({ id_area_fk: d.id_area_fk, monto: Number(d.monto) || 0 })
+      detByOp[d.id_op_fk].push({ id_area_fk: d.id_area_fk, id_cuadrante_fk: d.id_cuadrante_fk ?? null, monto: Number(d.monto) || 0 })
     })
     const areaCCMap: Record<number, number> = {}
     ;(ars ?? []).forEach((a: any) => { areaCCMap[a.id] = a.id_centro_costo_fk })
@@ -180,7 +181,7 @@ export default function ReporteAntiguedadOPporCC() {
   const opsFiltradas = useMemo<OPConDias[]>(() => {
     return opsPreproc.filter(op => {
       if (filtroCC    && op.id_centro_costo_fk !== Number(filtroCC)) return false
-      if (filtroZona && !zonasCat.areaEnZona(filtroZona, op.id_area_fk)) return false
+      if (filtroZona && !zonasCat.docEnZona(filtroZona, op)) return false
       if (filtroArea  && op.id_area_fk !== Number(filtroArea)) return false
       if (filtroProv  && op.id_proveedor_fk !== Number(filtroProv)) return false
       if (filtroBanda && op._banda !== filtroBanda) return false

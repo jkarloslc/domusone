@@ -31,6 +31,9 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
   const [loadingCap, setLoadingCap] = useState(false)
 
   const zonasCat = useZonas()
+  // Zona propia del lote: automática si su sección está en una sola zona;
+  // si la sección se reparte entre varias (ej. Fairway), se elige aquí.
+  const [zonaLote, setZonaLote] = useState<string>((lote as any)?.id_cuadrante_fk?.toString() ?? '')
   const [form, setForm] = useState({
     cve_lote:            lote?.cve_lote ?? '',
     lote:                lote?.lote?.toString() ?? '',
@@ -114,7 +117,12 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
     }
 
     setSaving(true); setError('')
+    const zonasSec = zonasCat.zonasDeSeccion(form.id_seccion_fk ? Number(form.id_seccion_fk) : null)
+    const zonaFinal = zonasSec.length === 1 ? zonasSec[0].id
+      : zonasSec.some(z => String(z.id) === zonaLote) ? Number(zonaLote) : null
     const payload: Record<string, unknown> = {
+      // Solo se manda si hay valor o el lote ya traía la columna (tolera migración pendiente)
+      ...((zonaFinal != null || (lote && 'id_cuadrante_fk' in lote)) ? { id_cuadrante_fk: zonaFinal } : {}),
       cve_lote:            form.cve_lote || null,
       lote:                form.lote ? Number(form.lote) : null,
       id_seccion_fk:       form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
@@ -197,11 +205,24 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
                   {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                 </select>
                 <CapacidadIndicador capacidad={capacidad} loading={loadingCap} />
-                {form.id_seccion_fk && (
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-                    Zona: <b>{zonasCat.zonasDeSeccion(Number(form.id_seccion_fk)).map(z => z.nombre).join(', ') || 'sin zona (asígnala en Catálogos › Zonas)'}</b>
-                  </div>
-                )}
+                {form.id_seccion_fk && (() => {
+                  const zs = zonasCat.zonasDeSeccion(Number(form.id_seccion_fk))
+                  if (zs.length === 0) return <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Zona: <b>sin zona (asígnala en Catálogos › Zonas)</b></div>
+                  if (zs.length === 1) return <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Zona: <b>{zs[0].nombre}</b></div>
+                  const ok = zs.some(z => String(z.id) === zonaLote)
+                  return (
+                    <div style={{ marginTop: 6 }}>
+                      <div style={{ fontSize: 11, color: ok ? 'var(--text-muted)' : '#b45309', marginBottom: 3 }}>
+                        Esta sección está en {zs.length} zonas — elige la zona del lote
+                      </div>
+                      <select className="select" value={ok ? zonaLote : ''} onChange={e => setZonaLote(e.target.value)}
+                        style={!ok ? { borderColor: '#f59e0b' } : undefined}>
+                        <option value="">— Elegir zona —</option>
+                        {zs.map(z => <option key={z.id} value={z.id}>{z.nombre}</option>)}
+                      </select>
+                    </div>
+                  )
+                })()}
               </Field>
               <Field label="Tipo de Lote">
                 <select className="select" value={form.id_tipo_lote_fk} onChange={set('id_tipo_lote_fk')}>

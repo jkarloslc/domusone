@@ -18,11 +18,12 @@ type OP = {
   id_proveedor_fk: number | null
   id_centro_costo_fk: number | null
   id_area_fk: number | null
+  id_cuadrante_fk?: number | null
   id_frente_fk: number | null
   _detIdx?: number
 }
 
-type Linea = { id_area_fk: number | null; id_frente_fk: number | null; monto: number }
+type Linea = { id_area_fk: number | null; id_cuadrante_fk?: number | null; id_frente_fk: number | null; monto: number }
 
 // OP distribuidas: el encabezado no trae área/frente, viven en ordenes_pago_det.
 // Se explotan en una fila por línea prorrateando el saldo (el CC se deriva del Área).
@@ -36,7 +37,7 @@ function explotar(ops: OP[], detByOp: Record<number, Linea[]>, areaCCMap: Record
     lineas.forEach((l, idx) => {
       const share = l.monto / totalLineas
       const cc = l.id_area_fk != null ? (areaCCMap[l.id_area_fk] ?? op.id_centro_costo_fk) : op.id_centro_costo_fk
-      res.push({ ...op, id_centro_costo_fk: cc, id_area_fk: l.id_area_fk, id_frente_fk: l.id_frente_fk, monto: l.monto, saldo: saldoOP * share, _detIdx: idx })
+      res.push({ ...op, id_centro_costo_fk: cc, id_area_fk: l.id_area_fk, id_cuadrante_fk: l.id_cuadrante_fk ?? null, id_frente_fk: l.id_frente_fk, monto: l.monto, saldo: saldoOP * share, _detIdx: idx })
     })
   }
   return res
@@ -79,9 +80,9 @@ export default function ReporteCXPporCC() {
       dbCfg.from('frentes').select('id, nombre').order('nombre'),
       dbComp.from('proveedores').select('id, nombre'),
       dbComp.from('ordenes_pago')
-        .select('id, folio, concepto, monto, saldo, fecha_op, fecha_vencimiento, status, id_proveedor_fk, id_centro_costo_fk, id_area_fk, id_frente_fk')
+        .select('id, folio, concepto, monto, saldo, fecha_op, fecha_vencimiento, status, id_proveedor_fk, id_centro_costo_fk, id_area_fk, id_cuadrante_fk, id_frente_fk')
         .not('status', 'in', '("Pagada","Cancelada","Rechazada","Sustituida","Pendiente Auth","Pendiente Auth Finanzas")'),
-      dbComp.from('ordenes_pago_det').select('id_op_fk, id_area_fk, id_frente_fk, monto'),
+      dbComp.from('ordenes_pago_det').select('id_op_fk, id_area_fk, id_cuadrante_fk, id_frente_fk, monto'),
     ])
     if (error) console.error('ReporteCXPporCC:', error.message)
 
@@ -94,7 +95,7 @@ export default function ReporteCXPporCC() {
 
     const detByOp: Record<number, Linea[]> = {}
     ;(detData ?? []).forEach((d: any) => {
-      (detByOp[d.id_op_fk] ??= []).push({ id_area_fk: d.id_area_fk, id_frente_fk: d.id_frente_fk, monto: Number(d.monto) || 0 })
+      (detByOp[d.id_op_fk] ??= []).push({ id_area_fk: d.id_area_fk, id_cuadrante_fk: d.id_cuadrante_fk ?? null, id_frente_fk: d.id_frente_fk, monto: Number(d.monto) || 0 })
     })
     const areaCCMap: Record<number, number> = {}
     ;(ars ?? []).forEach((a: any) => { areaCCMap[a.id] = a.id_centro_costo_fk })
@@ -112,7 +113,7 @@ export default function ReporteCXPporCC() {
   const opsFiltradas = useMemo(() => ops.filter(op => {
     if (saldoDe(op) <= 0) return false
     if (filtroCC     && op.id_centro_costo_fk !== Number(filtroCC)) return false
-    if (filtroZona && !zonasCat.areaEnZona(filtroZona, op.id_area_fk)) return false
+    if (filtroZona && !zonasCat.docEnZona(filtroZona, op)) return false
     if (filtroArea   && op.id_area_fk !== Number(filtroArea)) return false
     if (filtroFrente && op.id_frente_fk !== Number(filtroFrente)) return false
     const f = op[campoFecha]

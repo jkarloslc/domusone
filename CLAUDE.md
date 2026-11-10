@@ -43,13 +43,15 @@ Vehículos y Maquinaria, Equipo y Herramienta (con combustible, bitácoras, pré
 
 ## Zonas (antes "Cuadrantes", 2026-11-10)
 - Solo cambió el nombre visible: la tabla sigue siendo `cfg.cuadrantes` y las columnas `id_cuadrante_fk`.
-- Zona agrupa **Secciones** (N:M, `cfg.rel_seccion_cuadrante`, migr. `20261110120000`; `cfg.secciones.id_cuadrante_fk` queda como respaldo legado) y **Áreas** (N:M, `cfg.rel_area_cuadrante`). El **Lote** hereda las zonas de su sección (no tiene columna propia); una sección en 2 zonas cuenta en ambas.
+- Zona agrupa **Secciones** (N:M, `cfg.rel_seccion_cuadrante`, migr. `20261110120000`; `cfg.secciones.id_cuadrante_fk` queda como respaldo legado) y **Áreas** (N:M, `cfg.rel_area_cuadrante`). El **Lote** tiene zona propia (ver abajo).
 - `lib/zonas.tsx`: `useZonas()` (`seccionEnZona`, `areaEnZona`, `seccionesDeZona`, `areasDeZona`, `zonaDeSeccion`) + `<SelectZona>`. Llamar `invalidarZonas()` al editar el catálogo.
 - Jerarquía de filtros (Zona es nivel intermedio, solo bajo el centro que la usa):
   - Costos: **CC → Zona → Área**, solo si el CC tiene `cfg.centros_costo.usa_zonas` (migr. `20261110130000`; hoy Mantto. Fraccionamiento). `zonasCat.ccUsaZonas(cc)`.
   - Ingresos: **CI → Zona → Sección**, solo si el CI es de cuotas (agrupador `es_cuotas_fraccionamiento`) con `tipo_desglose='secciones'`. `zonasCat.ciUsaZonas(ci)`.
   - Al cambiar de centro se limpia la Zona. Páginas sin filtro de CC (Consumo por Sección/Frente, Combustible) muestran Zona directo.
-- Captura (Requisición, OC, OP encabezado y líneas de distribución de un solo CC): **CC → Zona → Área** con `<CampoZonaCaptura>`. La Zona **no se guarda**: solo filtra las áreas; al editar se preselecciona si el área está en una sola zona. En OP modo "CC distintos" no hay Zona por línea.
+- Captura (Requisición, OC, OP encabezado y líneas de distribución de un solo CC): **CC → Zona → Área** con `<CampoZonaCaptura>`. La Zona **se guarda** en `id_cuadrante_fk` de `comp.requisiciones`, `ordenes_compra`, `ordenes_pago`, `ordenes_pago_det` (migr. `20261110140000`). OC hereda de la Requisición; OP con OC hereda de la OC. En OP modo "CC distintos" no hay Zona por línea.
+- Filtros/reportes de costos usan `zonasCat.docEnZona(zona, doc)` / `orDocEnZona(zona)`: zona guardada del documento y, si es NULL (documentos viejos), la del área.
+- **Lotes con zona propia** (`cat.lotes.id_cuadrante_fk`): si su sección está en una sola zona, se asigna sola; si la sección está repartida (ej. Fairway), se elige en el modal del lote o en Catálogos › Zonas › Lotes. Al quitar una sección de una zona, sus lotes se liberan de esa zona. Los ingresos siguen siendo por sección (una sección en 2 zonas cuenta en ambas).
 - Al crear una página nueva con filtro o captura de Sección o Área, seguir esta jerarquía.
 
 ## Ramas

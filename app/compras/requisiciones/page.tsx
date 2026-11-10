@@ -56,7 +56,7 @@ export default function RequisicionesPage() {
     if (filterStatus) q = q.eq('status', filterStatus)
     if (filterCC) q = q.eq('id_centro_costo_fk', Number(filterCC))
     if (filterArea) q = q.eq('id_area_fk', Number(filterArea))
-    else if (filtroZona) { const az = zonasCat.areasDeZona(filtroZona)!; q = q.in('id_area_fk', az.size > 0 ? Array.from(az) : [-1]) }
+    else if (filtroZona) q = q.or(zonasCat.orDocEnZona(filtroZona))
     if (filterFechaDesde) q = q.gte('created_at', `${filterFechaDesde}T00:00:00`)
     if (filterFechaHasta) q = q.lte('created_at', `${filterFechaHasta}T23:59:59`)
     if (debouncedSearch) q = q.or(`folio.ilike.%${debouncedSearch}%,area_solicitante.ilike.%${debouncedSearch}%,solicitante.ilike.%${debouncedSearch}%`)
@@ -516,6 +516,7 @@ function RequisicionModal({ row, esAdminPleno, onClose, onSaved }: { row: any | 
         id_centro_costo_fk: Number(form.id_centro_costo_fk),
         id_area_fk:         form.id_area_fk ? Number(form.id_area_fk) : null,
         id_frente_fk:       form.id_frente_fk ? Number(form.id_frente_fk) : null,
+        ...zonaPayload(),
         prioridad:          form.prioridad,
         justificacion:      form.justificacion.trim() || null,
         status: enviar ? 'Enviada' : 'Borrador',
@@ -531,6 +532,7 @@ function RequisicionModal({ row, esAdminPleno, onClose, onSaved }: { row: any | 
         id_centro_costo_fk: Number(form.id_centro_costo_fk),
         id_area_fk:         form.id_area_fk ? Number(form.id_area_fk) : null,
         id_frente_fk:       form.id_frente_fk ? Number(form.id_frente_fk) : null,
+        ...zonaPayload(),
         prioridad:          form.prioridad,
         justificacion:      form.justificacion.trim() || null,
         status: enviar ? 'Enviada' : row.status,
@@ -548,9 +550,12 @@ function RequisicionModal({ row, esAdminPleno, onClose, onSaved }: { row: any | 
     setSaving(false); onSaved()
   }
 
-  // Captura CC → Zona → Área (Zona solo si el CC la usa; no se guarda, filtra las áreas)
+  // Captura CC → Zona → Área (Zona solo si el CC la usa; se guarda en id_cuadrante_fk)
   const zonasCap = useZonas()
-  const [zonaCap, setZonaCap] = useState('')
+  const [zonaCap, setZonaCap] = useState<string>(row?.id_cuadrante_fk?.toString() ?? '')
+  // Se manda solo si el CC usa zonas o el registro ya la traía (para limpiarla al cambiar de CC)
+  const zonaPayload = () => (zonasCap.ccUsaZonas(form.id_centro_costo_fk) || (row && 'id_cuadrante_fk' in row))
+    ? { id_cuadrante_fk: zonasCap.ccUsaZonas(form.id_centro_costo_fk) && zonaCap ? Number(zonaCap) : null } : {}
   useEffect(() => {
     if (!zonaCap && form.id_area_fk) { const z = zonasCap.zonaUnicaDeArea(form.id_area_fk); if (z) setZonaCap(String(z)) }
   }, [zonasCap]) // eslint-disable-line react-hooks/exhaustive-deps

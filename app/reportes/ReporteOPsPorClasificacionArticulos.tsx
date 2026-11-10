@@ -86,7 +86,7 @@ export default function ReporteOPsPorClasificacionArticulos() {
       dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
       dbComp.from('proveedores').select('id, nombre').order('nombre'),
       dbComp.from('ordenes_pago')
-        .select('id, folio, concepto, monto, saldo, fecha_op, fecha_vencimiento, status, id_proveedor_fk, id_centro_costo_fk, id_area_fk, id_oc_fk')
+        .select('id, folio, concepto, monto, saldo, fecha_op, fecha_vencimiento, status, id_proveedor_fk, id_centro_costo_fk, id_area_fk, id_cuadrante_fk, id_oc_fk')
         .order('fecha_op', { ascending: false }),
       dbComp.from('ordenes_pago_oc').select('id_op_fk'),
     ])
@@ -148,7 +148,7 @@ export default function ReporteOPsPorClasificacionArticulos() {
     return opsCat.filter(op => {
       if (filtroStatus    && op.status !== filtroStatus) return false
       if (filtroCC        && op.id_centro_costo_fk !== Number(filtroCC)) return false
-      if (filtroZona && !zonasCat.areaEnZona(filtroZona, op.id_area_fk)) return false
+      if (filtroZona && !zonasCat.docEnZona(filtroZona, op)) return false
       if (filtroArea       && op.id_area_fk !== Number(filtroArea)) return false
       if (filtroProv       && op.id_proveedor_fk !== Number(filtroProv)) return false
       if (filtroCategoria  && (filtroCategoria === SIN_CATEGORIA ? op.id_categoria != null : String(op.id_categoria) !== filtroCategoria)) return false
@@ -226,7 +226,7 @@ export default function ReporteOPsPorClasificacionArticulos() {
   const opsParaKPIs = useMemo(() => {
     return opsConOC.filter(op => {
       if (filtroCC   && op.id_centro_costo_fk !== Number(filtroCC)) return false
-      if (filtroZona && !zonasCat.areaEnZona(filtroZona, op.id_area_fk)) return false
+      if (filtroZona && !zonasCat.docEnZona(filtroZona, op)) return false
       if (filtroArea && op.id_area_fk !== Number(filtroArea)) return false
       if (filtroProv && op.id_proveedor_fk !== Number(filtroProv)) return false
       if (filtroDe   && (!op.fecha_op || op.fecha_op < filtroDe)) return false

@@ -75,10 +75,11 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
     if (debouncedSearch) q = q.or(`cve_lote.ilike.%${debouncedSearch}%,lote::text.ilike.%${debouncedSearch}%`)
     if (filterStatus)    q = q.eq('status_lote', filterStatus)
     if (filterSeccion)   q = q.eq('id_seccion_fk', Number(filterSeccion))
-    else if (filterZona) {
-      // El lote pertenece a la Zona de su sección
-      const secs = zonasCat.seccionesDeZona(filterZona)!
-      q = q.in('id_seccion_fk', secs.size > 0 ? Array.from(secs) : [-1])
+    if (filterZona) {
+      // Zona propia del lote; los lotes aún sin zona entran por su sección
+      // (así los de secciones repartidas aparecen en ambas zonas hasta asignarlos)
+      const secs = Array.from(zonasCat.seccionesDeZona(filterZona)!)
+      q = q.or(`id_cuadrante_fk.eq.${Number(filterZona)},and(id_cuadrante_fk.is.null,id_seccion_fk.in.(${secs.length ? secs.join(',') : -1}))`)
     }
     if (filterClasif)    q = q.eq('id_clasificacion_fk', Number(filterClasif))
     if (debouncedDir)    q = q.or(`calle.ilike.%${debouncedDir}%,numero.ilike.%${debouncedDir}%`)
@@ -237,7 +238,14 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
                     {(l as any).id_clasificacion_fk ? (clasificaciones[(l as any).id_clasificacion_fk] ?? '—') : '—'}
                   </td>
                   <td style={{ color: 'var(--text-secondary)' }}>
-                    {zonasCat.zonasDeSeccion(l.id_seccion_fk).map(z => z.nombre).join(', ') || '—'}
+                    {(() => {
+                      const propia = (l as any).id_cuadrante_fk
+                      if (propia) return zonasCat.zonas.find(z => z.id === propia)?.nombre ?? `#${propia}`
+                      const zs = zonasCat.zonasDeSeccion(l.id_seccion_fk)
+                      if (zs.length === 1) return zs[0].nombre
+                      if (zs.length > 1) return <span style={{ color: '#b45309', fontSize: 12 }} title={zs.map(z => z.nombre).join(', ')}>Sin asignar ({zs.length} zonas)</span>
+                      return '—'
+                    })()}
                   </td>
                   <td style={{ color: 'var(--text-secondary)' }}>
                     {l.id_seccion_fk ? (secciones[l.id_seccion_fk] ?? '—') : '—'}

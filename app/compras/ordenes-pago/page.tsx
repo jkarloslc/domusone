@@ -102,9 +102,9 @@ export default function OrdenesPagoPage() {
     // Zona → Áreas de la zona (encabezado o líneas de distribución)
     const areasZona = !filterArea ? zonasCat.areasDeZona(filtroZona) : null
     let idsDistribuidosZona: number[] = []
-    if (areasZona && areasZona.size > 0) {
+    if (areasZona) {
       const { data: detRowsZ } = await dbComp.from('ordenes_pago_det')
-        .select('id_op_fk').in('id_area_fk', Array.from(areasZona))
+        .select('id_op_fk').or(zonasCat.orDocEnZona(filtroZona))
       idsDistribuidosZona = Array.from(new Set((detRowsZ ?? []).map((d: any) => d.id_op_fk)))
     }
 
@@ -123,10 +123,10 @@ export default function OrdenesPagoPage() {
         : q.eq('id_area_fk', Number(filterArea))
     }
     if (areasZona) {
-      const az = areasZona.size > 0 ? Array.from(areasZona).join(',') : '-1'
+      // Zona guardada en la OP; si no tiene, la de su área; o alguna línea en la zona
       q = idsDistribuidosZona.length > 0
-        ? q.or(`id_area_fk.in.(${az}),id.in.(${idsDistribuidosZona.join(',')})`)
-        : q.or(`id_area_fk.in.(${az})`)
+        ? q.or(`${zonasCat.orDocEnZona(filtroZona)},id.in.(${idsDistribuidosZona.join(',')})`)
+        : q.or(zonasCat.orDocEnZona(filtroZona))
     }
     if (filterProv) q = q.eq('id_proveedor_fk', Number(filterProv))
     if (filterTipoGasto === '__SIN_TIPO__') q = q.is('id_tipo_gasto_fk', null)
@@ -531,6 +531,7 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
               id_area_fk:   d.id_area_fk?.toString()   ?? '',
               id_frente_fk: d.id_frente_fk?.toString() ?? '',
               monto:        d.monto?.toString()         ?? '0',
+              ...(d.id_cuadrante_fk != null ? { zona: d.id_cuadrante_fk.toString() } : {}),
             })))
             setNextTempId(data.length)
             // El header trae CC ⇒ distribución dentro de un mismo CC (legacy);
@@ -928,10 +929,11 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
     setSaving(true); setError('')
 
     // Obtener CC/Área/Frente de la OC cuando aplica
-    let ocCampos = { id_centro_costo_fk: null as number|null, id_area_fk: null as number|null, id_frente_fk: null as number|null }
+    let ocCampos = { id_centro_costo_fk: null as number|null, id_area_fk: null as number|null, id_frente_fk: null as number|null, id_cuadrante_fk: null as number|null }
     if (conOC && ocsSelected.length > 0) {
+      // select('*') para leer id_cuadrante_fk sin romper si la migración no ha corrido
       const { data: ocData } = await dbComp.from('ordenes_compra')
-        .select('id_centro_costo_fk, id_area_fk, id_frente_fk')
+        .select('*')
         .eq('id', ocsSelected[0].id).single()
       if (ocData) ocCampos = ocData
     }
@@ -944,6 +946,9 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
         : (modoDist === 'multi_cc' ? null : (form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null)),
       id_area_fk:         detLines.length > 0 ? null : (conOC ? ocCampos.id_area_fk   : (form.id_area_fk   ? Number(form.id_area_fk)   : null)),
       id_frente_fk:       detLines.length > 0 ? null : (conOC ? ocCampos.id_frente_fk : (form.id_frente_fk ? Number(form.id_frente_fk) : null)),
+      ...conZonaCol(detLines.length > 0 ? null
+        : conOC ? (ocCampos.id_cuadrante_fk ?? null)
+        : (modoDist === 'normal' && zonasCap.ccUsaZonas(form.id_centro_costo_fk) && zonaCap ? Number(zonaCap) : null)),
       id_oc_fk:           (!conOC || ocsSelected.length === 0) ? null : ocsSelected[0].id,
       forma_pago:        form.forma_pago,
       fecha_vencimiento: form.fecha_vencimiento || null,
@@ -1009,6 +1014,7 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
             descripcion:  l.descripcion  || null,
             id_area_fk:   l.id_area_fk   ? Number(l.id_area_fk)   : null,
             id_frente_fk: l.id_frente_fk ? Number(l.id_frente_fk) : null,
+            ...conZonaCol(zonaDeLinea(l)),
             monto:        Number(l.monto) || 0,
           }))
         )
@@ -1085,6 +1091,7 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
           descripcion:  l.descripcion  || null,
           id_area_fk:   l.id_area_fk   ? Number(l.id_area_fk)   : null,
           id_frente_fk: l.id_frente_fk ? Number(l.id_frente_fk) : null,
+          ...conZonaCol(zonaDeLinea(l)),
           monto:        Number(l.monto) || 0,
         }))
       )
@@ -1136,9 +1143,13 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
     )
   }
 
-  // Captura CC → Zona → Área (Zona solo si el CC la usa; no se guarda, filtra las áreas)
+  // Captura CC → Zona → Área (Zona solo si el CC la usa; se guarda en id_cuadrante_fk)
   const zonasCap = useZonas()
-  const [zonaCap, setZonaCap] = useState('')
+  const [zonaCap, setZonaCap] = useState<string>(opEdit?.id_cuadrante_fk?.toString() ?? '')
+  // Solo se manda la columna si hay valor o la OP ya la tenía (tolera migración pendiente)
+  const conZonaCol = (v: number | null) => (v != null || (opEdit && 'id_cuadrante_fk' in opEdit)) ? { id_cuadrante_fk: v } : {}
+  const zonaDeLinea = (l: { zona?: string; id_area_fk: string }) =>
+    lineasConZona ? (Number(l.zona ?? zonasCap.zonaUnicaDeArea(l.id_area_fk) ?? '') || null) : null
   useEffect(() => {
     if (!zonaCap && form.id_area_fk) { const z = zonasCap.zonaUnicaDeArea(form.id_area_fk); if (z) setZonaCap(String(z)) }
   }, [zonasCap]) // eslint-disable-line react-hooks/exhaustive-deps

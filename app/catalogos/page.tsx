@@ -1796,7 +1796,7 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
 // CuadranteSecciones — Zona: asigna secciones (N:M), áreas (N:M) y colaboradores
 // ══════════════════════════════════════════════════════════════
 function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: () => void }) {
-  const [tab, setTab] = useState<'secciones' | 'areas' | 'colaboradores'>('secciones')
+  const [tab, setTab] = useState<'secciones' | 'lotes' | 'areas' | 'colaboradores'>('secciones')
 
   // ── Secciones (N:M vía cfg.rel_seccion_cuadrante) ──
   const [todasSecs,    setTodasSecs]    = useState<any[]>([])
@@ -1851,6 +1851,8 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
       const { error: e } = await dbCfg.from('rel_seccion_cuadrante')
         .delete().eq('id_cuadrante', cuadrante.id).in('id_seccion', removed)
       if (e) { setErrorSecs(e.message); setSavingSecs(false); return }
+      // Los lotes de esas secciones dejan de pertenecer a esta zona
+      await dbCat.from('lotes').update({ id_cuadrante_fk: null }).eq('id_cuadrante_fk', cuadrante.id).in('id_seccion_fk', removed)
     }
     invalidarZonas()
     setInicialSecs(new Set(selSecs)); setSavingSecs(false)
@@ -1960,6 +1962,7 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
         <button style={tabStyle(tab === 'secciones')} onClick={() => setTab('secciones')}>
           Secciones {selSecs.size > 0 && <span style={{ marginLeft: 4, fontSize: 11, background: '#dcfce7', color: '#15803d', borderRadius: 10, padding: '1px 6px' }}>{selSecs.size}</span>}
         </button>
+        <button style={tabStyle(tab === 'lotes')} onClick={() => setTab('lotes')}>Lotes</button>
         <button style={tabStyle(tab === 'areas')} onClick={() => setTab('areas')}>
           Áreas {selAreas.size > 0 && <span style={{ marginLeft: 4, fontSize: 11, background: '#dbeafe', color: '#1d4ed8', borderRadius: 10, padding: '1px 6px' }}>{selAreas.size}</span>}
         </button>
@@ -2022,6 +2025,12 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
             </div>
           </div>
         </>
+      )}
+
+      {/* Tab Lotes — reparte los lotes de secciones que están en varias zonas */}
+      {tab === 'lotes' && (
+        <ZonaLotes zona={cuadrante} secciones={todasSecs.filter(x => inicialSecs.has(x.id))}
+          otrasZonas={otrasZonas} zonaNombres={zonaNombres} onClose={onClose} />
       )}
 
       {/* Tab Áreas */}
@@ -2127,6 +2136,126 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
         </>
       )}
     </ModalShell>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
+// ZonaLotes — zona propia de cada lote (cat.lotes.id_cuadrante_fk)
+// Sección en una sola zona: sus lotes la toman solos. Sección repartida
+// entre varias zonas: aquí se marcan los lotes que pertenecen a esta zona.
+// ══════════════════════════════════════════════════════════════
+function ZonaLotes({ zona, secciones, otrasZonas, zonaNombres, onClose }: {
+  zona: any; secciones: any[]; otrasZonas: Record<number, number[]>; zonaNombres: Record<number, string>; onClose: () => void
+}) {
+  const compartidas = secciones.filter(x => (otrasZonas[x.id] ?? []).length > 0)
+  const [secSel, setSecSel]   = useState<number | null>(compartidas[0]?.id ?? null)
+  const [lotes, setLotes]     = useState<any[]>([])
+  const [sel, setSel]         = useState<Set<number>>(new Set())
+  const [inicial, setInicial] = useState<Set<number>>(new Set())
+  const [busq, setBusq]       = useState('')
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving]   = useState(false)
+  const [error, setError]     = useState('')
+  const [ok, setOk]           = useState('')
+
+  useEffect(() => {
+    if (!secSel) { setLotes([]); return }
+    setLoading(true); setError(''); setOk('')
+    dbCat.from('lotes').select('id, cve_lote, lote, manzana, calle, numero, id_cuadrante_fk')
+      .eq('id_seccion_fk', secSel).order('lote').limit(2000)
+      .then(({ data, error: e }) => {
+        if (e) setError(e.message.includes('id_cuadrante_fk') ? 'Falta ejecutar la migración 20261110140000_zona_en_documentos_y_lotes.sql' : e.message)
+        setLotes(data ?? [])
+        const mios = new Set<number>((data ?? []).filter((l: any) => l.id_cuadrante_fk === zona.id).map((l: any) => Number(l.id)))
+        setSel(new Set(mios)); setInicial(new Set(mios))
+        setLoading(false)
+      })
+  }, [secSel, zona.id])
+
+  const filt = lotes.filter(l => [l.cve_lote, l.lote, l.manzana, l.calle, l.numero].filter(Boolean).join(' ').toLowerCase().includes(busq.toLowerCase()))
+  const toggle = (id: number) => setSel(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const todosFilt = filt.length > 0 && filt.every(l => sel.has(l.id))
+  const toggleTodos = () => setSel(prev => {
+    const n = new Set(prev)
+    filt.forEach(l => todosFilt ? n.delete(l.id) : n.add(l.id))
+    return n
+  })
+  const sinAsignar = lotes.filter(l => l.id_cuadrante_fk == null).length
+
+  const guardar = async () => {
+    setSaving(true); setError(''); setOk('')
+    const added   = Array.from(sel).filter(id => !inicial.has(id))
+    const removed = Array.from(inicial).filter(id => !sel.has(id))
+    for (let i = 0; i < added.length; i += 500) {
+      const { error: e } = await dbCat.from('lotes').update({ id_cuadrante_fk: zona.id }).in('id', added.slice(i, i + 500))
+      if (e) { setError(e.message); setSaving(false); return }
+    }
+    for (let i = 0; i < removed.length; i += 500) {
+      const { error: e } = await dbCat.from('lotes').update({ id_cuadrante_fk: null }).in('id', removed.slice(i, i + 500))
+      if (e) { setError(e.message); setSaving(false); return }
+    }
+    setLotes(prev => prev.map(l => added.includes(l.id) ? { ...l, id_cuadrante_fk: zona.id } : removed.includes(l.id) ? { ...l, id_cuadrante_fk: null } : l))
+    setInicial(new Set(sel)); setSaving(false)
+    setOk(`${added.length} lote(s) asignados${removed.length ? `, ${removed.length} liberados` : ''}`)
+  }
+
+  if (compartidas.length === 0) {
+    return (
+      <div style={{ padding: 24, fontSize: 13, color: 'var(--text-muted)' }}>
+        Ninguna sección de esta zona está repartida con otra zona: todos sus lotes pertenecen a esta zona automáticamente.
+        <div style={{ marginTop: 8, fontSize: 12 }}>Si una sección está en 2 zonas (ej. Fairway), márcala en ambas en la pestaña Secciones y aquí reparte sus lotes.</div>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div style={{ padding: '10px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <select className="select" value={secSel ?? ''} onChange={e => setSecSel(Number(e.target.value) || null)} style={{ fontSize: 13 }}>
+          {compartidas.map(x => (
+            <option key={x.id} value={x.id}>{x.nombre} — también en {(otrasZonas[x.id] ?? []).map(z => zonaNombres[z] ?? `#${z}`).join(', ')}</option>
+          ))}
+        </select>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input className="input" placeholder="Buscar lote, manzana, calle…" value={busq} onChange={e => setBusq(e.target.value)} style={{ fontSize: 13, flex: 1 }} />
+          <button className="btn-ghost" style={{ fontSize: 12, whiteSpace: 'nowrap' }} onClick={toggleTodos} disabled={filt.length === 0}>
+            {todosFilt ? 'Quitar visibles' : 'Marcar visibles'}
+          </button>
+        </div>
+        {sinAsignar > 0 && <div style={{ fontSize: 11, color: '#b45309' }}>{sinAsignar} lote(s) de esta sección aún sin zona</div>}
+      </div>
+      <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 330px)', padding: '8px 0' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: 32 }}><RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></div>
+        ) : filt.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)', fontSize: 13 }}>Sin lotes</div>
+        ) : filt.map(l => {
+          const checked = sel.has(l.id)
+          const otra = l.id_cuadrante_fk && l.id_cuadrante_fk !== zona.id ? (zonaNombres[l.id_cuadrante_fk] ?? `#${l.id_cuadrante_fk}`) : null
+          return (
+            <label key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 16px', cursor: 'pointer',
+              background: checked ? '#f0fdf4' : 'transparent', borderLeft: `3px solid ${checked ? '#15803d' : 'transparent'}` }}>
+              <input type="checkbox" checked={checked} onChange={() => toggle(l.id)} style={{ accentColor: '#15803d', width: 15, height: 15 }} />
+              <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: checked ? '#15803d' : '#1e293b' }}>{l.cve_lote ?? `#${l.lote}`}</span>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{[l.manzana && `Mz ${l.manzana}`, l.calle, l.numero].filter(Boolean).join(' ')}</span>
+              {otra && !checked && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>en {otra}</span>}
+              {otra && checked && <span style={{ fontSize: 11, color: '#b45309', marginLeft: 'auto' }}>se moverá desde {otra}</span>}
+            </label>
+          )
+        })}
+      </div>
+      {error && <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+      {ok && <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, color: '#15803d', fontSize: 12 }}>{ok}</div>}
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderTop: '1px solid #e2e8f0' }}>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{sel.size} de {lotes.length} lotes en {zona.nombre}</span>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cerrar</button>
+          <button className="btn-primary" style={{ fontSize: 12 }} onClick={guardar} disabled={saving}>
+            {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11} />} Guardar
+          </button>
+        </div>
+      </div>
+    </>
   )
 }
 
