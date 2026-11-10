@@ -3,6 +3,7 @@ import { Fragment, useState, useEffect, useCallback, useMemo } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import { PrintBar } from './utils'
 import { RefreshCw, Filter, ChevronDown, ChevronRight } from 'lucide-react'
+import { useZonas, SelectZona } from '@/lib/zonas'
 
 // Bandas de antigüedad sobre fecha_vencimiento. Se consideran OPs con saldo > 0
 // y status distinto de 'Pagada', 'Cancelada', 'Rechazada' y 'Sustituida'.
@@ -105,6 +106,8 @@ export default function ReporteAntiguedadOPporCC() {
 
   const [filtroCC, setFiltroCC]     = useState<string>('')
   const [filtroArea, setFiltroArea] = useState<string>('')
+  const [filtroZona, setFiltroZona] = useState('')
+  const zonasCat = useZonas()
   const [filtroProv, setFiltroProv] = useState<string>('')
   const [filtroBanda, setFiltroBanda] = useState<BandaKey | ''>('')
 
@@ -175,12 +178,13 @@ export default function ReporteAntiguedadOPporCC() {
   const opsFiltradas = useMemo<OPConDias[]>(() => {
     return opsPreproc.filter(op => {
       if (filtroCC    && op.id_centro_costo_fk !== Number(filtroCC)) return false
+      if (filtroZona && !zonasCat.areaEnZona(filtroZona, op.id_area_fk)) return false
       if (filtroArea  && op.id_area_fk !== Number(filtroArea)) return false
       if (filtroProv  && op.id_proveedor_fk !== Number(filtroProv)) return false
       if (filtroBanda && op._banda !== filtroBanda) return false
       return true
     })
-  }, [opsPreproc, filtroCC, filtroArea, filtroProv, filtroBanda])
+  }, [opsPreproc, filtroCC, filtroArea, filtroZona, zonasCat, filtroProv, filtroBanda])
 
   // Agrupar CC → Área
   const grupos = useMemo(() => {
@@ -259,9 +263,10 @@ export default function ReporteAntiguedadOPporCC() {
           <option value="">Todos los centros de costo</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
+        <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFiltroArea('') }} />
         <select className="select" style={{ width: 'auto', minWidth: 180 }} value={filtroArea} onChange={e => setFiltroArea(e.target.value)} disabled={areasDelCC.length === 0}>
           <option value="">Todas las áreas{filtroCC ? ' del CC' : ''}</option>
-          {areasDelCC.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+          {areasDelCC.filter(a => zonasCat.areaEnZona(filtroZona, a.id)).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
         </select>
         <select className="select" style={{ width: 'auto', minWidth: 220 }} value={filtroProv} onChange={e => setFiltroProv(e.target.value)}>
           <option value="">Todos los proveedores</option>

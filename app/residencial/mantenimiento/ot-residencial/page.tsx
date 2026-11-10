@@ -11,7 +11,7 @@ export default function OTResidencialPage() {
         icon={ClipboardList}
         eyebrowLabel="Mantenimiento"
         title="OT Mantto. Fraccionamiento"
-        subtitle="Órdenes de trabajo del mantenimiento residencial por cuadrante y área"
+        subtitle="Órdenes de trabajo del mantenimiento residencial por zona y área"
       />
 
       <OrdenesTrabajoTab empresa="Balvanera" modulo="mantenimiento" />

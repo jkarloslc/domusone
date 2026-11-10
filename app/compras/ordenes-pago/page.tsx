@@ -18,6 +18,7 @@ import { OPDetail, Sec, DI, URGENCIA_COLOR } from '@/components/compras/OPDetail
 
 import Paginador from '@/components/ui/Paginador'
 import CamposCFE, { DETALLE_CFE_VACIO, detalleCFEPayload, type DetalleCFE } from '@/components/servicios/CamposCFE'
+import { useZonas, SelectZona } from '@/lib/zonas'
 const PAGE_SIZES = [10, 25, 50, 100]
 
 type RolTipoOp = { id_tipo_gasto_fk: number; modo: string; solo_propios: boolean }
@@ -46,6 +47,8 @@ export default function OrdenesPagoPage() {
   const [filterStatus, setFilter] = useState('')
   const [filterCC, setFilterCC] = useState('')
   const [filterArea, setFilterArea] = useState('')
+  const [filtroZona, setFiltroZona] = useState('')
+  const zonasCat = useZonas()
   const [filterProv, setFilterProv] = useState('')
   const [filterTipoGasto, setFilterTipoGasto] = useState('')
   const [filterFechaDesde, setFilterFechaDesde] = useState('')
@@ -94,6 +97,15 @@ export default function OrdenesPagoPage() {
       }
     }
 
+    // Zona → Áreas de la zona (encabezado o líneas de distribución)
+    const areasZona = !filterArea ? zonasCat.areasDeZona(filtroZona) : null
+    let idsDistribuidosZona: number[] = []
+    if (areasZona && areasZona.size > 0) {
+      const { data: detRowsZ } = await dbComp.from('ordenes_pago_det')
+        .select('id_op_fk').in('id_area_fk', Array.from(areasZona))
+      idsDistribuidosZona = Array.from(new Set((detRowsZ ?? []).map((d: any) => d.id_op_fk)))
+    }
+
     let q = dbComp.from('ordenes_pago').select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(page * pageSize, page * pageSize + pageSize - 1)
@@ -107,6 +119,12 @@ export default function OrdenesPagoPage() {
       q = idsDistribuidos.length > 0
         ? q.or(`id_area_fk.eq.${Number(filterArea)},id.in.(${idsDistribuidos.join(',')})`)
         : q.eq('id_area_fk', Number(filterArea))
+    }
+    if (areasZona) {
+      const az = areasZona.size > 0 ? Array.from(areasZona).join(',') : '-1'
+      q = idsDistribuidosZona.length > 0
+        ? q.or(`id_area_fk.in.(${az}),id.in.(${idsDistribuidosZona.join(',')})`)
+        : q.or(`id_area_fk.in.(${az})`)
     }
     if (filterProv) q = q.eq('id_proveedor_fk', Number(filterProv))
     if (filterTipoGasto === '__SIN_TIPO__') q = q.is('id_tipo_gasto_fk', null)
@@ -171,7 +189,7 @@ export default function OrdenesPagoPage() {
     })
     setClasifMap(cm)
     setLoading(false)
-  }, [page, pageSize, debouncedSearch, filterStatus, filterCC, filterArea, filterProv, filterTipoGasto, filterFechaDesde, filterFechaHasta, rolRestricciones, authUser?.user.id, areaFiltros])
+  }, [page, pageSize, debouncedSearch, filterStatus, filterCC, filterArea, filtroZona, zonasCat, filterProv, filterTipoGasto, filterFechaDesde, filterFechaHasta, rolRestricciones, authUser?.user.id, areaFiltros])
 
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => {
@@ -226,11 +244,12 @@ export default function OrdenesPagoPage() {
           <option value="">Todos los centros de costo</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
+        <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFilterArea(''); setPage(0) }} />
         <select className="select" style={{ width: 200 }} value={filterArea}
           onChange={e => { setFilterArea(e.target.value); setPage(0) }}>
           <option value="">Todas las áreas</option>
           {areaFiltros
-            .filter(s => !filterCC || s.id_centro_costo_fk === Number(filterCC))
+            .filter(s => (!filterCC || s.id_centro_costo_fk === Number(filterCC)) && zonasCat.areaEnZona(filtroZona, s.id))
             .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </select>
         <select className="select" style={{ width: 220 }} value={filterProv}

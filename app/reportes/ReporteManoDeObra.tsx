@@ -123,7 +123,7 @@ export default function ReporteManoDeObra() {
   const groupedOT: Record<string, GrupoCuad> = {}
   filtered.forEach(r => {
     const cKey = r.ot.id_cuadrante_fk ? String(r.ot.id_cuadrante_fk) : '__sin_cuadrante'
-    const cLbl = r.ot.id_cuadrante_fk ? (cuadranteMap[r.ot.id_cuadrante_fk] ?? `#${r.ot.id_cuadrante_fk}`) : 'Sin Cuadrante'
+    const cLbl = r.ot.id_cuadrante_fk ? (cuadranteMap[r.ot.id_cuadrante_fk] ?? `#${r.ot.id_cuadrante_fk}`) : 'Sin Zona'
     const aKey = r.ot.id_area_fk ? String(r.ot.id_area_fk) : '__sin_area'
     const aLbl = r.ot.id_area_fk ? (areaMap[r.ot.id_area_fk] ?? `#${r.ot.id_area_fk}`) : 'Sin Área'
     const oKey = String(r.ot.id)
@@ -141,7 +141,7 @@ export default function ReporteManoDeObra() {
   filtered.filter(r => r.id_colaborador_fk).forEach(r => {
     const tKey = String(r.id_colaborador_fk)
     const cKey = r.ot.id_cuadrante_fk ? String(r.ot.id_cuadrante_fk) : '__sin_cuadrante'
-    const cLbl = r.ot.id_cuadrante_fk ? (cuadranteMap[r.ot.id_cuadrante_fk] ?? `#${r.ot.id_cuadrante_fk}`) : 'Sin Cuadrante'
+    const cLbl = r.ot.id_cuadrante_fk ? (cuadranteMap[r.ot.id_cuadrante_fk] ?? `#${r.ot.id_cuadrante_fk}`) : 'Sin Zona'
     const aKey = r.ot.id_area_fk ? String(r.ot.id_area_fk) : '__sin_area'
     const aLbl = r.ot.id_area_fk ? (areaMap[r.ot.id_area_fk] ?? `#${r.ot.id_area_fk}`) : 'Sin Área'
     if (!groupedTrab[tKey]) groupedTrab[tKey] = { nombre: r.nombre ?? `#${r.id_colaborador_fk}`, cuadrantes: {} }
@@ -169,7 +169,7 @@ export default function ReporteManoDeObra() {
         </select>
         <select className="select" style={{ fontSize: 12, height: 28, padding: '2px 8px', minWidth: 150 }}
           value={fCuadrante} onChange={e => { setFCuadrante(e.target.value); setFArea('') }}>
-          <option value="">Cuadrante</option>
+          <option value="">Zona</option>
           {cuadrantes.map((c: any) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
         <select className="select" style={{ fontSize: 12, height: 28, padding: '2px 8px', minWidth: 150 }}
@@ -214,7 +214,7 @@ export default function ReporteManoDeObra() {
       {/* Tabs */}
       <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 14 }}>
         {([
-          { key: 'ot',         label: 'Por OT (Cuadrante / Área)' },
+          { key: 'ot',         label: 'Por OT (Zona / Área)' },
           { key: 'trabajador', label: 'Por Trabajador' },
         ] as const).map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}

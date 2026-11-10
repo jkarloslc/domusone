@@ -4,6 +4,7 @@ import { dbComp, dbCfg } from '@/lib/supabase'
 import { useCatalogoTiposGasto } from '@/lib/tiposGasto'
 import { PrintBar } from './utils'
 import { RefreshCw, Filter } from 'lucide-react'
+import { useZonas, SelectZona } from '@/lib/zonas'
 
 export default function ReporteConsumoSeccion() {
   const catTG = useCatalogoTiposGasto()
@@ -12,6 +13,8 @@ export default function ReporteConsumoSeccion() {
   const [provMap, setProvMap]     = useState<Record<number, string>>({})
   const [loading, setLoading]     = useState(true)
   const [filtroArea, setFiltroArea] = useState('')
+  const [filtroZona, setFiltroZona] = useState('')
+  const zonasCat = useZonas()
   const [filtroTipo, setFiltroTipo] = useState('')  // tipo_gasto
   const [filtroDe, setFiltroDe]   = useState('')
   const [filtroA,  setFiltroA]    = useState('')
@@ -40,6 +43,7 @@ export default function ReporteConsumoSeccion() {
 
     // Filtrar
     let opsFiltradas = ops ?? []
+    if (filtroZona) opsFiltradas = opsFiltradas.filter((r: any) => zonasCat.areaEnZona(filtroZona, r.id_area_fk))
     if (filtroArea)  opsFiltradas = opsFiltradas.filter((r: any) => r.id_area_fk === Number(filtroArea))
     if (filtroTipo) opsFiltradas = opsFiltradas.filter((r: any) => String(r.id_tipo_gasto_fk ?? '') === filtroTipo)
     if (filtroDe)   opsFiltradas = opsFiltradas.filter((r: any) => r.fecha_op >= filtroDe)
@@ -70,7 +74,7 @@ export default function ReporteConsumoSeccion() {
     const result = Object.values(grouped).sort((a: any, b: any) => b.total - a.total)
     setRows(result)
     setLoading(false)
-  }, [filtroArea, filtroTipo, filtroDe, filtroA])
+  }, [filtroArea, filtroZona, zonasCat, filtroTipo, filtroDe, filtroA])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -93,9 +97,10 @@ export default function ReporteConsumoSeccion() {
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Filter size={13} style={{ color: 'var(--text-muted)' }} />
+          <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFiltroArea('') }} />
           <select className="select" style={{ width: 'auto', minWidth: 200 }} value={filtroArea} onChange={e => setFiltroArea(e.target.value)}>
             <option value="">Todas las áreas</option>
-            {areas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+            {areas.filter(s => zonasCat.areaEnZona(filtroZona, s.id)).map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
           </select>
         </div>
         <select className="select" style={{ width: 'auto', minWidth: 180 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>

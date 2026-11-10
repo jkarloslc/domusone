@@ -14,6 +14,7 @@ import { type Articulo, fmt, fmtFecha, folioGen, StatusBadge, UNIDADES } from '.
 
 
 import Paginador from '@/components/ui/Paginador'
+import { useZonas, SelectZona } from '@/lib/zonas'
 type Det = { id?: number; id_articulo_fk: number | null; descripcion: string; cantidad: string; unidad: string; notas: string }
 
 const ESTADOS_NO_CANCELABLES = ['Cancelada', 'Rechazada', 'Cerrada']
@@ -31,6 +32,8 @@ export default function RequisicionesPage() {
   const [filterStatus, setFilter] = useState('')
   const [filterCC, setFilterCC] = useState('')
   const [filterArea, setFilterArea] = useState('')
+  const [filtroZona, setFiltroZona] = useState('')
+  const zonasCat = useZonas()
   const [filterFechaDesde, setFilterFechaDesde] = useState('')
   const [filterFechaHasta, setFilterFechaHasta] = useState('')
   const [ccFiltros, setCcFiltros] = useState<{ id: number; nombre: string }[]>([])
@@ -51,12 +54,13 @@ export default function RequisicionesPage() {
     if (filterStatus) q = q.eq('status', filterStatus)
     if (filterCC) q = q.eq('id_centro_costo_fk', Number(filterCC))
     if (filterArea) q = q.eq('id_area_fk', Number(filterArea))
+    else if (filtroZona) { const az = zonasCat.areasDeZona(filtroZona)!; q = q.in('id_area_fk', az.size > 0 ? Array.from(az) : [-1]) }
     if (filterFechaDesde) q = q.gte('created_at', `${filterFechaDesde}T00:00:00`)
     if (filterFechaHasta) q = q.lte('created_at', `${filterFechaHasta}T23:59:59`)
     if (debouncedSearch) q = q.or(`folio.ilike.%${debouncedSearch}%,area_solicitante.ilike.%${debouncedSearch}%,solicitante.ilike.%${debouncedSearch}%`)
     const { data, count } = await q
     setRows(data ?? []); setTotal(count ?? 0); setLoading(false)
-  }, [page, pageSize, debouncedSearch, filterStatus, filterCC, filterArea, filterFechaDesde, filterFechaHasta])
+  }, [page, pageSize, debouncedSearch, filterStatus, filterCC, filterArea, filtroZona, zonasCat, filterFechaDesde, filterFechaHasta])
 
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => {
@@ -150,11 +154,12 @@ export default function RequisicionesPage() {
             <option value="">Todos los centros de costo</option>
             {ccFiltros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
           </select>
+          <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFilterArea(''); setPage(0) }} />
           <select className="select" style={{ width: 200 }} value={filterArea}
             onChange={e => { setFilterArea(e.target.value); setPage(0) }}>
             <option value="">Todas las áreas</option>
             {areaFiltros
-              .filter(s => !filterCC || s.id_centro_costo_fk === Number(filterCC))
+              .filter(s => (!filterCC || s.id_centro_costo_fk === Number(filterCC)) && zonasCat.areaEnZona(filtroZona, s.id))
               .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
           </select>
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>

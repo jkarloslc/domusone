@@ -11,6 +11,7 @@ import {
 import { useAuth } from '@/lib/AuthContext'
 import { antiguedad } from '@/lib/dateUtils'
 import { nombreCompletoColaborador } from '@/lib/colaboradores'
+import { invalidarZonas } from '@/lib/zonas'
 import ColaboradoresPanel from '@/components/catalogos/ColaboradoresPanel'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
@@ -53,11 +54,11 @@ const CATALOGOS: CatConfig[] = [
   {
     key:          'cuadrantes',
     tabla:        'cuadrantes',
-    label:        'Cuadrantes',
+    label:        'Zonas',
     icon:         Grid3x3,
     color:        '#0891b2',
-    sectionLabel: 'Mantenimiento',
-    desc:         'Cuadrantes de mantenimiento — agrupan secciones para el Programa Anual',
+    sectionLabel: 'Estructura',
+    desc:         'Zonas — agrupan Secciones (ingresos: Zona → Sección → Lote) y Áreas (costos: Zona → Área). Usa el ojo para asignar secciones, áreas y colaboradores.',
     hasDetail:    true,
     sortBy:       'id',
     campos: [
@@ -72,12 +73,13 @@ const CATALOGOS: CatConfig[] = [
     label:     'Secciones',
     icon:      MapPin,
     color:     '#2563eb',
-    desc:      'Secciones residenciales — se relacionan con lotes, cobranza y mantenimiento',
+    desc:      'Secciones del fraccionamiento — pertenecen a una Zona y se relacionan con lotes, cobranza y mantenimiento',
     hasDetail: true,
     campos: [
       { key: 'id_empresa_fk',       label: 'Empresa',              type: 'select', selectTabla: 'proveedores', selectSchema: 'comp', selectFilter: { interno: true } },
       { key: 'nombre',              label: 'Nombre *',             type: 'text',   required: true },
       { key: 'clave_alfa',          label: 'Abreviatura',          type: 'text' },
+      { key: 'id_cuadrante_fk',     label: 'Zona',                 type: 'select', selectTabla: 'cuadrantes' },
       { key: 'descripcion',         label: 'Descripción',          type: 'textarea' },
       { key: 'id_tipo_seccion_fk',  label: 'Tipo de Sección',      type: 'select', selectTabla: 'tipo_secciones' },
       { key: 'cantidad_lotes',      label: 'Cantidad de Lotes',    type: 'number' },
@@ -124,7 +126,7 @@ const CATALOGOS: CatConfig[] = [
     label:     'Áreas',
     icon:      Layers,
     color:     '#0891b2',
-    desc:      'Áreas de obra o zona dentro de un Centro de Costo. Usa "Frentes" para gestionar los frentes permitidos en cada área.',
+    desc:      'Áreas de obra dentro de un Centro de Costo; se agrupan en Zonas (catálogo Zonas). Usa "Frentes" para gestionar los frentes permitidos en cada área.',
     hasDetail: true,
     campos: [
       { key: 'nombre',              label: 'Nombre *',         type: 'text',   required: true },
@@ -1791,10 +1793,62 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
 }
 
 // ══════════════════════════════════════════════════════════════
-// CuadranteSecciones — asigna áreas y colaboradores a un cuadrante
+// CuadranteSecciones — Zona: asigna secciones (1:N), áreas (N:M) y colaboradores
 // ══════════════════════════════════════════════════════════════
 function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: () => void }) {
-  const [tab, setTab] = useState<'areas' | 'colaboradores'>('areas')
+  const [tab, setTab] = useState<'secciones' | 'areas' | 'colaboradores'>('secciones')
+
+  // ── Secciones (1:N vía cfg.secciones.id_cuadrante_fk) ──
+  const [todasSecs,    setTodasSecs]    = useState<any[]>([])
+  const [zonaNombres,  setZonaNombres]  = useState<Record<number, string>>({})
+  const [selSecs,      setSelSecs]      = useState<Set<number>>(new Set())
+  const [inicialSecs,  setInicialSecs]  = useState<Set<number>>(new Set())
+  const [busqSecs,     setBusqSecs]     = useState('')
+  const [loadingSecs,  setLoadingSecs]  = useState(true)
+  const [savingSecs,   setSavingSecs]   = useState(false)
+  const [errorSecs,    setErrorSecs]    = useState('')
+  const [lotesPorSec,  setLotesPorSec]  = useState<Record<number, number>>({})
+
+  useEffect(() => {
+    setLoadingSecs(true)
+    Promise.all([
+      dbCfg.from('secciones').select('id, nombre, id_cuadrante_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('cuadrantes').select('id, nombre'),
+    ]).then(async ([{ data: secs }, { data: zs }]) => {
+      setTodasSecs(secs ?? [])
+      // Lotes por sección: el lote hereda la zona de su sección
+      const cnt: Record<number, number> = {}
+      await Promise.all((secs ?? []).map(async (x: any) => {
+        const { count } = await dbCat.from('lotes').select('id', { count: 'exact', head: true }).eq('id_seccion_fk', x.id)
+        cnt[x.id] = count ?? 0
+      }))
+      setLotesPorSec(cnt)
+      setZonaNombres(Object.fromEntries((zs ?? []).map((z: any) => [z.id, z.nombre])))
+      const asignadas = new Set<number>((secs ?? []).filter((x: any) => x.id_cuadrante_fk === cuadrante.id).map((x: any) => Number(x.id)))
+      setSelSecs(new Set(asignadas)); setInicialSecs(new Set(asignadas))
+      setLoadingSecs(false)
+    })
+  }, [cuadrante.id])
+
+  const toggleSec = (id: number) => setSelSecs(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+
+  const saveSecs = async () => {
+    setSavingSecs(true); setErrorSecs('')
+    const added   = Array.from(selSecs).filter(id => !inicialSecs.has(id))
+    const removed = Array.from(inicialSecs).filter(id => !selSecs.has(id))
+    if (added.length > 0) {
+      const { error: e } = await dbCfg.from('secciones').update({ id_cuadrante_fk: cuadrante.id }).in('id', added)
+      if (e) { setErrorSecs(e.message); setSavingSecs(false); return }
+    }
+    if (removed.length > 0) {
+      const { error: e } = await dbCfg.from('secciones').update({ id_cuadrante_fk: null }).in('id', removed)
+      if (e) { setErrorSecs(e.message); setSavingSecs(false); return }
+    }
+    invalidarZonas()
+    setTodasSecs(prev => prev.map(x => added.includes(x.id) ? { ...x, id_cuadrante_fk: cuadrante.id } : removed.includes(x.id) ? { ...x, id_cuadrante_fk: null } : x))
+    setInicialSecs(new Set(selSecs)); setSavingSecs(false)
+  }
+  const filtSecs = todasSecs.filter(x => x.nombre.toLowerCase().includes(busqSecs.toLowerCase()))
 
   // ── Áreas ──
   const [todasAreas,     setTodasAreas]     = useState<any[]>([])
@@ -1858,6 +1912,7 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
         .delete().eq('id_cuadrante', cuadrante.id).in('id_area', removed)
       if (e) { setErrorAreas(e.message); setSavingAreas(false); return }
     }
+    invalidarZonas()
     setInicialAreas(new Set(selAreas)); setSavingAreas(false)
   }
 
@@ -1895,6 +1950,9 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
     <ModalShell modulo="mantenimiento" titulo={cuadrante.nombre} onClose={onClose} maxWidth={520}>
       {/* Tabs */}
       <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', paddingLeft: 8 }}>
+        <button style={tabStyle(tab === 'secciones')} onClick={() => setTab('secciones')}>
+          Secciones {selSecs.size > 0 && <span style={{ marginLeft: 4, fontSize: 11, background: '#dcfce7', color: '#15803d', borderRadius: 10, padding: '1px 6px' }}>{selSecs.size}</span>}
+        </button>
         <button style={tabStyle(tab === 'areas')} onClick={() => setTab('areas')}>
           Áreas {selAreas.size > 0 && <span style={{ marginLeft: 4, fontSize: 11, background: '#dbeafe', color: '#1d4ed8', borderRadius: 10, padding: '1px 6px' }}>{selAreas.size}</span>}
         </button>
@@ -1902,6 +1960,62 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
           Colaboradores {selColabs.size > 0 && <span style={{ marginLeft: 4, fontSize: 11, background: '#ede9fe', color: '#7c3aed', borderRadius: 10, padding: '1px 6px' }}>{selColabs.size}</span>}
         </button>
       </div>
+
+      {/* Tab Secciones — una sección pertenece a UNA sola zona */}
+      {tab === 'secciones' && (
+        <>
+          <div style={{ padding: '10px 16px', borderBottom: '1px solid #e2e8f0' }}>
+            <input className="input" placeholder="Buscar sección…" value={busqSecs}
+              onChange={e => setBusqSecs(e.target.value)} style={{ fontSize: 13 }} />
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
+              Una sección pertenece a una sola zona; si ya está en otra, al guardar se mueve a esta.
+            </div>
+          </div>
+          <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 260px)', padding: '8px 0' }}>
+            {loadingSecs ? (
+              <div style={{ textAlign: 'center', padding: 32 }}>
+                <RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
+              </div>
+            ) : filtSecs.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)', fontSize: 13 }}>Sin secciones</div>
+            ) : filtSecs.map(x => {
+              const checked = selSecs.has(x.id)
+              const otraZona = x.id_cuadrante_fk && x.id_cuadrante_fk !== cuadrante.id ? zonaNombres[x.id_cuadrante_fk] : null
+              return (
+                <label key={x.id}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px',
+                    cursor: 'pointer', background: checked ? '#f0fdf4' : 'transparent',
+                    borderLeft: `3px solid ${checked ? '#15803d' : 'transparent'}`, transition: 'background 0.15s' }}>
+                  <input type="checkbox" checked={checked} onChange={() => toggleSec(x.id)}
+                    style={{ accentColor: '#15803d', width: 15, height: 15 }} />
+                  <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: checked ? '#15803d' : '#1e293b' }}>
+                    {x.nombre}
+                  </span>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{lotesPorSec[x.id] ?? 0} lotes</span>
+                  {otraZona && !checked && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>en {otraZona}</span>}
+                  {checked && <CheckCircle size={14} style={{ color: '#15803d', marginLeft: 'auto', flexShrink: 0 }} />}
+                </label>
+              )
+            })}
+          </div>
+          {errorSecs && (
+            <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: '#fef2f2',
+              border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{errorSecs}</div>
+          )}
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center',
+            padding: '12px 16px', borderTop: '1px solid #e2e8f0' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              {selSecs.size} secci{selSecs.size !== 1 ? 'ones' : 'ón'} · {Array.from(selSecs).reduce((a, id) => a + (lotesPorSec[id] ?? 0), 0)} lotes en la zona
+            </span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cerrar</button>
+              <button className="btn-primary" style={{ fontSize: 12 }} onClick={saveSecs} disabled={savingSecs}>
+                {savingSecs ? <Loader size={11} className="animate-spin" /> : <Save size={11} />} Guardar
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Tab Áreas */}
       {tab === 'areas' && (

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { PrintBar } from './utils'
 import { RefreshCw } from 'lucide-react'
+import { useZonas, SelectZona } from '@/lib/zonas'
 
 const STATUSES    = ['Pendiente','En Proceso','En Pausa','Completada','Cancelada']
 const PRIORIDADES = ['Urgente','Alta','Media','Baja']
@@ -31,6 +32,8 @@ export default function ReporteOrdenesTrabajo() {
   const [filtroTipo,   setFiltroTipo]   = useState('')
   const [filtroCc,     setFiltroCc]     = useState('')
   const [filtroArea,    setFiltroArea]    = useState('')
+  const [filtroZona, setFiltroZona] = useState('')
+  const zonasCat = useZonas()
   const [filtroFr,     setFiltroFr]     = useState('')
   const [filtroPrio,   setFiltroPrio]   = useState('')
   const [filtroDe,     setFiltroDe]     = useState('')
@@ -59,6 +62,7 @@ export default function ReporteOrdenesTrabajo() {
     if (filtroStatus)  result = result.filter((r: any) => r.status            === filtroStatus)
     if (filtroTipo)    result = result.filter((r: any) => r.tipo_trabajo       === filtroTipo)
     if (filtroCc)      result = result.filter((r: any) => r.id_centro_costo_fk === Number(filtroCc))
+    if (filtroZona) result = result.filter((r: any) => String(r.id_cuadrante_fk) === filtroZona || zonasCat.areaEnZona(filtroZona, r.id_area_fk))
     if (filtroArea)    result = result.filter((r: any) => r.id_area_fk         === Number(filtroArea))
     if (filtroFr)      result = result.filter((r: any) => r.id_frente_fk       === Number(filtroFr))
     if (filtroPrio)    result = result.filter((r: any) => r.prioridad          === filtroPrio)
@@ -67,7 +71,7 @@ export default function ReporteOrdenesTrabajo() {
 
     setRows(result)
     setLoading(false)
-  }, [filtroEmpresa, filtroStatus, filtroTipo, filtroCc, filtroArea, filtroFr, filtroPrio, filtroDe, filtroA])
+  }, [filtroEmpresa, filtroStatus, filtroTipo, filtroCc, filtroArea, filtroZona, zonasCat, filtroFr, filtroPrio, filtroDe, filtroA])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -95,10 +99,12 @@ export default function ReporteOrdenesTrabajo() {
           <option value="">Todos los centros de costo</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
+        <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFiltroArea('') }} />
         <select className="select" style={{ width: 'auto', minWidth: 160 }} value={filtroArea} onChange={e => { setFiltroArea(e.target.value); setFiltroFr('') }}>
           <option value="">Todas las áreas</option>
           {(areas as any[])
             .filter(s => !filtroCc || s.id_centro_costo_fk === Number(filtroCc))
+            .filter(s => zonasCat.areaEnZona(filtroZona, s.id))
             .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </select>
         <select className="select" style={{ width: 'auto', minWidth: 150 }} value={filtroFr} onChange={e => setFiltroFr(e.target.value)}>

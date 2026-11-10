@@ -324,7 +324,7 @@ export default function MantenimientoPage() {
             </select>
             <select className="select" style={{ width: 200 }} value={filterCuad}
               onChange={e => { setFilterCuad(e.target.value); setFilterArea(''); setFilterAC('') }}>
-              <option value="">Cuadrante</option>
+              <option value="">Zona</option>
               {cuadrantes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
             <select className="select" style={{ width: 190 }} value={filterArea}
@@ -1045,7 +1045,7 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, areaToCuadr
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <div><label className="label" style={{ fontSize: 11 }}>Cuadrante</label>
+            <div><label className="label" style={{ fontSize: 11 }}>Zona</label>
               <select className="select" style={{ fontSize: 12 }} value={form.id_cuadrante_fk}
                 onChange={e => setForm(f => ({ ...f, id_cuadrante_fk: e.target.value, id_area_fk: '', areasComunes: [] }))}>
                 <option value="">—</option>
@@ -1284,7 +1284,7 @@ function ProgramaDetail({ prog, cuadMap, areaMap, acMap, acCritMap, onClose, onE
             {prog.tipo_trabajo && <div><div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tipo</div>{prog.tipo_trabajo}</div>}
             <div><div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Frecuencia</div>{prog.frecuencia}</div>
             {prog.responsable && <div><div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Responsable</div>{prog.responsable}</div>}
-            {prog.id_cuadrante_fk && cuadMap[prog.id_cuadrante_fk] && <div><div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Cuadrante</div>{cuadMap[prog.id_cuadrante_fk]}</div>}
+            {prog.id_cuadrante_fk && cuadMap[prog.id_cuadrante_fk] && <div><div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Zona</div>{cuadMap[prog.id_cuadrante_fk]}</div>}
             {prog.id_area_fk && areaMap[prog.id_area_fk] && <div><div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Área</div>{areaMap[prog.id_area_fk]}</div>}
             {prog.fecha_inicio && <div><div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Inicio</div>{fmtDate(prog.fecha_inicio)}</div>}
             {prog.fecha_fin && <div><div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Fin</div>{fmtDate(prog.fecha_fin)}</div>}

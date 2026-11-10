@@ -12,6 +12,7 @@ import {
   Plus, X, Save, Loader, RefreshCw, Eye, Edit2, Printer,
   Fuel, Droplets, FileText, Search, Upload, CheckCircle, AlertTriangle
 } from 'lucide-react'
+import { useZonas, SelectZona } from '@/lib/zonas'
 
 const PAGE_SIZE = 20
 
@@ -211,6 +212,8 @@ export default function CombustibleTab() {
   const [loadingC,   setLoadingC]   = useState(true)
   const [filterTipoC,setFilterTipoC]= useState('')
   const [filterAreaC,setFilterAreaC]= useState('')
+  const [filtroZona, setFiltroZona] = useState('')
+  const zonasCat = useZonas()
   const [searchC,    setSearchC]    = useState('')
   const [modalC,     setModalC]     = useState<{ open: boolean; carga?: any }>({ open: false })
 
@@ -266,11 +269,12 @@ export default function CombustibleTab() {
       .eq('activo', true).order('fecha', { ascending: false })
     if (filterTipoC) q = q.eq('tipo_carga', filterTipoC)
     if (filterAreaC) q = q.eq('id_area_fk', Number(filterAreaC))
+    else if (filtroZona) { const az = zonasCat.areasDeZona(filtroZona)!; q = q.in('id_area_fk', az.size > 0 ? Array.from(az) : [-1]) }
     const { data, error } = await q
     if (error) console.error('fetchCargas:', error.message)
     setCargas(data ?? [])
     setLoadingC(false)
-  }, [filterTipoC, filterAreaC])
+  }, [filterTipoC, filterAreaC, filtroZona, zonasCat])
 
   useEffect(() => { fetchCatalogos() }, [fetchCatalogos])
   useEffect(() => { fetchVales()    }, [fetchVales])
@@ -306,7 +310,7 @@ export default function CombustibleTab() {
   // Paginación en cliente (los vales/cargas ya vienen completos); vuelve a la
   // primera página cuando cambia cualquier filtro o búsqueda.
   useEffect(() => { setPageV(0) }, [filterTipoV, filterStatV, searchV])
-  useEffect(() => { setPageC(0) }, [filterTipoC, filterAreaC, searchC])
+  useEffect(() => { setPageC(0) }, [filterTipoC, filterAreaC, filtroZona, searchC])
   const totalPagesV = Math.max(1, Math.ceil(filteredVales.length / PAGE_SIZE))
   const totalPagesC = Math.max(1, Math.ceil(filteredCargas.length / PAGE_SIZE))
   const curPageV = Math.min(pageV, totalPagesV - 1)
@@ -445,9 +449,10 @@ export default function CombustibleTab() {
               <option value="">Todos los tipos</option>
               {TIPOS_CARGA.map(t => <option key={t}>{t}</option>)}
             </select>
+            <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFilterAreaC('') }} />
             <select className="select" style={{ fontSize: 12, width: 150 }} value={filterAreaC} onChange={e => setFilterAreaC(e.target.value)}>
               <option value="">Todas las áreas</option>
-              {areas.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+              {areas.filter(a => zonasCat.areaEnZona(filtroZona, a.id)).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
             </select>
             <button className="btn-ghost" onClick={fetchCargas} style={{ padding: '6px 8px' }}><RefreshCw size={13} /></button>
             {canWrite('mantenimiento') && (

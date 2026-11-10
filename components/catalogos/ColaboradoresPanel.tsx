@@ -358,7 +358,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
               </div>
               {esManttoResidencial && (
                 <div>
-                  <label className="label">Cuadrante</label>
+                  <label className="label">Zona</label>
                   <select className="select" value={form.id_cuadrante_fk} onChange={e => setForm(f => ({ ...f, id_cuadrante_fk: e.target.value, id_area_fk: '' }))}>
                     <option value="">— Sin asignar —</option>
                     {cuadrantes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
@@ -369,7 +369,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
                 <div>
                   <label className="label">Área asignada</label>
                   <select className="select" value={form.id_area_fk} disabled={!form.id_cuadrante_fk} onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value }))}>
-                    <option value="">{form.id_cuadrante_fk ? '— Sin asignar —' : 'Elige Cuadrante primero'}</option>
+                    <option value="">{form.id_cuadrante_fk ? '— Sin asignar —' : 'Elige Zona primero'}</option>
                     {areasDelCuadrante.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                   </select>
                 </div>
@@ -487,7 +487,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
                 { label: 'Costo Mensual', value: fmt$(viewing.costo_mensual) },
                 { label: 'No. de Empleado', value: viewing.no_empleado || '—' },
                 { label: 'Centro de Costo', value: viewing.id_centro_costo_fk ? (centrosCosto.find(c => c.id === viewing.id_centro_costo_fk)?.nombre ?? '—') : '—' },
-                ...(viewing.id_cuadrante_fk ? [{ label: 'Cuadrante', value: cuadrantes.find(c => c.id === viewing.id_cuadrante_fk)?.nombre ?? '—' }] : []),
+                ...(viewing.id_cuadrante_fk ? [{ label: 'Zona', value: cuadrantes.find(c => c.id === viewing.id_cuadrante_fk)?.nombre ?? '—' }] : []),
                 ...(viewing.id_area_fk ? [{ label: 'Área Asignada', value: areas.find(a => a.id === viewing.id_area_fk)?.nombre ?? '—' }] : []),
               ].map(({ label, value }) => (
                 <div key={label} style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: 8 }}>

@@ -12,6 +12,7 @@ import {
 import { nombreCompletoColaborador } from '@/lib/colaboradores'
 
 import Paginador from '@/components/ui/Paginador'
+import { useZonas, SelectZona } from '@/lib/zonas'
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 type CC   = { id: number; nombre: string }
 type Area = { id: number; nombre: string; id_centro_costo_fk: number }
@@ -111,6 +112,8 @@ export default function CapexPage() {
   const dSearch                   = useDebounce(search, 300)
   const [filterCC, setFilterCC]   = useState('')
   const [filterArea, setFilterArea] = useState('')
+  const [filtroZona, setFiltroZona] = useState('')
+  const zonasCat = useZonas()
   const [filterTipo, setFilterTipo] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
 
@@ -136,15 +139,16 @@ export default function CapexPage() {
     if (dSearch)      q = q.or(`nombre.ilike.%${dSearch}%,folio.ilike.%${dSearch}%`)
     if (filterCC)     q = q.eq('id_centro_costo_fk', Number(filterCC))
     if (filterArea)   q = q.eq('id_area_fk', Number(filterArea))
+    else if (filtroZona) { const az = zonasCat.areasDeZona(filtroZona)!; q = q.in('id_area_fk', az.size > 0 ? Array.from(az) : [-1]) }
     if (filterTipo)   q = q.eq('tipo', filterTipo)
     if (filterStatus) q = q.eq('status', filterStatus)
     const { data, count, error } = await q
     if (!error) { setProyectos(data as CapexProyecto[]); setTotal(count ?? 0) }
     setLoading(false)
-  }, [page, pageSize, dSearch, filterCC, filterArea, filterTipo, filterStatus])
+  }, [page, pageSize, dSearch, filterCC, filterArea, filtroZona, zonasCat, filterTipo, filterStatus])
 
   useEffect(() => { fetchData() }, [fetchData])
-  useEffect(() => { setPage(0) }, [dSearch, filterCC, filterArea, filterTipo, filterStatus])
+  useEffect(() => { setPage(0) }, [dSearch, filterCC, filterArea, filtroZona, filterTipo, filterStatus])
 
   const handleDelete = async (p: CapexProyecto) => {
     if (!confirm(`¿Eliminar el proyecto "${p.nombre}"? Se eliminarán todos sus frentes, partidas e insumos.`)) return
@@ -213,9 +217,10 @@ export default function CapexPage() {
             <option value="">Todos los CC</option>
             {ccs.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
           </select>
-          <select className="select" style={{ width: 150 }} value={filterArea} onChange={e => setFilterArea(e.target.value)} disabled={!filterCC}>
+          <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFilterArea('') }} />
+          <select className="select" style={{ width: 150 }} value={filterArea} onChange={e => setFilterArea(e.target.value)} disabled={!filterCC && !filtroZona}>
             <option value="">Todas las Áreas</option>
-            {areasFiltradas.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+            {areasFiltradas.filter(a => zonasCat.areaEnZona(filtroZona, a.id)).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
           </select>
           <select className="select" style={{ width: 150 }} value={filterTipo} onChange={e => setFilterTipo(e.target.value)}>
             <option value="">Todos los tipos</option>

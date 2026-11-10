@@ -9,6 +9,7 @@ import { RefreshCw, FileText, AlertTriangle, Clock, Calendar, ChevronRight, Chev
 import { fmt, fmtFecha, StatusBadge } from '../compras/types'
 import KpiCard from '@/components/ui/KpiCard'
 import { PrintBar } from './utils'
+import { useZonas, SelectZona } from '@/lib/zonas'
 
 // ── Mismas reglas que la página de CXP ─────────────────────
 const diasVencido = (fecha: string | null) => {
@@ -62,6 +63,8 @@ export default function ReporteCXPTesoreria() {
   const [remesas, setRemesas]   = useState<any[]>([])
   const [filterCC, setFilterCC]         = useState('')
   const [filterArea, setFilterArea]     = useState('')
+  const [filtroZona, setFiltroZona] = useState('')
+  const zonasCat = useZonas()
   const [filterFrente, setFilterFrente] = useState('')
   const [filterProv, setFilterProv]     = useState('')
   const [abiertos, setAbiertos]         = useState<Set<number>>(new Set())
@@ -126,14 +129,15 @@ export default function ReporteCXPTesoreria() {
     areas.forEach(a => { m[a.id] = a.id_centro_costo_fk })
     return m
   }, [areas])
-  const areasFiltro = filterCC ? areas.filter(a => a.id_centro_costo_fk === Number(filterCC)) : areas
-  const hayFiltro = !!(filterCC || filterArea || filterFrente || filterProv)
+  const areasFiltro = (filterCC ? areas.filter(a => a.id_centro_costo_fk === Number(filterCC)) : areas).filter(a => zonasCat.areaEnZona(filtroZona, a.id))
+  const hayFiltro = !!(filterCC || filtroZona || filterArea || filterFrente || filterProv)
 
   // Fracción del saldo que corresponde a los filtros CC/Área/Frente (igual que la página CXP)
   const fraccionOP = useCallback((o: any) => {
-    if (!filterCC && !filterArea && !filterFrente) return 1
+    if (!filterCC && !filtroZona && !filterArea && !filterFrente) return 1
     const ok = (cc: number | null | undefined, area: number | null, frente: number | null) =>
       (!filterCC || cc === Number(filterCC)) &&
+      (!filtroZona || zonasCat.areaEnZona(filtroZona, area)) &&
       (!filterArea || area === Number(filterArea)) &&
       (!filterFrente || frente === Number(filterFrente))
     const lineas = lineasOP[o.id] ?? []
@@ -145,7 +149,7 @@ export default function ReporteCXPTesoreria() {
       const cc = l.id_area_fk != null ? (areaCC[l.id_area_fk] ?? o.id_centro_costo_fk) : o.id_centro_costo_fk
       return ok(cc, l.id_area_fk, l.id_frente_fk) ? a + l.monto / total : a
     }, 0)
-  }, [filterCC, filterArea, filterFrente, areaCC, lineasOP])
+  }, [filterCC, filtroZona, zonasCat, filterArea, filterFrente, areaCC, lineasOP])
   const sd = useCallback((o: any) => Number(o.saldo ?? o.monto ?? 0) * fraccionOP(o), [fraccionOP])
 
   const opsFiltradas = useMemo(
@@ -196,12 +200,12 @@ export default function ReporteCXPTesoreria() {
   const remesasFiltradas = useMemo(() => {
     let r = remesas
     if (filterProv) r = r.filter(x => x.id_proveedor_fk === Number(filterProv))
-    if (filterCC || filterArea || filterFrente) {
+    if (filterCC || filtroZona || filterArea || filterFrente) {
       const okIds = new Set(opsFiltradas.map(o => o.id))
       r = r.filter(x => (x._opIds ?? []).some((id: number) => okIds.has(id)))
     }
     return r
-  }, [remesas, opsFiltradas, filterProv, filterCC, filterArea, filterFrente])
+  }, [remesas, opsFiltradas, filterProv, filterCC, filtroZona, filterArea, filterFrente])
   const totalRemesas = remesasFiltradas.filter(r => r.status !== 'Cancelada').reduce((a, r) => a + Number(r.monto_total ?? 0), 0)
 
   const provNombre = (id: number | null) => (id != null ? provMap[id]?.nombre : null) ?? '—'
@@ -210,6 +214,7 @@ export default function ReporteCXPTesoreria() {
 
   const filtrosTexto = [
     filterCC && `CC: ${centros.find(c => c.id === Number(filterCC))?.nombre}`,
+    filtroZona && `Zona: ${zonasCat.zonas.find(z => z.id === Number(filtroZona))?.nombre}`,
     filterArea && `Área: ${areas.find(a => a.id === Number(filterArea))?.nombre}`,
     filterFrente && `Frente: ${frentes.find(f => f.id === Number(filterFrente))?.nombre}`,
     filterProv && `Proveedor: ${provNombre(Number(filterProv))}`,
@@ -292,6 +297,7 @@ export default function ReporteCXPTesoreria() {
           <option value="">Todos los CC</option>
           {centros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
+        <SelectZona className="input" zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFilterArea('') }} />
         <select className="input" style={{ width: 200 }} value={filterArea} onChange={e => setFilterArea(e.target.value)}>
           <option value="">Todas las áreas</option>
           {areasFiltro.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
@@ -305,7 +311,7 @@ export default function ReporteCXPTesoreria() {
           {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
         </select>
         {hayFiltro && (
-          <button className="btn-ghost" onClick={() => { setFilterCC(''); setFilterArea(''); setFilterFrente(''); setFilterProv('') }}>Limpiar filtros</button>
+          <button className="btn-ghost" onClick={() => { setFilterCC(''); setFiltroZona(''); setFilterArea(''); setFilterFrente(''); setFilterProv('') }}>Limpiar filtros</button>
         )}
         <button className="btn-ghost" onClick={fetchData} style={{ marginLeft: 'auto' }}>
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />

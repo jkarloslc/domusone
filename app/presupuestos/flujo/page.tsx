@@ -1,4 +1,5 @@
 'use client'
+import { useZonas } from '@/lib/zonas'
 import { useState, useEffect, useCallback, Fragment } from 'react'
 import { dbCtrl, dbComp, dbCfg } from '@/lib/supabase'
 import { cargarCentrosAgrupados, idsCentrosFiltro, centrosDeAgrupador, agrupadoresUsados, CentroIngresoAgr, AgrupadorIngreso } from '@/lib/centrosIngreso'
@@ -165,6 +166,9 @@ export default function FlujoEfectivoPage() {
   const [areasF, setAreasF]             = useState<AreaF[]>([])
   const [filtroCentroIng, setFiltroCentroIng] = useState('')
   const [filtroSeccion,   setFiltroSeccion]   = useState('')
+  const [filtroZonaIng,   setFiltroZonaIng]   = useState('')
+  const [filtroZonaEgr,   setFiltroZonaEgr]   = useState('')
+  const zonasCat = useZonas()
   const [filtroConcepto,  setFiltroConcepto]  = useState('')
   const [filtroCC,   setFiltroCC]   = useState('')
   const [filtroArea, setFiltroArea] = useState('')
@@ -442,7 +446,7 @@ export default function FlujoEfectivoPage() {
     const p = presupuestos.find(x => x.id === id)
     if (p) loadEverything(p.id, p.anio, p.modulo, true)
     setFiltroAgrIng(''); setFiltroCentroIng(''); setFiltroSeccion(''); setFiltroConcepto('')
-    setFiltroCC(''); setFiltroArea('')
+    setFiltroCC(''); setFiltroArea(''); setFiltroZonaIng(''); setFiltroZonaEgr('')
   }
 
   // Opciones de los filtros: solo lo que existe en las partidas del presupuesto
@@ -460,17 +464,22 @@ export default function FlujoEfectivoPage() {
   const centrosIngConPartida = centrosIng.filter(c => idsDe(ingParts, 'id_centro_ingreso_fk').has(c.id))
   const agrupadoresIngOpts   = agrupadoresUsados(agrupadoresIng, centrosIngConPartida)
   const centrosIngOpts       = centrosDeAgrupador(centrosIngConPartida, filtroAgrIng)
-  const seccionesOpts    = seccionesF.filter(s => idsDe(ingDelCentro, 'id_seccion_fk').has(s.id))
+  // Zona agrupa Secciones (ingresos) y Áreas (egresos); solo se ofrecen las zonas con partidas
+  const secsConPartida   = idsDe(ingDelCentro, 'id_seccion_fk')
+  const zonasIngOpts     = zonasCat.zonas.filter(z => Array.from(secsConPartida).some(id => zonasCat.seccionEnZona(z.id, id)))
+  const areasConPartida  = idsDe(egrDelCC, 'id_area_fk')
+  const zonasEgrOpts     = zonasCat.zonas.filter(z => Array.from(areasConPartida).some(id => zonasCat.areaEnZona(z.id, id)))
+  const seccionesOpts    = seccionesF.filter(s => secsConPartida.has(s.id) && zonasCat.seccionEnZona(filtroZonaIng, s.id))
   const conceptosOpts    = conceptosF.filter(c => idsDe(ingDelCentro, 'id_concepto_fk').has(c.id))
   const centrosCostoOpts = centrosCostoF.filter(c => idsDe(egrParts, 'id_centro_costo_fk').has(c.id))
-  const areasFFiltradas  = areasF.filter(a => idsDe(egrDelCC, 'id_area_fk').has(a.id))
+  const areasFFiltradas  = areasF.filter(a => areasConPartida.has(a.id) && zonasCat.areaEnZona(filtroZonaEgr, a.id))
   // Un centro puede tener partidas por sección Y por concepto (Mantto.
   // Fraccionamiento: cuotas por sección + otros ingresos por concepto), así
   // que se muestra cada desglose que tenga datos, no el `tipo_desglose` del centro.
-  const esSecciones = !!filtroCentroIng && seccionesOpts.length > 0
+  const esSecciones = (!!filtroCentroIng || !!filtroZonaIng) && seccionesOpts.length > 0
   const esConceptos = !!filtroCentroIng && conceptosOpts.length > 0
-  const hayFiltroIng = !!(filtroAgrIng || filtroCentroIng || filtroSeccion || filtroConcepto)
-  const hayFiltroEgr = !!(filtroCC || filtroArea)
+  const hayFiltroIng = !!(filtroAgrIng || filtroCentroIng || filtroZonaIng || filtroSeccion || filtroConcepto)
+  const hayFiltroEgr = !!(filtroCC || filtroZonaEgr || filtroArea)
 
   // Carga los registros de real manual ya capturados para una partida
   const loadManualEntries = useCallback(async (pid: number) => {
@@ -542,10 +551,12 @@ export default function FlujoEfectivoPage() {
     .filter(p => {
       if (p.tipo === 'ingreso') {
         if (idsCentrosIng && !(p.id_centro_ingreso_fk != null && idsCentrosIng.has(p.id_centro_ingreso_fk))) return false
+        if (filtroZonaIng && !zonasCat.seccionEnZona(filtroZonaIng, p.id_seccion_fk)) return false
         if (filtroSeccion && p.id_seccion_fk !== Number(filtroSeccion)) return false
         if (filtroConcepto && p.id_concepto_fk !== Number(filtroConcepto)) return false
       } else {
         if (filtroCC && p.id_centro_costo_fk !== Number(filtroCC)) return false
+        if (filtroZonaEgr && !zonasCat.areaEnZona(filtroZonaEgr, p.id_area_fk)) return false
         if (filtroArea && p.id_area_fk !== Number(filtroArea)) return false
       }
       return true
@@ -779,6 +790,13 @@ export default function FlujoEfectivoPage() {
               <option value="">Todos los centros</option>
               {centrosIngOpts.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
             </select>
+            {zonasIngOpts.length > 0 && (
+              <select value={filtroZonaIng} onChange={e => { setFiltroZonaIng(e.target.value); setFiltroSeccion(''); setFiltroConcepto('') }}
+                style={selStyle(!!filtroZonaIng, ING, 130)} title="Zona → Sección">
+                <option value="">Todas las zonas</option>
+                {zonasIngOpts.map(z => <option key={z.id} value={z.id}>{z.nombre}</option>)}
+              </select>
+            )}
             {esSecciones && (
               <select value={filtroSeccion} onChange={e => { setFiltroSeccion(e.target.value); setFiltroConcepto('') }}
                 style={selStyle(!!filtroSeccion, ING, 130)}>
@@ -786,7 +804,7 @@ export default function FlujoEfectivoPage() {
                 {seccionesOpts.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select>
             )}
-            {esConceptos && (
+            {esConceptos && !filtroZonaIng && (
               <select value={filtroConcepto} onChange={e => { setFiltroConcepto(e.target.value); setFiltroSeccion('') }}
                 style={selStyle(!!filtroConcepto, ING, 140)}>
                 <option value="">Todos los conceptos</option>
@@ -794,7 +812,7 @@ export default function FlujoEfectivoPage() {
               </select>
             )}
             {hayFiltroIng && (
-              <button onClick={() => { setFiltroAgrIng(''); setFiltroCentroIng(''); setFiltroSeccion(''); setFiltroConcepto('') }}
+              <button onClick={() => { setFiltroAgrIng(''); setFiltroCentroIng(''); setFiltroZonaIng(''); setFiltroSeccion(''); setFiltroConcepto('') }}
                 title="Limpiar filtro ingresos"
                 style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #bbf7d0',
                   background: '#f0fdf4', color: '#16a34a', cursor: 'pointer', fontSize: 10,
@@ -817,7 +835,14 @@ export default function FlujoEfectivoPage() {
               <option value="">Todos los CC</option>
               {centrosCostoOpts.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
-            {filtroCC && (
+            {zonasEgrOpts.length > 0 && (
+              <select value={filtroZonaEgr} onChange={e => { setFiltroZonaEgr(e.target.value); setFiltroArea('') }}
+                style={selStyle(!!filtroZonaEgr, EGR, 130)} title="Zona → Área">
+                <option value="">Todas las zonas</option>
+                {zonasEgrOpts.map(z => <option key={z.id} value={z.id}>{z.nombre}</option>)}
+              </select>
+            )}
+            {(filtroCC || filtroZonaEgr) && (
               <select value={filtroArea} onChange={e => setFiltroArea(e.target.value)}
                 style={selStyle(!!filtroArea, EGR, 130)}>
                 <option value="">Todas las áreas</option>
@@ -825,7 +850,7 @@ export default function FlujoEfectivoPage() {
               </select>
             )}
             {hayFiltroEgr && (
-              <button onClick={() => { setFiltroCC(''); setFiltroArea('') }}
+              <button onClick={() => { setFiltroCC(''); setFiltroZonaEgr(''); setFiltroArea('') }}
                 title="Limpiar filtro egresos"
                 style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #fecaca',
                   background: '#fef2f2', color: '#dc2626', cursor: 'pointer', fontSize: 10,

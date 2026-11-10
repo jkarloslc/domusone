@@ -114,7 +114,7 @@ export default function ReporteProgramasMantenimiento() {
   const gruposCuadrante = Array.from(porCuadrante.entries())
     .map(([key, items]) => ({
       key,
-      nombre: key === 'sin-cuadrante' ? 'Sin cuadrante asignado' : (cuadMap[Number(key)] ?? `#${key}`),
+      nombre: key === 'sin-cuadrante' ? 'Sin zona asignada' : (cuadMap[Number(key)] ?? `#${key}`),
       items,
       costoTotal: items.reduce((a, f) => a + f.costoTotal, 0),
       costoMO:    items.reduce((a, f) => a + f.costoMO, 0),
@@ -146,7 +146,7 @@ export default function ReporteProgramasMantenimiento() {
         </select>
         <select className="select" style={{ width: 'auto', minWidth: 160 }} value={filtroCuad}
           onChange={e => { setFiltroCuad(e.target.value); setFiltroArea(''); setFiltroAC('') }}>
-          <option value="">Todos los cuadrantes</option>
+          <option value="">Todas las zonas</option>
           {cuadrantes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
         <select className="select" style={{ width: 'auto', minWidth: 160 }} value={filtroArea}
@@ -166,7 +166,7 @@ export default function ReporteProgramasMantenimiento() {
         <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
       </div>
 
-      <PrintBar title="Programas-Mantenimiento" count={filas.length} reportTitle="Programas de Mantenimiento — Costo por Cuadrante" />
+      <PrintBar title="Programas-Mantenimiento" count={filas.length} reportTitle="Programas de Mantenimiento — Costo por Zona" />
 
       {/* KPIs */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -191,7 +191,7 @@ export default function ReporteProgramasMantenimiento() {
           <table id="reporte-table">
             <thead>
               <tr>
-                <th style={{ minWidth: 200 }}>Cuadrante / Programa</th>
+                <th style={{ minWidth: 200 }}>Zona / Programa</th>
                 <th>Tipo</th>
                 <th>Frecuencia</th>
                 <th>Criticidad</th>

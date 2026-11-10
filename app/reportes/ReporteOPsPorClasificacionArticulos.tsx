@@ -6,6 +6,7 @@ import { resolverCategoriasPorOp } from '@/lib/pptoOcCategoria'
 import { useCatalogoTiposGasto } from '@/lib/tiposGasto'
 import { RefreshCw, Filter, ChevronDown, ChevronRight, FileSpreadsheet, LayoutList, Grid3x3 } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import { useZonas, SelectZona } from '@/lib/zonas'
 
 const STATUS_OP = ['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente', 'Pagada', 'Rechazada', 'Sustituida', 'Cancelada'] as const
 
@@ -66,6 +67,8 @@ export default function ReporteOPsPorClasificacionArticulos() {
   const [filtroStatus, setFiltroStatus]       = useState<string>('')
   const [filtroCC, setFiltroCC]               = useState<string>('')
   const [filtroArea, setFiltroArea]           = useState<string>('')
+  const [filtroZona, setFiltroZona] = useState('')
+  const zonasCat = useZonas()
   const [filtroProv, setFiltroProv]           = useState<string>('')
   const [filtroCategoria, setFiltroCategoria] = useState<string>('')
   const [filtroDe, setFiltroDe]               = useState<string>('')
@@ -143,6 +146,7 @@ export default function ReporteOPsPorClasificacionArticulos() {
     return opsCat.filter(op => {
       if (filtroStatus    && op.status !== filtroStatus) return false
       if (filtroCC        && op.id_centro_costo_fk !== Number(filtroCC)) return false
+      if (filtroZona && !zonasCat.areaEnZona(filtroZona, op.id_area_fk)) return false
       if (filtroArea       && op.id_area_fk !== Number(filtroArea)) return false
       if (filtroProv       && op.id_proveedor_fk !== Number(filtroProv)) return false
       if (filtroCategoria  && (filtroCategoria === SIN_CATEGORIA ? op.id_categoria != null : String(op.id_categoria) !== filtroCategoria)) return false
@@ -150,7 +154,7 @@ export default function ReporteOPsPorClasificacionArticulos() {
       if (filtroA          && (!op.fecha_op || op.fecha_op > filtroA))  return false
       return true
     })
-  }, [opsCat, filtroStatus, filtroCC, filtroArea, filtroProv, filtroCategoria, filtroDe, filtroA])
+  }, [opsCat, filtroStatus, filtroCC, filtroArea, filtroZona, zonasCat, filtroProv, filtroCategoria, filtroDe, filtroA])
 
   // Agrupar por Categoría (clasificación de artículo)
   const grupos = useMemo(() => {
@@ -220,13 +224,14 @@ export default function ReporteOPsPorClasificacionArticulos() {
   const opsParaKPIs = useMemo(() => {
     return opsConOC.filter(op => {
       if (filtroCC   && op.id_centro_costo_fk !== Number(filtroCC)) return false
+      if (filtroZona && !zonasCat.areaEnZona(filtroZona, op.id_area_fk)) return false
       if (filtroArea && op.id_area_fk !== Number(filtroArea)) return false
       if (filtroProv && op.id_proveedor_fk !== Number(filtroProv)) return false
       if (filtroDe   && (!op.fecha_op || op.fecha_op < filtroDe)) return false
       if (filtroA    && (!op.fecha_op || op.fecha_op > filtroA))  return false
       return true
     })
-  }, [opsConOC, filtroCC, filtroArea, filtroProv, filtroDe, filtroA])
+  }, [opsConOC, filtroCC, filtroArea, filtroZona, zonasCat, filtroProv, filtroDe, filtroA])
 
   const exportExcel = () => {
     const wb = XLSX.utils.book_new()
@@ -312,9 +317,10 @@ export default function ReporteOPsPorClasificacionArticulos() {
           <option value="">Todos los CC</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
+        <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFiltroArea('') }} />
         <select className="select" style={{ fontSize: 12, padding: '5px 8px', width: 140, flex: '0 0 auto' }} value={filtroArea} onChange={e => setFiltroArea(e.target.value)} disabled={areasDelCC.length === 0}>
           <option value="">Todas las áreas</option>
-          {areasDelCC.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+          {areasDelCC.filter(a => zonasCat.areaEnZona(filtroZona, a.id)).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
         </select>
         <select className="select" style={{ fontSize: 12, padding: '5px 8px', width: 160, flex: '0 0 auto' }} value={filtroProv} onChange={e => setFiltroProv(e.target.value)}>
           <option value="">Todos los proveedores</option>

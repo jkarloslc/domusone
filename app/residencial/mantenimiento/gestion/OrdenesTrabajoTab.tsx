@@ -270,7 +270,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
         ) : (
           <>
             <select className="select" style={{ flex: '1 1 120px', maxWidth: 200, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterCuad} onChange={e => { setFilterCuad(e.target.value); setFilterArea(''); setFilterAC(''); setPage(1) }}>
-              <option value="">Cuadrante</option>
+              <option value="">Zona</option>
               {cuadrantes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
             <select className="select" style={{ flex: '1 1 100px', maxWidth: 170, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterArea} onChange={e => { setFilterArea(e.target.value); setFilterAC(''); setPage(1) }}>
@@ -699,7 +699,7 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-              <div><label className="label" style={{ fontSize: 11 }}>Cuadrante</label>
+              <div><label className="label" style={{ fontSize: 11 }}>Zona</label>
                 <select className="select" style={{ fontSize: 12 }} value={form.id_cuadrante_fk}
                   onChange={e => setForm(f => ({ ...f, id_cuadrante_fk: e.target.value, id_area_fk: '', id_area_comun_fk: '' }))}>
                   <option value="">—</option>
@@ -1270,7 +1270,7 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
         <div><div class="lbl">Área</div><div class="val">${seccion}</div></div>
         ${ot.ubicacion_detalle ? `<div><div class="lbl">Ubicación Detalle</div><div class="val">${ot.ubicacion_detalle}</div></div>` : ''}
         ${ot.tipo_trabajo ? `<div><div class="lbl">Tipo de Trabajo</div><div class="val">${ot.tipo_trabajo}</div></div>` : ''}
-        ${ot.id_cuadrante_fk ? `<div><div class="lbl">Cuadrante</div><div class="val">${cuadMap[ot.id_cuadrante_fk] ?? '—'}</div></div>` : ''}
+        ${ot.id_cuadrante_fk ? `<div><div class="lbl">Zona</div><div class="val">${cuadMap[ot.id_cuadrante_fk] ?? '—'}</div></div>` : ''}
         ${ot.id_area_comun_fk ? `<div><div class="lbl">Área Común</div><div class="val">${acMap[ot.id_area_comun_fk] ?? '—'}</div></div>` : ''}
         ${ot.id_centro_costo_fk ? `<div><div class="lbl">Centro de Costo</div><div class="val">${ccMap[ot.id_centro_costo_fk] ?? '—'}</div></div>` : ''}
         ${ot.id_frente_fk ? `<div><div class="lbl">Frente</div><div class="val">${frMap[ot.id_frente_fk] ?? '—'}</div></div>` : ''}
@@ -1388,7 +1388,7 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
             {ot.fecha_inicio && <DI label="Fecha Inicio" value={fmtFecha(ot.fecha_inicio)} />}
             {ot.fecha_limite && <DI label="Fecha Límite" value={fmtFecha(ot.fecha_limite)} />}
             {ot.fecha_cierre && <DI label="Fecha Cierre" value={fmtFecha(ot.fecha_cierre)} />}
-            {ot.id_cuadrante_fk  && <DI label="Cuadrante"    value={cuadMap[ot.id_cuadrante_fk]  ?? `#${ot.id_cuadrante_fk}`} />}
+            {ot.id_cuadrante_fk  && <DI label="Zona"    value={cuadMap[ot.id_cuadrante_fk]  ?? `#${ot.id_cuadrante_fk}`} />}
             {ot.id_area_fk      && <DI label="Área"          value={areaMap[ot.id_area_fk]      ?? `#${ot.id_area_fk}`} />}
             {ot.id_area_comun_fk && <DI label="Área Común"   value={acMap[ot.id_area_comun_fk]   ?? `#${ot.id_area_comun_fk}`} />}
             {ot.id_centro_costo_fk && <DI label="Centro de Costo" value={ccMap[ot.id_centro_costo_fk] ?? `#${ot.id_centro_costo_fk}`} />}

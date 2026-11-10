@@ -5,6 +5,7 @@ import { Save, Loader, AlertTriangle, CheckCircle, MapPin, Wallet, Scale, Wrench
 import FileUpload from '@/components/FileUpload'
 import ModalShell from '@/components/ui/ModalShell'
 import { ServiciosTab } from './LoteDetail'
+import { useZonas } from '@/lib/zonas'
 
 type Props = { lote: Lote | null; onClose: () => void; onSaved: () => void }
 
@@ -29,6 +30,7 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
   const [capacidad, setCapacidad] = useState<{ actual: number; limite: number | null } | null>(null)
   const [loadingCap, setLoadingCap] = useState(false)
 
+  const zonasCat = useZonas()
   const [form, setForm] = useState({
     cve_lote:            lote?.cve_lote ?? '',
     lote:                lote?.lote?.toString() ?? '',
@@ -195,6 +197,11 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
                   {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                 </select>
                 <CapacidadIndicador capacidad={capacidad} loading={loadingCap} />
+                {form.id_seccion_fk && (
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                    Zona: <b>{zonasCat.zonaDeSeccion(Number(form.id_seccion_fk))?.nombre ?? 'sin zona (asígnala en Catálogos › Zonas)'}</b>
+                  </div>
+                )}
               </Field>
               <Field label="Tipo de Lote">
                 <select className="select" value={form.id_tipo_lote_fk} onChange={set('id_tipo_lote_fk')}>

@@ -18,6 +18,7 @@ import { aplicarPagoRemesa, reversarPagoRemesa } from '@/lib/pagoRemesa'
 import { editarPagoCxp } from '@/lib/editarPagoCxp'
 
 import Paginador from '@/components/ui/Paginador'
+import { useZonas, SelectZona } from '@/lib/zonas'
 // ── Antigüedad de saldo ────────────────────────────────────
 const diasVencido = (fecha: string | null) => {
   if (!fecha) return 0
@@ -88,6 +89,8 @@ export default function CXPPage() {
   const [lineasOP, setLineasOP] = useState<Record<number, { id_area_fk: number | null; id_frente_fk: number | null; monto: number }[]>>({})
   const [filterCC, setFilterCC]         = useState('')
   const [filterArea, setFilterArea]     = useState('')
+  const [filtroZona, setFiltroZona] = useState('')
+  const zonasCat = useZonas()
   const [filterFrente, setFilterFrente] = useState('')
 
   const fetchData = useCallback(async () => {
@@ -155,16 +158,17 @@ export default function CXPPage() {
     areas.forEach(a => { m[a.id] = a.id_centro_costo_fk })
     return m
   }, [areas])
-  const areasFiltro = filterCC ? areas.filter(a => a.id_centro_costo_fk === Number(filterCC)) : areas
-  const hayFiltro = !!(filterCC || filterArea || filterFrente)
+  const areasFiltro = (filterCC ? areas.filter(a => a.id_centro_costo_fk === Number(filterCC)) : areas).filter(a => zonasCat.areaEnZona(filtroZona, a.id))
+  const hayFiltro = !!(filterCC || filtroZona || filterArea || filterFrente)
 
   // Fracción del saldo de la OP que corresponde a los filtros CC/Área/Frente.
   // Igual que Reportes > CXP por CC: si la OP está distribuida, cada línea aporta su parte
   // proporcional; si no, el encabezado aporta el 100%.
   const fraccionOP = useCallback((o: any) => {
-    if (!filterCC && !filterArea && !filterFrente) return 1
+    if (!filterCC && !filtroZona && !filterArea && !filterFrente) return 1
     const ok = (cc: number | null | undefined, area: number | null, frente: number | null) =>
       (!filterCC || cc === Number(filterCC)) &&
+      (!filtroZona || zonasCat.areaEnZona(filtroZona, area)) &&
       (!filterArea || area === Number(filterArea)) &&
       (!filterFrente || frente === Number(filterFrente))
     const lineas = lineasOP[o.id] ?? []
@@ -176,7 +180,7 @@ export default function CXPPage() {
       const cc = l.id_area_fk != null ? (areaCC[l.id_area_fk] ?? o.id_centro_costo_fk) : o.id_centro_costo_fk
       return ok(cc, l.id_area_fk, l.id_frente_fk) ? a + l.monto / total : a
     }, 0)
-  }, [filterCC, filterArea, filterFrente, areaCC, lineasOP])
+  }, [filterCC, filtroZona, zonasCat, filterArea, filterFrente, areaCC, lineasOP])
   const opCoincide = useCallback((o: any) => fraccionOP(o) > 0, [fraccionOP])
   // Saldo atribuible a los filtros activos (sin filtros = saldo completo)
   const sd = (o: any) => (o.saldo ?? o.monto ?? 0) * fraccionOP(o)
@@ -279,6 +283,7 @@ export default function CXPPage() {
           <option value="">Todos los CC</option>
           {centros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
+        <SelectZona className="input" zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFilterArea('') }} />
         <select className="input" style={{ width: 200 }} value={filterArea} onChange={e => setFilterArea(e.target.value)}>
           <option value="">Todas las áreas</option>
           {areasFiltro.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
@@ -288,7 +293,7 @@ export default function CXPPage() {
           {frentes.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
         </select>
         {hayFiltro && (
-          <button className="btn-ghost" onClick={() => { setFilterCC(''); setFilterArea(''); setFilterFrente('') }}>Limpiar filtros</button>
+          <button className="btn-ghost" onClick={() => { setFilterCC(''); setFiltroZona(''); setFilterArea(''); setFilterFrente('') }}>Limpiar filtros</button>
         )}
       </div>
 

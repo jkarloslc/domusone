@@ -15,6 +15,7 @@ import PageHeader from '@/components/layout/PageHeader'
 
 
 import Paginador from '@/components/ui/Paginador'
+import { useZonas, SelectZona } from '@/lib/zonas'
 export default function OrdenesPage() {
   const { authUser, canWrite, canAuth: canAuthFn } = useAuth()
   const router = useRouter()
@@ -28,6 +29,8 @@ export default function OrdenesPage() {
   const [filterStatus, setFilter] = useState('')
   const [filterCC, setFilterCC] = useState('')
   const [filterArea, setFilterArea] = useState('')
+  const [filtroZona, setFiltroZona] = useState('')
+  const zonasCat = useZonas()
   const [filterProv, setFilterProv] = useState('')
   const [filterFechaDesde, setFilterFechaDesde] = useState('')
   const [filterFechaHasta, setFilterFechaHasta] = useState('')
@@ -45,6 +48,7 @@ export default function OrdenesPage() {
     if (filterStatus) q = q.eq('status', filterStatus)
     if (filterCC) q = q.eq('id_centro_costo_fk', Number(filterCC))
     if (filterArea) q = q.eq('id_area_fk', Number(filterArea))
+    else if (filtroZona) { const az = zonasCat.areasDeZona(filtroZona)!; q = q.in('id_area_fk', az.size > 0 ? Array.from(az) : [-1]) }
     if (filterProv) q = q.eq('id_proveedor_fk', Number(filterProv))
     if (filterFechaDesde) q = q.gte('created_at', `${filterFechaDesde}T00:00:00`)
     if (filterFechaHasta) q = q.lte('created_at', `${filterFechaHasta}T23:59:59`)
@@ -56,7 +60,7 @@ export default function OrdenesPage() {
     ;(provs ?? []).forEach((p: any) => { m[p.id] = p.nombre })
     setProvMap(m)
     setLoading(false)
-  }, [page, pageSize, debouncedSearch, filterStatus, filterCC, filterArea, filterProv, filterFechaDesde, filterFechaHasta])
+  }, [page, pageSize, debouncedSearch, filterStatus, filterCC, filterArea, filtroZona, zonasCat, filterProv, filterFechaDesde, filterFechaHasta])
 
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => {
@@ -105,11 +109,12 @@ export default function OrdenesPage() {
             <option value="">Todos los centros de costo</option>
             {ccFiltros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
           </select>
+          <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFilterArea(''); setPage(0) }} />
           <select className="select" style={{ width: 200 }} value={filterArea}
             onChange={e => { setFilterArea(e.target.value); setPage(0) }}>
             <option value="">Todas las áreas</option>
             {areaFiltros
-              .filter(s => !filterCC || s.id_centro_costo_fk === Number(filterCC))
+              .filter(s => (!filterCC || s.id_centro_costo_fk === Number(filterCC)) && zonasCat.areaEnZona(filtroZona, s.id))
               .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
           </select>
           <select className="select" style={{ width: 220 }} value={filterProv}

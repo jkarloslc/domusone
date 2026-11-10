@@ -73,7 +73,7 @@ export default function ReporteColaboradores() {
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
         <select className="select" style={{ flex: '1 1 110px', maxWidth: 160 }} value={filtroCuadrante} onChange={e => setFCuad(e.target.value)}>
-          <option value="">Todos los cuadrantes</option>
+          <option value="">Todas las zonas</option>
           {cuadrantes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
         <select className="select" style={{ flex: '1 1 100px', maxWidth: 140 }} value={filtroStatus} onChange={e => setFStatus(e.target.value)}>
@@ -119,7 +119,7 @@ export default function ReporteColaboradores() {
                 <th style={{ textAlign: 'right' }}>Sueldo Neto</th>
                 <th style={{ textAlign: 'center' }}>Asignado</th>
                 <th style={{ textAlign: 'center' }}>Supervisor</th>
-                <th>Cuadrante</th>
+                <th>Zona</th>
                 <th>CC</th>
                 <th style={{ textAlign: 'center' }}>Status</th>
               </tr>

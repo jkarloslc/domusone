@@ -5,6 +5,7 @@ import { PrintBar } from './utils'
 import FiltroAgrupadorCentro from '@/components/ui/FiltroAgrupadorCentro'
 import { esCentroCuotas, cargarCentrosAgrupados, idsCentrosFiltro, centrosDeAgrupador, CentroIngresoAgr, AgrupadorIngreso } from '@/lib/centrosIngreso'
 import { RefreshCw } from 'lucide-react'
+import { useZonas, SelectZona } from '@/lib/zonas'
 
 const fmt  = (n: number) => '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2 })
 const fmtF = (s: string) => new Date(s + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -40,6 +41,8 @@ export default function ReporteIngresosCuotas() {
   const [filtroStatus, setFiltroStatus] = useState('Confirmado')
   const [filtroDe,     setFiltroDe]     = useState('')
   const [filtroA,      setFiltroA]      = useState('')
+  const [filtroZona,   setFiltroZona]   = useState('')
+  const zonasCat = useZonas()
 
   const centrosCuotas = centros.filter(c => esCentroCuotas(c) && c.tipo_desglose === 'secciones')
   const centroMap     = Object.fromEntries(centros.map(c => [c.id, c]))
@@ -62,11 +65,14 @@ export default function ReporteIngresosCuotas() {
 
     // Secciones con join a recibos
     let secQ = (dbCtrl.from('recibos_ingreso_secciones') as any)
-      .select('id_recibo_fk, nombre_seccion, monto, recibos_ingreso!inner(id, folio, fecha, status, id_centro_ingreso_fk, monto_total)')
+      .select('id_recibo_fk, id_seccion_fk, nombre_seccion, monto, recibos_ingreso!inner(id, folio, fecha, status, id_centro_ingreso_fk, monto_total)')
       .in('recibos_ingreso.id_centro_ingreso_fk', centroTarget)
     if (filtroStatus) secQ = secQ.eq('recibos_ingreso.status', filtroStatus)
     if (filtroDe)     secQ = secQ.gte('recibos_ingreso.fecha', filtroDe)
     if (filtroA)      secQ = secQ.lte('recibos_ingreso.fecha', filtroA)
+    // Zona → Sección: solo las líneas de secciones de la zona
+    const secsZona = zonasCat.seccionesDeZona(filtroZona)
+    if (secsZona) secQ = secQ.in('id_seccion_fk', secsZona.size > 0 ? Array.from(secsZona) : [-1])
 
     const { data: secRows } = await secQ
 
@@ -87,10 +93,13 @@ export default function ReporteIngresosCuotas() {
       }
     }
 
+    // Con Zona, el total del recibo es solo lo de sus secciones en la zona
+    if (secsZona) for (const r of Object.values(reciboMap)) r.monto_total = r.secciones.reduce((a, x) => a + x.monto, 0)
+
     const reciboIds = Object.keys(reciboMap).map(Number)
 
-    // Conceptos para esos recibos
-    if (reciboIds.length > 0) {
+    // Conceptos para esos recibos (no aplican con filtro de Zona: no son por sección)
+    if (reciboIds.length > 0 && !secsZona) {
       const { data: cRows } = await dbCtrl
         .from('recibos_ingreso_conceptos')
         .select('id_recibo_fk, nombre_concepto, monto')
@@ -106,7 +115,7 @@ export default function ReporteIngresosCuotas() {
       Object.values(reciboMap).sort((a, b) => b.fecha.localeCompare(a.fecha))
     )
     setLoading(false)
-  }, [filtroAgr, filtroCentro, filtroStatus, filtroDe, filtroA])
+  }, [filtroAgr, filtroCentro, filtroStatus, filtroDe, filtroA, filtroZona, zonasCat])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -148,6 +157,7 @@ export default function ReporteIngresosCuotas() {
         </select>
         <FiltroAgrupadorCentro centros={centrosCuotas} agrupadores={agrupadores} filtroAgr={filtroAgr} setFiltroAgr={setFiltroAgr}
           filtroCentro={filtroCentro} setFiltroCentro={setFiltroCentro} textoTodos="Todos los centros de cuotas" minWidth={220} />
+        <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={setFiltroZona} />
         <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)} style={{ width: 140 }} />
         <input className="input" type="date" value={filtroA}  onChange={e => setFiltroA(e.target.value)}  style={{ width: 140 }} />
         <button className="btn-ghost" onClick={fetchData}>

@@ -5,6 +5,7 @@ import { useCatalogoTiposGasto } from '@/lib/tiposGasto'
 import { PrintBar } from './utils'
 import { RefreshCw, Filter, ChevronDown, ChevronRight, FileSpreadsheet, LayoutList, Grid3x3 } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import { useZonas, SelectZona } from '@/lib/zonas'
 
 // Status conocidos en comp.ordenes_pago
 const STATUS_OP = ['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente', 'Pagada', 'Rechazada', 'Sustituida', 'Cancelada'] as const
@@ -99,6 +100,8 @@ export default function ReporteOrdenesPago() {
   const [filtroStatus, setFiltroStatus] = useState<string>('')
   const [filtroCC, setFiltroCC]         = useState<string>('')
   const [filtroArea, setFiltroArea]     = useState<string>('')
+  const [filtroZona, setFiltroZona] = useState('')
+  const zonasCat = useZonas()
   const [filtroProv, setFiltroProv]     = useState<string>('')
   const [filtroTipo, setFiltroTipo]     = useState<string>('')
   const [filtroDe, setFiltroDe]         = useState<string>('')
@@ -166,6 +169,7 @@ export default function ReporteOrdenesPago() {
     return ops.filter(op => {
       if (filtroStatus && op.status !== filtroStatus) return false
       if (filtroCC     && op.id_centro_costo_fk !== Number(filtroCC)) return false
+      if (filtroZona && !zonasCat.areaEnZona(filtroZona, op.id_area_fk)) return false
       if (filtroArea   && op.id_area_fk !== Number(filtroArea)) return false
       if (filtroProv   && op.id_proveedor_fk !== Number(filtroProv)) return false
       if (filtroTipo   && String(op.id_tipo_gasto_fk ?? '') !== filtroTipo) return false
@@ -173,7 +177,7 @@ export default function ReporteOrdenesPago() {
       if (filtroA      && (!op.fecha_op || op.fecha_op > filtroA))  return false
       return true
     })
-  }, [ops, filtroStatus, filtroCC, filtroArea, filtroProv, filtroTipo, filtroDe, filtroA])
+  }, [ops, filtroStatus, filtroCC, filtroArea, filtroZona, zonasCat, filtroProv, filtroTipo, filtroDe, filtroA])
 
   // Agrupar CC → Área → OPs
   const grupos = useMemo(() => {
@@ -274,6 +278,7 @@ export default function ReporteOrdenesPago() {
   const opsParaKPIs = useMemo(() => {
     return ops.filter(op => {
       if (filtroCC   && op.id_centro_costo_fk !== Number(filtroCC)) return false
+      if (filtroZona && !zonasCat.areaEnZona(filtroZona, op.id_area_fk)) return false
       if (filtroArea && op.id_area_fk !== Number(filtroArea)) return false
       if (filtroProv && op.id_proveedor_fk !== Number(filtroProv)) return false
       if (filtroTipo && String(op.id_tipo_gasto_fk ?? '') !== filtroTipo) return false
@@ -281,7 +286,7 @@ export default function ReporteOrdenesPago() {
       if (filtroA    && (!op.fecha_op || op.fecha_op > filtroA))  return false
       return true
     })
-  }, [ops, filtroCC, filtroArea, filtroProv, filtroTipo, filtroDe, filtroA])
+  }, [ops, filtroCC, filtroArea, filtroZona, zonasCat, filtroProv, filtroTipo, filtroDe, filtroA])
 
   // Export Excel (3 hojas: Resumen, Detalle, Matriz)
   const exportExcel = () => {
@@ -377,9 +382,10 @@ export default function ReporteOrdenesPago() {
           <option value="">Todos los centros de costo</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
+        <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFiltroArea('') }} />
         <select className="select" style={{ width: 'auto', minWidth: 180 }} value={filtroArea} onChange={e => setFiltroArea(e.target.value)} disabled={areasDelCC.length === 0}>
           <option value="">Todas las áreas{filtroCC ? ' del CC' : ''}</option>
-          {areasDelCC.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+          {areasDelCC.filter(a => zonasCat.areaEnZona(filtroZona, a.id)).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
         </select>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)} style={{ width: 145 }} />

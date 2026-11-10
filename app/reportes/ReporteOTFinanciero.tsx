@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { PrintBar } from './utils'
 import { RefreshCw, ChevronDown, ChevronRight } from 'lucide-react'
+import { useZonas, SelectZona } from '@/lib/zonas'
 
 const fmt$ = (n: number) => n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 2 })
 const fmtFecha = (f: string | null) => f ? new Date(f + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
@@ -27,6 +28,8 @@ export default function ReporteOTFinanciero() {
   const [fStatus,  setFStatus]  = useState('')
   const [fCc,      setFCc]      = useState('')
   const [fArea,    setFArea]    = useState('')
+  const [filtroZona, setFiltroZona] = useState('')
+  const zonasCat = useZonas()
   const [fDe,      setFDe]      = useState('')
   const [fA,       setFA]       = useState('')
 
@@ -69,12 +72,13 @@ export default function ReporteOTFinanciero() {
     if (fEmpresa) result = result.filter((r: any) => r.empresa === fEmpresa)
     if (fStatus)  result = result.filter((r: any) => r.status  === fStatus)
     if (fCc)      result = result.filter((r: any) => String(r.id_centro_costo_fk) === fCc)
+    if (filtroZona) result = result.filter((r: any) => String(r.id_cuadrante_fk) === filtroZona || zonasCat.areaEnZona(filtroZona, r.id_area_fk))
     if (fArea)    result = result.filter((r: any) => String(r.id_area_fk) === fArea)
     if (fDe)      result = result.filter((r: any) => r.created_at?.slice(0,10) >= fDe)
     if (fA)       result = result.filter((r: any) => r.created_at?.slice(0,10) <= fA)
     setRows(result)
     setLoading(false)
-  }, [fEmpresa, fStatus, fCc, fArea, fDe, fA])
+  }, [fEmpresa, fStatus, fCc, fArea, filtroZona, zonasCat, fDe, fA])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -128,10 +132,11 @@ export default function ReporteOTFinanciero() {
           <option value="">Centro de Costo</option>
           {centrosCosto.map((c: any) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
+        <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFArea('') }} />
         <select className="select" style={{ fontSize: 12, height: 28, padding: '2px 8px', minWidth: 160 }}
           value={fArea} onChange={e => setFArea(e.target.value)}>
           <option value="">Área</option>
-          {filteredAreas.map((a: any) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+          {filteredAreas.filter((a: any) => zonasCat.areaEnZona(filtroZona, a.id)).map((a: any) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
         </select>
         <input type="date" className="input" style={{ fontSize: 12, height: 28, padding: '2px 8px', width: 130 }}
           value={fDe} onChange={e => setFDe(e.target.value)} title="Desde" />

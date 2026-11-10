@@ -13,6 +13,7 @@ import HistorialPropietarios from './HistorialPropietarios'
 import { useAuth } from '@/lib/AuthContext'
 import PageHeader from '@/components/layout/PageHeader'
 import LotesTabs from './LotesTabs'
+import { useZonas, SelectZona } from '@/lib/zonas'
 
 import Paginador from '@/components/ui/Paginador'
 const STATUS_COLORS: Record<string, string> = {
@@ -34,6 +35,8 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
   const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilter]     = useState('')
   const [filterSeccion, setFilterSeccion] = useState('')
+  const [filterZona, setFilterZona]       = useState('')
+  const zonasCat = useZonas()
   const [filterClasif, setFilterClasif]   = useState('')
   const [filterDir, setFilterDir]     = useState('')
   const debouncedDir = useDebounce(filterDir, 300)
@@ -72,6 +75,11 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
     if (debouncedSearch) q = q.or(`cve_lote.ilike.%${debouncedSearch}%,lote::text.ilike.%${debouncedSearch}%`)
     if (filterStatus)    q = q.eq('status_lote', filterStatus)
     if (filterSeccion)   q = q.eq('id_seccion_fk', Number(filterSeccion))
+    else if (filterZona) {
+      // El lote pertenece a la Zona de su sección
+      const secs = zonasCat.seccionesDeZona(filterZona)!
+      q = q.in('id_seccion_fk', secs.size > 0 ? Array.from(secs) : [-1])
+    }
     if (filterClasif)    q = q.eq('id_clasificacion_fk', Number(filterClasif))
     if (debouncedDir)    q = q.or(`calle.ilike.%${debouncedDir}%,numero.ilike.%${debouncedDir}%`)
 
@@ -81,7 +89,7 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
       setTotal(count ?? 0)
     }
     setLoading(false)
-  }, [page, pageSize, debouncedSearch, filterStatus, filterSeccion, filterClasif, debouncedDir])
+  }, [page, pageSize, debouncedSearch, filterStatus, filterSeccion, filterZona, zonasCat, filterClasif, debouncedDir])
 
   useEffect(() => { fetchLotes() }, [fetchLotes])
 
@@ -160,6 +168,8 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
           <option value="Bloqueado">Bloqueado</option>
         </select>
 
+        <SelectZona zonas={zonasCat.zonas} value={filterZona} onChange={v => { setFilterZona(v); setFilterSeccion(''); setPage(0) }} />
+
         <select
           className="select"
           style={{ width: 180 }}
@@ -167,7 +177,7 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
           onChange={e => { setFilterSeccion(e.target.value); setPage(0) }}
         >
           <option value="">Todas las secciones</option>
-          {Object.entries(secciones).sort((a, b) => a[1].localeCompare(b[1], 'es')).map(([id, nombre]) => (
+          {Object.entries(secciones).filter(([id]) => zonasCat.seccionEnZona(filterZona, Number(id))).sort((a, b) => a[1].localeCompare(b[1], 'es')).map(([id, nombre]) => (
             <option key={id} value={id}>{nombre}</option>
           ))}
         </select>
@@ -197,6 +207,7 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
               <tr>
                 <th>Clave Lote</th>
                 <th>Clasificación</th>
+                <th>Zona</th>
                 <th>Sección</th>
                 <th>Lote</th>
                 <th>Dirección</th>
@@ -206,11 +217,11 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                   <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto' }} />
                 </td></tr>
               ) : lotes.length === 0 ? (
-                <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
                   No se encontraron lotes
                 </td></tr>
               ) : lotes.map(l => {
@@ -224,6 +235,9 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
                   </td>
                   <td style={{ color: 'var(--text-secondary)' }}>
                     {(l as any).id_clasificacion_fk ? (clasificaciones[(l as any).id_clasificacion_fk] ?? '—') : '—'}
+                  </td>
+                  <td style={{ color: 'var(--text-secondary)' }}>
+                    {zonasCat.zonaDeSeccion(l.id_seccion_fk)?.nombre ?? '—'}
                   </td>
                   <td style={{ color: 'var(--text-secondary)' }}>
                     {l.id_seccion_fk ? (secciones[l.id_seccion_fk] ?? '—') : '—'}

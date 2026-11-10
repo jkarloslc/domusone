@@ -41,6 +41,12 @@ Vehículos y Maquinaria, Equipo y Herramienta (con combustible, bitácoras, pré
 - **Pendiente**: OP (`id_servicio_fk`, vales, bitácoras) y Capex siguen leyendo solo las tablas originales; integrarlas con las `_mantto` cuando Fracc. las empiece a usar.
 - Si cambias el esquema de una tabla original, replicarlo en su `_mantto`.
 
+## Zonas (antes "Cuadrantes", 2026-11-10)
+- Solo cambió el nombre visible: la tabla sigue siendo `cfg.cuadrantes` y las columnas `id_cuadrante_fk`.
+- Zona agrupa **Secciones** (1:N, `cfg.secciones.id_cuadrante_fk`) y **Áreas** (N:M, `cfg.rel_area_cuadrante`). El **Lote** hereda la zona de su sección (no tiene columna propia).
+- `lib/zonas.tsx`: `useZonas()` (`seccionEnZona`, `areaEnZona`, `seccionesDeZona`, `areasDeZona`, `zonaDeSeccion`) + `<SelectZona>`. Llamar `invalidarZonas()` al editar el catálogo.
+- Filtro Zona → Sección en páginas de ingresos y Zona → Área en páginas de costos. Al crear una página nueva con filtro de Sección o Área, agregar Zona antes.
+
 ## Ramas
 - Rama principal: `main`
 - Repositorio: https://github.com/jkarloslc/domusone.git

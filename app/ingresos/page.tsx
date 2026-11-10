@@ -1,4 +1,5 @@
 'use client'
+import { useZonas, SelectZona } from '@/lib/zonas'
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbCfg, dbComp } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
@@ -1203,6 +1204,9 @@ export default function IngresosPage() {
   const [filterAgr, setFilterAgr]       = useState('')
   const [agrupadores, setAgrupadores]   = useState<AgrupadorIngreso[]>([])
   const [filterStatus, setFilterStatus] = useState('')
+  const [filterZona, setFilterZona]     = useState('')
+  const [filterSeccion, setFilterSeccion] = useState('')
+  const zonasCat = useZonas()
   const [filterFechaIni, setFilterFechaIni] = useState('')
   const [filterFechaFin, setFilterFechaFin] = useState('')
   const [loading, setLoading]   = useState(true)
@@ -1231,13 +1235,16 @@ export default function IngresosPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
+    // Zona → Sección: recibos con al menos una línea de esas secciones
+    const secIds = filterSeccion ? new Set([Number(filterSeccion)]) : zonasCat.seccionesDeZona(filterZona)
     let q = dbCtrl.from('recibos_ingreso')
-      .select('*', { count: 'exact' })
+      .select(secIds ? '*, recibos_ingreso_secciones!inner(id_seccion_fk)' : '*', { count: 'exact' })
       .order('fecha', { ascending: false })
       .order('created_at', { ascending: false })
       .range(page * pageSize, page * pageSize + pageSize - 1)
 
     if (filterStatus)   q = q.eq('status', filterStatus)
+    if (secIds)         q = q.in('recibos_ingreso_secciones.id_seccion_fk', secIds.size > 0 ? Array.from(secIds) : [-1])
     const idsC = idsCentrosFiltro(centrosPermitidos as any, filterAgr, filterCentro)
     if (idsC)           q = q.in('id_centro_ingreso_fk', idsC.size > 0 ? Array.from(idsC) : [-1])
     if (filterFechaIni) q = q.gte('fecha', filterFechaIni)
@@ -1248,10 +1255,10 @@ export default function IngresosPage() {
     if (esCobranza) q = q.in('id_centro_ingreso_fk', cuotasCentroIds.length > 0 ? cuotasCentroIds : [-1])
 
     const { data, count } = await q
-    setRows((data ?? []) as Recibo[])
+    setRows((data ?? []) as unknown as Recibo[])
     setTotal(count ?? 0)
     setLoading(false)
-  }, [page, pageSize, filterStatus, filterAgr, filterCentro, centros, filterFechaIni, filterFechaFin, search, esCobranza, cuotasCentroIds.join(',')])
+  }, [page, pageSize, filterStatus, filterZona, filterSeccion, zonasCat, filterAgr, filterCentro, centros, filterFechaIni, filterFechaFin, search, esCobranza, cuotasCentroIds.join(',')])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -1291,6 +1298,11 @@ export default function IngresosPage() {
         <FiltroAgrupadorCentro centros={centrosPermitidos as any} agrupadores={agrupadores} minWidth={200}
           filtroAgr={filterAgr} setFiltroAgr={v => { setFilterAgr(v); setPage(0) }}
           filtroCentro={filterCentro} setFiltroCentro={v => { setFilterCentro(v); setPage(0) }} />
+        <SelectZona zonas={zonasCat.zonas} value={filterZona} onChange={v => { setFilterZona(v); setFilterSeccion(''); setPage(0) }} />
+        <select className="select" style={{ width: 'auto', minWidth: 160 }} value={filterSeccion} onChange={e => { setFilterSeccion(e.target.value); setPage(0) }}>
+          <option value="">Todas las secciones</option>
+          {secciones.filter(x => zonasCat.seccionEnZona(filterZona, x.id)).map(x => <option key={x.id} value={x.id}>{x.nombre}</option>)}
+        </select>
         <select className="select" style={{ width: 150 }} value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(0) }}>
           <option value="">Todos los status</option>
           <option value="Confirmado">Confirmado</option>

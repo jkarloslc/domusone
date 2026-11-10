@@ -6,6 +6,7 @@ import FiltroAgrupadorCentro from '@/components/ui/FiltroAgrupadorCentro'
 import { cargarCentrosAgrupados, idsCentrosFiltro, CentroIngresoAgr, AgrupadorIngreso } from '@/lib/centrosIngreso'
 import { RefreshCw, ChevronDown, ChevronRight, FileSpreadsheet } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import { useZonas, SelectZona } from '@/lib/zonas'
 
 const fmt  = (n: number) => '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const fmtF = (s: string) =>
@@ -42,6 +43,8 @@ export default function ReporteRecibosIngreso() {
   const [filtroStatus, setFiltroStatus] = useState('Confirmado')
   const [filtroDe,     setFiltroDe]     = useState('')
   const [filtroA,      setFiltroA]      = useState('')
+  const [filtroZona,   setFiltroZona]   = useState('')
+  const zonasCat = useZonas()
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -51,15 +54,18 @@ export default function ReporteRecibosIngreso() {
 
     // Recibos (paginado: PostgREST limita a 1000 filas por consulta)
     const base: Recibo[] = []
+    // Zona → Sección: recibos con al menos una línea de secciones de la zona
+    const secsZona = zonasCat.seccionesDeZona(filtroZona)
     for (let from = 0; ; from += 1000) {
-      let q = dbCtrl.from('recibos_ingreso')
-        .select('id, folio, fecha, status, id_centro_ingreso_fk, monto_total, descripcion')
+      let q = (dbCtrl.from('recibos_ingreso') as any)
+        .select(secsZona ? 'id, folio, fecha, status, id_centro_ingreso_fk, monto_total, descripcion, recibos_ingreso_secciones!inner(id_seccion_fk)' : 'id, folio, fecha, status, id_centro_ingreso_fk, monto_total, descripcion')
         .order('fecha', { ascending: false }).order('id', { ascending: false })
         .range(from, from + 999)
       if (filtroStatus) q = q.eq('status', filtroStatus)
       if (filtroDe)     q = q.gte('fecha', filtroDe)
       if (filtroA)      q = q.lte('fecha', filtroA)
       if (idsC)         q = q.in('id_centro_ingreso_fk', Array.from(idsC))
+      if (secsZona)     q = q.in('recibos_ingreso_secciones.id_seccion_fk', secsZona.size > 0 ? Array.from(secsZona) : [-1])
       const { data, error } = await q
       if (error) { console.error('recibos_ingreso:', error.message); break }
       base.push(...((data ?? []) as Recibo[]))
@@ -96,7 +102,7 @@ export default function ReporteRecibosIngreso() {
       return { ...r, subtotal: total, iva: 0, total, sinDesglose: true }
     }))
     setLoading(false)
-  }, [filtroAgr, filtroCentro, filtroStatus, filtroDe, filtroA])
+  }, [filtroAgr, filtroCentro, filtroStatus, filtroDe, filtroA, filtroZona, zonasCat])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -183,6 +189,7 @@ export default function ReporteRecibosIngreso() {
         </select>
         <FiltroAgrupadorCentro centros={centros} agrupadores={agrupadores} filtroAgr={filtroAgr} setFiltroAgr={setFiltroAgr}
           filtroCentro={filtroCentro} setFiltroCentro={setFiltroCentro} minWidth={220} />
+        <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={setFiltroZona} />
         <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)} style={{ width: 140 }} />
         <input className="input" type="date" value={filtroA}  onChange={e => setFiltroA(e.target.value)}  style={{ width: 140 }} />
         <button className="btn-ghost" onClick={fetchData}>
