@@ -69,6 +69,8 @@ export default function ReporteOPsPorClasificacionArticulos() {
   const [filtroArea, setFiltroArea]           = useState<string>('')
   const [filtroZona, setFiltroZona] = useState('')
   const zonasCat = useZonas()
+  // Zona es un nivel intermedio solo bajo el centro que la usa
+  useEffect(() => { if (!zonasCat.ccUsaZonas(filtroCC)) setFiltroZona('') }, [filtroCC, zonasCat])
   const [filtroProv, setFiltroProv]           = useState<string>('')
   const [filtroCategoria, setFiltroCategoria] = useState<string>('')
   const [filtroDe, setFiltroDe]               = useState<string>('')
@@ -317,7 +319,7 @@ export default function ReporteOPsPorClasificacionArticulos() {
           <option value="">Todos los CC</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFiltroArea('') }} />
+        {zonasCat.ccUsaZonas(filtroCC) && <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFiltroArea('') }} />}
         <select className="select" style={{ fontSize: 12, padding: '5px 8px', width: 140, flex: '0 0 auto' }} value={filtroArea} onChange={e => setFiltroArea(e.target.value)} disabled={areasDelCC.length === 0}>
           <option value="">Todas las áreas</option>
           {areasDelCC.filter(a => zonasCat.areaEnZona(filtroZona, a.id)).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}

@@ -91,6 +91,8 @@ export default function CXPPage() {
   const [filterArea, setFilterArea]     = useState('')
   const [filtroZona, setFiltroZona] = useState('')
   const zonasCat = useZonas()
+  // Zona es un nivel intermedio solo bajo el centro que la usa
+  useEffect(() => { if (!zonasCat.ccUsaZonas(filterCC)) setFiltroZona('') }, [filterCC, zonasCat])
   const [filterFrente, setFilterFrente] = useState('')
 
   const fetchData = useCallback(async () => {
@@ -283,7 +285,7 @@ export default function CXPPage() {
           <option value="">Todos los CC</option>
           {centros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <SelectZona className="input" zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFilterArea('') }} />
+        {zonasCat.ccUsaZonas(filterCC) && <SelectZona className="input" zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFilterArea('') }} />}
         <select className="input" style={{ width: 200 }} value={filterArea} onChange={e => setFilterArea(e.target.value)}>
           <option value="">Todas las áreas</option>
           {areasFiltro.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}

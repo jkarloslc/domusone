@@ -103,9 +103,10 @@ const CATALOGOS: CatConfig[] = [
     label: 'Centros de Costo',
     icon:  DollarSign,
     color: '#059669',
-    desc:  'Centros de costo para clasificación de compras y mantenimiento',
+    desc:  'Centros de costo para clasificación de compras y mantenimiento. "Usa Zonas" agrega el nivel Zona entre el CC y sus Áreas (CC → Zona → Área).',
     campos: [
-      { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
+      { key: 'nombre',    label: 'Nombre *',  type: 'text', required: true },
+      { key: 'usa_zonas', label: 'Usa Zonas', type: 'boolean' },
     ],
   },
   {

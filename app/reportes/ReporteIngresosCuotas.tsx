@@ -43,6 +43,8 @@ export default function ReporteIngresosCuotas() {
   const [filtroA,      setFiltroA]      = useState('')
   const [filtroZona,   setFiltroZona]   = useState('')
   const zonasCat = useZonas()
+  // Zona es un nivel intermedio solo bajo el centro que la usa
+  useEffect(() => { if (!zonasCat.ciUsaZonas(filtroCentro)) setFiltroZona('') }, [filtroCentro, zonasCat])
 
   const centrosCuotas = centros.filter(c => esCentroCuotas(c) && c.tipo_desglose === 'secciones')
   const centroMap     = Object.fromEntries(centros.map(c => [c.id, c]))
@@ -157,7 +159,7 @@ export default function ReporteIngresosCuotas() {
         </select>
         <FiltroAgrupadorCentro centros={centrosCuotas} agrupadores={agrupadores} filtroAgr={filtroAgr} setFiltroAgr={setFiltroAgr}
           filtroCentro={filtroCentro} setFiltroCentro={setFiltroCentro} textoTodos="Todos los centros de cuotas" minWidth={220} />
-        <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={setFiltroZona} />
+        {zonasCat.ciUsaZonas(filtroCentro) && <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={setFiltroZona} />}
         <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)} style={{ width: 140 }} />
         <input className="input" type="date" value={filtroA}  onChange={e => setFiltroA(e.target.value)}  style={{ width: 140 }} />
         <button className="btn-ghost" onClick={fetchData}>

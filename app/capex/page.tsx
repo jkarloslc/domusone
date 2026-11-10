@@ -114,6 +114,8 @@ export default function CapexPage() {
   const [filterArea, setFilterArea] = useState('')
   const [filtroZona, setFiltroZona] = useState('')
   const zonasCat = useZonas()
+  // Zona es un nivel intermedio solo bajo el centro que la usa
+  useEffect(() => { if (!zonasCat.ccUsaZonas(filterCC)) setFiltroZona('') }, [filterCC, zonasCat])
   const [filterTipo, setFilterTipo] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
 
@@ -217,7 +219,7 @@ export default function CapexPage() {
             <option value="">Todos los CC</option>
             {ccs.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
           </select>
-          <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFilterArea('') }} />
+          {zonasCat.ccUsaZonas(filterCC) && <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFilterArea('') }} />}
           <select className="select" style={{ width: 150 }} value={filterArea} onChange={e => setFilterArea(e.target.value)} disabled={!filterCC && !filtroZona}>
             <option value="">Todas las Áreas</option>
             {areasFiltradas.filter(a => zonasCat.areaEnZona(filtroZona, a.id)).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}

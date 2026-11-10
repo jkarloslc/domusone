@@ -532,7 +532,7 @@ export default function ComparativoPage() {
   // Un centro puede tener partidas por sección Y por concepto (Mantto.
   // Fraccionamiento: cuotas por sección + otros ingresos por concepto), así
   // que se muestra cada desglose que tenga datos, no el `tipo_desglose` del centro.
-  const esSecciones = (!!filtroCentroIng || !!filtroZonaIng) && seccionesOpts.length > 0
+  const esSecciones = !!filtroCentroIng && seccionesOpts.length > 0
   const esConceptos = !!filtroCentroIng && conceptosOpts.length > 0
   const hayFiltroIng = !!(filtroAgrIng || filtroCentroIng || filtroZonaIng || filtroSeccion || filtroConcepto)
   const hayFiltroEgr = !!(filtroCC || filtroZonaEgr || filtroArea)
@@ -923,7 +923,7 @@ export default function ComparativoPage() {
           <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
             {agrupadoresIngOpts.length > 0 && (
               <select value={filtroAgrIng}
-                onChange={e => { setFiltroAgrIng(e.target.value); setFiltroCentroIng(''); setFiltroSeccion(''); setFiltroConcepto('') }}
+                onChange={e => { setFiltroAgrIng(e.target.value); setFiltroCentroIng(''); setFiltroZonaIng(''); setFiltroSeccion(''); setFiltroConcepto('') }}
                 style={selStyle(!!filtroAgrIng, ING, 140)}>
                 <option value="">Todos los agrupadores</option>
                 {agrupadoresIngOpts.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
@@ -931,12 +931,12 @@ export default function ComparativoPage() {
               </select>
             )}
             <select value={filtroCentroIng}
-              onChange={e => { setFiltroCentroIng(e.target.value); setFiltroSeccion(''); setFiltroConcepto('') }}
+              onChange={e => { setFiltroCentroIng(e.target.value); setFiltroZonaIng(''); setFiltroSeccion(''); setFiltroConcepto('') }}
               style={selStyle(!!filtroCentroIng, ING, 170)}>
               <option value="">Todos los centros</option>
               {centrosIngOpts.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
             </select>
-            {zonasIngOpts.length > 0 && (
+            {zonasCat.ciUsaZonas(filtroCentroIng) && zonasIngOpts.length > 0 && (
               <select value={filtroZonaIng} onChange={e => { setFiltroZonaIng(e.target.value); setFiltroSeccion(''); setFiltroConcepto('') }}
                 style={selStyle(!!filtroZonaIng, ING, 130)} title="Zona → Sección">
                 <option value="">Todas las zonas</option>
@@ -976,19 +976,19 @@ export default function ComparativoPage() {
           </span>
           <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
             <select value={filtroCC}
-              onChange={e => { setFiltroCC(e.target.value); setFiltroArea('') }}
+              onChange={e => { setFiltroCC(e.target.value); setFiltroZonaEgr(''); setFiltroArea('') }}
               style={selStyle(!!filtroCC, EGR, 148)}>
               <option value="">Todos los CC</option>
               {centrosCostoOpts.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
-            {zonasEgrOpts.length > 0 && (
+            {zonasCat.ccUsaZonas(filtroCC) && zonasEgrOpts.length > 0 && (
               <select value={filtroZonaEgr} onChange={e => { setFiltroZonaEgr(e.target.value); setFiltroArea('') }}
                 style={selStyle(!!filtroZonaEgr, EGR, 130)} title="Zona → Área">
                 <option value="">Todas las zonas</option>
                 {zonasEgrOpts.map(z => <option key={z.id} value={z.id}>{z.nombre}</option>)}
               </select>
             )}
-            {(filtroCC || filtroZonaEgr) && (
+            {filtroCC && (
               <select value={filtroArea} onChange={e => setFiltroArea(e.target.value)}
                 style={selStyle(!!filtroArea, EGR, 130)}>
                 <option value="">Todas las áreas</option>

@@ -34,6 +34,8 @@ export default function ReporteOrdenesTrabajo() {
   const [filtroArea,    setFiltroArea]    = useState('')
   const [filtroZona, setFiltroZona] = useState('')
   const zonasCat = useZonas()
+  // Zona es un nivel intermedio solo bajo el centro que la usa
+  useEffect(() => { if (!zonasCat.ccUsaZonas(filtroCc)) setFiltroZona('') }, [filtroCc, zonasCat])
   const [filtroFr,     setFiltroFr]     = useState('')
   const [filtroPrio,   setFiltroPrio]   = useState('')
   const [filtroDe,     setFiltroDe]     = useState('')
@@ -99,7 +101,7 @@ export default function ReporteOrdenesTrabajo() {
           <option value="">Todos los centros de costo</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFiltroArea('') }} />
+        {zonasCat.ccUsaZonas(filtroCc) && <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFiltroArea('') }} />}
         <select className="select" style={{ width: 'auto', minWidth: 160 }} value={filtroArea} onChange={e => { setFiltroArea(e.target.value); setFiltroFr('') }}>
           <option value="">Todas las áreas</option>
           {(areas as any[])

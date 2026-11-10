@@ -30,6 +30,8 @@ export default function ReporteOTFinanciero() {
   const [fArea,    setFArea]    = useState('')
   const [filtroZona, setFiltroZona] = useState('')
   const zonasCat = useZonas()
+  // Zona es un nivel intermedio solo bajo el centro que la usa
+  useEffect(() => { if (!zonasCat.ccUsaZonas(fCc)) setFiltroZona('') }, [fCc, zonasCat])
   const [fDe,      setFDe]      = useState('')
   const [fA,       setFA]       = useState('')
 
@@ -132,7 +134,7 @@ export default function ReporteOTFinanciero() {
           <option value="">Centro de Costo</option>
           {centrosCosto.map((c: any) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFArea('') }} />
+        {zonasCat.ccUsaZonas(fCc) && <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFArea('') }} />}
         <select className="select" style={{ fontSize: 12, height: 28, padding: '2px 8px', minWidth: 160 }}
           value={fArea} onChange={e => setFArea(e.target.value)}>
           <option value="">Área</option>

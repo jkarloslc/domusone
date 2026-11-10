@@ -34,6 +34,8 @@ export default function RequisicionesPage() {
   const [filterArea, setFilterArea] = useState('')
   const [filtroZona, setFiltroZona] = useState('')
   const zonasCat = useZonas()
+  // Zona es un nivel intermedio solo bajo el centro que la usa
+  useEffect(() => { if (!zonasCat.ccUsaZonas(filterCC)) setFiltroZona('') }, [filterCC, zonasCat])
   const [filterFechaDesde, setFilterFechaDesde] = useState('')
   const [filterFechaHasta, setFilterFechaHasta] = useState('')
   const [ccFiltros, setCcFiltros] = useState<{ id: number; nombre: string }[]>([])
@@ -154,7 +156,7 @@ export default function RequisicionesPage() {
             <option value="">Todos los centros de costo</option>
             {ccFiltros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
           </select>
-          <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFilterArea(''); setPage(0) }} />
+          {zonasCat.ccUsaZonas(filterCC) && <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFilterArea(''); setPage(0) }} />}
           <select className="select" style={{ width: 200 }} value={filterArea}
             onChange={e => { setFilterArea(e.target.value); setPage(0) }}>
             <option value="">Todas las áreas</option>

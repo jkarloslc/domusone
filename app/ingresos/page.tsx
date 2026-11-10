@@ -1207,6 +1207,9 @@ export default function IngresosPage() {
   const [filterZona, setFilterZona]     = useState('')
   const [filterSeccion, setFilterSeccion] = useState('')
   const zonasCat = useZonas()
+  // CI de cuotas (Mantto. Fraccionamiento) → Zona → Sección
+  const ciZona = zonasCat.ciUsaZonas(filterCentro)
+  useEffect(() => { if (!ciZona) { setFilterZona(''); setFilterSeccion('') } }, [ciZona])
   const [filterFechaIni, setFilterFechaIni] = useState('')
   const [filterFechaFin, setFilterFechaFin] = useState('')
   const [loading, setLoading]   = useState(true)
@@ -1298,11 +1301,13 @@ export default function IngresosPage() {
         <FiltroAgrupadorCentro centros={centrosPermitidos as any} agrupadores={agrupadores} minWidth={200}
           filtroAgr={filterAgr} setFiltroAgr={v => { setFilterAgr(v); setPage(0) }}
           filtroCentro={filterCentro} setFiltroCentro={v => { setFilterCentro(v); setPage(0) }} />
-        <SelectZona zonas={zonasCat.zonas} value={filterZona} onChange={v => { setFilterZona(v); setFilterSeccion(''); setPage(0) }} />
-        <select className="select" style={{ width: 'auto', minWidth: 160 }} value={filterSeccion} onChange={e => { setFilterSeccion(e.target.value); setPage(0) }}>
-          <option value="">Todas las secciones</option>
-          {secciones.filter(x => zonasCat.seccionEnZona(filterZona, x.id)).map(x => <option key={x.id} value={x.id}>{x.nombre}</option>)}
-        </select>
+        {ciZona && <>
+          <SelectZona zonas={zonasCat.zonas} value={filterZona} onChange={v => { setFilterZona(v); setFilterSeccion(''); setPage(0) }} />
+          <select className="select" style={{ width: 'auto', minWidth: 160 }} value={filterSeccion} onChange={e => { setFilterSeccion(e.target.value); setPage(0) }}>
+            <option value="">Todas las secciones</option>
+            {secciones.filter(x => zonasCat.seccionEnZona(filterZona, x.id)).map(x => <option key={x.id} value={x.id}>{x.nombre}</option>)}
+          </select>
+        </>}
         <select className="select" style={{ width: 150 }} value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(0) }}>
           <option value="">Todos los status</option>
           <option value="Confirmado">Confirmado</option>

@@ -5,9 +5,13 @@
 //     (respaldo: cfg.secciones.id_cuadrante_fk si la tabla puente aún no existe)
 //   - Área ↔ Zona:    N:M vía cfg.rel_area_cuadrante (un área puede cubrir varias zonas)
 //   - Lote → Zonas:   derivado de su sección
+// Jerarquía de filtros: Zona solo aparece bajo un centro que la usa:
+//   Costos:   Centro de Costo (usa_zonas) → Zona → Área
+//   Ingresos: Centro de Ingreso de cuotas con desglose por secciones → Zona → Sección
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { dbCfg } from '@/lib/supabase'
+import { cargarCentrosAgrupados, esCentroCuotas } from '@/lib/centrosIngreso'
 
 export type Zona = { id: number; nombre: string; color: string | null }
 
@@ -15,6 +19,8 @@ type ZonasData = {
   zonas: Zona[]
   secZonas: Map<number, number[]>       // id_seccion → [id_zona]
   areaZonas: Map<number, number[]>      // id_area → [id_zona]
+  ccsZona: Set<number>                  // CC que usan Zona
+  cisZona: Set<number>                  // CI que usan Zona
 }
 
 let cache: Promise<ZonasData> | null = null
@@ -26,7 +32,12 @@ function cargar(): Promise<ZonasData> {
       dbCfg.from('secciones').select('id, id_cuadrante_fk'),
       dbCfg.from('rel_area_cuadrante').select('id_area, id_cuadrante'),
       dbCfg.from('rel_seccion_cuadrante').select('id_seccion, id_cuadrante'),
-    ]).then(([z, s, r, rs]) => {
+      // Migración usa_zonas pendiente → respaldo: el CC de Mantto. Fraccionamiento
+      dbCfg.from('centros_costo').select('id, usa_zonas').then(async (r: any) => r.error
+        ? { data: ((await dbCfg.from('centros_costo').select('id, nombre')).data ?? []).map((c: any) => ({ id: c.id, usa_zonas: /fraccionamiento/i.test(c.nombre) })) }
+        : r),
+      cargarCentrosAgrupados('tipo_desglose'),
+    ]).then(([z, s, r, rs, cc, ci]) => {
       if (z.error || s.error || r.error) {
         console.error('zonas:', z.error?.message, s.error?.message, r.error?.message)
         cache = null
@@ -45,7 +56,9 @@ function cargar(): Promise<ZonasData> {
       }
       // Orden natural ("2 - …" antes que "10 - …")
       const zonas = ((z.data ?? []) as Zona[]).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { numeric: true }))
-      return { zonas, secZonas, areaZonas }
+      const ccsZona = new Set<number>(((cc as any).data ?? []).filter((c: any) => c.usa_zonas).map((c: any) => Number(c.id)))
+      const cisZona = new Set<number>(ci.centros.filter((c: any) => esCentroCuotas(c) && c.tipo_desglose === 'secciones').map(c => c.id))
+      return { zonas, secZonas, areaZonas, ccsZona, cisZona }
     })
   }
   return cache
@@ -55,11 +68,11 @@ function cargar(): Promise<ZonasData> {
 export function invalidarZonas() { cache = null }
 
 export function useZonas() {
-  const [data, setData] = useState<ZonasData>({ zonas: [], secZonas: new Map(), areaZonas: new Map() })
+  const [data, setData] = useState<ZonasData>({ zonas: [], secZonas: new Map(), areaZonas: new Map(), ccsZona: new Set(), cisZona: new Set() })
   useEffect(() => { let vivo = true; cargar().then(d => { if (vivo) setData(d) }); return () => { vivo = false } }, [])
 
   return useMemo(() => {
-    const { zonas, secZonas, areaZonas } = data
+    const { zonas, secZonas, areaZonas, ccsZona, cisZona } = data
     /** ids de secciones de la zona (null si no hay zona seleccionada) */
     const seccionesDeZona = (zona: string | number | null | undefined): Set<number> | null => {
       if (!zona) return null
@@ -81,7 +94,11 @@ export function useZonas() {
     /** Zonas de una sección (y de sus lotes) */
     const zonasDeSeccion = (idSeccion: number | null | undefined): Zona[] =>
       idSeccion != null ? zonas.filter(z => (secZonas.get(Number(idSeccion)) ?? []).includes(z.id)) : []
-    return { zonas, seccionesDeZona, areasDeZona, seccionEnZona, areaEnZona, zonasDeSeccion }
+    /** El nivel Zona aplica bajo este Centro de Costo */
+    const ccUsaZonas = (cc: string | number | null | undefined) => !!cc && ccsZona.has(Number(cc))
+    /** El nivel Zona aplica bajo este Centro de Ingreso */
+    const ciUsaZonas = (ci: string | number | null | undefined) => !!ci && cisZona.has(Number(ci))
+    return { zonas, seccionesDeZona, areasDeZona, seccionEnZona, areaEnZona, zonasDeSeccion, ccUsaZonas, ciUsaZonas }
   }, [data])
 }
 

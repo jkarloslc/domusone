@@ -45,7 +45,11 @@ Vehículos y Maquinaria, Equipo y Herramienta (con combustible, bitácoras, pré
 - Solo cambió el nombre visible: la tabla sigue siendo `cfg.cuadrantes` y las columnas `id_cuadrante_fk`.
 - Zona agrupa **Secciones** (N:M, `cfg.rel_seccion_cuadrante`, migr. `20261110120000`; `cfg.secciones.id_cuadrante_fk` queda como respaldo legado) y **Áreas** (N:M, `cfg.rel_area_cuadrante`). El **Lote** hereda las zonas de su sección (no tiene columna propia); una sección en 2 zonas cuenta en ambas.
 - `lib/zonas.tsx`: `useZonas()` (`seccionEnZona`, `areaEnZona`, `seccionesDeZona`, `areasDeZona`, `zonaDeSeccion`) + `<SelectZona>`. Llamar `invalidarZonas()` al editar el catálogo.
-- Filtro Zona → Sección en páginas de ingresos y Zona → Área en páginas de costos. Al crear una página nueva con filtro de Sección o Área, agregar Zona antes.
+- Jerarquía de filtros (Zona es nivel intermedio, solo bajo el centro que la usa):
+  - Costos: **CC → Zona → Área**, solo si el CC tiene `cfg.centros_costo.usa_zonas` (migr. `20261110130000`; hoy Mantto. Fraccionamiento). `zonasCat.ccUsaZonas(cc)`.
+  - Ingresos: **CI → Zona → Sección**, solo si el CI es de cuotas (agrupador `es_cuotas_fraccionamiento`) con `tipo_desglose='secciones'`. `zonasCat.ciUsaZonas(ci)`.
+  - Al cambiar de centro se limpia la Zona. Páginas sin filtro de CC (Consumo por Sección/Frente, Combustible) muestran Zona directo.
+- Al crear una página nueva con filtro de Sección o Área, seguir esta jerarquía.
 
 ## Ramas
 - Rama principal: `main`
