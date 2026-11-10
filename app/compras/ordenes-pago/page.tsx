@@ -1106,6 +1106,14 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
     setSaving(false); onSaved()
   }
 
+  // Captura CC → Zona → Área (Zona solo si el CC la usa; se guarda en id_cuadrante_fk)
+  // Hooks ANTES de los returns anticipados (paso consumo / elegir con-sin OC): si no, React #310
+  const zonasCap = useZonas()
+  const [zonaCap, setZonaCap] = useState<string>(opEdit?.id_cuadrante_fk?.toString() ?? '')
+  useEffect(() => {
+    if (!zonaCap && form.id_area_fk) { const z = zonasCap.zonaUnicaDeArea(form.id_area_fk); if (z) setZonaCap(String(z)) }
+  }, [zonasCap]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Paso consumo — aparece tras guardar OP con proveedor id=75
   if (savedOpForConsumo) {
     return (
@@ -1143,16 +1151,10 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
     )
   }
 
-  // Captura CC → Zona → Área (Zona solo si el CC la usa; se guarda en id_cuadrante_fk)
-  const zonasCap = useZonas()
-  const [zonaCap, setZonaCap] = useState<string>(opEdit?.id_cuadrante_fk?.toString() ?? '')
   // Solo se manda la columna si hay valor o la OP ya la tenía (tolera migración pendiente)
   const conZonaCol = (v: number | null) => (v != null || (opEdit && 'id_cuadrante_fk' in opEdit)) ? { id_cuadrante_fk: v } : {}
   const zonaDeLinea = (l: { zona?: string; id_area_fk: string }) =>
     lineasConZona ? (Number(l.zona ?? zonasCap.zonaUnicaDeArea(l.id_area_fk) ?? '') || null) : null
-  useEffect(() => {
-    if (!zonaCap && form.id_area_fk) { const z = zonasCap.zonaUnicaDeArea(form.id_area_fk); if (z) setZonaCap(String(z)) }
-  }, [zonasCap]) // eslint-disable-line react-hooks/exhaustive-deps
   const areasDelCCCap = ccAreas.filter(a => a.id_centro_costo_fk === Number(form.id_centro_costo_fk)).map(a => a.id)
   // Líneas de distribución de un solo CC (mismo CC o con OC): Zona por línea si ese CC usa zonas
   const lineasConZona = !(!conOC && modoDist === 'multi_cc') && zonasCap.ccUsaZonas(headerCCId)
