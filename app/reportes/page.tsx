@@ -76,6 +76,7 @@ import ReporteOPsPorClasificacionArticulos from './ReporteOPsPorClasificacionArt
 import ReporteCancelaciones from './ReporteCancelaciones'
 import ReporteComposicionIngresoCuotas from './ReporteComposicionIngresoCuotas'
 import ReporteVigilanciaNovedades from './ReporteVigilanciaNovedades'
+import ReporteValesCombustible from './ReporteValesCombustible'
 
 const GRUPOS = [
   {
@@ -123,6 +124,7 @@ const GRUPOS = [
       { id: 'programas-mantenimiento', label: 'Programas de Mantenimiento', icon: ClipboardList, desc: 'Costo y cumplimiento por zona, con desglose por programa y criticidad' },
       { id: 'colaboradores',          label: 'Colaboradores',               icon: Users,         desc: 'Personal operativo filtrable por zona, centro de costo y rol (asignado/supervisor)' },
       { id: 'mano-obra-real',         label: 'Mano de Obra Real',           icon: Wrench,        desc: 'Jornales y costo por trabajador real, agrupado por OT/Zona/Área o por Trabajador, con detalle drill-down' },
+      { id: 'vales-combustible-cc', label: 'Vales de Combustible por CC/Área/Frente', icon: Droplets, desc: 'Vales agrupados por Centro de Costo → Área → Frente: litros y monto autorizado, con detalle por vale y OP. Exporta a Excel' },
     ],
   },
   {
@@ -353,6 +355,7 @@ function ReportesContent() {
       {active === 'programas-mantenimiento' && <ReporteProgramasMantenimiento />}
       {active === 'colaboradores'           && <ReporteColaboradores />}
       {active === 'mano-obra-real'          && <ReporteManoDeObra />}
+      {active === 'vales-combustible-cc'    && <ReporteValesCombustible />}
 
       {/* Reportes HR */}
       {active === 'rol-pagos' && <ReporteRolPagos />}
