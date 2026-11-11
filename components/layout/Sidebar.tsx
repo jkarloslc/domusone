@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Home, Wrench, Zap, Building2, ShoppingCart,
-  BarChart3, Settings, LogOut, User, Users, X, Landmark,
+  BarChart3, Settings, LogOut, KeyRound, User, Users, X, Landmark,
   Flag, Truck, Hammer, DollarSign, CalendarDays, MessageCircle, LayoutDashboard, BookOpen, Store, Leaf, Briefcase,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
@@ -864,6 +864,19 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
             </div>
           </div>
         </div>
+        <a
+          href="/cambiar-password"
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+            padding: '7px 10px', color: 'rgba(255,255,255,0.45)', fontSize: 12, borderRadius: 6,
+            textDecoration: 'none', transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)' }}
+        >
+          <KeyRound size={13} />
+          Cambiar contraseña
+        </a>
         <button
           onClick={signOut}
           style={{

@@ -3,6 +3,12 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey  = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
+// Link de recuperación de contraseña: se lee ANTES de crear el cliente,
+// porque supabase-js limpia el hash (#...type=recovery) al procesarlo.
+export const esLinkRecuperacion =
+  typeof window !== 'undefined' &&
+  /type=recovery/.test(window.location.hash + window.location.search)
+
 const base = createClient(supabaseUrl, supabaseKey)
 
 export const supabase = base

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getHomeRouteByRole, useAuth } from '@/lib/AuthContext'
+import { supabase } from '@/lib/supabase'
 import { LogIn, Loader, Eye, EyeOff, X } from 'lucide-react'
 
 export default function LoginPage() {
@@ -15,6 +16,7 @@ export default function LoginPage() {
   // Marca Golf-One solo cuando se entra por golf-one.mx (se resuelve en el cliente)
   const [esClub, setEsClub]     = useState(false)
   const [verAviso, setVerAviso] = useState(false)
+  const [aviso, setAviso]       = useState('')
   useEffect(() => {
     const h = window.location.hostname.toLowerCase()
     setEsClub(h === 'golf-one.mx' || h.endsWith('.golf-one.mx'))
@@ -35,6 +37,18 @@ export default function LoginPage() {
       setSigning(false)
     }
     // La redirección la maneja el useEffect cuando authUser se actualiza
+  }
+
+  const recuperar = async () => {
+    setError(''); setAviso('')
+    if (!email) { setError('Escribe tu correo y vuelve a dar clic en “¿Olvidaste tu contraseña?”'); return }
+    setSigning(true)
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/cambiar-password`,
+    })
+    setSigning(false)
+    if (error) { setError(error.message); return }
+    setAviso('Si el correo está registrado, te llegará un enlace para definir una nueva contraseña.')
   }
 
   if (loading) return (
@@ -85,6 +99,12 @@ export default function LoginPage() {
             </div>
           )}
 
+          {aviso && (
+            <div style={{ padding: '10px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, color: '#15803d', fontSize: 13, marginBottom: 16 }}>
+              {aviso}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
               <label className="label">Correo electrónico</label>
@@ -127,6 +147,11 @@ export default function LoginPage() {
                 ? <><Loader size={14} className="animate-spin" /> Entrando…</>
                 : <><LogIn size={14} /> Entrar</>
               }
+            </button>
+
+            <button type="button" onClick={recuperar} disabled={signing}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 12, color: 'var(--blue)', textDecoration: 'underline', alignSelf: 'center' }}>
+              ¿Olvidaste tu contraseña?
             </button>
           </form>
         </div>

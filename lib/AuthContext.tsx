@@ -1,6 +1,6 @@
 'use client'
 import { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from './supabase'
+import { supabase, esLinkRecuperacion } from './supabase'
 import type { User } from '@supabase/supabase-js'
 
 type RolBase =
@@ -385,12 +385,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
+    // Link de "recuperar contraseña": mandar a la página para definir la nueva
+    // (si no, la app lo trata como login normal y lo lleva a su inicio)
+    const irACambiarPassword = (): boolean => {
+      if (window.location.pathname === '/cambiar-password') return false
+      window.location.replace('/cambiar-password')
+      return true
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user && esLinkRecuperacion && irACambiarPassword()) return
       if (session?.user) loadUsuario(session.user).finally(() => setLoading(false))
       else setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' && irACambiarPassword()) return
       if (session?.user) loadUsuario(session.user)
       else setAuthUser(null)
     })

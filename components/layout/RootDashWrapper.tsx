@@ -6,7 +6,7 @@ import DashLayout from '@/components/layout/DashLayout'
  * Rutas públicas que NO deben ir envueltas en DashLayout.
  * Todo lo demás es una ruta autenticada con sidebar.
  */
-const PUBLIC_PATHS = ['/', '/login']
+const PUBLIC_PATHS = ['/', '/login', '/cambiar-password']
 
 /**
  * Deriva el nombre de módulo a partir del pathname para que AuthGuard
