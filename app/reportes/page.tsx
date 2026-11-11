@@ -124,7 +124,7 @@ const GRUPOS = [
       { id: 'programas-mantenimiento', label: 'Programas de Mantenimiento', icon: ClipboardList, desc: 'Costo y cumplimiento por zona, con desglose por programa y criticidad' },
       { id: 'colaboradores',          label: 'Colaboradores',               icon: Users,         desc: 'Personal operativo filtrable por zona, centro de costo y rol (asignado/supervisor)' },
       { id: 'mano-obra-real',         label: 'Mano de Obra Real',           icon: Wrench,        desc: 'Jornales y costo por trabajador real, agrupado por OT/Zona/Área o por Trabajador, con detalle drill-down' },
-      { id: 'vales-combustible-cc', label: 'Vales de Combustible por CC/Área/Frente', icon: Droplets, desc: 'Vales agrupados por Centro de Costo → Área → Frente: litros y monto autorizado, con detalle por vale y OP. Exporta a Excel' },
+      { id: 'vales-combustible-cc', label: 'Vales de Combustible por Centro de Costo', icon: Droplets, desc: 'Vales agrupados por el centro de costo del vale: litros y monto autorizado, con detalle por vale y su OP. Exporta a Excel' },
     ],
   },
   {
