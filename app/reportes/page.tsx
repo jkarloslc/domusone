@@ -186,6 +186,7 @@ const GRUPOS = [
       { id: 'cxp-cc',            label: 'CXP por CC / Área / Frente', icon: Wallet, desc: 'Cuentas por pagar agrupadas por centro de costo, área y frente, con filtro de fechas' },
       { id: 'ops-tipo-gasto',    label: 'OPs por Tipo de Gasto',      icon: Wallet,       desc: 'Órdenes de pago sin OC vinculada, agrupadas por tipo de gasto capturado en el encabezado' },
       { id: 'ops-clasificacion-articulos', label: 'OPs por Clasificación de Artículos', icon: Tag, desc: 'Órdenes de pago con OC vinculada, repartidas por la categoría de los artículos realmente comprados' },
+      { id: 'vales-combustible-cc', label: 'Vales de Combustible por Centro de Costo', icon: Droplets, desc: 'Vales agrupados por el centro de costo del vale: litros y monto autorizado, con detalle por vale y su OP. Exporta a Excel' },
       { id: 'kardex',            label: 'Kardex de Movimientos',      icon: Warehouse,    desc: 'Historial de entradas y salidas de inventario' },
       { id: 'transferencias',  label: 'Transferencias',             icon: Package,      desc: 'Movimientos entre almacenes con filtros por origen, destino y fecha' },
       { id: 'ops-por-proveedor',        label: 'OPs por Proveedor',              icon: FileText,     desc: 'Órdenes de pago agrupadas por proveedor con totales y saldos pendientes' },
