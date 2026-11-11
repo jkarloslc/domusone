@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/AuthContext'
 import { resolverCategoriasPorOp } from '@/lib/pptoOcCategoria'
 import { prorratearDescuento } from '@/lib/prorateoDescuento'
 import { OPDetail } from '@/components/compras/OPDetailModal'
+import ReciboModal, { type Recibo, type Centro as CentroRecibo, type Seccion as SeccionRecibo } from '@/app/ingresos/ReciboModal'
 import { useRouter } from 'next/navigation'
 import { esComodin } from '@/lib/pptoComodin'
 import { cargarTiposGasto, armarCatalogo } from '@/lib/tiposGasto'
@@ -45,6 +46,7 @@ type DetalleTransaccion = {
   folio?: string | null; id_proveedor_fk?: number | null
   tipo_gasto?: string | null; descripcion?: string | null
   id_op_fk?: number | null
+  id_recibo_fk?: number | null
 }
 type DetMapTx = Record<number, DetalleTransaccion[]>
 type CentroIng    = CentroIngresoAgr
@@ -131,7 +133,7 @@ function MontoDrillButton({ monto, onClick, fmt }: { monto: number; onClick: () 
 
 // ── Página ────────────────────────────────────────────────────────────────────
 export default function FlujoEfectivoPage() {
-  const { canWrite } = useAuth()
+  const { canWrite, authUser } = useAuth()
   const router = useRouter()
   const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([])
   const [selId, setSelId]               = useState<number | null>(null)
@@ -154,6 +156,29 @@ export default function FlujoEfectivoPage() {
     setOpLoading(false)
     if (error || !data) { alert('No se pudo cargar la orden de pago.'); return }
     setOpDetalle({ ...data, _provNombre: proveedores.find(p => p.id === data.id_proveedor_fk)?.nombre })
+  }
+
+  // Detalle de recibo de ingreso (mismo modal que /ingresos). Catálogos se cargan al primer uso.
+  const [reciboDetalle, setReciboDetalle] = useState<Recibo | null>(null)
+  const [reciboCat, setReciboCat] = useState<{ centros: CentroRecibo[]; secciones: SeccionRecibo[] } | null>(null)
+  const abrirRecibo = async (id: number) => {
+    setOpLoading(true)
+    try {
+      const [{ data, error }, cat] = await Promise.all([
+        dbCtrl.from('recibos_ingreso').select('*').eq('id', id).single(),
+        reciboCat ?? Promise.all([
+          cargarCentrosAgrupados('*', q => q.eq('activo', true)),
+          dbCfg.from('secciones').select('id, nombre, clave_alfa').eq('activo', true).order('nombre'),
+        ]).then(([{ centros: cs }, { data: ss }]) => ({
+          centros: cs as unknown as CentroRecibo[], secciones: (ss ?? []) as SeccionRecibo[],
+        })),
+      ])
+      if (error || !data) { alert('No se pudo cargar el recibo de ingreso.'); return }
+      setReciboCat(cat)
+      setReciboDetalle(data as Recibo)
+    } finally {
+      setOpLoading(false)
+    }
   }
 
   // Catálogos para filtro por CC/Sección (ingresos) y CC/Área (egresos) — mismo modelo que /dashboards/financiero
@@ -236,7 +261,7 @@ export default function FlujoEfectivoPage() {
     const [{ data: secData }, { data: concData }, { data: abonosData }] = await Promise.all([
       secIds.length > 0
         ? (dbCtrl.from('recibos_ingreso_secciones') as any)
-            .select('id_seccion_fk, monto, recibos_ingreso!inner(status, fecha, folio, descripcion)')
+            .select('id_seccion_fk, monto, recibos_ingreso!inner(id, status, fecha, folio, descripcion)')
             .in('id_seccion_fk', secIds)
             .eq('recibos_ingreso.status', 'Confirmado')
             .gte('recibos_ingreso.fecha', `${anio}-01-01`)
@@ -244,7 +269,7 @@ export default function FlujoEfectivoPage() {
         : Promise.resolve({ data: [] }),
       concIds.length > 0
         ? (dbCtrl.from('recibos_ingreso_conceptos') as any)
-            .select('id_concepto_fk, monto, recibos_ingreso!inner(status, fecha, folio, descripcion)')
+            .select('id_concepto_fk, monto, recibos_ingreso!inner(id, status, fecha, folio, descripcion)')
             .in('id_concepto_fk', concIds)
             .eq('recibos_ingreso.status', 'Confirmado')
             .gte('recibos_ingreso.fecha', `${anio}-01-01`)
@@ -348,7 +373,7 @@ export default function FlujoEfectivoPage() {
         .forEach((r: any) => {
           const mes = new Date(r.recibos_ingreso.fecha + 'T12:00:00').getMonth() + 1
           rm[p.id][mes] = (rm[p.id][mes] ?? 0) + Number(r.monto)
-          rd[p.id].push({ fecha: r.recibos_ingreso.fecha, monto: Number(r.monto), folio: r.recibos_ingreso.folio, descripcion: r.recibos_ingreso.descripcion })
+          rd[p.id].push({ fecha: r.recibos_ingreso.fecha, monto: Number(r.monto), folio: r.recibos_ingreso.folio, descripcion: r.recibos_ingreso.descripcion, id_recibo_fk: r.recibos_ingreso.id })
         })
     })
 
@@ -360,7 +385,7 @@ export default function FlujoEfectivoPage() {
         .forEach((r: any) => {
           const mes = new Date(r.recibos_ingreso.fecha + 'T12:00:00').getMonth() + 1
           rm[p.id][mes] = (rm[p.id][mes] ?? 0) + Number(r.monto)
-          rd[p.id].push({ fecha: r.recibos_ingreso.fecha, monto: Number(r.monto), folio: r.recibos_ingreso.folio, descripcion: r.recibos_ingreso.descripcion })
+          rd[p.id].push({ fecha: r.recibos_ingreso.fecha, monto: Number(r.monto), folio: r.recibos_ingreso.folio, descripcion: r.recibos_ingreso.descripcion, id_recibo_fk: r.recibos_ingreso.id })
         })
     })
 
@@ -1213,6 +1238,13 @@ export default function FlujoEfectivoPage() {
                               fontFamily: 'inherit', fontSize: 'inherit', cursor: opLoading ? 'default' : 'pointer', textDecoration: 'underline' }}>
                             {r.folio ?? '—'}
                           </button>
+                        ) : r.id_recibo_fk ? (
+                          <button onClick={() => abrirRecibo(r.id_recibo_fk!)} disabled={opLoading}
+                            title="Ver recibo de ingreso"
+                            style={{ background: 'none', border: 'none', padding: 0, color: '#2563eb', fontWeight: 600,
+                              fontFamily: 'inherit', fontSize: 'inherit', cursor: opLoading ? 'default' : 'pointer', textDecoration: 'underline' }}>
+                            {r.folio ?? `#${r.id_recibo_fk}`}
+                          </button>
                         ) : (r.folio ?? '—')}
                       </td>
                       <td style={{ ...td, color: '#475569' }}>
@@ -1248,6 +1280,18 @@ export default function FlujoEfectivoPage() {
           onCanceled={() => { setOpDetalle(null); selPpto && loadEverything(selPpto.id, selPpto.anio, selPpto.modulo, true) }}
           onAuthorized={() => { setOpDetalle(null); selPpto && loadEverything(selPpto.id, selPpto.anio, selPpto.modulo, true) }}
           onEdit={() => router.push('/compras/ordenes-pago')}
+        />
+      )}
+
+      {reciboDetalle && reciboCat && (
+        <ReciboModal
+          recibo={reciboDetalle}
+          centros={reciboCat.centros}
+          secciones={reciboCat.secciones}
+          onClose={() => setReciboDetalle(null)}
+          onSaved={() => { setReciboDetalle(null); setDrillOps(null); selPpto && loadEverything(selPpto.id, selPpto.anio, selPpto.modulo, true) }}
+          authUser={authUser}
+          canWrite={canWrite}
         />
       )}
     </div>
