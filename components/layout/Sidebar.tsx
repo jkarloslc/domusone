@@ -203,7 +203,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
-      { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
+      { label: 'Flujo de Efectivo', href: '/presupuestos',   icon: BookOpen      },
       { label: 'Reportes', href: '/reportes', icon: BarChart3 },
     ]},
     { section: 'Sistema', items: [
@@ -249,7 +249,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
-      { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
+      { label: 'Flujo de Efectivo', href: '/presupuestos',   icon: BookOpen      },
       { label: 'Reportes', href: '/reportes', icon: BarChart3 },
     ]},
     { section: 'Sistema', items: [
@@ -295,7 +295,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
-      { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
+      { label: 'Flujo de Efectivo', href: '/presupuestos',   icon: BookOpen      },
       { label: 'Reportes', href: '/reportes', icon: BarChart3 },
     ]},
     { section: 'Sistema', items: [
@@ -340,7 +340,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
-      { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
+      { label: 'Flujo de Efectivo', href: '/presupuestos',   icon: BookOpen      },
       { label: 'Reportes', href: '/reportes', icon: BarChart3 },
     ]},
     { section: 'Sistema', items: [
@@ -381,7 +381,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
-      { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
+      { label: 'Flujo de Efectivo', href: '/presupuestos',   icon: BookOpen      },
       { label: 'Reportes', href: '/reportes', icon: BarChart3 },
     ]},
     { section: 'Sistema', items: [
@@ -422,7 +422,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
-      { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
+      { label: 'Flujo de Efectivo', href: '/presupuestos',   icon: BookOpen      },
       { label: 'Reportes', href: '/reportes', icon: BarChart3 },
     ]},
     { section: 'Sistema', items: [
@@ -459,7 +459,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
-      { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
+      { label: 'Flujo de Efectivo', href: '/presupuestos',   icon: BookOpen      },
       { label: 'Reportes', href: '/reportes', icon: BarChart3 },
     ]},
     { section: 'Sistema', items: [
@@ -484,7 +484,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Finanzas', items: [
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
-      { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
+      { label: 'Flujo de Efectivo', href: '/presupuestos',   icon: BookOpen      },
       RPT('ingresos'),
     ]},
     { section: 'Sistema', items: [
@@ -580,7 +580,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
-      { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
+      { label: 'Flujo de Efectivo', href: '/presupuestos',   icon: BookOpen      },
       { label: 'Reportes', href: '/reportes', icon: BarChart3 },
     ]},
   ],
@@ -592,7 +592,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
-      { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
+      { label: 'Flujo de Efectivo', href: '/presupuestos',   icon: BookOpen      },
       { label: 'Reportes', href: '/reportes', icon: BarChart3 },
     ]},
   ],
@@ -687,7 +687,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
-      { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
+      { label: 'Flujo de Efectivo', href: '/presupuestos',   icon: BookOpen      },
     ]},
     { section: 'Sistema', items: [
       { label: 'Catálogos',      href: '/catalogos',      icon: Settings      },

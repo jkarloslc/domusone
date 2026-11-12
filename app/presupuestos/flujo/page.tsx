@@ -20,7 +20,26 @@ import { agruparPorArea, nombresDe } from '../agrupaArea'
 import GridMensual, { type CeldaInfo } from '../GridMensual'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
-type Presupuesto = { id: number; anio: number; nombre: string; status: string; modulo: string }
+type Presupuesto = { id: number; anio: number; nombre: string; status: string; modulo: string; ids?: number[] }
+
+// TODOS (consolidado): opción virtual por año, id = -anio, que agrupa todos los
+// presupuestos de ese año. Cada partida tiene montos en un solo presupuesto y
+// ninguna fuente de Real (sección, concepto, área+tipo de gasto) se repite
+// entre módulos, así que sumar el Presupuesto de todos y calcular el Real una
+// vez por partida no duplica nada. Las partidas se cargan de todos los módulos
+// (modulo 'General' en cargarPartidasPresupuesto).
+const idsPpto = (p: Presupuesto) => p.ids ?? [p.id]
+const esTodos = (p: Presupuesto | undefined) => !!p && p.id < 0
+function conConsolidados(list: Presupuesto[]): Presupuesto[] {
+  const out: Presupuesto[] = []
+  const anios = Array.from(new Set(list.map(p => p.anio)))
+  anios.forEach(anio => {
+    const delAnio = list.filter(p => p.anio === anio)
+    if (delAnio.length > 1) out.push({ id: -anio, anio, nombre: 'TODOS (consolidado)', status: '', modulo: 'General', ids: delAnio.map(p => p.id) })
+    out.push(...delAnio)
+  })
+  return out
+}
 type Clasificacion = 'operativo' | 'financiero' | 'intercompanias'
 type Partida     = {
   id: number; nombre: string; descripcion: string | null; tipo: 'ingreso' | 'egreso'; orden: number
@@ -217,17 +236,19 @@ export default function FlujoEfectivoPage() {
   const [manualConc,  setManualConc]  = useState('')
   const [savingManual, setSavingManual] = useState(false)
 
-  const loadEverything = useCallback(async (pptoId: number, anio: number, modulo: string, silent = false) => {
+  const loadEverything = useCallback(async (ppto: Presupuesto, silent = false) => {
+    const { anio, modulo } = ppto
+    const ids = idsPpto(ppto)
     if (!silent) setLoading(true); else setRefreshing(true)
 
     const [pData, { data: det }, { data: manual }] = await Promise.all([
       cargarPartidasPresupuesto<Partida>(
         'id, nombre, descripcion, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, id_tipo_gasto_fk, id_agrupador_fk, clasificacion, iva_pct',
-        pptoId, modulo, q => q.eq('incluir_flujo', true)),
+        ids[0], modulo, q => q.eq('incluir_flujo', true)),
       dbCtrl.from('ppto_presupuesto_det')
-        .select('id_partida_fk, mes, monto').eq('id_presupuesto_fk', pptoId),
+        .select('id_partida_fk, mes, monto').in('id_presupuesto_fk', ids),
       dbCtrl.from('ppto_presupuesto_real_manual')
-        .select('id_partida_fk, mes, monto').eq('id_presupuesto_fk', pptoId),
+        .select('id_partida_fk, mes, monto').in('id_presupuesto_fk', ids),
     ])
 
     const cat = armarCatalogo(await cargarTiposGasto())
@@ -241,7 +262,7 @@ export default function FlujoEfectivoPage() {
     const dm: DetMap = {}
     ;(det ?? []).forEach((r: any) => {
       if (!dm[r.id_partida_fk]) dm[r.id_partida_fk] = {}
-      dm[r.id_partida_fk][r.mes] = Number(r.monto) * (1 + (ivaPorPartida.get(r.id_partida_fk) ?? 16) / 100)
+      dm[r.id_partida_fk][r.mes] = (dm[r.id_partida_fk][r.mes] ?? 0) + Number(r.monto) * (1 + (ivaPorPartida.get(r.id_partida_fk) ?? 16) / 100)
     })
     setDetMap(dm)
 
@@ -441,11 +462,12 @@ export default function FlujoEfectivoPage() {
     dbCtrl.from('ppto_presupuestos').select('id, anio, nombre, status, modulo')
       .order('anio', { ascending: false }).order('nombre')
       .then(({ data }) => {
-        const list = (data ?? []) as Presupuesto[]
-        setPresupuestos(list)
+        const reales = (data ?? []) as Presupuesto[]
+        setPresupuestos(conConsolidados(reales))
+        const list = reales
         if (list.length > 0) {
           setSelId(list[0].id)
-          loadEverything(list[0].id, list[0].anio, list[0].modulo)
+          loadEverything(list[0])
         } else setLoading(false)
       })
     dbCtrl.from('ppto_agrupadores').select('id, nombre, orden').eq('activo', true).order('orden').order('nombre')
@@ -469,7 +491,7 @@ export default function FlujoEfectivoPage() {
   function onChangePpto(id: number) {
     setSelId(id)
     const p = presupuestos.find(x => x.id === id)
-    if (p) loadEverything(p.id, p.anio, p.modulo, true)
+    if (p) loadEverything(p, true)
     setFiltroAgrIng(''); setFiltroCentroIng(''); setFiltroSeccion(''); setFiltroConcepto('')
     setFiltroCC(''); setFiltroArea(''); setFiltroZonaIng(''); setFiltroZonaEgr('')
   }
@@ -508,23 +530,25 @@ export default function FlujoEfectivoPage() {
 
   // Carga los registros de real manual ya capturados para una partida
   const loadManualEntries = useCallback(async (pid: number) => {
-    if (!selId) return
+    const p = presupuestos.find(x => x.id === selId)
+    if (!p) return
     const { data } = await dbCtrl.from('ppto_presupuesto_real_manual')
       .select('id, mes, monto, concepto')
-      .eq('id_presupuesto_fk', selId).eq('id_partida_fk', pid)
+      .in('id_presupuesto_fk', idsPpto(p)).eq('id_partida_fk', pid)
       .order('mes')
     setManualEntries((data ?? []) as typeof manualEntries)
-  }, [selId])
+  }, [selId, presupuestos])
 
   function refreshManual() {
     const p = presupuestos.find(x => x.id === selId)
-    if (p) loadEverything(p.id, p.anio, p.modulo, true)
+    if (p) loadEverything(p, true)
     if (manualPid) loadManualEntries(manualPid)
   }
 
   // Agrega real manual
   async function saveManual() {
-    if (!manualPid || !selId) return
+    // En TODOS no hay un presupuesto destino: el Real manual se captura en el presupuesto del módulo.
+    if (!manualPid || !selId || selId < 0) return
     const monto = parseFloat(manualMonto.replace(/,/g, '')) || 0
     if (monto <= 0) return
     setSavingManual(true)
@@ -747,10 +771,10 @@ export default function FlujoEfectivoPage() {
       <PageHeader
         variant="xl"
         icon={Wallet}
-        eyebrowLabel="Presupuestos"
-        title="Flujo de Efectivo: Presupuestado vs Real"
+        eyebrowLabel="Flujo de Efectivo"
+        title="Flujo de Efectivo"
         subtitle={`${mesLabel} · ${selPpto?.nombre}`}
-        actions={<button className="btn-ghost" onClick={() => selPpto && loadEverything(selPpto.id, selPpto.anio, selPpto.modulo, true)}
+        actions={<button className="btn-ghost" onClick={() => selPpto && loadEverything(selPpto, true)}
           style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 10px' }}>
           <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
         </button>}
@@ -987,7 +1011,7 @@ export default function FlujoEfectivoPage() {
                     ingRows={ing} egrRows={egr}
                     ingRowsConcepto={agruparPorConcepto(ing, vista !== 'consolidado')} egrRowsConcepto={agruparPorConcepto(egr, vista !== 'consolidado')}
                     ingRowsAgrupado={agrupar(ing)} egrRowsAgrupado={agrupar(egr)}
-                    vista={vista} canWriteManual={canWrite('presupuestos')}
+                    vista={vista} canWriteManual={canWrite('presupuestos') && !esTodos(selPpto)}
                     {...nombres}
                     onManual={handleManual} onDrill={handleDrill} onDrillOps={handleDrillOps}
                   />
@@ -1095,6 +1119,11 @@ export default function FlujoEfectivoPage() {
               </div>
             )}
 
+            {esTodos(selPpto) ? (
+              <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>
+                En la vista TODOS el Real manual es de solo consulta. Para agregar, selecciona el presupuesto del módulo.
+              </p>
+            ) : (
             <div style={{ borderTop: manualEntries.length > 0 ? '1px solid #f1f5f9' : undefined, paddingTop: manualEntries.length > 0 ? 14 : 0 }}>
               <span style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 8 }}>
                 Agregar nuevo
@@ -1126,6 +1155,7 @@ export default function FlujoEfectivoPage() {
                 </button>
               </div>
             </div>
+            )}
           </div>
         </ModalShell>
       )}
@@ -1277,8 +1307,8 @@ export default function FlujoEfectivoPage() {
         <OPDetail
           op={opDetalle}
           onClose={() => setOpDetalle(null)}
-          onCanceled={() => { setOpDetalle(null); selPpto && loadEverything(selPpto.id, selPpto.anio, selPpto.modulo, true) }}
-          onAuthorized={() => { setOpDetalle(null); selPpto && loadEverything(selPpto.id, selPpto.anio, selPpto.modulo, true) }}
+          onCanceled={() => { setOpDetalle(null); selPpto && loadEverything(selPpto, true) }}
+          onAuthorized={() => { setOpDetalle(null); selPpto && loadEverything(selPpto, true) }}
           onEdit={() => router.push('/compras/ordenes-pago')}
         />
       )}
@@ -1289,7 +1319,7 @@ export default function FlujoEfectivoPage() {
           centros={reciboCat.centros}
           secciones={reciboCat.secciones}
           onClose={() => setReciboDetalle(null)}
-          onSaved={() => { setReciboDetalle(null); setDrillOps(null); selPpto && loadEverything(selPpto.id, selPpto.anio, selPpto.modulo, true) }}
+          onSaved={() => { setReciboDetalle(null); setDrillOps(null); selPpto && loadEverything(selPpto, true) }}
           authUser={authUser}
           canWrite={canWrite}
         />
