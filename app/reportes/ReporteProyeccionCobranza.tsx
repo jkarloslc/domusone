@@ -187,6 +187,9 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
   // Flujo de cobranza del mes (cobrado / anticipado / vencido)
   const [cobrosMesAll, setCobrosMes] = useState<CobroRow[]>([])
   const [vencidosAll, setVencidos]   = useState<CobroRow[]>([])
+  // Cartera vencida al corte (cierre del mes «Al mes» del flujo, que por default
+  // sigue al «Período (mes)» general).
+  const [vencidosCorteAll, setVencidosCorte] = useState<(CobroRow & { saldo_corte: number })[]>([])
   const [loadingFlujo, setLoadingFlujo] = useState(false)
 
   // Rango propio del Flujo de Cobranza ('YYYY-MM'). Mientras no se toque, sigue
@@ -207,7 +210,7 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
     const hoyStr = new Date().toLocaleDateString('en-CA')
     const selectCols = `id, tipo, concepto, periodo, monto_final, saldo, status, fecha_pago, fecha_vencimiento, ${cfg.selectJoin}`
 
-    const [{ data: dCobros }, { data: dVencidos }] = await Promise.all([
+    const [{ data: dCobros }, { data: dVencidos }, { data: dCorte }] = await Promise.all([
       cfg.db.from(cfg.tabla).select(selectCols)
         .in('tipo', cfg.tipos)
         .neq('status', 'CANCELADO')
@@ -218,6 +221,14 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
         .in('tipo', cfg.tipos)
         .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
         .lt('fecha_vencimiento', hoyStr)
+        .order('fecha_vencimiento'),
+      // Vencidas al corte: vencimiento <= fin de mes y que a esa fecha seguían
+      // sin cobrar — hoy pendientes/parciales, o pagadas DESPUÉS del corte.
+      cfg.db.from(cfg.tabla).select(selectCols)
+        .in('tipo', cfg.tipos)
+        .neq('status', 'CANCELADO')
+        .lte('fecha_vencimiento', fin)
+        .or(`status.in.(PENDIENTE,PAGO_PARCIAL),fecha_pago.gt.${fin}`)
         .order('fecha_vencimiento'),
     ])
 
@@ -230,6 +241,14 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
 
     setCobrosMes(normalizar((dCobros as any[]) ?? []))
     setVencidos(normalizar((dVencidos as any[]) ?? []))
+    // Saldo al corte: si el (último) pago fue después del corte, a esa fecha se
+    // debía el cargo completo; si no, el saldo vigente. No hay historial de
+    // abonos por cuota en las 4 fuentes, así que una cuota con abono parcial
+    // antes del corte y liquidada después se cuenta por su monto total.
+    setVencidosCorte(normalizar((dCorte as any[]) ?? []).map(c => ({
+      ...c,
+      saldo_corte: c.fecha_pago && c.fecha_pago > fin ? c.monto_final : (c.saldo ?? c.monto_final),
+    })))
     setLoadingFlujo(false)
   }, [flujoDesde, flujoHasta, cfg])
 
@@ -281,6 +300,7 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
   const filas     = clienteSel ? filasAll.filter(f => f.cliente === clienteSel) : filasAll
   const cobrosMes = clienteSel ? cobrosMesAll.filter(c => c.cliente === clienteSel) : cobrosMesAll
   const vencidos  = clienteSel ? vencidosAll.filter(c => c.cliente === clienteSel) : vencidosAll
+  const vencidosCorte = clienteSel ? vencidosCorteAll.filter(c => c.cliente === clienteSel) : vencidosCorteAll
   const clientesOpc = Array.from(new Set([...filasAll, ...cobrosMesAll, ...vencidosAll].map(r => r.cliente).filter(c => c && c !== '—')))
     .sort((a, b) => a.localeCompare(b, 'es'))
     .filter(c => !pickerQ.trim() || c.toLowerCase().includes(pickerQ.trim().toLowerCase()))
@@ -344,6 +364,10 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
   // Ojo: este es un SALDO a hoy (stock de cartera), no un flujo del mes — no
   // suma con los anteriores. Va rotulado como tal en la UI.
   const totalVencidoFlujo = vencidos.reduce((a, c) => a + (c.saldo ?? c.monto_final), 0)
+  const corteFin   = rangoMes(flujoHasta).fin
+  const corteTxt   = new Date(corteFin + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+  const corteFuturo = corteFin >= new Date().toLocaleDateString('en-CA')
+  const totalVencidoCorte = vencidosCorte.reduce((a, c) => a + c.saldo_corte, 0)
 
   const porDia = cobrosMes.reduce((acc, c) => {
     const f = c.fecha_pago ?? '—'
@@ -561,6 +585,7 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
             { label: flujoDesde === flujoHasta ? 'Corriente del mes' : 'Corriente', value: fmt$(totalCorriente),    sub: `${corrienteRows.length} cuota${corrienteRows.length !== 1 ? 's' : ''} de su propio mes de cobro`, color: '#16a34a', bg: '#f0fdf4', icon: CheckCircle },
             { label: 'Vencido recuperado', value: fmt$(totalVencidaRec),  sub: `${vencidaRows.length} de periodos anteriores`,        color: '#ea580c', bg: '#fff7ed', icon: Clock },
             { label: 'Anticipado',      value: fmt$(totalAnticipado),      sub: `${anticipadoRows.length} de periodos futuros`,       color: '#2563eb', bg: '#eff6ff', icon: CalendarClock },
+            { label: `Cartera vencida al ${corteTxt}`, value: fmt$(totalVencidoCorte), sub: `${vencidosCorte.length} cuota${vencidosCorte.length !== 1 ? 's' : ''} vencida${vencidosCorte.length !== 1 ? 's' : ''} sin cobrar al cierre de ${labelMes(flujoHasta)}${corteFuturo ? ' (proyectado si no se cobra)' : ''}`, color: '#b91c1c', bg: '#fef2f2', icon: AlertTriangle },
             { label: 'Cartera vencida (saldo a hoy)', value: fmt$(totalVencidoFlujo), sub: `${vencidos.length} cuota${vencidos.length !== 1 ? 's' : ''} sin cobrar — es un saldo, no flujo del mes`, color: '#dc2626', bg: '#fef2f2', icon: AlertTriangle },
           ].map(k => {
             const Icon = k.icon
