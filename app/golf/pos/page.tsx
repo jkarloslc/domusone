@@ -12,7 +12,7 @@ import {
 import NuevaVentaModal from './NuevaVentaModal'
 import CorteModal from './CorteModal'
 import { distribuirConceptosRecibo } from './distribucionIngreso'
-import { crearRecibosCorte } from './recibosCorte'
+import { crearRecibosCorte, ajustarReciboPorVentaCancelada } from './recibosCorte'
 import { distribuirSeccionesRecibo } from '@/lib/distribucionSecciones'
 import FacturaUniversalModal from '@/components/facturacion/FacturaUniversalModal'
 import ModalShell from '@/components/ui/ModalShell'
@@ -538,6 +538,9 @@ export default function POSPage() {
       if (!confirm('¿Cancelar esta venta?')) return
       const { error } = await dbGolf.from('ctrl_ventas').update({ status: 'CANCELADA' }).eq('id', id)
       if (error) throw error
+      // Venta ya incluida en un corte: su recibo de ingreso se recalcula sin ella
+      const aj = await ajustarReciboPorVentaCancelada(id, authUser?.nombre).catch((e: any) => `No se pudo ajustar el recibo de ingreso del corte: ${e?.message ?? e}`)
+      if (aj) alert(aj)
       fetchVentas(); fetchStats()
     } catch (e: any) {
       alert(`Error al cancelar la venta: ${e?.message ?? e}`)

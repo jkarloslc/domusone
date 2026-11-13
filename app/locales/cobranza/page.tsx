@@ -14,6 +14,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import ModalShell from '@/components/ui/ModalShell'
 
 import Paginador from '@/components/ui/Paginador'
+import { ajustarReciboPorVentaCancelada } from '@/app/golf/pos/recibosCorte'
 // ── Tipos ──────────────────────────────────────────────────────
 type Tab = 'asignaciones' | 'cobranza' | 'recibos' | 'cuotas'
 
@@ -608,6 +609,9 @@ export default function CobranzaLocalesPage() {
 
       if (cancelando.id_venta_pos_fk) {
         await dbGolf.from('ctrl_ventas').update({ status: 'CANCELADA' }).eq('id', cancelando.id_venta_pos_fk)
+        // Venta ya incluida en un corte: su recibo de ingreso se recalcula sin ella
+        const aj = await ajustarReciboPorVentaCancelada(cancelando.id_venta_pos_fk).catch((e: any) => `No se pudo ajustar el recibo de ingreso del corte: ${e?.message ?? e}`)
+        if (aj) alert(aj)
       }
 
       const { error: erRec } = await dbCtrl.from('loc_recibos').update({

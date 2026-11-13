@@ -1,4 +1,4 @@
-import { dbGolf, dbCtrl } from '@/lib/supabase'
+import { dbGolf, dbCtrl, dbComp } from '@/lib/supabase'
 import { distribuirConceptosRecibo } from './distribucionIngreso'
 import { distribuirSeccionesRecibo } from '@/lib/distribucionSecciones'
 
@@ -110,4 +110,99 @@ export async function crearRecibosCorte({ idCorte, idCentroIngreso, nombreCentro
     await dbGolf.from('ctrl_cortes_caja').update({ id_recibo_ingreso: creados[0] }).eq('id', idCorte)
   }
   return creados
+}
+
+// ── Cancelación de una venta que ya entró a un corte ─────────────────────────
+//
+// Cancelar una venta después del corte no descontaba su línea del recibo de
+// ingreso: el Real seguía contando dinero que se devolvió (venta 853, $34,800
+// en el recibo 302, corregido a mano 2026-11-12). Al cancelar, el recibo del
+// mes de esa venta se recalcula desde cero con las ventas PAGADAS que le
+// quedan (formas de pago, totales y desglose por concepto/sección). Si ya no
+// queda ninguna, el recibo se cancela.
+
+/** Reparte formas de pago en las columnas de caja/banco (mismas reglas que el corte). */
+function columnasFormas(rows: FormaPago[]) {
+  const m = { monto_efectivo: 0, monto_transferencia: 0, monto_tarjeta: 0, monto_tarjeta_debito: 0,
+    monto_tarjeta_credito: 0, monto_cheque: 0, monto_deposito: 0 }
+  for (const fp of rows) {
+    const n = fp.forma_nombre.toLowerCase()
+    if (n.includes('efectivo')) m.monto_efectivo += fp.monto
+    else if (n.includes('tarjeta') || n.includes('tdc') || n.includes('tdd')) {
+      if (n.includes('cr') || n.includes('cré')) m.monto_tarjeta_credito += fp.monto
+      else m.monto_tarjeta_debito += fp.monto
+      m.monto_tarjeta += fp.monto
+    } else if (n.includes('transf')) m.monto_transferencia += fp.monto
+    else if (n.includes('cheque')) m.monto_cheque += fp.monto
+    else if (n.includes('dep') || n.includes('ventanilla')) m.monto_deposito += fp.monto
+  }
+  return m
+}
+
+/**
+ * Llamar DESPUÉS de marcar la venta como CANCELADA. Devuelve un mensaje para
+ * el usuario si tocó algún recibo, o null si la venta no estaba en un corte.
+ */
+export async function ajustarReciboPorVentaCancelada(idVenta: number, usuario?: string): Promise<string | null> {
+  const { data: venta } = await dbGolf.from('ctrl_ventas').select('id, fecha, id_corte_fk').eq('id', idVenta).maybeSingle()
+  if (!venta?.id_corte_fk) return null
+
+  const { data: recibos } = await dbCtrl.from('recibos_ingreso')
+    .select('id, fecha, id_centro_ingreso_fk')
+    .eq('referencia_externa', `golf.ctrl_cortes_caja:${venta.id_corte_fk}`)
+    .eq('status', 'Confirmado')
+  if (!recibos?.length) return null
+
+  // Cortes nuevos: un recibo por mes → el del mes de la venta.
+  // Cortes viejos (un solo recibo para todo el corte): ese recibo.
+  const mesVenta = diaLocal(venta.fecha).slice(0, 7)
+  const porMes = recibos.length > 1
+  const recibo: any = porMes ? recibos.find((r: any) => String(r.fecha).slice(0, 7) === mesVenta) : recibos[0]
+  if (!recibo) return null
+
+  const { data: restantes } = await dbGolf.from('ctrl_ventas').select('id, fecha, total')
+    .eq('id_corte_fk', venta.id_corte_fk).eq('status', 'PAGADA')
+  const quedan = ((restantes ?? []) as any[]).filter(v => !porMes || diaLocal(v.fecha).slice(0, 7) === mesVenta)
+  const ids = quedan.map(v => v.id as number)
+
+  const { data: mov } = await dbComp.from('movimientos_bancarios').select('id').eq('id_recibo_ingreso_fk', recibo.id).limit(1)
+  const avisoBanco = mov?.length ? ' Tiene movimiento bancario ligado: revisa la conciliación.' : ''
+
+  if (ids.length === 0) {
+    const { error } = await dbCtrl.from('recibos_ingreso').update({
+      status: 'Cancelado', usuario_cancela: usuario ?? 'sistema', fecha_cancela: new Date().toISOString(),
+      motivo_cancelacion: `Se cancelaron todas las ventas del corte #${venta.id_corte_fk}${porMes ? ` de ${mesVenta}` : ''}`,
+    }).eq('id', recibo.id)
+    if (error) throw new Error(error.message)
+    return `El recibo de ingreso #${recibo.id} quedó cancelado: ya no tiene ventas pagadas.${avisoBanco}`
+  }
+
+  const total = quedan.reduce((s, v) => s + (Number(v.total) || 0), 0)
+  const { data: pagos } = await dbGolf.from('ctrl_ventas_pagos').select('id_forma_fk, forma_nombre, monto').in('id_venta_fk', ids)
+  const fpMap = new Map<number, FormaPago>()
+  for (const p of (pagos ?? []) as any[]) {
+    const f = fpMap.get(p.id_forma_fk) ?? { id_forma_fk: p.id_forma_fk, forma_nombre: p.forma_nombre, monto: 0 }
+    f.monto += Number(p.monto) || 0
+    fpMap.set(p.id_forma_fk, f)
+  }
+  const formas = Array.from(fpMap.values())
+
+  await Promise.all([
+    dbCtrl.from('recibos_ingreso_conceptos').delete().eq('id_recibo_fk', recibo.id),
+    dbCtrl.from('recibos_ingreso_secciones').delete().eq('id_recibo_fk', recibo.id),
+    dbCtrl.from('recibos_ingreso_formas_pago').delete().eq('id_recibo_fk', recibo.id),
+  ])
+  const { error } = await dbCtrl.from('recibos_ingreso')
+    .update({ ...columnasFormas(formas), monto_total: Math.round(total * 100) / 100 }).eq('id', recibo.id)
+  if (error) throw new Error(error.message)
+  if (formas.length > 0) {
+    await dbCtrl.from('recibos_ingreso_formas_pago').insert(formas.map(f => ({
+      id_recibo_fk: recibo.id, id_forma_pago_fk: f.id_forma_fk, nombre_forma_pago: f.forma_nombre, monto: f.monto,
+    })))
+  }
+  await distribuirConceptosRecibo(recibo.id, recibo.id_centro_ingreso_fk, ids)
+  const dSec = await distribuirSeccionesRecibo(recibo.id, recibo.id_centro_ingreso_fk, ids)
+  dSec.errores.forEach(e => console.error('distribuirSeccionesRecibo:', e))
+
+  return `El recibo de ingreso #${recibo.id} se ajustó sin esta venta (nuevo total $${total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}).${avisoBanco}`
 }

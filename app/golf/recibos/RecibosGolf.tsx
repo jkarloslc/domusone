@@ -12,6 +12,7 @@ import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 
 import Paginador from '@/components/ui/Paginador'
+import { ajustarReciboPorVentaCancelada } from '@/app/golf/pos/recibosCorte'
 // ── Tipos ─────────────────────────────────────────────────────
 type Recibo = {
   id: number
@@ -218,6 +219,9 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
       if (cancelando.id_venta_pos_fk) {
         const { error: erVenta } = await dbGolf.from('ctrl_ventas').update({ status: 'CANCELADA' }).eq('id', cancelando.id_venta_pos_fk)
         if (erVenta) throw erVenta
+        // Venta ya incluida en un corte: su recibo de ingreso se recalcula sin ella
+        const aj = await ajustarReciboPorVentaCancelada(cancelando.id_venta_pos_fk).catch((e: any) => `No se pudo ajustar el recibo de ingreso del corte: ${e?.message ?? e}`)
+        if (aj) alert(aj)
       }
 
       // 4. Bitácora de auditoría

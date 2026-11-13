@@ -6,6 +6,7 @@ import { X, Ban, Printer, CheckCircle, RotateCcw, Loader } from 'lucide-react'
 import { type Recibo, type ReciboDetalle, type ReciboPago, fmt } from './types'
 import ModalShell from '@/components/ui/ModalShell'
 import { verificarNoFacturada, logCancelacion, marcarCancelacionRevertida } from '@/lib/cancelacionCobranza'
+import { ajustarReciboPorVentaCancelada } from '@/app/golf/pos/recibosCorte'
 
 type Props = { recibo: Recibo; onClose: () => void; onCanceled: () => void }
 
@@ -72,6 +73,9 @@ export default function ReciboDetail({ recibo: r, onClose, onCanceled }: Props) 
       if (r.id_venta_pos_fk) {
         const { error: erVenta } = await dbGolf.from('ctrl_ventas').update({ status: 'CANCELADA' }).eq('id', r.id_venta_pos_fk)
         if (erVenta) throw erVenta
+        // Venta ya incluida en un corte: su recibo de ingreso se recalcula sin ella
+        const aj = await ajustarReciboPorVentaCancelada(r.id_venta_pos_fk).catch((e: any) => `No se pudo ajustar el recibo de ingreso del corte: ${e?.message ?? e}`)
+        if (aj) alert(aj)
       }
 
       const { error: erRec } = await dbCtrl.from('recibos').update({
