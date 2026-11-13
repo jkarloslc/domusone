@@ -10,6 +10,7 @@ import { rubroDePartida, RUBROS_VACIO, type CatalogoRubros } from '@/lib/rubros'
  *   Ingresos: Rubro → Centro de Ingreso → Partida
  *             (partidas por sección: Rubro → Zona → Sección)
  *   Egresos:  Rubro → Tipo de gasto     → CC · Área
+ *             (CC con zonas: Rubro → Tipo de gasto → Zona → Área; ver zonaEgresos.ts)
  * El rubro viene del catálogo (lib/rubros.ts); sin rubro se usa el agrupador.
  * Abre en nivel 1 (~15-20 filas). Los hermanos que pesan menos del umbral
  * del total de su sección se juntan en "Otros menores (n)".
@@ -25,6 +26,8 @@ export type FilaArbol = {
   id_centro_ingreso_fk: number | null; id_centro_costo_fk: number | null; id_area_fk: number | null
   id_concepto_fk?: number | null
   id_seccion_fk?: number | null
+  /** Solo egresos de CC con zonas: zona de esta porción del Real (filasConZona). */
+  zona?: { id: string; nombre: string }
   realVal: number; pptoVal: number
 }
 
@@ -102,6 +105,11 @@ export default function ArbolResumen<T extends FilaArbol>({
       })
     }
 
+    // Egresos de CC con zonas: Zona antes del CC · Área; el resto va directo a hojas.
+    const nivelZonaEgreso = (ps: T[], depth: number, pre: string): Nodo<T>[] => [
+      ...agruparPor(ps.filter(p => p.zona), depth, pre, p => `zn${p.zona!.id}`, p => p.zona!.nombre, hojas),
+      ...hojas(ps.filter(p => !p.zona), depth, pre),
+    ]
     // Ingreso por sección (cuotas de Fraccionamiento): el nivel intermedio es la
     // Zona en vez del centro. Una sección en 2+ zonas va a un nodo combinado
     // ("Zona A + Zona B") para no contar su ingreso dos veces.
@@ -118,7 +126,7 @@ export default function ArbolResumen<T extends FilaArbol>({
       : agruparPor(ps, depth, pre,
           p => p.id_tipo_gasto_fk != null ? `tg${p.id_tipo_gasto_fk}` : `px${p.id}`,
           p => p.tipo_gasto ?? p.nombre,
-          hojas)
+          nivelZonaEgreso)
 
     const raiz = agruparPor(rows, 0, prefijo,
       p => { const r = rubroDePartida(rubros, p); return r ? `rb${r.id}` : `ag${p.id_agrupador_fk ?? 0}` },
@@ -291,7 +299,7 @@ export default function ArbolResumen<T extends FilaArbol>({
         <div style={{ display: 'flex', gap: 4, background: '#f1f5f9', borderRadius: 18, padding: 3 }}>
           {([1, 2, 3] as const).map(v => (
             <button key={v} onClick={() => cambiarNivel(v)}
-              title={v === 1 ? 'Solo rubros' : v === 2 ? 'Rubro → Zona / Centro de ingreso / Tipo de gasto' : 'Todo abierto'}
+              title={v === 1 ? 'Solo rubros' : v === 2 ? 'Rubro → Zona / Centro de ingreso / Tipo de gasto' : 'Todo abierto (egresos de CC con zonas: Tipo de gasto → Zona → Área)'}
               style={{ padding: '3px 12px', borderRadius: 14, border: 'none', cursor: 'pointer', fontSize: 12,
                 background: nivel === v ? '#fff' : 'transparent', color: nivel === v ? '#1e293b' : '#64748b',
                 fontWeight: nivel === v ? 600 : 400, boxShadow: nivel === v ? '0 1px 3px rgba(0,0,0,.1)' : 'none' }}>

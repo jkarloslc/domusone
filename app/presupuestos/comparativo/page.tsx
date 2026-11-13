@@ -17,6 +17,7 @@ import { cargarTiposGasto, armarCatalogo } from '@/lib/tiposGasto'
 import { exportarResumenExcel, lineasEgresoPorArea } from '../exportResumen'
 import { agruparPorArea, nombresDe } from '../agrupaArea'
 import ArbolResumen from '../ArbolResumen'
+import { useZonaDeOps, filasConZona } from '../zonaEgresos'
 import { cargarRubros, RUBROS_VACIO, type CatalogoRubros } from '@/lib/rubros'
 import GridMensual, { type CeldaInfo } from '../GridMensual'
 import { fetchDevengadoSinIvaPorPartida } from '@/lib/cobranzaCuotas'
@@ -744,6 +745,11 @@ export default function ComparativoPage() {
   const ingRows = filas.filter(p => p.tipo === 'ingreso')
   const egrRows = filas.filter(p => p.tipo === 'egreso')
   const nombres = nombresDe(centrosCostoF, areasF)
+  // Árbol: egresos de CC con zonas se reparten por la zona de cada OP.
+  const zonaOps = useZonaDeOps(filas
+    .filter(f => f.tipo === 'egreso' && zonasCat.ccUsaZonas(f.id_centro_costo_fk))
+    .flatMap(f => (realDetalle[f.id] ?? []).map(t => t.id_op_fk).filter((v): v is number => v != null)))
+  const filasArbol = filasConZona(filas, realDetalle, getMeses(), zonasCat, zonaOps)
   // Prom. mensual del Árbol: en Acumulado año, Real ÷ meses con movimiento.
   const mesesPromedio = filterMes !== 0 ? 0 : Math.max(0, ...filas.flatMap(f =>
     Object.entries(realMensual[f.id] ?? {}).filter(([, v]) => Number(v) !== 0).map(([m]) => Number(m))))
@@ -1195,7 +1201,7 @@ export default function ComparativoPage() {
               vista={vista === 'arbol' ? 'consolidado' : vista} agrupadores={agrupadores}
               archivo="Comparativo-Presupuesto-vs-Real" onCelda={handleCelda} pptoFallback={pptoFallbackMes} labels={CLASIFICACION_LABELS} netoLabel="Balance Neto" />
           ) : vista === 'arbol' ? (
-            <ArbolResumen filas={filas} agrupadores={agrupadores} rubros={rubrosCat} labels={CLASIFICACION_LABELS}
+            <ArbolResumen filas={filasArbol} agrupadores={agrupadores} rubros={rubrosCat} labels={CLASIFICACION_LABELS}
               netoLabel="Balance Neto" {...nombres} nombreCentroIng={nombreCentroIng}
               mesesPromedio={mesesPromedio} zonasDeSeccion={zonasCat.zonasDeSeccion}
               onDrill={handleDrill} onDrillOps={handleDrillOps} onManual={handleManual} />
