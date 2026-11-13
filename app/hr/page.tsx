@@ -1,11 +1,12 @@
 'use client'
-import { Users, Wallet, ChevronRight, Briefcase } from 'lucide-react'
+import { Users, Wallet, ChevronRight, Briefcase, Receipt } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { useRouter } from 'next/navigation'
 
 import PageHeader from '@/components/layout/PageHeader'
 const MODULOS = [
   { key: 'rol-pagos',    permKey: 'hr',                label: 'Rol de Pagos',            icon: Wallet,      color: '#b45309', desc: 'Asistencia semanal de colaboradores y monto a pagar', href: '/hr/rol-de-pagos' },
+  { key: 'nomina',       permKey: 'hr',                label: 'Nómina',                  icon: Receipt,     color: '#b45309', desc: 'Carga del Excel de nómina y OPs del mes por Área', href: '/hr/nomina' },
   { key: 'colaboradores',permKey: 'hr',                label: 'Colaboradores',           icon: Users,       color: '#b45309', desc: 'Catálogo de personal operativo — sueldos y puesto',  href: '/hr/colaboradores' },
 ]
 

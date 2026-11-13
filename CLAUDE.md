@@ -54,6 +54,15 @@ Vehículos y Maquinaria, Equipo y Herramienta (con combustible, bitácoras, pré
 - **Lotes con zona propia** (`cat.lotes.id_cuadrante_fk`): si su sección está en una sola zona, se asigna sola; si la sección está repartida (ej. Fairway), se elige en el modal del lote o en Catálogos › Zonas › Lotes. Al quitar una sección de una zona, sus lotes se liberan de esa zona. Los ingresos siguen siendo por sección (una sección en 2 zonas cuenta en ambas).
 - Al crear una página nueva con filtro o captura de Sección o Área, seguir esta jerarquía.
 
+## HR › Nómina: OPs de nómina automáticas (2026-11-13)
+- Ruta `/hr/nomina` (permiso `hr`). Se sube el Excel de nómina tal cual (`2610 Nomina BPCC P44.xlsx`, `2610 Quincena 20 BPCC.xlsx`); solo se lee la hoja **BPCC** (`lib/nominaExcel.ts`): no. empleado, nombre, CENTRO DE COSTOS (informativo), TOTAL PERCEPCIONES y neto (TOTAL APAGAR / NETO A PAGAR).
+- **El Área sale de `cfg.colaboradores`** (`no_empleado` + `tipo_nomina` → `id_area_fk`; el CC se deriva del Área). Si un colaborador no tiene Área se asigna en el modal y se guarda en Colaboradores (si no hay número, se empata por nombre antes de dar de alta). Hípico/Áreas Públicas = Área 45 Eventos.
+- Periodo → mes: semana ISO al mes de su **jueves** (Oct-2026 = S40–S44); quincena n → mes ⌈n/2⌉. Editable en el modal.
+- **Ajustes** por carga (`es_ajuste`): personal pagado por otra razón social (sustitución patronal, estimado del tablero Nómina BPCC). Botón "Copiar de la carga anterior".
+- **OPs**: una por Área por mes, `monto` = **neto a pagar**, tipo gasto Nómina (`cfg.tipos_gasto.clave='nomina'`, id 23), `fecha_op` = **último día del mes** (no la de captura), status `Pendiente Auth` (doble autorización normal), sin `ordenes_pago_det`. Vínculo en `ctrl.nomina_op_mes` (soft FK). Si después llega otra carga del mes: "Actualizar OP" (solo `Pendiente Auth` sin pagos) o "Complementaria". OPs de nómina capturadas a mano en el mes se detectan y se pueden "Vincular".
+- Tablas: `ctrl.nomina_cargas` (unique tipo+año+periodo), `ctrl.nomina_cargas_det`, `ctrl.nomina_op_mes` (migr. `20261113180000`).
+- **Pendiente (decisión del usuario: "solo nómina por ahora")**: OPs de cargas sociales (IMSS patronal hoja IMSS, ISN 3%, Infonavit) que contabilidad suma en Sueldos; hoy no tienen OP.
+
 ## Ramas
 - Rama principal: `main`
 - Repositorio: https://github.com/jkarloslc/domusone.git
