@@ -27,7 +27,7 @@ export type FilaArbol = {
   id_concepto_fk?: number | null
   id_seccion_fk?: number | null
   /** Solo egresos de CC con zonas: zona de esta porción del Real (filasConZona). */
-  zona?: { id: string; nombre: string }
+  zona?: { id: string; nombre: string; prorrateo?: number }
   realVal: number; pptoVal: number
 }
 
@@ -45,7 +45,7 @@ const pct = (n: number | null) => n == null || !isFinite(n) ? '—' : `${n.toFix
 
 export default function ArbolResumen<T extends FilaArbol>({
   filas, agrupadores, rubros = RUBROS_VACIO, labels, netoLabel, nombreCC, nombreArea, nombreCentroIng,
-  mesesPromedio, zonasDeSeccion, onDrill, onDrillOps, onManual,
+  mesesPromedio, zonasDeSeccion, prorrateoLotes, onProrrateoLotes, onDrill, onDrillOps, onManual,
 }: {
   filas: T[]
   agrupadores: { id: number; nombre: string; orden: number }[]
@@ -59,6 +59,9 @@ export default function ArbolResumen<T extends FilaArbol>({
   mesesPromedio: number
   /** Zonas de una sección: las partidas de ingreso por sección se agrupan por Zona. */
   zonasDeSeccion?: (idSeccion: number) => { id: number; nombre: string }[]
+  /** Selector de prorrateo del gasto general por lotes (solo si hay egresos con zona). */
+  prorrateoLotes?: boolean
+  onProrrateoLotes?: (v: boolean) => void
   onDrill: (nombre: string, tipo: 'ingreso' | 'egreso', partidas: T[]) => void
   onDrillOps: (p: T) => void
   onManual: (pid: number) => void
@@ -75,8 +78,9 @@ export default function ArbolResumen<T extends FilaArbol>({
 
   function etiquetaHoja(p: T) {
     if (p.tipo === 'egreso' && (p.id_centro_costo_fk != null || p.id_area_fk != null)) {
-      return [p.id_centro_costo_fk != null ? nombreCC(p.id_centro_costo_fk) : null,
+      const base = [p.id_centro_costo_fk != null ? nombreCC(p.id_centro_costo_fk) : null,
               p.id_area_fk != null ? nombreArea(p.id_area_fk) : null].filter(Boolean).join(' · ')
+      return p.zona?.prorrateo != null ? `${base} — gasto general prorrateado (${(p.zona.prorrateo * 100).toFixed(1)}% por lotes)` : base
     }
     return p.nombre
   }
@@ -86,7 +90,7 @@ export default function ArbolResumen<T extends FilaArbol>({
     const suma = (ps: T[], k: 'realVal' | 'pptoVal') => ps.reduce((s, p) => s + p[k], 0)
 
     const hojas = (ps: T[], depth: number, pre: string): Nodo<T>[] => ps.map(p => ({
-      key: `${pre}|p${p.id}`, nombre: etiquetaHoja(p), depth,
+      key: `${pre}|p${p.id}${p.zona?.prorrateo != null ? 'r' : ''}`, nombre: etiquetaHoja(p), depth,
       real: p.realVal, ppto: p.pptoVal, partidas: [p], hijos: [], hoja: p,
     }))
 
@@ -311,6 +315,13 @@ export default function ArbolResumen<T extends FilaArbol>({
           <input type="checkbox" checked={agruparMenores} onChange={e => setAgruparMenores(e.target.checked)} />
           Agrupar partidas menores al 1% en “Otros menores”
         </label>
+        {onProrrateoLotes && filas.some(f => f.zona) && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#475569', cursor: 'pointer' }}
+            title="El gasto sin zona (operación, vigilancia, vialidades) se reparte entre las zonas según su número de lotes">
+            <input type="checkbox" checked={!!prorrateoLotes} onChange={e => onProrrateoLotes(e.target.checked)} />
+            Prorratear gasto general entre zonas por lotes
+          </label>
+        )}
       </div>
       <div style={{ overflowX: 'auto' }}>
         <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>

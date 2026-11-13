@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { dbComp } from '@/lib/supabase'
+import { dbComp, dbCat } from '@/lib/supabase'
 
 /**
  * Zona en los egresos del Árbol (solo CC con usa_zonas, hoy Mantto. Fraccionamiento).
@@ -11,6 +11,11 @@ import { dbComp } from '@/lib/supabase'
  * (si el área está en varias zonas, nodo combinado "Zona A + Zona B";
  * sin ninguna, "Sin zona"). Lo que no viene de una OP (Real manual) usa la
  * zona del área.
+ *
+ * Prorrateo (opcional): lo que queda en "Sin zona" (gasto general: operación,
+ * vigilancia, vialidades) se reparte entre las zonas activas en proporción a su
+ * número de lotes (cat.lotes.id_cuadrante_fk). Criterio elegido por el usuario
+ * (2026-11-12). Es solo vista: no modifica datos.
  */
 
 type ZonaCat = {
@@ -19,7 +24,30 @@ type ZonaCat = {
   ccUsaZonas: (cc: number | null | undefined) => boolean
 }
 type Tx = { fecha: string; monto: number; id_op_fk?: number | null }
-export type ZonaFila = { id: string; nombre: string }
+/** prorrateo = fracción (0-1) asignada a la zona cuando la fila es gasto general prorrateado. */
+export type ZonaFila = { id: string; nombre: string; prorrateo?: number }
+
+/** Lotes por zona activa, para el prorrateo del gasto general. */
+export function useLotesPorZona() {
+  const [m, setM] = useState<Map<number, number>>(new Map())
+  useEffect(() => {
+    let vivo = true
+    ;(async () => {
+      const out = new Map<number, number>()
+      // Paginado: PostgREST corta en 1000 filas
+      for (let desde = 0; ; desde += 1000) {
+        const { data, error } = await dbCat.from('lotes').select('id_cuadrante_fk')
+          .not('id_cuadrante_fk', 'is', null).range(desde, desde + 999)
+        if (error || !data?.length) break
+        data.forEach((r: any) => out.set(r.id_cuadrante_fk, (out.get(r.id_cuadrante_fk) ?? 0) + 1))
+        if (data.length < 1000) break
+      }
+      if (vivo) setM(out)
+    })()
+    return () => { vivo = false }
+  }, [])
+  return m
+}
 
 export function useZonaDeOps(opIds: number[]) {
   const [porOp, setPorOp] = useState<Map<number, number | null>>(new Map())
@@ -57,7 +85,15 @@ export function filasConZona<T extends {
 }>(
   filas: T[], realDetalle: Record<number, Tx[]>, meses: number[], zonasCat: ZonaCat,
   zonaOps: { porOp: Map<number, number | null>; porOpArea: Map<string, number | null> },
+  /** Si viene, el gasto "Sin zona" se prorratea por lotes entre las zonas activas. */
+  lotesPorZona?: Map<number, number>,
 ): (T & { zona?: ZonaFila })[] {
+  const reparto = (() => {
+    if (!lotesPorZona) return null
+    const zs = zonasCat.zonas.map(z => ({ z, n: lotesPorZona.get(z.id) ?? 0 })).filter(x => x.n > 0)
+    const total = zs.reduce((s, x) => s + x.n, 0)
+    return total > 0 ? zs.map(x => ({ zona: { id: String(x.z.id), nombre: x.z.nombre, prorrateo: x.n / total } as ZonaFila })) : null
+  })()
   const nombreZona = (id: number) => zonasCat.zonas.find(z => z.id === id)?.nombre ?? `Zona ${id}`
   const zonaDeArea = (area: number | null): ZonaFila => {
     const zs = area != null ? zonasCat.zonas.filter(z => zonasCat.areaEnZona(z.id, area)) : []
@@ -84,9 +120,16 @@ export function filasConZona<T extends {
     }
     const resto = f.realVal - asignado
     if (Math.abs(resto) > 0.005) sumar(zonaDeArea(f.id_area_fk), resto)
-    if (partes.size === 0) return [{ ...f, zona: zonaDeArea(f.id_area_fk) }]
+    if (partes.size === 0) partes.set('x', { zona: zonaDeArea(f.id_area_fk), monto: f.realVal })
     const lista = Array.from(partes.values()).sort((a, b) => b.monto - a.monto)
-    // El presupuesto no tiene zona: va completo a la parte mayor.
-    return lista.map((p, i) => ({ ...f, realVal: p.monto, pptoVal: i === 0 ? f.pptoVal : 0, zona: p.zona }))
+    const total = lista.reduce((s, p) => s + p.monto, 0)
+    return lista.flatMap(p => {
+      // El presupuesto no tiene zona: se reparte en la misma proporción que el Real.
+      const ppto = total ? f.pptoVal * p.monto / total : (p === lista[0] ? f.pptoVal : 0)
+      if (p.zona.id === 'sin' && reparto) {
+        return reparto.map(r => ({ ...f, realVal: p.monto * r.zona.prorrateo!, pptoVal: ppto * r.zona.prorrateo!, zona: r.zona }))
+      }
+      return [{ ...f, realVal: p.monto, pptoVal: ppto, zona: p.zona }]
+    })
   })
 }
