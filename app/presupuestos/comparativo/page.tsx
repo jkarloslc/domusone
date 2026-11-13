@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, Fragment } from 'react'
 import { dbCtrl, dbComp, dbCfg } from '@/lib/supabase'
 import { cargarCentrosAgrupados, idsCentrosFiltro, centrosDeAgrupador, agrupadoresUsados, CentroIngresoAgr, AgrupadorIngreso } from '@/lib/centrosIngreso'
 import { cargarPartidasPresupuesto } from '@/lib/pptoPartidasPresupuesto'
-import { Loader, RefreshCw, BookOpen, Layers, List, Trash2, Save, Building2, CalendarRange, Download, Sigma, ListTree } from 'lucide-react'
+import { Loader, RefreshCw, BookOpen, Layers, List, Trash2, Save, Building2, CalendarRange, Download, Sigma, ListTree, LayoutGrid } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 import { useAuth } from '@/lib/AuthContext'
@@ -17,6 +17,7 @@ import { cargarTiposGasto, armarCatalogo } from '@/lib/tiposGasto'
 import { exportarResumenExcel, lineasEgresoPorArea } from '../exportResumen'
 import { agruparPorArea, nombresDe } from '../agrupaArea'
 import ArbolResumen from '../ArbolResumen'
+import MatrizUnidades from '../MatrizUnidades'
 import { useZonaDeOps, useLotesPorZona, filasConZona } from '../zonaEgresos'
 import { cargarRubros, RUBROS_VACIO, type CatalogoRubros } from '@/lib/rubros'
 import GridMensual, { type CeldaInfo } from '../GridMensual'
@@ -56,6 +57,7 @@ type Partida     = {
   id_tipo_gasto_fk:     number | null
   id_agrupador_fk:      number | null
   clasificacion:        Clasificacion
+  modulo?:              string | null
   /** Venta diaria: en base devengado su Real se toma del real de caja. */
   devengado_igual_a_cobro: boolean
 }
@@ -239,7 +241,7 @@ export default function ComparativoPage() {
   const [filterTipo, setFilterTipo] = useState<'' | 'ingreso' | 'egreso'>('')
   const [filterMes,  setFilterMes]  = useState<number>(0) // 0 = Acumulado
   const [vista, setVista] = useState<'arbol' | 'detalle' | 'concepto' | 'consolidado' | 'agrupado'>('arbol')
-  const [modo, setModo] = useState<'resumen' | 'mensual'>('resumen')
+  const [modo, setModo] = useState<'resumen' | 'mensual' | 'unidades'>('resumen')
   const [drillGrupo, setDrillGrupo] = useState<{ nombre: string; tipo: 'ingreso' | 'egreso'; partidas: FilaPartida[] } | null>(null)
 
   // Modal añadir/editar real manual
@@ -261,7 +263,7 @@ export default function ComparativoPage() {
 
     const [pData, { data: det }, { data: manual }] = await Promise.all([
       cargarPartidasPresupuesto<Partida>(
-        'id, nombre, descripcion, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, id_tipo_gasto_fk, id_agrupador_fk, clasificacion, devengado_igual_a_cobro',
+        'id, nombre, descripcion, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, id_tipo_gasto_fk, id_agrupador_fk, clasificacion, devengado_igual_a_cobro, modulo',
         ids[0], modulo, q => q.eq('incluir_presupuesto', true).eq('clasificacion', 'operativo')),
       dbCtrl.from('ppto_presupuesto_det')
         .select('id_partida_fk, mes, monto, monto_devengado').in('id_presupuesto_fk', ids),
@@ -1097,6 +1099,7 @@ export default function ComparativoPage() {
           {([
             { v: 'resumen', label: 'Resumen', icon: List },
             { v: 'mensual', label: 'Mensual', icon: CalendarRange },
+            { v: 'unidades', label: 'Por unidad', icon: LayoutGrid },
           ] as const).map(({ v, label, icon: Icon }) => (
             <button key={v} onClick={() => setModo(v)}
               style={{
@@ -1202,6 +1205,9 @@ export default function ComparativoPage() {
             <GridMensual {...nombres} nombreCentroIng={nombreCentroIng} filas={filas} detMap={pptoMensual} realMap={realMensual}
               vista={vista === 'arbol' ? 'consolidado' : vista} agrupadores={agrupadores}
               archivo="Comparativo-Presupuesto-vs-Real" onCelda={handleCelda} pptoFallback={pptoFallbackMes} labels={CLASIFICACION_LABELS} netoLabel="Balance Neto" />
+          ) : modo === 'unidades' ? (
+            <MatrizUnidades filas={filas} agrupadores={agrupadores} rubros={rubrosCat} labels={CLASIFICACION_LABELS}
+              netoLabel="Balance Neto" archivo="Comparativo" onDrill={handleDrill} />
           ) : vista === 'arbol' ? (
             <ArbolResumen filas={filasArbol} agrupadores={agrupadores} rubros={rubrosCat} labels={CLASIFICACION_LABELS}
               netoLabel="Balance Neto" {...nombres} nombreCentroIng={nombreCentroIng}
