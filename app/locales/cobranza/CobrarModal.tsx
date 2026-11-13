@@ -69,6 +69,24 @@ export type ClasifCuotaPOS = { idConcepto: number | null; idProducto: number | n
 //   golf.cat_productos_pos, centro Locales Comerciales) — igual que cualquier venta nativa
 //   del POS — que a su vez está mapeado al concepto "Servicio de Mantenimiento". El monto
 //   real siempre viene de la cuota (precio_variable=true en el producto).
+/**
+ * POS donde se registra la venta de un cobro de Locales: el del producto de
+ * sus líneas (La Práctica, Carritos…) cuando TODAS apuntan al mismo POS activo;
+ * si no (líneas sin producto, productos de varios POS), el POS de Locales.
+ * Así el corte de ese POS genera el recibo de ingreso en su propio centro
+ * (pos_centros_ingreso_map) en vez de "Locales Comerciales".
+ */
+export async function centroPosDeLineas<C extends { id: number; nombre: string }>(
+  clasifs: ClasifCuotaPOS[], centrosPos: C[], respaldo: C,
+): Promise<C> {
+  const idsProd = Array.from(new Set(clasifs.map(c => c.idProducto).filter((v): v is number => v != null)))
+  if (idsProd.length === 0 || idsProd.length < clasifs.length) return respaldo
+  const { data } = await dbGolf.from('cat_productos_pos').select('id, id_centro_fk').in('id', idsProd)
+  const cvs = Array.from(new Set(((data ?? []) as { id_centro_fk: number | null }[]).map(p => p.id_centro_fk)))
+  if (cvs.length !== 1 || cvs[0] == null) return respaldo
+  return centrosPos.find(c => c.id === cvs[0]) ?? respaldo
+}
+
 export async function resolveConceptosPorCuota(idsCuota: number[]): Promise<Record<number, ClasifCuotaPOS>> {
   if (idsCuota.length === 0) return {}
   const { data: cxc } = await dbCtrl.from('loc_cxc').select('id, id_asignacion_fk, tipo').in('id', idsCuota)
@@ -494,16 +512,17 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
       const clasifPorCuota = await resolveConceptosPorCuota(idsCuota)
       const clasifDeLinea = (d: { id_cuota_fk: number | null }): { idConcepto: number | null; idProducto: number | null } =>
         (d.id_cuota_fk != null ? clasifPorCuota[d.id_cuota_fk] : null) ?? { idConcepto: null, idProducto: null }
+      const centroVenta = await centroPosDeLineas(detList.map(clasifDeLinea), centrosPos, centroLoc)
 
       if (!ventaId) {
         const { data: maxF } = await dbGolf.from('ctrl_ventas').select('folio_dia')
-          .eq('id_centro_fk', centroLoc.id)
+          .eq('id_centro_fk', centroVenta.id)
           .gte('fecha', `${rf.fecha_recibo}T00:00:00`).lte('fecha', `${rf.fecha_recibo}T23:59:59`)
           .order('folio_dia', { ascending: false }).limit(1)
         folioDia = maxF && maxF.length > 0 ? ((maxF[0] as any).folio_dia + 1) : 1
 
         const { data: venta, error: ev } = await dbGolf.from('ctrl_ventas').insert({
-          folio_dia: folioDia, id_centro_fk: centroLoc.id, fecha: fechaIso,
+          folio_dia: folioDia, id_centro_fk: centroVenta.id, fecha: fechaIso,
           nombre_cliente: nombreArrendatario, es_socio: idSocio != null, id_socio_fk: idSocio,
           subtotal: rf.subtotal ?? rf.total, descuento: rf.descuento ?? 0, iva: totalIvaCuotas, total: rf.total,
           status: 'PAGADA', facturable: rf.facturable ?? false, usuario_crea: authUser?.nombre ?? authUser?.user?.email ?? 'locales',
@@ -538,7 +557,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
       const cfgP = cfg as PosCfg | null
       const ticketData = {
         id: ventaId, folio_dia: folioDia || '—', fecha: fechaIso,
-        cliente: nombreArrendatario, cajero: authUser?.nombre ?? authUser?.user?.email ?? 'locales', centro: centroLoc.nombre,
+        cliente: nombreArrendatario, cajero: authUser?.nombre ?? authUser?.user?.email ?? 'locales', centro: centroVenta.nombre,
         razon_social: cfgP?.razon_social ?? 'DomusOne',
         municipio: cfgP?.municipio ?? '', direccion: cfgP?.direccion ?? '',
         rfc: cfgP?.rfc ?? '', telefono: cfgP?.telefono ?? '',

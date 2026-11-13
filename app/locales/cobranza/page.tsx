@@ -9,7 +9,7 @@ import {
   XCircle, AlertTriangle, RotateCcw,
 } from 'lucide-react'
 import AsignacionModal, { type AsignacionData } from './AsignacionModal'
-import CobrarModal, { type CuotaPendiente, printReciboLoc, resolveConceptosPorCuota } from './CobrarModal'
+import CobrarModal, { type CuotaPendiente, printReciboLoc, resolveConceptosPorCuota, centroPosDeLineas } from './CobrarModal'
 import PageHeader from '@/components/layout/PageHeader'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -505,15 +505,16 @@ export default function CobranzaLocalesPage() {
       const clasifPorCuota = await resolveConceptosPorCuota(idsCuota)
       const clasifDeLinea = (d: { id_cuota_fk: number | null }): { idConcepto: number | null; idProducto: number | null } =>
         (d.id_cuota_fk != null ? clasifPorCuota[d.id_cuota_fk] : null) ?? { idConcepto: null, idProducto: null }
+      const centroVenta = await centroPosDeLineas(r.recibos_loc_det.map(clasifDeLinea), centrosPos, centroLoc)
 
       if (!ventaId) {
         const { data: maxF } = await dbGolf.from('ctrl_ventas').select('folio_dia')
-          .eq('id_centro_fk', centroLoc.id)
+          .eq('id_centro_fk', centroVenta.id)
           .gte('fecha', `${r.fecha_recibo}T00:00:00`).lte('fecha', `${r.fecha_recibo}T23:59:59`)
           .order('folio_dia', { ascending: false }).limit(1)
         folioDia = maxF && maxF.length > 0 ? ((maxF[0] as any).folio_dia + 1) : 1
         const { data: venta, error: ev } = await dbGolf.from('ctrl_ventas').insert({
-          folio_dia: folioDia, id_centro_fk: centroLoc.id, fecha: fechaIso,
+          folio_dia: folioDia, id_centro_fk: centroVenta.id, fecha: fechaIso,
           nombre_cliente: fmtNombre(r.cat_arrendatarios), es_socio: idSocio != null, id_socio_fk: idSocio,
           subtotal: r.subtotal ?? r.total, descuento: r.descuento ?? 0, iva: totalIvaCuotas, total: r.total,
           status: 'PAGADA', usuario_crea: authUser?.user?.email ?? 'locales',
@@ -547,7 +548,7 @@ export default function CobranzaLocalesPage() {
       const cfgP = cfg as { razon_social: string | null; municipio: string | null; direccion: string | null; rfc: string | null; telefono: string | null; leyenda_ticket: string | null } | null
       const ticketData = {
         id: ventaId, folio_dia: folioDia || '—', fecha: fechaIso,
-        cliente: fmtNombre(r.cat_arrendatarios), cajero: r.usuario_cobra ?? '—', centro: centroLoc.nombre,
+        cliente: fmtNombre(r.cat_arrendatarios), cajero: r.usuario_cobra ?? '—', centro: centroVenta.nombre,
         razon_social: cfgP?.razon_social ?? 'DomusOne',
         municipio: cfgP?.municipio ?? '', direccion: cfgP?.direccion ?? '',
         rfc: cfgP?.rfc ?? '', telefono: cfgP?.telefono ?? '',
