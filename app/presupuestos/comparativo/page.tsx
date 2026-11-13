@@ -591,14 +591,24 @@ export default function ComparativoPage() {
   }
 
   // Agrega real manual
+  /** Presupuesto donde se guarda el Real manual de una partida (en TODOS: el de su módulo). */
+  function pptoDestinoManual(pid: number) {
+    if (!selPpto) return null
+    if (!esTodos(selPpto)) return selPpto
+    const modulo = partidas.find(p => p.id === pid)?.modulo
+    return presupuestos.find(p => p.id > 0 && p.anio === selPpto.anio && p.modulo === modulo) ?? null
+  }
+
   async function saveManual() {
-    // En TODOS no hay un presupuesto destino: el Real manual se captura en el presupuesto del módulo.
-    if (!manualPid || !selId || selId < 0) return
+    // En TODOS el Real manual se guarda en el presupuesto del año cuyo módulo es el de la partida.
+    if (!manualPid || !selId) return
+    const destino = pptoDestinoManual(manualPid)
+    if (!destino) { alert('No hay un presupuesto de este año para el módulo de la partida. Créalo en Captura.'); return }
     const monto = parseFloat(manualMonto.replace(/,/g, '')) || 0
     if (monto <= 0) return
     setSavingManual(true)
     await dbCtrl.from('ppto_presupuesto_real_manual').insert({
-      id_presupuesto_fk: selId, id_partida_fk: manualPid,
+      id_presupuesto_fk: destino.id, id_partida_fk: manualPid,
       mes: manualMes, monto, concepto: manualConc || null,
     })
     setSavingManual(false)
@@ -1203,6 +1213,7 @@ export default function ComparativoPage() {
               netoLabel="Balance Neto" {...nombres} nombreCentroIng={nombreCentroIng}
               mesesPromedio={mesesPromedio} zonasDeSeccion={zonasCat.zonasDeSeccion}
               prorrateoLotes={prorrateoLotes} onProrrateoLotes={setProrrateoLotes}
+              canWriteManual={canWrite('presupuestos')}
               onDrill={handleDrill} onDrillOps={handleDrillOps} onManual={handleManual} />
           )}
           </div>
@@ -1276,9 +1287,9 @@ export default function ComparativoPage() {
               </div>
             )}
 
-            {esTodos(selPpto) ? (
-              <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>
-                En la vista TODOS el Real manual es de solo consulta. Para agregar, selecciona el presupuesto del módulo.
+            {esTodos(selPpto) && !pptoDestinoManual(manualPid) ? (
+              <p style={{ fontSize: 12, color: '#b45309', margin: 0 }}>
+                No hay un presupuesto de este año para el módulo de esta partida; créalo en Captura para poder registrar Real manual.
               </p>
             ) : (
             <div style={{ borderTop: manualEntries.length > 0 ? '1px solid #f1f5f9' : undefined, paddingTop: manualEntries.length > 0 ? 14 : 0 }}>

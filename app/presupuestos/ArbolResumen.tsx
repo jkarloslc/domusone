@@ -46,7 +46,7 @@ const pct = (n: number | null) => n == null || !isFinite(n) ? '—' : `${n.toFix
 
 export default function ArbolResumen<T extends FilaArbol>({
   filas, agrupadores, rubros = RUBROS_VACIO, labels, netoLabel, nombreCC, nombreArea, nombreCentroIng,
-  mesesPromedio, zonasDeSeccion, prorrateoLotes, onProrrateoLotes, saldos, onDrill, onDrillOps, onManual,
+  mesesPromedio, zonasDeSeccion, prorrateoLotes, onProrrateoLotes, saldos, canWriteManual, onDrill, onDrillOps, onManual,
 }: {
   filas: T[]
   agrupadores: { id: number; nombre: string; orden: number }[]
@@ -65,6 +65,8 @@ export default function ArbolResumen<T extends FilaArbol>({
   onProrrateoLotes?: (v: boolean) => void
   /** Flujo de Efectivo: filas Saldo inicial (arriba) y Saldo final / real / diferencia (abajo). */
   saldos?: SaldosFila | null
+  /** Muestra '+ Manual' en las partidas con Real de captura manual (Intercompañías, Comisiones, …). */
+  canWriteManual?: boolean
   onDrill: (nombre: string, tipo: 'ingreso' | 'egreso', partidas: T[]) => void
   onDrillOps: (p: T) => void
   onManual: (pid: number) => void
@@ -245,7 +247,12 @@ export default function ArbolResumen<T extends FilaArbol>({
             </span>
           </td>
           {celdas(n.real, n.ppto, totalSeccion, tipo, n.depth === 0, onReal)}
-          <td />
+          <td style={{ padding: '4px 10px', textAlign: 'right' }}>
+            {h && h.fuente_real === 'manual' && canWriteManual && (
+              <button className="btn-ghost" onClick={() => onManual(h.id)} title="Capturar Real manual"
+                style={{ fontSize: 11, padding: '2px 8px', color: '#64748b', whiteSpace: 'nowrap' }}>+ Manual</button>
+            )}
+          </td>
         </tr>
         {open && n.hijos.map(c => filasNodo(c, tipo, totalSeccion))}
       </Fragment>
