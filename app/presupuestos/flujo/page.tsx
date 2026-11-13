@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, Fragment } from 'react'
 import { dbCtrl, dbComp, dbCfg } from '@/lib/supabase'
 import { cargarCentrosAgrupados, idsCentrosFiltro, centrosDeAgrupador, agrupadoresUsados, CentroIngresoAgr, AgrupadorIngreso } from '@/lib/centrosIngreso'
 import { cargarPartidasPresupuesto } from '@/lib/pptoPartidasPresupuesto'
-import { Loader, RefreshCw, Wallet, Info, Layers, List, Trash2, Save, Building2, CalendarRange, Download, Sigma, ListTree, LayoutGrid } from 'lucide-react'
+import { Loader, RefreshCw, Wallet, Info, Layers, List, Trash2, Save, Building2, CalendarRange, CalendarDays, Download, Sigma, ListTree, LayoutGrid } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 import { useAuth } from '@/lib/AuthContext'
@@ -19,6 +19,8 @@ import { exportarResumenExcel, lineasEgresoPorArea } from '../exportResumen'
 import { agruparPorArea, nombresDe } from '../agrupaArea'
 import ArbolResumen from '../ArbolResumen'
 import MatrizUnidades from '../MatrizUnidades'
+import { TarjetaSaldos, SaldosMensuales, VistaDiaria, SaldoModal, type Captura, type MovDia } from '../SaldosFlujo'
+import { cargarSaldos, serieDiaria, resumenPeriodo, guardarSaldo, fechaISO, diasDelMes, type SaldosFuente } from '@/lib/saldosFlujo'
 import { useZonaDeOps, useLotesPorZona, filasConZona } from '../zonaEgresos'
 import { cargarRubros, RUBROS_VACIO, type CatalogoRubros } from '@/lib/rubros'
 import GridMensual, { type CeldaInfo } from '../GridMensual'
@@ -229,7 +231,7 @@ export default function FlujoEfectivoPage() {
   const [filterMes,  setFilterMes]  = useState<number>(0) // 0 = Acumulado
   const [vista, setVista] = useState<'arbol' | 'detalle' | 'concepto' | 'consolidado' | 'agrupado'>('arbol') // solo Árbol en pantalla; las demás quedan para Mensual/Excel
   const [filtroComport, setFiltroComport] = useState<'' | 'fijo' | 'variable' | 'sin'>('')
-  const [modo, setModo] = useState<'resumen' | 'mensual' | 'unidades'>('resumen')
+  const [modo, setModo] = useState<'resumen' | 'mensual' | 'unidades' | 'diario'>('resumen')
   const [drillGrupo, setDrillGrupo] = useState<{ nombre: string; tipo: 'ingreso' | 'egreso'; partidas: FilaPartida[] } | null>(null)
 
   // Modal añadir/editar real manual (partidas adicionales de flujo, financiamiento, etc.)
@@ -644,6 +646,55 @@ export default function FlujoEfectivoPage() {
   const ingRows = filas.filter(p => p.tipo === 'ingreso')
   const egrRows = filas.filter(p => p.tipo === 'egreso')
   const nombres = nombresDe(centrosCostoF, areasF)
+
+  // ── Saldos de efectivo (lib/saldosFlujo.ts) ─────────────────────
+  // Consolidado y con TODAS las partidas cargadas (sin filtros): el saldo es
+  // del banco, no de un subconjunto. Movimientos por día desde el detalle
+  // transaccional; el Real manual (mensual) va al último día de su mes.
+  const anioSaldos = selPpto?.anio ?? new Date().getFullYear()
+  const [saldosFuente, setSaldosFuente] = useState<SaldosFuente>({ capturados: [], real: new Map(), fuentesActivas: ['manual'] })
+  const [captura, setCaptura] = useState<Captura | null>(null)
+  const recargarSaldos = useCallback(() => { cargarSaldos(anioSaldos).then(setSaldosFuente) }, [anioSaldos])
+  useEffect(() => { recargarSaldos() }, [recargarSaldos])
+  const movsDia = new Map<string, { ingresos: number; egresos: number }>()
+  const movsDetalle: MovDia[] = []
+  partidas.forEach(p => {
+    const sumarDia = (fecha: string, monto: number) => {
+      const v = movsDia.get(fecha) ?? { ingresos: 0, egresos: 0 }
+      if (p.tipo === 'ingreso') v.ingresos += monto; else v.egresos += monto
+      movsDia.set(fecha, v)
+    }
+    const porMes: Record<number, number> = {}
+    ;(realDetalle[p.id] ?? []).forEach(t => {
+      if (!t.fecha) return
+      const f = String(t.fecha).slice(0, 10)
+      if (!f.startsWith(String(anioSaldos))) return
+      sumarDia(f, Number(t.monto))
+      porMes[Number(f.slice(5, 7))] = (porMes[Number(f.slice(5, 7))] ?? 0) + Number(t.monto)
+      movsDetalle.push({ fecha: f, tipo: p.tipo, partida: p.nombre, folio: t.folio, descripcion: t.descripcion, monto: Number(t.monto) })
+    })
+    Object.entries(realMap[p.id] ?? {}).forEach(([m, v]) => {
+      const resto = Number(v) - (porMes[Number(m)] ?? 0)
+      if (Math.abs(resto) < 0.005) return
+      const f = fechaISO(anioSaldos, Number(m), diasDelMes(anioSaldos, Number(m)))
+      sumarDia(f, resto)
+      movsDetalle.push({ fecha: f, tipo: p.tipo, partida: p.nombre, monto: resto, mensual: true })
+    })
+  })
+  const serie = serieDiaria(anioSaldos, movsDia, saldosFuente)
+  const diasMes = (m: number) => serie.filter(d => Number(d.fecha.slice(5, 7)) === m)
+  const resumenSaldos = resumenPeriodo(filterMes ? diasMes(filterMes) : serie)
+  const resumenesMes = Array.from({ length: 12 }, (_, i) => resumenPeriodo(diasMes(i + 1)))
+  const hoyMx = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
+  const mesDiario = filterMes || (hoyMx.startsWith(String(anioSaldos)) ? Number(hoyMx.slice(5, 7)) : 12)
+  const abrirCaptura = (tipo: 'inicial' | 'real', fecha: string, actual: number | null) => {
+    const c = saldosFuente.capturados.find(x => x.tipo === tipo && x.fecha === fecha)
+    setCaptura({ tipo, fecha, monto: actual ?? c?.monto ?? null, notas: c?.notas ?? null })
+  }
+  const guardarCaptura = async (c: Captura) => {
+    await guardarSaldo(c.tipo, c.fecha, c.monto, authUser?.nombre ?? 'usuario', c.notas)
+    recargarSaldos()
+  }
   // Árbol: egresos de CC con zonas se reparten por la zona de cada OP.
   const zonaOps = useZonaDeOps(filas
     .filter(f => f.tipo === 'egreso' && zonasCat.ccUsaZonas(f.id_centro_costo_fk))
@@ -972,6 +1023,7 @@ export default function FlujoEfectivoPage() {
             { v: 'resumen', label: 'Resumen', icon: List },
             { v: 'mensual', label: 'Mensual', icon: CalendarRange },
             { v: 'unidades', label: 'Por unidad', icon: LayoutGrid },
+            { v: 'diario', label: 'Diario', icon: CalendarDays },
           ] as const).map(({ v, label, icon: Icon }) => (
             <button key={v} onClick={() => setModo(v)}
               style={{
@@ -1004,11 +1056,22 @@ export default function FlujoEfectivoPage() {
               </button>
             </div>
           )}
+          {(modo === 'resumen' || modo === 'unidades') && resumenSaldos && (
+            <TarjetaSaldos r={resumenSaldos} periodo={mesLabel}
+              fechaIni={filterMes ? fechaISO(anioSaldos, filterMes, 1) : `${anioSaldos}-01-01`}
+              fechaFin={filterMes ? fechaISO(anioSaldos, filterMes, diasDelMes(anioSaldos, filterMes)) : `${anioSaldos}-12-31`}
+              esInicioAnio={!filterMes || filterMes === 1} fuentesActivas={saldosFuente.fuentesActivas}
+              canWrite={canWrite('presupuestos')} onCapturar={abrirCaptura} />
+          )}
           <div id="reporte-print-area" className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          {modo === 'mensual' ? (
+          {modo === 'diario' ? (
+            <VistaDiaria dias={diasMes(mesDiario)} movs={movsDetalle} canWrite={canWrite('presupuestos')}
+              onCapturar={abrirCaptura} sinMes={!filterMes} />
+          ) : modo === 'mensual' ? (<>
             <GridMensual {...nombres} mesSel={filterMes} nombreCentroIng={nombreCentroIng} filas={filas} detMap={detMap} realMap={realMap} vista={vista === 'arbol' ? 'consolidado' : vista} agrupadores={agrupadores}
               archivo="Flujo-de-Efectivo" onCelda={handleCelda} labels={CLASIFICACION_LABELS} netoLabel="Flujo Neto de Efectivo" />
-          ) : modo === 'unidades' ? (
+            <SaldosMensuales meses={resumenesMes} mesSel={filterMes} />
+          </>) : modo === 'unidades' ? (
             <MatrizUnidades filas={filas} agrupadores={agrupadores} rubros={rubrosCat} labels={CLASIFICACION_LABELS}
               netoLabel="Flujo Neto de Efectivo" archivo="Flujo-de-Efectivo" onDrill={handleDrill} />
           ) : (
@@ -1021,6 +1084,8 @@ export default function FlujoEfectivoPage() {
           </div>
         </>
       )}
+
+      {captura && <SaldoModal captura={captura} onClose={() => setCaptura(null)} onGuardar={guardarCaptura} />}
 
       {/* Modal: Real Manual — agregar, editar y eliminar */}
       {modalManual && manualPid && (
