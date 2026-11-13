@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, Fragment } from 'react'
 import { dbCtrl, dbComp, dbCfg } from '@/lib/supabase'
 import { cargarCentrosAgrupados, idsCentrosFiltro, centrosDeAgrupador, agrupadoresUsados, CentroIngresoAgr, AgrupadorIngreso } from '@/lib/centrosIngreso'
 import { cargarPartidasPresupuesto } from '@/lib/pptoPartidasPresupuesto'
-import { Loader, RefreshCw, BookOpen, Layers, List, Trash2, Save, Building2, CalendarRange, Download, Sigma } from 'lucide-react'
+import { Loader, RefreshCw, BookOpen, Layers, List, Trash2, Save, Building2, CalendarRange, Download, Sigma, ListTree } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 import { useAuth } from '@/lib/AuthContext'
@@ -16,6 +16,7 @@ import { esComodin } from '@/lib/pptoComodin'
 import { cargarTiposGasto, armarCatalogo } from '@/lib/tiposGasto'
 import { exportarResumenExcel, lineasEgresoPorArea } from '../exportResumen'
 import { agruparPorArea, nombresDe } from '../agrupaArea'
+import ArbolResumen from '../ArbolResumen'
 import GridMensual, { type CeldaInfo } from '../GridMensual'
 import { fetchDevengadoSinIvaPorPartida } from '@/lib/cobranzaCuotas'
 
@@ -81,7 +82,7 @@ const CLASIFICACION_LABELS: Record<Clasificacion, { ingresos: string; egresos: s
 }
 
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
-const VISTA_LABEL = { detalle: 'Detalle', concepto: 'Concepto', consolidado: 'Consolidado', agrupado: 'Agrupado' } as const
+const VISTA_LABEL = { arbol: 'Árbol', detalle: 'Detalle', concepto: 'Concepto', consolidado: 'Consolidado', agrupado: 'Agrupado' } as const
 
 const fmt = (n: number) =>
   '$' + Math.abs(n).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -234,7 +235,7 @@ export default function ComparativoPage() {
   // Filtros
   const [filterTipo, setFilterTipo] = useState<'' | 'ingreso' | 'egreso'>('')
   const [filterMes,  setFilterMes]  = useState<number>(0) // 0 = Acumulado
-  const [vista, setVista] = useState<'detalle' | 'concepto' | 'consolidado' | 'agrupado'>('detalle')
+  const [vista, setVista] = useState<'arbol' | 'detalle' | 'concepto' | 'consolidado' | 'agrupado'>('arbol')
   const [modo, setModo] = useState<'resumen' | 'mensual'>('resumen')
   const [drillGrupo, setDrillGrupo] = useState<{ nombre: string; tipo: 'ingreso' | 'egreso'; partidas: FilaPartida[] } | null>(null)
 
@@ -501,7 +502,7 @@ export default function ComparativoPage() {
         setPresupuestos(list)
         if (list.length > 0) {
           setSelId(list[0].id)
-          if (esTodos(list[0])) setVista('consolidado')
+          if (esTodos(list[0])) setVista('arbol')
           loadEverything(list[0])
         } else setLoading(false)
       })
@@ -527,7 +528,7 @@ export default function ComparativoPage() {
     setSelId(id)
     const p = presupuestos.find(x => x.id === id)
     if (p) loadEverything(p, true)
-    if (esTodos(p)) setVista('consolidado')
+    if (esTodos(p)) setVista('arbol')
     setFiltroAgrIng(''); setFiltroCentroIng(''); setFiltroSeccion(''); setFiltroConcepto('')
     setFiltroCC(''); setFiltroArea(''); setFiltroZonaIng(''); setFiltroZonaEgr('')
   }
@@ -740,6 +741,9 @@ export default function ComparativoPage() {
   const ingRows = filas.filter(p => p.tipo === 'ingreso')
   const egrRows = filas.filter(p => p.tipo === 'egreso')
   const nombres = nombresDe(centrosCostoF, areasF)
+  // Prom. mensual del Árbol: en Acumulado año, Real ÷ meses con movimiento.
+  const mesesPromedio = filterMes !== 0 ? 0 : Math.max(0, ...filas.flatMap(f =>
+    Object.entries(realMensual[f.id] ?? {}).filter(([, v]) => Number(v) !== 0).map(([m]) => Number(m))))
 
   // Totales de sección
   function totalSeccion(rows: FilaPartida[], field: 'pptoVal' | 'realVal') {
@@ -1100,6 +1104,7 @@ export default function ComparativoPage() {
         {/* Vista: Detalle / Concepto (CC) / Consolidado (empresa) / Agrupado */}
         <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
           {([
+            { v: 'arbol',    label: 'Árbol',    icon: ListTree },
             { v: 'detalle',  label: 'Detalle',  icon: List },
             { v: 'concepto', label: 'Concepto', icon: Building2 },
             { v: 'consolidado', label: 'Consolidado', icon: Sigma },
@@ -1184,8 +1189,13 @@ export default function ComparativoPage() {
           <div id="reporte-print-area" className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {modo === 'mensual' ? (
             <GridMensual {...nombres} nombreCentroIng={nombreCentroIng} filas={filas} detMap={pptoMensual} realMap={realMensual}
-              vista={vista} agrupadores={agrupadores}
+              vista={vista === 'arbol' ? 'consolidado' : vista} agrupadores={agrupadores}
               archivo="Comparativo-Presupuesto-vs-Real" onCelda={handleCelda} pptoFallback={pptoFallbackMes} labels={CLASIFICACION_LABELS} netoLabel="Balance Neto" />
+          ) : vista === 'arbol' ? (
+            <ArbolResumen filas={filas} agrupadores={agrupadores} labels={CLASIFICACION_LABELS}
+              netoLabel="Balance Neto" {...nombres} nombreCentroIng={nombreCentroIng}
+              mesesPromedio={mesesPromedio}
+              onDrill={handleDrill} onDrillOps={handleDrillOps} onManual={handleManual} />
           ) : (
           <div style={{ overflowX: 'auto' }}>
           <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
