@@ -2,7 +2,7 @@
 import { Fragment, useState } from 'react'
 import { Pencil, ChevronRight, ChevronDown, Landmark, AlertTriangle } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
-import { FUENTE_LABEL, type DiaSaldo, type FuenteSaldo } from '@/lib/saldosFlujo'
+import { FUENTE_LABEL, explicaDiferencia, type DiaSaldo, type FuenteSaldo } from '@/lib/saldosFlujo'
 
 /**
  * UI de saldos de Flujo de Efectivo: tarjeta del periodo, tabla mensual,
@@ -17,6 +17,7 @@ const colorSaldo = (v: number) => v < 0 ? '#dc2626' : '#1e293b'
 type Resumen = {
   inicial: number; inicialCapturado: boolean; ingresos: number; egresos: number; neto: number; final: number
   real: number | null; fechaReal: string | null; fuenteReal: FuenteSaldo | null; diferencia: number | null
+  finalAlReal?: number | null
 }
 export type Captura = { tipo: 'inicial' | 'real'; fecha: string; monto: number | null; notas?: string | null }
 
@@ -77,9 +78,9 @@ export function TarjetaSaldos({ r, periodo, fechaIni, fechaFin, esInicioAnio, fu
         <div style={{ ...box, borderRight: 'none' }}>
           <div style={lbl}>Diferencia sin conciliar</div>
           <div style={{ ...val, color: r.diferencia == null ? '#cbd5e1' : Math.abs(r.diferencia) < 1 ? '#15803d' : '#b45309' }}>
-            {r.diferencia == null ? '—' : fmt(r.diferencia)}
+            {r.diferencia == null ? '—' : `${r.diferencia > 0 ? '+' : ''}${fmt(r.diferencia)}`}
           </div>
-          <div style={{ fontSize: 11, color: '#94a3b8' }}>Real − calculado</div>
+          <div style={{ fontSize: 11, color: '#94a3b8' }}>{explicaDiferencia(r) ?? 'Saldo real − saldo calculado'}</div>
         </div>
       </div>
     </div>

@@ -243,7 +243,7 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
       fila('SALDO INICIAL', x => x.inicial, primero?.inicial ?? null)
       fila('SALDO FINAL (calculado)', x => x.final, ultimo?.final ?? null)
       fila('SALDO REAL EN BANCO', x => x.real, conReal ? s(conReal)!.real : null)
-      fila('DIFERENCIA SIN CONCILIAR', x => x.diferencia, conReal ? s(conReal)!.diferencia : null)
+      fila('DIFERENCIA SIN CONCILIAR (saldo real − saldo calculado)', x => x.diferencia, conReal ? s(conReal)!.diferencia : null)
     }
     const ws = XLSX.utils.aoa_to_sheet(aoa)
     ws['!cols'] = [{ wch: 42 }, ...meses.map(() => ({ wch: 13 })), { wch: 15 }]

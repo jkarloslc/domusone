@@ -3,7 +3,7 @@ import { Fragment } from 'react'
 import * as XLSX from 'xlsx'
 import { Download } from 'lucide-react'
 import { rubroDePartida, RUBROS_VACIO, type CatalogoRubros } from '@/lib/rubros'
-import type { SaldosFila } from '@/lib/saldosFlujo'
+import { explicaDiferencia, type SaldosFila } from '@/lib/saldosFlujo'
 
 /**
  * Estado de resultados por unidad de negocio (Fase 3 del Árbol).
@@ -168,7 +168,8 @@ export default function MatrizUnidades<T extends FilaMatriz>({
       aoa.push([])
       filaSaldoX('SALDO FINAL', saldos.final)
       filaSaldoX('SALDO REAL EN BANCO', saldos.real)
-      filaSaldoX('DIFERENCIA SIN CONCILIAR', saldos.diferencia)
+      filaSaldoX('DIFERENCIA SIN CONCILIAR (saldo real − saldo calculado)', saldos.diferencia)
+      { const t = explicaDiferencia(saldos); if (t) aoa.push([t]) }
     }
     const ws = XLSX.utils.aoa_to_sheet(aoa)
     const wb = XLSX.utils.book_new()
@@ -241,7 +242,7 @@ export default function MatrizUnidades<T extends FilaMatriz>({
             {saldos && <>
               {filaSaldo('Saldo final', saldos.final, true)}
               {filaSaldo('Saldo real en banco', saldos.real, false)}
-              {filaSaldo('Diferencia sin conciliar', saldos.diferencia, false,
+              {filaSaldo(`Diferencia sin conciliar${explicaDiferencia(saldos) ? ' · ' + explicaDiferencia(saldos) : ''}`, saldos.diferencia, false,
                 saldos.diferencia == null ? undefined : Math.abs(saldos.diferencia) < 1 ? '#15803d' : '#b45309')}
             </>}
           </tbody>

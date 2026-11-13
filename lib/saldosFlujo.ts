@@ -130,6 +130,8 @@ export function resumenPeriodo(dias: DiaSaldo[]) {
     fechaReal: conReal?.fecha ?? null,
     fuenteReal: conReal?.fuenteReal ?? null,
     diferencia: conReal ? conReal.diferencia : null,
+    /** Saldo calculado del MISMO día del saldo real (contra el que se mide la diferencia). */
+    finalAlReal: conReal ? conReal.final : null,
   }
 }
 
@@ -143,6 +145,26 @@ export async function guardarSaldo(tipo: 'inicial' | 'real', fecha: string, mont
 }
 
 /** Saldos que se muestran como filas en el estado de resultados (Árbol / Por unidad). */
-export type SaldosFila = { inicial: number; final: number; real: number | null; diferencia: number | null }
+export type SaldosFila = { inicial: number; final: number; real: number | null; diferencia: number | null; finalAlReal?: number | null; fechaReal?: string | null }
+
+const $ = (n: number) => (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString('es-MX', { maximumFractionDigits: 0 })
+
+/**
+ * Diferencia sin conciliar = saldo real − saldo calculado (del mismo día).
+ * + → en el banco hay MÁS de lo que explican los movimientos registrados
+ *     (ingresos sin registrar, egresos registrados de más o un saldo inicial bajo).
+ * − → en el banco hay MENOS (egresos sin registrar, ingresos registrados de más).
+ * Texto con la operación completa para que el signo no se preste a confusión
+ * cuando el calculado es negativo (restar un negativo suma).
+ */
+export function explicaDiferencia(s: SaldosFila | null | undefined): string | null {
+  if (!s || s.real == null || s.diferencia == null) return null
+  const calc = s.finalAlReal ?? s.final
+  const sentido = Math.abs(s.diferencia) < 1 ? 'conciliado'
+    : s.diferencia > 0 ? 'hay más en banco que lo registrado' : 'hay menos en banco que lo registrado'
+  const cal = calc < 0 ? `(${$(calc)})` : $(calc)
+  const dia = s.fechaReal ? ` al ${new Date(s.fechaReal + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}` : ''
+  return `${$(s.real)} real − ${cal} calculado${dia} = ${s.diferencia > 0 ? '+' : ''}${$(s.diferencia)} · ${sentido}`
+}
 
 export const FUENTE_LABEL: Record<FuenteSaldo, string> = { manual: 'Manual', banco: 'Estado de cuenta', tesoreria: 'Tesorería' }

@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx'
 import { agruparPorArea } from './agrupaArea'
-import type { SaldosFila } from '@/lib/saldosFlujo'
+import { explicaDiferencia, type SaldosFila } from '@/lib/saldosFlujo'
 
 /** banda = renglón de subtotal CC · Área; no suma en los totales. */
 export type FilaResumen = { nombre: string; ppto: number; real: number; banda?: boolean }
@@ -45,7 +45,8 @@ export function exportarResumenExcel({ titulo, secciones, netoLabel, archivo, sa
   if (saldos) aoa.push([],
     ['SALDO FINAL (saldo inicial + flujo neto, todas las partidas)', null, saldos.final],
     ['SALDO REAL EN BANCO', null, saldos.real],
-    ['DIFERENCIA SIN CONCILIAR (real − calculado)', null, saldos.diferencia])
+    ['DIFERENCIA SIN CONCILIAR (saldo real − saldo calculado)', null, saldos.diferencia],
+    ...(explicaDiferencia(saldos) ? [[explicaDiferencia(saldos)!]] : []))
 
   const ws = XLSX.utils.aoa_to_sheet(aoa)
   ws['!cols'] = [{ wch: 46 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 12 }]

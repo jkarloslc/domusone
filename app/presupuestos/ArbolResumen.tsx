@@ -2,7 +2,7 @@
 import { Fragment, useState } from 'react'
 import { ChevronRight, ChevronDown } from 'lucide-react'
 import { rubroDePartida, RUBROS_VACIO, type CatalogoRubros } from '@/lib/rubros'
-import type { SaldosFila } from '@/lib/saldosFlujo'
+import { explicaDiferencia, type SaldosFila } from '@/lib/saldosFlujo'
 
 /**
  * Vista Árbol del Resumen (Comparativo y Flujo de Efectivo).
@@ -379,7 +379,7 @@ export default function ArbolResumen<T extends FilaArbol>({
             {saldos && <>
               {filaSaldo('Saldo final', saldos.final, true, 'saldo inicial + flujo neto (todas las partidas)')}
               {filaSaldo('Saldo real en banco', saldos.real, false)}
-              {filaSaldo('Diferencia sin conciliar', saldos.diferencia, false, 'real − calculado',
+              {filaSaldo('Diferencia sin conciliar', saldos.diferencia, false, explicaDiferencia(saldos) ?? 'saldo real − saldo calculado',
                 saldos.diferencia == null ? undefined : Math.abs(saldos.diferencia) < 1 ? '#15803d' : '#b45309')}
             </>}
           </tbody>
