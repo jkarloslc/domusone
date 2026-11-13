@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx'
 import { agruparPorArea } from './agrupaArea'
+import type { SaldosFila } from '@/lib/saldosFlujo'
 
 /** banda = renglón de subtotal CC · Área; no suma en los totales. */
 export type FilaResumen = { nombre: string; ppto: number; real: number; banda?: boolean }
@@ -9,13 +10,16 @@ export type SeccionResumen = {
 }
 
 /** Excel de la vista Resumen (Presupuestado vs Real) tal como se ve en pantalla. */
-export function exportarResumenExcel({ titulo, secciones, netoLabel, archivo }: {
+export function exportarResumenExcel({ titulo, secciones, netoLabel, archivo, saldos }: {
   titulo: string; secciones: SeccionResumen[]; netoLabel: string; archivo: string
+  /** Flujo de Efectivo: saldo inicial arriba y saldo final / real / diferencia al pie (columna Real). */
+  saldos?: SaldosFila | null
 }) {
   const aoa: (string | number | null)[][] = [
     [titulo], [],
     ['Partida', 'Presupuestado', 'Real', 'Variación', '% Ejercido'],
   ]
+  if (saldos) aoa.push(['SALDO INICIAL', null, saldos.inicial], [])
   const pct = (real: number, ppto: number) => ppto > 0 ? real / ppto : null
   const suma = (rows: FilaResumen[], k: 'ppto' | 'real') => rows.reduce((s, r) => s + (r.banda ? 0 : r[k]), 0)
   const linea = (nombre: string, ppto: number, real: number) =>
@@ -38,6 +42,10 @@ export function exportarResumenExcel({ titulo, secciones, netoLabel, archivo }: 
   })
   if (todosIng.length > 0 && todosEgr.length > 0)
     linea(netoLabel, suma(todosIng, 'ppto') - suma(todosEgr, 'ppto'), suma(todosIng, 'real') - suma(todosEgr, 'real'))
+  if (saldos) aoa.push([],
+    ['SALDO FINAL (saldo inicial + flujo neto, todas las partidas)', null, saldos.final],
+    ['SALDO REAL EN BANCO', null, saldos.real],
+    ['DIFERENCIA SIN CONCILIAR (real − calculado)', null, saldos.diferencia])
 
   const ws = XLSX.utils.aoa_to_sheet(aoa)
   ws['!cols'] = [{ wch: 46 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 12 }]

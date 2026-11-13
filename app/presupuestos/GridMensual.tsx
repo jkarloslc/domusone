@@ -3,6 +3,7 @@ import { useState } from 'react'
 import * as XLSX from 'xlsx'
 import { Download } from 'lucide-react'
 import { agruparPorArea } from './agrupaArea'
+import type { SaldosFila } from '@/lib/saldosFlujo'
 
 type Clasificacion = 'operativo' | 'financiero' | 'intercompanias'
 type DetMap = Record<number, Record<number, number>>
@@ -30,7 +31,9 @@ const NUM: React.CSSProperties = { textAlign: 'right', fontVariantNumeric: 'tabu
 
 const SIN_AGRUPADOR = 'Sin Agrupador'
 
-export default function GridMensual({ filas, detMap, realMap, vista, agrupadores, labels: LABELS, netoLabel, archivo, onCelda, pptoFallback, nombreCC, nombreArea, nombreCentroIng, mesSel = 0 }: {
+export default function GridMensual({ filas, detMap, realMap, vista, agrupadores, labels: LABELS, netoLabel, archivo, onCelda, pptoFallback, nombreCC, nombreArea, nombreCentroIng, mesSel = 0, saldosMes }: {
+  /** Flujo de Efectivo: saldos por mes (índice 0 = enero) para agregarlos al Excel. */
+  saldosMes?: (SaldosFila | null)[]
   /** Mes elegido en el filtro (1-12): la vista muestra solo esa columna. 0 = los 12 meses. */
   mesSel?: number
   /** Consolidado: los ingresos se agrupan por Centro de Ingreso. */
@@ -228,6 +231,20 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
       aoa.push([])
     })
     if (ingAll.length > 0 && egrAll.length > 0) neto(netoLabel, ingAll, egrAll)
+    if (saldosMes) {
+      // Saldos consolidados por mes; en Total: inicial del primer mes, final/real/diferencia del último.
+      const vis = (m: number) => !mesSel || m === mesSel
+      const s = (m: number) => saldosMes[m - 1]
+      const conReal = [...mesesSuma].reverse().find(m => s(m)?.real != null)
+      const fila = (label: string, f: (x: SaldosFila) => number | null, total: number | null) =>
+        aoa.push([label, ...meses.map(m => { const x = s(m); return vis(m) && x ? (f(x) ?? '') : '' }), total ?? ''])
+      const primero = s(mesesSuma[0]), ultimo = s(mesesSuma[mesesSuma.length - 1])
+      aoa.push([])
+      fila('SALDO INICIAL', x => x.inicial, primero?.inicial ?? null)
+      fila('SALDO FINAL (calculado)', x => x.final, ultimo?.final ?? null)
+      fila('SALDO REAL EN BANCO', x => x.real, conReal ? s(conReal)!.real : null)
+      fila('DIFERENCIA SIN CONCILIAR', x => x.diferencia, conReal ? s(conReal)!.diferencia : null)
+    }
     const ws = XLSX.utils.aoa_to_sheet(aoa)
     ws['!cols'] = [{ wch: 42 }, ...meses.map(() => ({ wch: 13 })), { wch: 15 }]
     ws['!freeze'] = { xSplit: 1, ySplit: 1 } as any

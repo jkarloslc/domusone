@@ -827,7 +827,7 @@ export default function FlujoEfectivoPage() {
           ? lineasEgresoPorArea(porClasificacion(egrRows, clas), nombres.nombreCC, nombres.nombreArea)
           : lineas(porClasificacion(egrRows, clas)),
       })),
-      netoLabel: 'Flujo Neto de Efectivo', archivo: 'Flujo-de-Efectivo',
+      netoLabel: 'Flujo Neto de Efectivo', archivo: 'Flujo-de-Efectivo', saldos: resumenSaldos,
     })
   }
 
@@ -1068,7 +1068,7 @@ export default function FlujoEfectivoPage() {
             <VistaDiaria dias={diasMes(mesDiario)} movs={movsDetalle} canWrite={canWrite('presupuestos')}
               onCapturar={abrirCaptura} sinMes={!filterMes} />
           ) : modo === 'mensual' ? (<>
-            <GridMensual {...nombres} mesSel={filterMes} nombreCentroIng={nombreCentroIng} filas={filas} detMap={detMap} realMap={realMap} vista={vista === 'arbol' ? 'consolidado' : vista} agrupadores={agrupadores}
+            <GridMensual {...nombres} mesSel={filterMes} saldosMes={resumenesMes} nombreCentroIng={nombreCentroIng} filas={filas} detMap={detMap} realMap={realMap} vista={vista === 'arbol' ? 'consolidado' : vista} agrupadores={agrupadores}
               archivo="Flujo-de-Efectivo" onCelda={handleCelda} labels={CLASIFICACION_LABELS} netoLabel="Flujo Neto de Efectivo" />
             <SaldosMensuales meses={resumenesMes} mesSel={filterMes} />
           </>) : modo === 'unidades' ? (

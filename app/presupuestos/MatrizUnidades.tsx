@@ -140,8 +140,12 @@ export default function MatrizUnidades<T extends FilaMatriz>({
 
   const margen = (i: number, e: number) => i > 0 ? `${((i - e) / i * 100).toFixed(1)}%` : '—'
 
+  const totIng = filas.filter(f => f.tipo === 'ingreso'), totEgr = filas.filter(f => f.tipo === 'egreso')
+
   function exportar() {
-    const aoa: (string | number)[][] = [['Concepto', ...unidades.map(nombreUnidad), 'Total']]
+    const aoa: (string | number | null)[][] = [['Concepto', ...unidades.map(nombreUnidad), 'Total']]
+    const filaSaldoX = (label: string, v: number | null) => aoa.push([label, ...unidades.map(() => null), v == null ? null : Math.round(v)])
+    if (saldos) { filaSaldoX('SALDO INICIAL', saldos.inicial); aoa.push([]) }
     secciones.forEach(({ clas, ing, egr, lIng, lEgr }) => {
       const L = labels[clas]
       const fila = (n: string, pu: Record<string, T[]>, tot: number) => [n, ...unidades.map(u => Math.round(suma(pu[u]))), Math.round(tot)]
@@ -159,6 +163,13 @@ export default function MatrizUnidades<T extends FilaMatriz>({
       aoa.push([L.balance, ...unidades.map(u => Math.round(suma(pi[u]) - suma(pe[u]))), Math.round(suma(ing) - suma(egr))])
     })
     aoa.push(['Margen operativo', ...unidades.map(u => margen(suma(ingOpU[u]), suma(egrOpU[u]))), margen(suma(ingOp), suma(egrOp))])
+    aoa.push([netoLabel, ...unidades.map(u => Math.round(suma(porUnidad(totIng)[u]) - suma(porUnidad(totEgr)[u]))), Math.round(suma(totIng) - suma(totEgr))])
+    if (saldos) {
+      aoa.push([])
+      filaSaldoX('SALDO FINAL', saldos.final)
+      filaSaldoX('SALDO REAL EN BANCO', saldos.real)
+      filaSaldoX('DIFERENCIA SIN CONCILIAR', saldos.diferencia)
+    }
     const ws = XLSX.utils.aoa_to_sheet(aoa)
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Por unidad')
@@ -167,7 +178,6 @@ export default function MatrizUnidades<T extends FilaMatriz>({
 
   if (unidades.length === 0) return <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Sin movimientos en el período</div>
 
-  const totIng = filas.filter(f => f.tipo === 'ingreso'), totEgr = filas.filter(f => f.tipo === 'egreso')
 
   return (
     <>
