@@ -58,6 +58,7 @@ type Partida     = {
   id_agrupador_fk:      number | null
   clasificacion:        Clasificacion
   modulo?:              string | null
+  comportamiento?:      'fijo' | 'variable' | null
   /** Venta diaria: en base devengado su Real se toma del real de caja. */
   devengado_igual_a_cobro: boolean
 }
@@ -240,7 +241,8 @@ export default function ComparativoPage() {
   // Filtros
   const [filterTipo, setFilterTipo] = useState<'' | 'ingreso' | 'egreso'>('')
   const [filterMes,  setFilterMes]  = useState<number>(0) // 0 = Acumulado
-  const [vista, setVista] = useState<'arbol' | 'detalle' | 'concepto' | 'consolidado' | 'agrupado'>('arbol')
+  const [vista, setVista] = useState<'arbol' | 'detalle' | 'concepto' | 'consolidado' | 'agrupado'>('arbol') // solo Árbol en pantalla; las demás quedan para Mensual/Excel
+  const [filtroComport, setFiltroComport] = useState<'' | 'fijo' | 'variable' | 'sin'>('')
   const [modo, setModo] = useState<'resumen' | 'mensual' | 'unidades'>('resumen')
   const [drillGrupo, setDrillGrupo] = useState<{ nombre: string; tipo: 'ingreso' | 'egreso'; partidas: FilaPartida[] } | null>(null)
 
@@ -263,7 +265,7 @@ export default function ComparativoPage() {
 
     const [pData, { data: det }, { data: manual }] = await Promise.all([
       cargarPartidasPresupuesto<Partida>(
-        'id, nombre, descripcion, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, id_tipo_gasto_fk, id_agrupador_fk, clasificacion, devengado_igual_a_cobro, modulo',
+        'id, nombre, descripcion, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, id_tipo_gasto_fk, id_agrupador_fk, clasificacion, devengado_igual_a_cobro, modulo, comportamiento',
         ids[0], modulo, q => q.eq('incluir_presupuesto', true).eq('clasificacion', 'operativo')),
       dbCtrl.from('ppto_presupuesto_det')
         .select('id_partida_fk, mes, monto, monto_devengado').in('id_presupuesto_fk', ids),
@@ -713,6 +715,7 @@ export default function ComparativoPage() {
   // ── Datos de tabla ──────────────────────────────────────────────
   const filas: FilaPartida[] = partidas
     .filter(p => !filterTipo || p.tipo === filterTipo)
+    .filter(p => !filtroComport || (filtroComport === 'sin' ? !p.comportamiento : p.comportamiento === filtroComport))
     // Filtro por Centro de Ingreso/Sección/Concepto (ingresos) o Centro de
     // Costo/Área (egresos) — mismo modelo que /dashboards/financiero.
     .filter(p => {
@@ -964,6 +967,15 @@ export default function ComparativoPage() {
           ))}
         </select>
 
+        {/* Fijo / Variable (ppto_partidas.comportamiento) */}
+        <select className="input" style={{ width: 150, flex: '0 0 auto' }}
+          value={filtroComport} onChange={e => setFiltroComport(e.target.value as '' | 'fijo' | 'variable' | 'sin')}>
+          <option value="">Fijo y variable</option>
+          <option value="fijo">Solo fijos</option>
+          <option value="variable">Solo variables</option>
+          <option value="sin">Sin definir</option>
+        </select>
+
         {/* Filtros por CC/Sección (ingresos) y CC/Área (egresos) — mismo modelo que Dashboard Financiero.
             Van antes que Tipo/Vista para que, si el ancho no alcanza, sean Tipo/Vista
             los que bajen de línea — estos filtros de datos se quedan junto a Presupuesto/Mes. */}
@@ -1115,28 +1127,6 @@ export default function ComparativoPage() {
           ))}
         </div>
 
-        {/* Vista: Detalle / Concepto (CC) / Consolidado (empresa) / Agrupado */}
-        <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
-          {([
-            { v: 'arbol',    label: 'Árbol',    icon: ListTree },
-            { v: 'detalle',  label: 'Detalle',  icon: List },
-            { v: 'concepto', label: 'Concepto', icon: Building2 },
-            { v: 'consolidado', label: 'Consolidado', icon: Sigma },
-            { v: 'agrupado', label: 'Agrupado', icon: Layers },
-          ] as const).map(({ v, label, icon: Icon }) => (
-            <button key={v} onClick={() => setVista(v)}
-              style={{
-                padding: '4px 14px', borderRadius: 18, border: 'none', cursor: 'pointer', fontSize: 12,
-                display: 'flex', alignItems: 'center', gap: 5,
-                background: vista === v ? '#fff' : 'transparent',
-                color: vista === v ? '#1e293b' : '#64748b',
-                fontWeight: vista === v ? 600 : 400,
-                boxShadow: vista === v ? '0 1px 3px rgba(0,0,0,.1)' : 'none',
-              }}>
-              <Icon size={12} /> {label}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* ── Qué se está comparando ─────────────────────────────── */}
@@ -1208,70 +1198,12 @@ export default function ComparativoPage() {
           ) : modo === 'unidades' ? (
             <MatrizUnidades filas={filas} agrupadores={agrupadores} rubros={rubrosCat} labels={CLASIFICACION_LABELS}
               netoLabel="Balance Neto" archivo="Comparativo" onDrill={handleDrill} />
-          ) : vista === 'arbol' ? (
+          ) : (
             <ArbolResumen filas={filasArbol} agrupadores={agrupadores} rubros={rubrosCat} labels={CLASIFICACION_LABELS}
               netoLabel="Balance Neto" {...nombres} nombreCentroIng={nombreCentroIng}
               mesesPromedio={mesesPromedio} zonasDeSeccion={zonasCat.zonasDeSeccion}
               prorrateoLotes={prorrateoLotes} onProrrateoLotes={setProrrateoLotes}
               onDrill={handleDrill} onDrillOps={handleDrillOps} onManual={handleManual} />
-          ) : (
-          <div style={{ overflowX: 'auto' }}>
-          <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                <th style={th}>Partida</th>
-                <th style={{ ...th, textAlign: 'right' }}>Presupuesto</th>
-                <th style={{ ...th, textAlign: 'right' }}>Real (sin IVA)</th>
-                <th style={{ ...th, textAlign: 'right' }}>Variación</th>
-                <th style={{ ...th, textAlign: 'center', minWidth: 110 }}>% Ejercido</th>
-                <th style={th}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {CLASIFICACIONES.map(clas => {
-                const ing = porClasificacion(ingRows, clas)
-                const egr = porClasificacion(egrRows, clas)
-                return (
-                  <SeccionClasificacion key={clas}
-                    labels={CLASIFICACION_LABELS[clas]}
-                    ingRows={ing} egrRows={egr}
-                    ingRowsConcepto={agruparPorConcepto(ing, vista !== 'consolidado')} egrRowsConcepto={agruparPorConcepto(egr, vista !== 'consolidado')}
-                    ingRowsAgrupado={agrupar(ing)} egrRowsAgrupado={agrupar(egr)}
-                    vista={vista} canWriteManual={canWrite('presupuestos') && !esTodos(selPpto)}
-                    {...nombres}
-                    onManual={handleManual} onDrill={handleDrill} onDrillOps={handleDrillOps}
-                  />
-                )
-              })}
-
-              {/* Balance neto */}
-              {ingRows.length > 0 && egrRows.length > 0 && (() => {
-                const pptoB = totalSeccion(ingRows, 'pptoVal') - totalSeccion(egrRows, 'pptoVal')
-                const realB = totalSeccion(ingRows, 'realVal') - totalSeccion(egrRows, 'realVal')
-                const varAbs = realB - pptoB
-                return (
-                  <tr className="ppto-print-total" style={{ background: '#1e293b', fontWeight: 700 }}>
-                    <td style={{ ...td, color: '#f1f5f9', fontSize: 12, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                      Balance Neto
-                    </td>
-                    <td style={{ ...td, textAlign: 'right', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
-                      {fmt(pptoB)}
-                    </td>
-                    <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums',
-                      color: realB >= 0 ? '#86efac' : '#fca5a5' }}>
-                      {fmt(realB)}
-                    </td>
-                    <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums',
-                      color: varAbs >= 0 ? '#86efac' : '#fca5a5' }}>
-                      {varAbs !== 0 ? `${varAbs > 0 ? '+' : '-'}${fmt(Math.abs(varAbs))}` : '—'}
-                    </td>
-                    <td colSpan={2} />
-                  </tr>
-                )
-              })()}
-            </tbody>
-          </table>
-          </div>
           )}
           </div>
         </>
@@ -1579,236 +1511,6 @@ function totalSeccionRows(rows: FilaPartida[], field: 'pptoVal' | 'realVal') {
 function FallbackMark() {
   return <span title="Generado sin capturar: se usa el monto de Cobro"
     style={{ color: '#7c3aed', fontWeight: 700, marginLeft: 3, cursor: 'help' }}>*</span>
-}
-
-function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRowsConcepto, ingRowsAgrupado, egrRowsAgrupado, vista, canWriteManual, nombreCC, nombreArea, onManual, onDrill, onDrillOps }: {
-  nombreCC: (id: number) => string
-  nombreArea: (id: number) => string
-  labels: { ingresos: string; egresos: string; balance: string }
-  ingRows: FilaPartida[]; egrRows: FilaPartida[]
-  ingRowsConcepto: FilaGrupo[]; egrRowsConcepto: FilaGrupo[]
-  ingRowsAgrupado: FilaGrupo[]; egrRowsAgrupado: FilaGrupo[]
-  vista: 'detalle' | 'concepto' | 'consolidado' | 'agrupado'
-  canWriteManual: boolean
-  onManual: (pid: number) => void
-  onDrill: (nombre: string, tipo: 'ingreso' | 'egreso', partidas: FilaPartida[]) => void
-  onDrillOps: (p: FilaPartida) => void
-}) {
-  if (ingRows.length === 0 && egrRows.length === 0) return null
-  const porTipo  = vista === 'concepto' || vista === 'consolidado'
-  const ingGrupo = porTipo ? ingRowsConcepto : ingRowsAgrupado
-  const egrGrupo = porTipo ? egrRowsConcepto : egrRowsAgrupado
-  const egrPorArea = agruparPorArea(egrRows, nombreCC, nombreArea)
-  return (
-    <>
-      {ingRows.length > 0 && (
-        <>
-          <tr className="ppto-print-band">
-            <td colSpan={6} style={{
-              padding: '7px 16px', background: '#f0fdf4',
-              fontWeight: 700, fontSize: 11, color: '#15803d',
-              textTransform: 'uppercase', letterSpacing: '.06em',
-              borderTop: '2px solid #bbf7d0',
-            }}>
-              {labels.ingresos}
-            </td>
-          </tr>
-          {vista === 'detalle' ? ingRows.map((p, i) => (
-            <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9',
-              background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-              <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{p.nombre}</span>{p.descripcion && <span style={{ display: 'block', fontSize: 11, color: '#94a3b8' }}>{p.descripcion}</span>}</td>
-              <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
-                {p.pptoVal > 0 ? <>{fmt(p.pptoVal)}{p.pptoFallback && <FallbackMark />}</> : <span style={{ color: '#cbd5e1' }}>—</span>}
-              </td>
-              <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
-                {p.realVal > 0
-                  ? <MontoDrillButton monto={p.realVal} fmt={fmt}
-                      onClick={() => p.fuente_real === 'manual' ? onManual(p.id) : onDrillOps(p)} />
-                  : <span style={{ color: '#cbd5e1' }}>—</span>}
-              </td>
-              <td style={{ ...td, textAlign: 'right' }}>
-                <VariacionCell varAbs={p.varAbs} varPct={p.varPct} tipo="ingreso" />
-              </td>
-              <td style={{ ...td, textAlign: 'center' }}>
-                <PctEjercidoCell real={p.realVal} ppto={p.pptoVal} tipo="ingreso" />
-              </td>
-              <td style={{ ...td, textAlign: 'right' }}>
-                {canWriteManual && p.fuente_real === 'manual' && (
-                  <button className="btn-ghost" onClick={() => onManual(p.id)}
-                    style={{ fontSize: 11, padding: '3px 8px', color: '#64748b' }}>
-                    + Manual
-                  </button>
-                )}
-              </td>
-            </tr>
-          )) : ingGrupo.map((g, i) => (
-            <tr key={g.id} style={{ borderBottom: '1px solid #f1f5f9',
-              background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-              <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{g.nombre}</span></td>
-              <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
-                {g.pptoVal > 0 ? <><MontoDrillButton monto={g.pptoVal} onClick={() => onDrill(g.nombre, 'ingreso', g.partidas)} fmt={fmt} />{g.partidas.some(x => x.pptoFallback) && <FallbackMark />}</> : <span style={{ color: '#cbd5e1' }}>—</span>}
-              </td>
-              <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
-                {g.realVal > 0 ? <MontoDrillButton monto={g.realVal} onClick={() => onDrill(g.nombre, 'ingreso', g.partidas)} fmt={fmt} /> : <span style={{ color: '#cbd5e1' }}>—</span>}
-              </td>
-              <td style={{ ...td, textAlign: 'right' }}>
-                <VariacionCell varAbs={g.varAbs} varPct={g.varPct} tipo="ingreso" />
-              </td>
-              <td style={{ ...td, textAlign: 'center' }}>
-                <PctEjercidoCell real={g.realVal} ppto={g.pptoVal} tipo="ingreso" />
-              </td>
-              <td style={td}></td>
-            </tr>
-          ))}
-          <TotalSectionRow
-            label={`Total ${labels.ingresos}`}
-            ppto={totalSeccionRows(ingRows, 'pptoVal')}
-            real={totalSeccionRows(ingRows, 'realVal')}
-            tipo="ingreso"
-            bg="#dcfce7" color="#15803d" bgTotal="#bbf7d0"
-          />
-        </>
-      )}
-
-      {egrRows.length > 0 && (
-        <>
-          <tr className="ppto-print-band">
-            <td colSpan={6} style={{
-              padding: '7px 16px', background: '#fef2f2',
-              fontWeight: 700, fontSize: 11, color: '#b91c1c',
-              textTransform: 'uppercase', letterSpacing: '.06em',
-              borderTop: '2px solid #fecaca',
-            }}>
-              {labels.egresos}
-            </td>
-          </tr>
-          {vista === 'detalle' ? egrPorArea.map(g => (
-            <Fragment key={g.key}>
-            <tr style={{ background: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
-              <td style={{ ...td, fontWeight: 700, color: '#475569', fontSize: 12 }}>{g.label}</td>
-              <td style={{ ...td, textAlign: 'right', fontWeight: 700, color: '#475569', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSeccionRows(g.rows, 'pptoVal'))}</td>
-              <td style={{ ...td, textAlign: 'right', fontWeight: 700, color: '#475569', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSeccionRows(g.rows, 'realVal'))}</td>
-              <td style={td}></td><td style={td}></td><td style={td}></td>
-            </tr>
-            {g.rows.map((p, i) => (
-            <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9',
-              background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-              <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{p.nombre}</span>{p.descripcion && <span style={{ display: 'block', fontSize: 11, color: '#94a3b8' }}>{p.descripcion}</span>}</td>
-              <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
-                {p.pptoVal > 0 ? <>{fmt(p.pptoVal)}{p.pptoFallback && <FallbackMark />}</> : <span style={{ color: '#cbd5e1' }}>—</span>}
-              </td>
-              <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
-                {p.realVal > 0
-                  ? <MontoDrillButton monto={p.realVal} fmt={fmt}
-                      onClick={() => p.fuente_real === 'manual' ? onManual(p.id) : onDrillOps(p)} />
-                  : <span style={{ color: '#cbd5e1' }}>—</span>}
-              </td>
-              <td style={{ ...td, textAlign: 'right' }}>
-                <VariacionCell varAbs={p.varAbs} varPct={p.varPct} tipo="egreso" />
-              </td>
-              <td style={{ ...td, textAlign: 'center' }}>
-                <PctEjercidoCell real={p.realVal} ppto={p.pptoVal} tipo="egreso" />
-              </td>
-              <td style={{ ...td, textAlign: 'right' }}>
-                {canWriteManual && p.fuente_real === 'manual' && (
-                  <button className="btn-ghost" onClick={() => onManual(p.id)}
-                    style={{ fontSize: 11, padding: '3px 8px', color: '#64748b' }}>
-                    + Manual
-                  </button>
-                )}
-              </td>
-            </tr>
-            ))}
-            </Fragment>
-          )) : egrGrupo.map((g, i) => (
-            <tr key={g.id} style={{ borderBottom: '1px solid #f1f5f9',
-              background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-              <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{g.nombre}</span></td>
-              <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
-                {g.pptoVal > 0 ? <><MontoDrillButton monto={g.pptoVal} onClick={() => onDrill(g.nombre, 'egreso', g.partidas)} fmt={fmt} />{g.partidas.some(x => x.pptoFallback) && <FallbackMark />}</> : <span style={{ color: '#cbd5e1' }}>—</span>}
-              </td>
-              <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
-                {g.realVal > 0 ? <MontoDrillButton monto={g.realVal} onClick={() => onDrill(g.nombre, 'egreso', g.partidas)} fmt={fmt} /> : <span style={{ color: '#cbd5e1' }}>—</span>}
-              </td>
-              <td style={{ ...td, textAlign: 'right' }}>
-                <VariacionCell varAbs={g.varAbs} varPct={g.varPct} tipo="egreso" />
-              </td>
-              <td style={{ ...td, textAlign: 'center' }}>
-                <PctEjercidoCell real={g.realVal} ppto={g.pptoVal} tipo="egreso" />
-              </td>
-              <td style={td}></td>
-            </tr>
-          ))}
-          <TotalSectionRow
-            label={`Total ${labels.egresos}`}
-            ppto={totalSeccionRows(egrRows, 'pptoVal')}
-            real={totalSeccionRows(egrRows, 'realVal')}
-            tipo="egreso"
-            bg="#fee2e2" color="#b91c1c" bgTotal="#fecaca"
-          />
-        </>
-      )}
-
-      {ingRows.length > 0 && egrRows.length > 0 && (() => {
-        const pptoB = totalSeccionRows(ingRows, 'pptoVal') - totalSeccionRows(egrRows, 'pptoVal')
-        const realB = totalSeccionRows(ingRows, 'realVal') - totalSeccionRows(egrRows, 'realVal')
-        const varAbs = realB - pptoB
-        return (
-          <tr style={{ background: '#334155', fontWeight: 700 }}>
-            <td style={{ ...td, color: '#f1f5f9', fontSize: 12, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-              {labels.balance}
-            </td>
-            <td style={{ ...td, textAlign: 'right', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
-              {fmt(pptoB)}
-            </td>
-            <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums',
-              color: realB >= 0 ? '#86efac' : '#fca5a5' }}>
-              {fmt(realB)}
-            </td>
-            <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums',
-              color: varAbs >= 0 ? '#86efac' : '#fca5a5' }}>
-              {varAbs !== 0 ? `${varAbs > 0 ? '+' : '-'}${fmt(Math.abs(varAbs))}` : '—'}
-            </td>
-            <td colSpan={2} />
-          </tr>
-        )
-      })()}
-    </>
-  )
-}
-
-function TotalSectionRow({ label, ppto, real, tipo, bg, color, bgTotal }: {
-  label: string; ppto: number; real: number; tipo: 'ingreso' | 'egreso'
-  bg: string; color: string; bgTotal: string
-}) {
-  const varAbs = real - ppto
-  const varPct = ppto > 0 ? Math.round(((real - ppto) / ppto) * 100) : null
-  return (
-    <tr className="ppto-print-total" style={{ background: bg, fontWeight: 700 }}>
-      <td style={{ padding: '10px 16px', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color }}>
-        {label}
-      </td>
-      <td style={{ padding: '10px 16px', textAlign: 'right', color, fontVariantNumeric: 'tabular-nums' }}>
-        {fmt(ppto)}
-      </td>
-      <td style={{ padding: '10px 16px', textAlign: 'right', color, fontVariantNumeric: 'tabular-nums', background: bgTotal }}>
-        {fmt(real)}
-      </td>
-      <td style={{ padding: '10px 16px', textAlign: 'right', color }}>
-        {varAbs !== 0
-          ? <span style={{ fontVariantNumeric: 'tabular-nums' }}>{varAbs > 0 ? '+' : '-'}{fmt(Math.abs(varAbs))}</span>
-          : '—'}
-      </td>
-      <td style={{ padding: '10px 16px', textAlign: 'center' }}>
-        {varPct !== null ? (
-          <span style={{ fontSize: 13, fontWeight: 700, color }}>
-            {varPct > 0 ? '+' : ''}{varPct}%
-          </span>
-        ) : '—'}
-      </td>
-      <td />
-    </tr>
-  )
 }
 
 const th: React.CSSProperties = {

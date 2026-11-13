@@ -55,6 +55,8 @@ type Partida = {
   id_concepto_fk:       number | null
   id_tipo_gasto_fk:     number | null
   id_agrupador_fk: number | null
+  /** Fijo / Variable — dimensión propia, ya no en el nombre del agrupador (migr. 20261113120000). */
+  comportamiento: 'fijo' | 'variable' | null
   clasificacion: Clasificacion
   orden: number
   activo: boolean
@@ -81,7 +83,7 @@ type DupTarget = {
 const EMPTY: Omit<Partida, 'id'> = {
   nombre: '', descripcion: null, tipo: 'egreso', modulo: 'Golf', fuente_real: 'op_area',
   id_centro_costo_fk: null, id_area_fk: null, id_centro_ingreso_fk: null,
-  id_seccion_fk: null, id_concepto_fk: null, id_tipo_gasto_fk: null, id_agrupador_fk: null,
+  id_seccion_fk: null, id_concepto_fk: null, id_tipo_gasto_fk: null, id_agrupador_fk: null, comportamiento: null,
   clasificacion: 'operativo', orden: 0, activo: true,
   incluir_presupuesto: true, incluir_flujo: true,
   devengado_igual_a_cobro: false,
@@ -128,6 +130,7 @@ export default function PartidasPage() {
   const [filterNombre, setFilterNombre] = useState('')
   const [filterTipo, setFilterTipo]   = useState<'' | 'ingreso' | 'egreso'>('')
   const [filterModulo, setFilterModulo] = useState('')
+  const [filterComport, setFilterComport] = useState('')
   const [filterAgrupador, setFilterAgrupador] = useState('')
   const [filterClasificacion, setFilterClasificacion] = useState<'' | Clasificacion>('')
 
@@ -182,6 +185,7 @@ export default function PartidasPage() {
       id_centro_ingreso_fk: p.id_centro_ingreso_fk,
       id_seccion_fk: p.id_seccion_fk, id_concepto_fk: p.id_concepto_fk,
       id_tipo_gasto_fk: p.id_tipo_gasto_fk ?? null, id_agrupador_fk: p.id_agrupador_fk,
+      comportamiento: p.comportamiento ?? null,
       clasificacion: p.clasificacion ?? 'operativo',
       orden: p.orden, activo: p.activo,
       incluir_presupuesto: p.incluir_presupuesto ?? true,
@@ -204,6 +208,7 @@ export default function PartidasPage() {
       // Egreso Financiero/Intercompañías puede ser captura directa (manual), sin vínculo a OP.
       fuente_real:          form.tipo === 'egreso' ? (egresoManual ? 'manual' : 'op_area') : form.fuente_real,
       id_agrupador_fk:      form.id_agrupador_fk,
+      comportamiento:       form.comportamiento,
       clasificacion:        form.clasificacion,
       orden:                form.orden,
       activo:               form.activo,
@@ -268,6 +273,7 @@ export default function PartidasPage() {
       modulo,
       fuente_real:          dupSource.fuente_real,
       id_agrupador_fk:      dupSource.id_agrupador_fk,
+      comportamiento:       dupSource.comportamiento ?? null,
       clasificacion:        dupSource.clasificacion,
       orden:                dupSource.orden,
       activo:               true,
@@ -322,6 +328,7 @@ export default function PartidasPage() {
     .filter(p => !filterTipo   || p.tipo   === filterTipo)
     .filter(p => !filterModulo || (p.modulo ?? 'General') === filterModulo)
     .filter(p => !filterClasificacion || (p.clasificacion ?? 'operativo') === filterClasificacion)
+    .filter(p => !filterComport || (filterComport === 'sin' ? !p.comportamiento : p.comportamiento === filterComport))
     .filter(p => !filterAgrupador || (
       filterAgrupador === 'none' ? !p.id_agrupador_fk : p.id_agrupador_fk === Number(filterAgrupador)
     ))
@@ -356,6 +363,14 @@ export default function PartidasPage() {
             {(Object.keys(CLASIFICACION_LABEL) as Clasificacion[]).map(c => (
               <option key={c} value={c}>{CLASIFICACION_LABEL[c]}</option>
             ))}
+          </select>
+          {/* Filtro fijo / variable */}
+          <select className="input" style={{ fontSize: 12, padding: '5px 8px', width: 120, flex: '0 0 auto' }}
+            value={filterComport} onChange={e => setFilterComport(e.target.value)}>
+            <option value="">Fijo y variable</option>
+            <option value="fijo">Fijo</option>
+            <option value="variable">Variable</option>
+            <option value="sin">Sin definir</option>
           </select>
           {/* Filtro agrupador */}
           <select className="input" style={{ fontSize: 12, padding: '5px 8px', width: 130, flex: '0 0 auto' }}
@@ -483,6 +498,12 @@ export default function PartidasPage() {
                                 </span>
                               ) : (
                                 <span style={{ color: '#cbd5e1', fontSize: 12 }}>—</span>
+                              )}
+                              {p.comportamiento && (
+                                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 9, marginLeft: 4,
+                                  background: p.comportamiento === 'fijo' ? '#ecfeff' : '#fff7ed', color: p.comportamiento === 'fijo' ? '#0e7490' : '#c2410c' }}>
+                                  {p.comportamiento === 'fijo' ? 'Fijo' : 'Variable'}
+                                </span>
                               )}
                             </td>
                             <td style={td}>
@@ -648,6 +669,19 @@ export default function PartidasPage() {
               <span style={{ fontSize: 11, color: '#94a3b8' }}>
                 Operativo = negocio normal. Financiero/Intercompañías se muestran en apartados
                 separados en Comparativo, Flujo, Captura y Dashboard, fuera del Balance/Flujo operativo.
+              </span>
+            </label>
+
+            <label style={lbl}>
+              Comportamiento
+              <select className="input" value={form.comportamiento ?? ''}
+                onChange={e => setForm(f => ({ ...f, comportamiento: (e.target.value || null) as 'fijo' | 'variable' | null }))}>
+                <option value="">— Sin definir —</option>
+                <option value="fijo">Fijo</option>
+                <option value="variable">Variable</option>
+              </select>
+              <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                Filtro Fijo / Variable en Comparativo y Flujo de Efectivo (independiente del agrupador).
               </span>
             </label>
 
