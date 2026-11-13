@@ -1,7 +1,7 @@
 'use client'
 import {
   Landmark, FileText, Building2, ChevronRight,
-  Clock, Waves
+  Clock
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
@@ -22,14 +22,6 @@ const MODULOS = [
     color: '#0f766e',
     desc:  'Saldos, movimientos y administración de cuentas bancarias',
   },
-  {
-    key:   'flujo-efectivo',
-    label: 'Flujo de Efectivo',
-    icon:  Waves,
-    color: '#0369a1',
-    desc:  'Flujo proyectado desde Presupuestos vs. real clasificado del banco (solo Administradores)',
-    soloAdmin: true,
-  },
   // Flujo de Caja oculto del hub (se trabaja por fuera); la ruta /tesoreria/flujo-caja sigue existiendo.
 ]
 
@@ -46,7 +38,7 @@ export default function TesoreriaPage() {
         icon={Landmark}
         eyebrowLabel="Módulo"
         title="Tesorería"
-        subtitle="Gestión de cuentas bancarias, cuentas por pagar y flujo de efectivo"
+        subtitle="Gestión de cuentas bancarias, y cuentas por pagar"
       />
 
       {/* Grid de módulos */}
