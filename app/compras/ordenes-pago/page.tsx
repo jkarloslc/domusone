@@ -347,7 +347,14 @@ export default function OrdenesPagoPage() {
                   ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                 </td>
                 <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 14 }}>{fmt(r.monto)}</td>
-                <td style={{ whiteSpace: 'nowrap' }}><StatusBadge status={r.status} /></td>
+                <td style={{ whiteSpace: 'nowrap' }}>
+                  <StatusBadge status={r.status} />
+                  {r.fecha_pago && (
+                    <div title="Fecha de pago" style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>
+                      Pago: {fmtFecha(r.fecha_pago)}
+                    </div>
+                  )}
+                </td>
                 <td>
                   <div style={{ display: 'flex', gap: 3 }}>
                     {r.pdf_factura && (
