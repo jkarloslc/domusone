@@ -12,6 +12,7 @@ import {
 import NuevaVentaModal from './NuevaVentaModal'
 import CorteModal from './CorteModal'
 import { distribuirConceptosRecibo } from './distribucionIngreso'
+import { crearRecibosCorte } from './recibosCorte'
 import { distribuirSeccionesRecibo } from '@/lib/distribucionSecciones'
 import FacturaUniversalModal from '@/components/facturacion/FacturaUniversalModal'
 import ModalShell from '@/components/ui/ModalShell'
@@ -1066,70 +1067,25 @@ ${facturasCorte.length > 0 ? `
     setGenerandoRecibo(c.id)
 
     try {
-      // Obtener desglose de formas de pago
-      const { data: det } = await dbGolf.from('ctrl_cortes_caja_det')
-        .select('id_forma_fk, forma_nombre, monto').eq('id_corte_fk', c.id)
-      const fps = (det ?? []) as { id_forma_fk: number; forma_nombre: string; monto: number }[]
-      const fpagoMap = mapFormasPago(fps)
-
-      const f1 = c.fecha_inicio.split('T')[0]
-      const f2 = c.fecha_fin.split('T')[0]
-
       const idCentroIngreso = getCentroIngresoIdForCentroVenta(c.id_centro_fk)
       if (!idCentroIngreso) {
         alert(`No hay mapeo de centro de ingreso para "${c.centro_nombre}". Configúralo en Configuración > Mapeo POS.`)
         return
       }
 
-      const { data: recibo, error: reErr } = await dbCtrl.from('recibos_ingreso').insert({
-        fecha:                f2,
-        id_centro_ingreso_fk: idCentroIngreso,
-        descripcion:          `Corte POS Golf — ${c.centro_nombre} — ${f1} al ${f2}`,
-        monto_efectivo:       fpagoMap.monto_efectivo,
-        monto_transferencia:  fpagoMap.monto_transferencia,
-        monto_tarjeta_debito:  fpagoMap.monto_tarjeta_debito,
-        monto_tarjeta_credito: fpagoMap.monto_tarjeta_credito,
-        monto_tarjeta:         fpagoMap.monto_tarjeta,
-        monto_cheque:          fpagoMap.monto_cheque,
-        monto_deposito:        fpagoMap.monto_deposito,
-        monto_total:          c.total_neto,
-        status:               'Confirmado',
-        origen:               'POS_GOLF',
-        referencia_externa:   `golf.ctrl_cortes_caja:${c.id}`,
-        notas:                `Folio corte Golf: #${c.id}`,
-        usuario_crea:         authUser?.nombre ?? 'sistema',
-      }).select('id').single()
-
-      if (reErr || !recibo) { alert('Error al generar recibo: ' + (reErr?.message ?? 'desconocido')); return }
-
-      // Insertar formas de pago en la tabla normalizada (nueva)
-      if (fps.length > 0) {
-        await dbCtrl.from('recibos_ingreso_formas_pago').insert(
-          fps.map(f => ({
-            id_recibo_fk:      recibo.id,
-            id_forma_pago_fk:  f.id_forma_fk,
-            nombre_forma_pago: f.forma_nombre,
-            monto:             f.monto,
-          }))
-        )
-      }
-
-      // Distribuir el ingreso por concepto (solo si el centro de ingreso lo requiere) —
-      // solo ventas PAGADAS; una cancelada no debe sumar a recibos_ingreso_conceptos
-      // aunque siga marcada con este corte.
+      // Solo ventas PAGADAS; una cancelada no debe sumar aunque siga marcada
+      // con este corte. Un recibo por mes de venta (ver recibosCorte.ts).
       const { data: ventasCorte } = await dbGolf.from('ctrl_ventas').select('id').eq('id_corte_fk', c.id).eq('status', 'PAGADA')
-      if (ventasCorte && ventasCorte.length > 0) {
-        await distribuirConceptosRecibo(recibo.id, idCentroIngreso, ventasCorte.map((v: any) => v.id))
-        // Ver CorteModal: los centros por sección derivan su desglose (y las
-        // bandas de clasificación) de la cobranza, no de las líneas del POS.
-        const dSec = await distribuirSeccionesRecibo(recibo.id, idCentroIngreso, ventasCorte.map((v: any) => v.id))
-        dSec.errores.forEach(e => console.error('distribuirSeccionesRecibo:', e))
-        dSec.avisos.forEach(a => console.warn('distribuirSeccionesRecibo:', a))
-      }
-
-      await dbGolf.from('ctrl_cortes_caja').update({ id_recibo_ingreso: recibo.id }).eq('id', c.id)
+      const ids = await crearRecibosCorte({
+        idCorte: c.id, idCentroIngreso, nombreCentro: c.centro_nombre,
+        idsPagadas: (ventasCorte ?? []).map((v: any) => v.id),
+        usuario: authUser?.nombre ?? 'sistema', mapFormasPago,
+      })
+      if (ids.length === 0) { alert('El corte no tiene ventas pagadas: no se generó recibo.'); return }
       fetchCortes()
-      alert(`✅ Recibo de ingreso #${recibo.id} generado exitosamente.`)
+      alert(ids.length === 1
+        ? `✅ Recibo de ingreso #${ids[0]} generado exitosamente.`
+        : `✅ ${ids.length} recibos de ingreso generados (uno por mes de venta): #${ids.join(', #')}.`)
     } catch (e: any) {
       alert('Error: ' + e.message)
     } finally {

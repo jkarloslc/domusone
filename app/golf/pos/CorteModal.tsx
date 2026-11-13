@@ -4,8 +4,7 @@ import { dbGolf, dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { Save, Loader, AlertTriangle, CheckCircle, Scissors } from 'lucide-react'
 import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
-import { distribuirConceptosRecibo } from './distribucionIngreso'
-import { distribuirSeccionesRecibo } from '@/lib/distribucionSecciones'
+import { crearRecibosCorte } from './recibosCorte'
 import ModalShell from '@/components/ui/ModalShell'
 
 type FormaPagoResumen = { id_forma_fk: number; forma_nombre: string; monto: number }
@@ -236,53 +235,12 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
         throw new Error(`No hay centro de ingreso mapeado para "${nombreCentro}"`)
       }
 
-      const fpagoMap = mapFormasPago(formasPago)
-      const { data: recibo } = await dbCtrl.from('recibos_ingreso').insert({
-        fecha:               f2,
-        id_centro_ingreso_fk: idCentroIngreso,
-        descripcion:         `Corte POS Golf — ${nombreCentro} — ${f1} al ${f2}`,
-        monto_efectivo:        fpagoMap.monto_efectivo,
-        monto_transferencia:   fpagoMap.monto_transferencia,
-        monto_tarjeta_debito:  fpagoMap.monto_tarjeta_debito,
-        monto_tarjeta_credito: fpagoMap.monto_tarjeta_credito,
-        monto_tarjeta:         fpagoMap.monto_tarjeta,
-        monto_cheque:          fpagoMap.monto_cheque,
-        monto_deposito:        fpagoMap.monto_deposito,
-        monto_total:         totalVentas,
-        status:              'Confirmado',
-        origen:              'POS_GOLF',
-        referencia_externa:  `golf.ctrl_cortes_caja:${corte.id}`,
-        notas:               `Folio corte Golf: #${corte.id}`,
-        usuario_crea:        authUser?.nombre ?? 'sistema',
-      }).select('id').single()
-
-      // Insertar formas de pago
-      if (recibo && formasPago.length > 0) {
-        await dbCtrl.from('recibos_ingreso_formas_pago').insert(
-          formasPago.map(f => ({
-            id_recibo_fk:      recibo.id,
-            id_forma_pago_fk:  f.id_forma_fk,
-            nombre_forma_pago: f.forma_nombre,
-            monto:             f.monto,
-          }))
-        )
-      }
-
-      // Distribuir el ingreso por concepto (solo si el centro de ingreso lo requiere)
-      if (recibo && idsPagadas.length > 0) {
-        await distribuirConceptosRecibo(recibo.id, idCentroIngreso, idsPagadas)
-        // Centros con desglose por sección (Fraccionamiento): el desglose y las
-        // bandas vencido/corriente/anticipado se derivan de la cobranza que
-        // originó estas ventas. No-op para los centros por concepto.
-        const dSec = await distribuirSeccionesRecibo(recibo.id, idCentroIngreso, idsPagadas)
-        dSec.errores.forEach(e => console.error('distribuirSeccionesRecibo:', e))
-        dSec.avisos.forEach(a => console.warn('distribuirSeccionesRecibo:', a))
-      }
-
-      // Guardar FK en el corte
-      if (recibo) {
-        await dbGolf.from('ctrl_cortes_caja').update({ id_recibo_ingreso: recibo.id }).eq('id', corte.id)
-      }
+      // Un recibo por mes de venta (ver recibosCorte.ts): un corte que cruza
+      // meses ya no lleva todo el ingreso al mes del cierre.
+      await crearRecibosCorte({
+        idCorte: corte.id, idCentroIngreso, nombreCentro, idsPagadas,
+        usuario: authUser?.nombre ?? 'sistema', mapFormasPago,
+      })
     } catch (_) {
       // Integración con Ingresos es best-effort; no bloquea el corte
     }
