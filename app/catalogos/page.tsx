@@ -115,9 +115,24 @@ const CATALOGOS: CatConfig[] = [
     label: 'Tipos de Gasto',
     icon:  Tag,
     color: '#d97706',
-    desc:  'Tipos de gasto para clasificar Órdenes de Pago y partidas de Presupuestos',
+    desc:  'Tipos de gasto para clasificar Órdenes de Pago y partidas de Presupuestos. El Rubro define el primer nivel del Árbol en Comparativo y Flujo de Efectivo.',
+    campos: [
+      { key: 'nombre',      label: 'Nombre *', type: 'text', required: true },
+      { key: 'id_rubro_fk', label: 'Rubro',    type: 'select', selectTabla: 'rubros_financieros', selectFilter: { tipo: 'egreso' } },
+    ],
+  },
+  {
+    key:    'rubros_financieros',
+    tabla:  'rubros_financieros',
+    label:  'Rubros Financieros',
+    icon:   Layers,
+    color:  '#0f766e',
+    desc:   'Primer nivel del Árbol en Comparativo y Flujo de Efectivo. Egresos: se asignan en Tipos de Gasto. Ingresos: en Centros de Ingreso (default) o en Conceptos de Ingreso (override). Un rubro de ingreso no debe mezclar centros de ingreso.',
+    sortBy: 'orden',
     campos: [
       { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
+      { key: 'tipo',   label: 'Tipo *',   type: 'select', staticOptions: ['ingreso', 'egreso'], required: true },
+      { key: 'orden',  label: 'Orden',    type: 'number' },
     ],
   },
   {
@@ -264,6 +279,7 @@ const CATALOGOS: CatConfig[] = [
       { key: 'id_agrupador_fk', label: 'Agrupador', type: 'select', selectTabla: 'agrupadores_ingreso' },
       { key: 'tipo_desglose', label: 'Tipo de Captura', type: 'select',
         staticOptions: ['unico', 'secciones', 'frentes', 'conceptos'] },
+      { key: 'id_rubro_fk',   label: 'Rubro', type: 'select', selectTabla: 'rubros_financieros', selectFilter: { tipo: 'ingreso' } },
       // Desde esta fecha el ingreso del centro se deriva del corte de cobranza
       // y /ingresos bloquea la captura manual, para que el recibo global y el
       // derivado no se sumen. Vacío = centro 100% manual.
@@ -283,6 +299,7 @@ const CATALOGOS: CatConfig[] = [
       { key: 'nombre',               label: 'Nombre *',          type: 'text',    required: true },
       { key: 'clave',                label: 'Clave interna',     type: 'text' },
       { key: 'id_centro_ingreso_fk', label: 'Centro de Ingreso', type: 'select',  selectTabla: 'centros_ingreso' },
+      { key: 'id_rubro_fk',          label: 'Rubro (si difiere del centro)', type: 'select', selectTabla: 'rubros_financieros', selectFilter: { tipo: 'ingreso' } },
       { key: 'orden',                label: 'Orden de aparición',type: 'number' },
       { key: 'clave_prod_serv',      label: 'Clave SAT (Producto/Servicio)', type: 'claveSat', hideInTable: true },
     ],

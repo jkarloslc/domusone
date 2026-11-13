@@ -17,6 +17,7 @@ import { cargarTiposGasto, armarCatalogo } from '@/lib/tiposGasto'
 import { exportarResumenExcel, lineasEgresoPorArea } from '../exportResumen'
 import { agruparPorArea, nombresDe } from '../agrupaArea'
 import ArbolResumen from '../ArbolResumen'
+import { cargarRubros, RUBROS_VACIO, type CatalogoRubros } from '@/lib/rubros'
 import GridMensual, { type CeldaInfo } from '../GridMensual'
 import { fetchDevengadoSinIvaPorPartida } from '@/lib/cobranzaCuotas'
 
@@ -217,6 +218,7 @@ export default function ComparativoPage() {
 
   // Catálogos para filtro por CC/Sección (ingresos) y CC/Área (egresos) — mismo modelo que /dashboards/financiero
   const [centrosIng, setCentrosIng]     = useState<CentroIng[]>([])
+  const [rubrosCat, setRubrosCat]       = useState<CatalogoRubros>(RUBROS_VACIO)
   const [agrupadoresIng, setAgrupadoresIng] = useState<AgrupadorIngreso[]>([])
   const [filtroAgrIng, setFiltroAgrIng] = useState('')
   const [seccionesF, setSeccionesF]     = useState<SeccionF[]>([])
@@ -510,6 +512,7 @@ export default function ComparativoPage() {
       .then(({ data }) => setAgrupadores((data ?? []) as Agrupador[]))
     dbComp.from('proveedores').select('id, nombre').order('nombre')
       .then(({ data }) => setProveedores((data ?? []) as Proveedor[]))
+    cargarRubros().then(setRubrosCat)
     cargarCentrosAgrupados('tipo_desglose')
       .then(({ centros, agrupadores }) => { setCentrosIng(centros); setAgrupadoresIng(agrupadores) })
     dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
@@ -1192,7 +1195,7 @@ export default function ComparativoPage() {
               vista={vista === 'arbol' ? 'consolidado' : vista} agrupadores={agrupadores}
               archivo="Comparativo-Presupuesto-vs-Real" onCelda={handleCelda} pptoFallback={pptoFallbackMes} labels={CLASIFICACION_LABELS} netoLabel="Balance Neto" />
           ) : vista === 'arbol' ? (
-            <ArbolResumen filas={filas} agrupadores={agrupadores} labels={CLASIFICACION_LABELS}
+            <ArbolResumen filas={filas} agrupadores={agrupadores} rubros={rubrosCat} labels={CLASIFICACION_LABELS}
               netoLabel="Balance Neto" {...nombres} nombreCentroIng={nombreCentroIng}
               mesesPromedio={mesesPromedio}
               onDrill={handleDrill} onDrillOps={handleDrillOps} onManual={handleManual} />

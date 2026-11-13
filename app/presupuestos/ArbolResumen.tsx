@@ -1,13 +1,15 @@
 'use client'
 import { Fragment, useState } from 'react'
 import { ChevronRight, ChevronDown } from 'lucide-react'
+import { rubroDePartida, RUBROS_VACIO, type CatalogoRubros } from '@/lib/rubros'
 
 /**
  * Vista Árbol del Resumen (Comparativo y Flujo de Efectivo).
  *
  * Reemplaza los listados planos por un reporte colapsable:
- *   Ingresos: Agrupador → Centro de Ingreso → Partida
- *   Egresos:  Agrupador → Tipo de gasto     → CC · Área
+ *   Ingresos: Rubro → Centro de Ingreso → Partida
+ *   Egresos:  Rubro → Tipo de gasto     → CC · Área
+ * El rubro viene del catálogo (lib/rubros.ts); sin rubro se usa el agrupador.
  * Abre en nivel 1 (~15-20 filas). Los hermanos que pesan menos del umbral
  * del total de su sección se juntan en "Otros menores (n)".
  * Un nivel con un solo hijo se colapsa en su padre para no repetir filas.
@@ -20,6 +22,7 @@ export type FilaArbol = {
   fuente_real: string | null
   id_agrupador_fk: number | null; id_tipo_gasto_fk: number | null; tipo_gasto: string | null
   id_centro_ingreso_fk: number | null; id_centro_costo_fk: number | null; id_area_fk: number | null
+  id_concepto_fk?: number | null
   realVal: number; pptoVal: number
 }
 
@@ -36,11 +39,12 @@ const fmt = (n: number) => (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString
 const pct = (n: number | null) => n == null || !isFinite(n) ? '—' : `${n.toFixed(1)}%`
 
 export default function ArbolResumen<T extends FilaArbol>({
-  filas, agrupadores, labels, netoLabel, nombreCC, nombreArea, nombreCentroIng,
+  filas, agrupadores, rubros = RUBROS_VACIO, labels, netoLabel, nombreCC, nombreArea, nombreCentroIng,
   mesesPromedio, onDrill, onDrillOps, onManual,
 }: {
   filas: T[]
   agrupadores: { id: number; nombre: string; orden: number }[]
+  rubros?: CatalogoRubros
   labels: Record<Clasificacion, { ingresos: string; egresos: string; balance: string }>
   netoLabel: string
   nombreCC: (id: number) => string
@@ -105,8 +109,9 @@ export default function ArbolResumen<T extends FilaArbol>({
           hojas)
 
     const raiz = agruparPor(rows, 0, prefijo,
-      p => `ag${p.id_agrupador_fk ?? 0}`,
-      p => agrupadores.find(a => a.id === p.id_agrupador_fk)?.nombre ?? SIN_AGRUPADOR,
+      p => { const r = rubroDePartida(rubros, p); return r ? `rb${r.id}` : `ag${p.id_agrupador_fk ?? 0}` },
+      p => rubroDePartida(rubros, p)?.nombre
+        ?? agrupadores.find(a => a.id === p.id_agrupador_fk)?.nombre ?? SIN_AGRUPADOR,
       nivel2)
 
     // Un hijo único se funde con su padre (si es hoja, el padre pasa a ser la hoja).
@@ -274,7 +279,7 @@ export default function ArbolResumen<T extends FilaArbol>({
         <div style={{ display: 'flex', gap: 4, background: '#f1f5f9', borderRadius: 18, padding: 3 }}>
           {([1, 2, 3] as const).map(v => (
             <button key={v} onClick={() => cambiarNivel(v)}
-              title={v === 1 ? 'Solo agrupadores' : v === 2 ? (`Agrupador → Centro de ingreso / Tipo de gasto`) : 'Todo abierto'}
+              title={v === 1 ? 'Solo rubros' : v === 2 ? 'Rubro → Centro de ingreso / Tipo de gasto' : 'Todo abierto'}
               style={{ padding: '3px 12px', borderRadius: 14, border: 'none', cursor: 'pointer', fontSize: 12,
                 background: nivel === v ? '#fff' : 'transparent', color: nivel === v ? '#1e293b' : '#64748b',
                 fontWeight: nivel === v ? 600 : 400, boxShadow: nivel === v ? '0 1px 3px rgba(0,0,0,.1)' : 'none' }}>
