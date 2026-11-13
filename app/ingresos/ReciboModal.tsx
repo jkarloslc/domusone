@@ -37,6 +37,7 @@ export type Recibo = {
   monto_efectivo: number; monto_transferencia: number
   monto_tarjeta: number; monto_tarjeta_debito: number; monto_tarjeta_credito: number
   monto_cheque: number; monto_deposito: number; monto_total: number
+  monto_condonacion?: number | null
   status: string; origen: string; notas: string | null
   usuario_crea: string | null; usuario_cancela: string | null
   fecha_cancela: string | null; motivo_cancelacion: string | null
@@ -106,6 +107,9 @@ export default function ReciboModal({
   const [secRows, setSecRows]             = useState<SeccionRow[]>([])
   const [conceptoRows, setConceptoRows]   = useState<ConceptoRow[]>([])
   const [formaPagoRows, setFormaPagoRows] = useState<FormaPagoRow[]>([])
+  // Condonación / Intercambio: cuenta en la sumatoria de formas de cobro pero NO es caja
+  // (no entra al kardex bancario). Se guarda en recibos_ingreso.monto_condonacion.
+  const [montoCondonacion, setMontoCondonacion] = useState<number>(recibo?.monto_condonacion ?? 0)
   const [cuentasBanc, setCuentasBanc]     = useState<any[]>([])
   const [loadingSecs, setLoadingSecs] = useState(false)
   // Modo clasificación de cobranza (vencido / corriente / anticipado).
@@ -349,7 +353,8 @@ export default function ReciboModal({
   }
 
   // Total calculado
-  const totalFormasPago = formaPagoRows.reduce((a, r) => a + (r.monto || 0), 0)
+  const totalFormasPago = formaPagoRows.reduce((a, r) => a + (r.monto || 0), 0) + (montoCondonacion || 0)
+  const montoCaja       = (t: number) => Math.max(0, Math.round((t - (montoCondonacion || 0)) * 100) / 100)
   const totalSecs       = secRows.reduce((a, r) => a + (r.monto || 0), 0)
   const totalSecsVencido    = secRows.reduce((a, r) => a + (r.monto_vencido ?? 0), 0)
   const totalSecsCorriente  = secRows.reduce((a, r) => a + (r.monto_corriente ?? 0), 0)
@@ -390,6 +395,7 @@ export default function ReciboModal({
       id_cuenta_bancaria_fk: form.id_cuenta_bancaria_fk || null,
       descripcion:          form.descripcion || null,
       monto_total:          totalFinal,
+      monto_condonacion:    montoCondonacion || 0,
       status:               form.status,
       notas:                form.notas || null,
       usuario_crea:         authUser?.nombre ?? authUser?.email ?? 'sistema',
@@ -439,7 +445,7 @@ export default function ReciboModal({
     }
 
     if (form.status === 'Confirmado') {
-      await syncMovimientoBancario(newRec.id, form.fecha, folio, form.id_cuenta_bancaria_fk, totalFinal, false)
+      await syncMovimientoBancario(newRec.id, form.fecha, folio, form.id_cuenta_bancaria_fk, montoCaja(totalFinal), false)
     }
 
     setSaving(false)
@@ -471,6 +477,7 @@ export default function ReciboModal({
       id_cuenta_bancaria_fk: form.id_cuenta_bancaria_fk || null,
       descripcion:          form.descripcion || null,
       monto_total:          totalFinal,
+      monto_condonacion:    montoCondonacion || 0,
       notas:                form.notas || null,
       // limpiar columnas legacy para que el fallback de display no confunda
       monto_efectivo: 0, monto_transferencia: 0,
@@ -518,7 +525,7 @@ export default function ReciboModal({
     }
 
     if (recibo.status === 'Confirmado') {
-      await syncMovimientoBancario(recibo.id, form.fecha, recibo.folio ?? fmtFolioIng(recibo.id), form.id_cuenta_bancaria_fk, totalFinal, true)
+      await syncMovimientoBancario(recibo.id, form.fecha, recibo.folio ?? fmtFolioIng(recibo.id), form.id_cuenta_bancaria_fk, montoCaja(totalFinal), true)
     }
 
     setSaving(false)
@@ -575,6 +582,7 @@ export default function ReciboModal({
 
       const formas = ((formaRes.data ?? []) as { nombre_forma_pago: string; monto: number }[])
         .map(f => ({ nombre: f.nombre_forma_pago, monto: f.monto }))
+      if ((recibo.monto_condonacion ?? 0) > 0) formas.push({ nombre: 'Condonación / Intercambio', monto: recibo.monto_condonacion ?? 0 })
 
       const centroNombre = centroSel?.nombre ?? 'Sin centro'
       const desgloseRows = esSecciones
@@ -1094,6 +1102,22 @@ export default function ReciboModal({
                   </div>
                   )
                 })}
+                {/* Condonación / Intercambio — suma al total, no entra a bancos */}
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 3 }}>
+                    Condonación / Intercambio
+                  </label>
+                  <input
+                    className="input" type="number" min="0" step="0.01"
+                    value={montoCondonacion || ''}
+                    onChange={e => setMontoCondonacion(parseFloat(e.target.value) || 0)}
+                    disabled={isView && !isEditMode}
+                    style={{ fontVariantNumeric: 'tabular-nums' }}
+                  />
+                  {montoCondonacion > 0 && (
+                    <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>No es caja: no se abona a la cuenta bancaria</div>
+                  )}
+                </div>
               </div>
               {/* Sumatoria de formas de cobro — siempre visible */}
               <div style={{ marginTop: 10, padding: '10px 14px', background: '#f0fdf4', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
