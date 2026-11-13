@@ -1203,10 +1203,10 @@ export default function ComparativoPage() {
           <div id="reporte-print-area" className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {modo === 'mensual' ? (
             <GridMensual {...nombres} mesSel={filterMes} nombreCentroIng={nombreCentroIng} filas={filas} detMap={pptoMensual} realMap={realMensual}
-              vista={vista === 'arbol' ? 'consolidado' : vista} agrupadores={agrupadores}
+              vista={vista} rubros={rubrosCat} zonasDeSeccion={zonasCat.zonasDeSeccion} agrupadores={agrupadores}
               archivo="Comparativo-Presupuesto-vs-Real" onCelda={handleCelda} pptoFallback={pptoFallbackMes} labels={CLASIFICACION_LABELS} netoLabel="Balance Neto" />
           ) : modo === 'unidades' ? (
-            <MatrizUnidades filas={filas} agrupadores={agrupadores} rubros={rubrosCat} labels={CLASIFICACION_LABELS}
+            <MatrizUnidades filas={filas} agrupadores={agrupadores} {...nombres} nombreCentroIng={nombreCentroIng} zonasDeSeccion={zonasCat.zonasDeSeccion} rubros={rubrosCat} labels={CLASIFICACION_LABELS}
               netoLabel="Balance Neto" archivo="Comparativo" onDrill={handleDrill} />
           ) : (
             <ArbolResumen filas={filasArbol} agrupadores={agrupadores} rubros={rubrosCat} labels={CLASIFICACION_LABELS}

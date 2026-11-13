@@ -1078,11 +1078,11 @@ export default function FlujoEfectivoPage() {
             <VistaDiaria dias={diasMes(mesDiario)} movs={movsDetalle} canWrite={canWrite('presupuestos')}
               onCapturar={abrirCaptura} sinMes={!filterMes} />
           ) : modo === 'mensual' ? (<>
-            <GridMensual {...nombres} mesSel={filterMes} saldosMes={resumenesMes} nombreCentroIng={nombreCentroIng} filas={filas} detMap={detMap} realMap={realMap} vista={vista === 'arbol' ? 'consolidado' : vista} agrupadores={agrupadores}
+            <GridMensual {...nombres} mesSel={filterMes} saldosMes={resumenesMes} nombreCentroIng={nombreCentroIng} filas={filas} detMap={detMap} realMap={realMap} vista={vista} rubros={rubrosCat} zonasDeSeccion={zonasCat.zonasDeSeccion} agrupadores={agrupadores}
               archivo="Flujo-de-Efectivo" onCelda={handleCelda} labels={CLASIFICACION_LABELS} netoLabel="Flujo Neto de Efectivo" />
             <SaldosMensuales meses={resumenesMes} mesSel={filterMes} />
           </>) : modo === 'unidades' ? (
-            <MatrizUnidades filas={filas} agrupadores={agrupadores} rubros={rubrosCat} labels={CLASIFICACION_LABELS}
+            <MatrizUnidades filas={filas} agrupadores={agrupadores} {...nombres} nombreCentroIng={nombreCentroIng} zonasDeSeccion={zonasCat.zonasDeSeccion} rubros={rubrosCat} labels={CLASIFICACION_LABELS}
               netoLabel="Flujo Neto de Efectivo" archivo="Flujo-de-Efectivo" onDrill={handleDrill} saldos={resumenSaldos} />
           ) : (
             <ArbolResumen filas={filasArbol} agrupadores={agrupadores} rubros={rubrosCat} labels={CLASIFICACION_LABELS}

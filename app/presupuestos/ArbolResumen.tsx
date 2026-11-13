@@ -1,7 +1,8 @@
 'use client'
-import { Fragment, useState } from 'react'
+import { Fragment } from 'react'
 import { ChevronRight, ChevronDown } from 'lucide-react'
-import { rubroDePartida, RUBROS_VACIO, type CatalogoRubros } from '@/lib/rubros'
+import { RUBROS_VACIO, type CatalogoRubros } from '@/lib/rubros'
+import { construirArbol, useArbolUI, ControlesArbol, type NodoArbol } from './arbolPartidas'
 import { explicaDiferencia, type SaldosFila } from '@/lib/saldosFlujo'
 
 /**
@@ -32,14 +33,9 @@ export type FilaArbol = {
   realVal: number; pptoVal: number
 }
 
-type Nodo<T> = {
-  key: string; nombre: string; depth: number
-  real: number; ppto: number; partidas: T[]
-  hijos: Nodo<T>[]; hoja?: T; esMenores?: boolean
-}
+type Nodo<T> = Omit<NodoArbol<T>, 'hijos'> & { real: number; ppto: number; hijos: Nodo<T>[] }
 
 const CLASIFICACIONES: Clasificacion[] = ['operativo', 'financiero', 'intercompanias']
-const SIN_AGRUPADOR = 'Sin Agrupador'
 
 const fmt = (n: number) => (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString('es-MX', { maximumFractionDigits: 0 })
 const pct = (n: number | null) => n == null || !isFinite(n) ? '—' : `${n.toFixed(1)}%`
@@ -71,109 +67,20 @@ export default function ArbolResumen<T extends FilaArbol>({
   onDrillOps: (p: T) => void
   onManual: (pid: number) => void
 }) {
-  const [nivel, setNivel] = useState<1 | 2 | 3>(1)
-  const [toggles, setToggles] = useState<Record<string, boolean>>({})
-  const [agruparMenores, setAgruparMenores] = useState(true)
-  const UMBRAL = 0.01
+  const ui = useArbolUI()
 
   const hayPpto = filas.some(f => f.pptoVal !== 0)
   const ingresosOperativos = filas
     .filter(f => f.tipo === 'ingreso' && f.clasificacion === 'operativo')
     .reduce((s, f) => s + f.realVal, 0)
 
-  function etiquetaHoja(p: T) {
-    if (p.tipo === 'egreso' && (p.id_centro_costo_fk != null || p.id_area_fk != null)) {
-      const base = [p.id_centro_costo_fk != null ? nombreCC(p.id_centro_costo_fk) : null,
-              p.id_area_fk != null ? nombreArea(p.id_area_fk) : null].filter(Boolean).join(' · ')
-      return p.zona?.prorrateo != null ? `${base} — gasto general prorrateado (${(p.zona.prorrateo * 100).toFixed(1)}% por lotes)` : base
-    }
-    return p.nombre
-  }
-
-  function construir(rows: T[], tipo: 'ingreso' | 'egreso', prefijo: string): Nodo<T>[] {
-    const totalSeccion = rows.reduce((s, r) => s + r.realVal, 0)
-    const suma = (ps: T[], k: 'realVal' | 'pptoVal') => ps.reduce((s, p) => s + p[k], 0)
-
-    const hojas = (ps: T[], depth: number, pre: string): Nodo<T>[] => ps.map(p => ({
-      key: `${pre}|p${p.id}${p.zona?.prorrateo != null ? 'r' : ''}`, nombre: etiquetaHoja(p), depth,
-      real: p.realVal, ppto: p.pptoVal, partidas: [p], hijos: [], hoja: p,
-    }))
-
-    const agruparPor = (ps: T[], depth: number, pre: string,
-      clave: (p: T) => string, nombre: (p: T) => string,
-      siguiente: (ps: T[], depth: number, pre: string) => Nodo<T>[]): Nodo<T>[] => {
-      const m = new Map<string, T[]>()
-      ps.forEach(p => { const k = clave(p); m.set(k, [...(m.get(k) ?? []), p]) })
-      return Array.from(m.entries()).map(([k, grupo]) => {
-        const key = `${pre}|${k}`
-        return {
-          key, nombre: nombre(grupo[0]), depth,
-          real: suma(grupo, 'realVal'), ppto: suma(grupo, 'pptoVal'), partidas: grupo,
-          hijos: siguiente(grupo, depth + 1, key),
-        }
-      })
-    }
-
-    // Egresos de CC con zonas: Zona antes del CC · Área; el resto va directo a hojas.
-    const nivelZonaEgreso = (ps: T[], depth: number, pre: string): Nodo<T>[] => [
-      ...agruparPor(ps.filter(p => p.zona), depth, pre, p => `zn${p.zona!.id}`, p => p.zona!.nombre, hojas),
-      ...hojas(ps.filter(p => !p.zona), depth, pre),
-    ]
-    // Ingreso por sección (cuotas de Fraccionamiento): el nivel intermedio es la
-    // Zona en vez del centro. Una sección en 2+ zonas va a un nodo combinado
-    // ("Zona A + Zona B") para no contar su ingreso dos veces.
-    const zonasDe = (p: T) => p.id_seccion_fk != null && zonasDeSeccion ? zonasDeSeccion(p.id_seccion_fk) : null
-    const nivel2 = (ps: T[], depth: number, pre: string) => tipo === 'ingreso'
-      ? agruparPor(ps, depth, pre,
-          p => { const z = zonasDe(p); return z ? `zn${z.map(x => x.id).join('-') || 0}` : `ci${p.id_centro_ingreso_fk ?? 0}` },
-          p => {
-            const z = zonasDe(p)
-            if (z) return z.length ? z.map(x => x.nombre).join(' + ') : 'Sin zona'
-            return p.id_centro_ingreso_fk != null ? nombreCentroIng(p.id_centro_ingreso_fk) : 'Sin centro de ingreso'
-          },
-          hojas)
-      : agruparPor(ps, depth, pre,
-          p => p.id_tipo_gasto_fk != null ? `tg${p.id_tipo_gasto_fk}` : `px${p.id}`,
-          p => p.tipo_gasto ?? p.nombre,
-          nivelZonaEgreso)
-
-    const raiz = agruparPor(rows, 0, prefijo,
-      p => { const r = rubroDePartida(rubros, p); return r ? `rb${r.id}` : `ag${p.id_agrupador_fk ?? 0}` },
-      p => rubroDePartida(rubros, p)?.nombre
-        ?? agrupadores.find(a => a.id === p.id_agrupador_fk)?.nombre ?? SIN_AGRUPADOR,
-      nivel2)
-
-    // Un hijo único se funde con su padre (si es hoja, el padre pasa a ser la hoja).
-    const fundir = (n: Nodo<T>): Nodo<T> => {
-      let hijos = n.hijos.map(fundir)
-      if (hijos.length === 1) {
-        const h = hijos[0]
-        if (h.hoja) return { ...n, hijos: [], hoja: h.hoja }
-        hijos = h.hijos.map(x => reprofundizar(x, n.depth + 1))
-      }
-      return { ...n, hijos }
-    }
-    const reprofundizar = (n: Nodo<T>, depth: number): Nodo<T> =>
-      ({ ...n, depth, hijos: n.hijos.map(h => reprofundizar(h, depth + 1)) })
-
-    // Orden de mayor a menor (Pareto) y "Otros menores" por nivel.
-    const ordenar = (ns: Nodo<T>[], depth: number, pre: string): Nodo<T>[] => {
-      const lista = ns.map(n => ({ ...n, hijos: ordenar(n.hijos, depth + 1, n.key) }))
-        .sort((a, b) => Math.abs(b.real) - Math.abs(a.real) || a.nombre.localeCompare(b.nombre, 'es'))
-      if (!agruparMenores || totalSeccion === 0) return lista
-      const menores = lista.filter(n => Math.abs(n.real) < Math.abs(totalSeccion) * UMBRAL)
-      if (menores.length < 2) return lista
-      const mayores = lista.filter(n => !menores.includes(n))
-      const partidas = menores.flatMap(n => n.partidas)
-      return [...mayores, {
-        key: `${pre}|menores`, nombre: `Otros menores (${menores.length})`, depth, esMenores: true,
-        real: suma(partidas, 'realVal'), ppto: suma(partidas, 'pptoVal'), partidas,
-        hijos: menores.map(n => reprofundizar(n, depth + 1)),
-      }]
-    }
-
-    return ordenar(raiz.map(fundir), 0, prefijo)
-  }
+  const opciones = { rubros, agrupadores, nombreCC, nombreArea, nombreCentroIng, zonasDeSeccion,
+    peso: (p: T) => p.realVal, agruparMenores: ui.agruparMenores }
+  // El constructor compartido da `peso` (= Real); aquí se agrega el Presupuesto del nodo.
+  const conPpto = (ns: NodoArbol<T>[]): Nodo<T>[] => ns.map(n => ({
+    ...n, real: n.peso, ppto: n.partidas.reduce((s, p) => s + p.pptoVal, 0), hijos: conPpto(n.hijos),
+  }))
+  const construir = (rows: T[], tipo: 'ingreso' | 'egreso', prefijo: string) => conPpto(construirArbol(rows, tipo, prefijo, opciones))
 
   const secciones = CLASIFICACIONES.map(clas => {
     const ing = filas.filter(f => f.clasificacion === clas && f.tipo === 'ingreso')
@@ -181,10 +88,8 @@ export default function ArbolResumen<T extends FilaArbol>({
     return { clas, ing, egr, arbIng: construir(ing, 'ingreso', `${clas}-i`), arbEgr: construir(egr, 'egreso', `${clas}-e`) }
   })
 
-  const abierto = (n: Nodo<T>) => n.key in toggles ? toggles[n.key]
-    : n.esMenores ? nivel === 3 : n.depth < nivel - 1
-  const toggle = (n: Nodo<T>) => setToggles(t => ({ ...t, [n.key]: !abierto(n) }))
-  const cambiarNivel = (v: 1 | 2 | 3) => { setNivel(v); setToggles({}) }
+  const abierto = (n: Nodo<T>) => ui.abierto(n as unknown as NodoArbol<unknown>)
+  const toggle = (n: Nodo<T>) => ui.toggle(n as unknown as NodoArbol<unknown>)
 
   const conPromedio = mesesPromedio > 0
   const nCols = 3 + (conPromedio ? 1 : 0) + (hayPpto ? 2 : 0) + 1
@@ -322,22 +227,7 @@ export default function ArbolResumen<T extends FilaArbol>({
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 14px', borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>Nivel de detalle</span>
-        <div style={{ display: 'flex', gap: 4, background: '#f1f5f9', borderRadius: 18, padding: 3 }}>
-          {([1, 2, 3] as const).map(v => (
-            <button key={v} onClick={() => cambiarNivel(v)}
-              title={v === 1 ? 'Solo rubros' : v === 2 ? 'Rubro → Zona / Centro de ingreso / Tipo de gasto' : 'Todo abierto (egresos de CC con zonas: Tipo de gasto → Zona → Área)'}
-              style={{ padding: '3px 12px', borderRadius: 14, border: 'none', cursor: 'pointer', fontSize: 12,
-                background: nivel === v ? '#fff' : 'transparent', color: nivel === v ? '#1e293b' : '#64748b',
-                fontWeight: nivel === v ? 600 : 400, boxShadow: nivel === v ? '0 1px 3px rgba(0,0,0,.1)' : 'none' }}>
-              {v}
-            </button>
-          ))}
-        </div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#475569', cursor: 'pointer' }}>
-          <input type="checkbox" checked={agruparMenores} onChange={e => setAgruparMenores(e.target.checked)} />
-          Agrupar partidas menores al 1% en “Otros menores”
-        </label>
+        <ControlesArbol ui={ui} />
         {onProrrateoLotes && filas.some(f => f.zona) && (
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#475569', cursor: 'pointer' }}
             title="El gasto sin zona (operación, vigilancia, vialidades) se reparte entre las zonas según su número de lotes">

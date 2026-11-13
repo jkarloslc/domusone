@@ -4,6 +4,8 @@ import * as XLSX from 'xlsx'
 import { Download } from 'lucide-react'
 import { agruparPorArea } from './agrupaArea'
 import type { SaldosFila } from '@/lib/saldosFlujo'
+import { RUBROS_VACIO, type CatalogoRubros } from '@/lib/rubros'
+import { construirArbol, aplanar, useArbolUI, ControlesArbol, EtiquetaNodo, type NodoArbol } from './arbolPartidas'
 
 type Clasificacion = 'operativo' | 'financiero' | 'intercompanias'
 type DetMap = Record<number, Record<number, number>>
@@ -11,10 +13,11 @@ export type FilaGrid = {
   id: number; nombre: string; tipo: 'ingreso' | 'egreso'; clasificacion: Clasificacion
   orden: number; tipo_gasto: string | null; id_tipo_gasto_fk: number | null; id_centro_costo_fk: number | null; id_area_fk: number | null; id_agrupador_fk: number | null
   id_centro_ingreso_fk?: number | null
+  id_concepto_fk?: number | null; id_seccion_fk?: number | null
 }
 export type CeldaInfo = { ids: number[]; nombre: string; tipo: 'ingreso' | 'egreso'; meses: number[] }
-export type Vista = 'detalle' | 'concepto' | 'consolidado' | 'agrupado'
-type Linea = { key: string; nombre: string; orden: number; ids: number[] }
+export type Vista = 'arbol' | 'detalle' | 'concepto' | 'consolidado' | 'agrupado'
+type Linea = { key: string; nombre: string; orden: number; ids: number[]; nodo?: NodoArbol<FilaGrid> }
 type Metrica = 'real' | 'ppto' | 'var'
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
@@ -31,7 +34,10 @@ const NUM: React.CSSProperties = { textAlign: 'right', fontVariantNumeric: 'tabu
 
 const SIN_AGRUPADOR = 'Sin Agrupador'
 
-export default function GridMensual({ filas, detMap, realMap, vista, agrupadores, labels: LABELS, netoLabel, archivo, onCelda, pptoFallback, nombreCC, nombreArea, nombreCentroIng, mesSel = 0, saldosMes }: {
+export default function GridMensual({ filas, detMap, realMap, vista, agrupadores, labels: LABELS, netoLabel, archivo, onCelda, pptoFallback, nombreCC, nombreArea, nombreCentroIng, mesSel = 0, saldosMes, rubros = RUBROS_VACIO, zonasDeSeccion }: {
+  /** Vista Árbol: catálogo de rubros y zonas de sección (mismo árbol que el Resumen). */
+  rubros?: CatalogoRubros
+  zonasDeSeccion?: (idSeccion: number) => { id: number; nombre: string }[]
   /** Flujo de Efectivo: saldos por mes (índice 0 = enero) para agregarlos al Excel. */
   saldosMes?: (SaldosFila | null)[]
   /** Mes elegido en el filtro (1-12): la vista muestra solo esa columna. 0 = los 12 meses. */
@@ -51,6 +57,8 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
   const [metrica, setMetrica] = useState<Metrica>('real')
   const [ocultarVacios, setOcultarVacios] = useState(false)
   const [acum, setAcum] = useState(false)
+  const ui = useArbolUI()
+  const esArbol = vista === 'arbol'
 
   const mesesTodos = Array.from({ length: 12 }, (_, i) => i + 1)
   const ppto = (pid: number, m: number) => detMap[pid]?.[m] ?? 0
@@ -92,6 +100,18 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
     })
     return Array.from(map.values()).sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre))
   }
+  // Vista Árbol: Rubro → Centro de ingreso / Tipo de gasto → Partida / CC · Área,
+  // ordenado por el Real del año (no cambia al cambiar de métrica ni de mes).
+  const pesoAnual = (p: FilaGrid) => mesesTodos.reduce((s, m) => s + real(p.id, m), 0)
+  const arbolDe = (rows: FilaGrid[], tipo: 'ingreso' | 'egreso') => construirArbol(rows, tipo, `${rows[0]?.clasificacion ?? ''}-${tipo}`, {
+    rubros, agrupadores, zonasDeSeccion, peso: pesoAnual, agruparMenores: ui.agruparMenores,
+    nombreCC: nombreCC ?? (id => String(id)), nombreArea: nombreArea ?? (id => String(id)),
+    nombreCentroIng: nombreCentroIng ?? (id => String(id)),
+  })
+  const lineasArbol = (rows: FilaGrid[], tipo: 'ingreso' | 'egreso', todos = false): Linea[] =>
+    aplanar(arbolDe(rows, tipo), n => ui.abierto(n as NodoArbol<unknown>), todos)
+      .map(n => ({ key: n.key, nombre: n.nombre, orden: 0, ids: n.partidas.map(p => p.id), nodo: n }))
+
   // Egresos en Detalle: sub-bandas CC · Área; el resto, una sola banda sin título.
   const bandasDe = (rows: FilaGrid[], tipo: 'ingreso' | 'egreso') =>
     tipo === 'egreso' && vista === 'detalle' && nombreCC && nombreArea
@@ -145,7 +165,21 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
       <>
         <tr><td colSpan={meses.length + 2} style={{ padding: '8px 12px', fontSize: 11, fontWeight: 700, letterSpacing: '.06em',
           textTransform: 'uppercase', color: fg, background: bg }}>{label}</td></tr>
-        {bandasDe(rows, tipo).map(b => [
+        {esArbol ? lineasArbol(rows, tipo).map(r => {
+          const t = totalLinea(r)
+          const d = r.nodo?.depth ?? 0
+          const bg = d === 0 ? '#fff' : d === 1 ? '#fcfcfd' : '#f8fafc'
+          return (
+            <tr key={r.key} style={{ borderBottom: '1px solid #f1f5f9', background: bg }}>
+              <td style={{ ...stickyBase, background: bg, padding: '6px 12px', minWidth: 260, maxWidth: 360,
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {r.nodo && <EtiquetaNodo n={r.nodo} ui={ui} />}
+              </td>
+              {meses.map(m => { const v = valorLinea(r, m); return <td key={m} style={cell(v, tipo, d === 0)}><Monto v={v} l={r} tipo={tipo} ms={acum ? mesesTodos.filter(k => k <= m) : [m]} /></td> })}
+              <td style={{ ...cell(t, tipo, true), borderLeft: '1px solid #e2e8f0', background: '#f8fafc' }}><Monto v={t} l={r} tipo={tipo} ms={mesSel ? [mesSel] : mesesTodos} /></td>
+            </tr>
+          )
+        }) : bandasDe(rows, tipo).map(b => [
           b.label && (
             <tr key={`b-${b.key}`} style={{ background: '#f8fafc' }}>
               <td style={{ ...stickyBase, background: '#f8fafc', padding: '6px 12px', fontSize: 12, fontWeight: 700, color: '#475569' }}>{b.label}</td>
@@ -214,7 +248,10 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
       if (rows.length === 0) return
       aoa.push([label.toUpperCase()])
       const tipo = rows[0].tipo
-      bandasDe(rows, tipo).forEach(b => {
+      if (esArbol) {
+        // Excel con el árbol completo (todo abierto), sangría por nivel
+        lineasArbol(rows, tipo, true).forEach(l => aoa.push([`${'    '.repeat(l.nodo?.depth ?? 0)}${l.nombre}`, ...meses.map(m => valorLinea(l, m)), totalLinea(l)]))
+      } else bandasDe(rows, tipo).forEach(b => {
         if (b.label) aoa.push([b.label, ...meses.map(m => sumaFilas(b.rows, m)), totalFila(b.rows)])
         lineasDe(b.rows).forEach(l => aoa.push([b.label ? `    ${l.nombre}` : l.nombre, ...meses.map(m => valorLinea(l, m)), totalLinea(l)]))
       })
@@ -278,6 +315,7 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
           <input type="checkbox" checked={acum} onChange={e => setAcum(e.target.checked)} />
           Acumulado corrido
         </label>
+        {esArbol && <ControlesArbol ui={ui} />}
         {metrica === 'var' && (
           <span style={{ fontSize: 11, color: '#94a3b8' }}>Variación = Real − Presupuesto</span>
         )}
