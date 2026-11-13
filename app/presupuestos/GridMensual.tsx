@@ -30,7 +30,9 @@ const NUM: React.CSSProperties = { textAlign: 'right', fontVariantNumeric: 'tabu
 
 const SIN_AGRUPADOR = 'Sin Agrupador'
 
-export default function GridMensual({ filas, detMap, realMap, vista, agrupadores, labels: LABELS, netoLabel, archivo, onCelda, pptoFallback, nombreCC, nombreArea, nombreCentroIng }: {
+export default function GridMensual({ filas, detMap, realMap, vista, agrupadores, labels: LABELS, netoLabel, archivo, onCelda, pptoFallback, nombreCC, nombreArea, nombreCentroIng, mesSel = 0 }: {
+  /** Mes elegido en el filtro (1-12): la vista muestra solo esa columna. 0 = los 12 meses. */
+  mesSel?: number
   /** Consolidado: los ingresos se agrupan por Centro de Ingreso. */
   nombreCentroIng?: (id: number) => string
   /** Con ambos, los egresos en vista Detalle se agrupan en bandas CC · Área. */
@@ -93,7 +95,7 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
   const totalLinea = (l: Linea) => meses.reduce((s, m) => s + l.ids.reduce((a, id) => a + valorMes(id, m), 0), 0)
 
   // Meses sin ningún movimiento (ni ppto ni real) en las filas mostradas
-  const meses = ocultarVacios
+  const meses = mesSel ? [mesSel] : ocultarVacios
     ? mesesTodos.filter(m => filas.some(f => ppto(f.id, m) !== 0 || real(f.id, m) !== 0))
     : mesesTodos
 

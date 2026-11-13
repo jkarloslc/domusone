@@ -664,7 +664,7 @@ export default function ComparativoPage() {
     !realDevMap[p.id] && (detDevMap[p.id] || detMap[p.id]))
 
   // ── Helpers de agregación ──────────────────────────────────────
-  const getMeses = () => (filterMes === 0 || modo === 'mensual') ? Array.from({ length: 12 }, (_, i) => i + 1) : [filterMes]
+  const getMeses = () => filterMes === 0 ? Array.from({ length: 12 }, (_, i) => i + 1) : [filterMes]
 
   const esIngreso = (pid: number) => partidas.find(p => p.id === pid)?.tipo === 'ingreso'
 
@@ -928,7 +928,7 @@ export default function ComparativoPage() {
     </div>
   )
 
-  const mesLabel = (filterMes === 0 || modo === 'mensual')
+  const mesLabel = filterMes === 0
     ? 'Acumulado anual'
     : `${MESES[filterMes - 1]} ${selPpto?.anio ?? ''}`
 
@@ -960,7 +960,7 @@ export default function ComparativoPage() {
         {/* Mes */}
         <select className="input" style={{ width: 180, flex: '0 0 auto' }}
           value={filterMes} onChange={e => setFilterMes(Number(e.target.value))}
-          disabled={modo === 'mensual'} title={modo === 'mensual' ? 'La vista mensual muestra los 12 meses' : undefined}>
+          title={modo === 'mensual' ? 'En la vista Mensual, elegir un mes deja solo esa columna' : undefined}>
           <option value={0}>Acumulado año</option>
           {MESES.map((m, i) => (
             <option key={i + 1} value={i + 1}>{m} {selPpto?.anio}</option>
@@ -1192,7 +1192,7 @@ export default function ComparativoPage() {
           )}
           <div id="reporte-print-area" className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {modo === 'mensual' ? (
-            <GridMensual {...nombres} nombreCentroIng={nombreCentroIng} filas={filas} detMap={pptoMensual} realMap={realMensual}
+            <GridMensual {...nombres} mesSel={filterMes} nombreCentroIng={nombreCentroIng} filas={filas} detMap={pptoMensual} realMap={realMensual}
               vista={vista === 'arbol' ? 'consolidado' : vista} agrupadores={agrupadores}
               archivo="Comparativo-Presupuesto-vs-Real" onCelda={handleCelda} pptoFallback={pptoFallbackMes} labels={CLASIFICACION_LABELS} netoLabel="Balance Neto" />
           ) : modo === 'unidades' ? (
