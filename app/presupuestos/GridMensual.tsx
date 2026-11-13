@@ -9,6 +9,7 @@ type DetMap = Record<number, Record<number, number>>
 export type FilaGrid = {
   id: number; nombre: string; tipo: 'ingreso' | 'egreso'; clasificacion: Clasificacion
   orden: number; tipo_gasto: string | null; id_tipo_gasto_fk: number | null; id_centro_costo_fk: number | null; id_area_fk: number | null; id_agrupador_fk: number | null
+  id_centro_ingreso_fk?: number | null
 }
 export type CeldaInfo = { ids: number[]; nombre: string; tipo: 'ingreso' | 'egreso'; meses: number[] }
 export type Vista = 'detalle' | 'concepto' | 'consolidado' | 'agrupado'
@@ -29,7 +30,9 @@ const NUM: React.CSSProperties = { textAlign: 'right', fontVariantNumeric: 'tabu
 
 const SIN_AGRUPADOR = 'Sin Agrupador'
 
-export default function GridMensual({ filas, detMap, realMap, vista, agrupadores, labels: LABELS, netoLabel, archivo, onCelda, pptoFallback, nombreCC, nombreArea }: {
+export default function GridMensual({ filas, detMap, realMap, vista, agrupadores, labels: LABELS, netoLabel, archivo, onCelda, pptoFallback, nombreCC, nombreArea, nombreCentroIng }: {
+  /** Consolidado: los ingresos se agrupan por Centro de Ingreso. */
+  nombreCentroIng?: (id: number) => string
   /** Con ambos, los egresos en vista Detalle se agrupan en bandas CC · Área. */
   nombreCC?: (id: number) => string; nombreArea?: (id: number) => string
   filas: FilaGrid[]; detMap: DetMap; realMap: DetMap
@@ -62,7 +65,10 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
     const map = new Map<string, Linea>()
     rows.forEach(r => {
       let key: string, nombre: string, orden: number
-      if (vista === 'concepto' || vista === 'consolidado') {
+      if (vista === 'consolidado' && r.tipo === 'ingreso' && r.id_centro_ingreso_fk != null && nombreCentroIng) {
+        // Ingresos no tienen tipo de gasto: en Consolidado se suman por Centro de Ingreso
+        key = `ci-${r.id_centro_ingreso_fk}`; nombre = nombreCentroIng(r.id_centro_ingreso_fk); orden = r.orden
+      } else if (vista === 'concepto' || vista === 'consolidado') {
         // Consolidado: mismo tipo de gasto en todos los CC → una sola línea
         const cc = vista === 'concepto' ? r.id_centro_costo_fk ?? 0 : 0
         key = r.id_tipo_gasto_fk ? `${cc}-${r.id_tipo_gasto_fk}` : `p-${r.id}`

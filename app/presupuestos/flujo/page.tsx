@@ -674,12 +674,18 @@ export default function FlujoEfectivoPage() {
   // grupos de 1 (misma fila que en Detalle).
   // Concepto: tipo de gasto por CC. Consolidado (porCC = false): tipo de gasto
   // en toda la empresa — una sola Nómina, etc.; el drill muestra el CC · Área.
+  const nombreCentroIng = (id: number) => centrosIng.find(c => c.id === id)?.nombre ?? `Centro ${id}`
   function agruparPorConcepto(rows: FilaPartida[], porCC = true): FilaGrupo[] {
     const map = new Map<string, { nombre: string; orden: number; pptoVal: number; realVal: number; partidas: FilaPartida[] }>()
     rows.forEach(r => {
-      const key = r.id_tipo_gasto_fk ? `${porCC ? r.id_centro_costo_fk ?? 0 : 0}-${r.id_tipo_gasto_fk}` : `p-${r.id}`
+      // Consolidado de ingresos: una fila por Centro de Ingreso (los ingresos no
+      // tienen tipo de gasto; sin esto cada partida quedaba sola, igual que Detalle).
+      const porCentroIng = !porCC && r.tipo === 'ingreso' && r.id_centro_ingreso_fk != null
+      const key = porCentroIng ? `ci-${r.id_centro_ingreso_fk}`
+        : r.id_tipo_gasto_fk ? `${porCC ? r.id_centro_costo_fk ?? 0 : 0}-${r.id_tipo_gasto_fk}` : `p-${r.id}`
       if (!map.has(key)) {
-        map.set(key, { nombre: r.tipo_gasto ?? r.nombre, orden: r.orden, pptoVal: 0, realVal: 0, partidas: [] })
+        const nombre = porCentroIng ? nombreCentroIng(r.id_centro_ingreso_fk!) : (r.tipo_gasto ?? r.nombre)
+        map.set(key, { nombre, orden: r.orden, pptoVal: 0, realVal: 0, partidas: [] })
       }
       const g = map.get(key)!
       g.orden = Math.min(g.orden, r.orden)
@@ -991,7 +997,7 @@ export default function FlujoEfectivoPage() {
           )}
           <div id="reporte-print-area" className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {modo === 'mensual' ? (
-            <GridMensual {...nombres} filas={filas} detMap={detMap} realMap={realMap} vista={vista} agrupadores={agrupadores}
+            <GridMensual {...nombres} nombreCentroIng={nombreCentroIng} filas={filas} detMap={detMap} realMap={realMap} vista={vista} agrupadores={agrupadores}
               archivo="Flujo-de-Efectivo" onCelda={handleCelda} labels={CLASIFICACION_LABELS} netoLabel="Flujo Neto de Efectivo" />
           ) : (
           <div style={{ overflowX: 'auto' }}>
