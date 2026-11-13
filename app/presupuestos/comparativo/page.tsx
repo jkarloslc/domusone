@@ -494,10 +494,14 @@ export default function ComparativoPage() {
       .order('anio', { ascending: false }).order('nombre')
       .then(({ data }) => {
         const reales = (data ?? []) as Presupuesto[]
-        setPresupuestos(conConsolidados(reales))
-        const list = reales
+        // Abre en TODOS + Consolidado (todos los presupuestos del año más
+        // reciente, agrupado solo por tipo de gasto); si el año tiene un solo
+        // presupuesto no hay TODOS y abre ese presupuesto en Detalle.
+        const list = conConsolidados(reales)
+        setPresupuestos(list)
         if (list.length > 0) {
           setSelId(list[0].id)
+          if (esTodos(list[0])) setVista('consolidado')
           loadEverything(list[0])
         } else setLoading(false)
       })
@@ -523,6 +527,7 @@ export default function ComparativoPage() {
     setSelId(id)
     const p = presupuestos.find(x => x.id === id)
     if (p) loadEverything(p, true)
+    if (esTodos(p)) setVista('consolidado')
     setFiltroAgrIng(''); setFiltroCentroIng(''); setFiltroSeccion(''); setFiltroConcepto('')
     setFiltroCC(''); setFiltroArea(''); setFiltroZonaIng(''); setFiltroZonaEgr('')
   }
