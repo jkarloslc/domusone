@@ -56,7 +56,10 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
   // Los totales de fila siempre suman valorMes (el corrido termina en el mismo total).
   const valorMes = (pid: number, m: number) =>
     metrica === 'real' ? real(pid, m) : metrica === 'ppto' ? ppto(pid, m) : real(pid, m) - ppto(pid, m)
-  const valor = (pid: number, m: number) =>
+  // Mes elegido en el filtro: se conservan las 12 columnas (etiquetas) y solo
+  // ese mes muestra datos; los demás quedan en blanco.
+  const visible = (m: number) => !mesSel || m === mesSel
+  const valor = (pid: number, m: number) => !visible(m) ? 0 :
     acum ? mesesTodos.filter(k => k <= m).reduce((s, k) => s + valorMes(pid, k), 0) : valorMes(pid, m)
 
   // Líneas visibles según la vista: partida, concepto (tipo_gasto por CC),
@@ -92,15 +95,16 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
       ? agruparPorArea(rows, nombreCC, nombreArea)
       : [{ key: 'todo', label: '', rows }]
   const valorLinea = (l: Linea, m: number) => l.ids.reduce((s, id) => s + valor(id, m), 0)
-  const totalLinea = (l: Linea) => meses.reduce((s, m) => s + l.ids.reduce((a, id) => a + valorMes(id, m), 0), 0)
+  const totalLinea = (l: Linea) => mesesSuma.reduce((s, m) => s + l.ids.reduce((a, id) => a + valorMes(id, m), 0), 0)
 
   // Meses sin ningún movimiento (ni ppto ni real) en las filas mostradas
-  const meses = mesSel ? [mesSel] : ocultarVacios
+  const meses = ocultarVacios
     ? mesesTodos.filter(m => filas.some(f => ppto(f.id, m) !== 0 || real(f.id, m) !== 0))
     : mesesTodos
+  const mesesSuma = mesSel ? [mesSel] : meses
 
   const sumaFilas = (rows: FilaGrid[], m: number) => rows.reduce((s, r) => s + valor(r.id, m), 0)
-  const totalFila = (rows: FilaGrid[]) => meses.reduce((s, m) => s + rows.reduce((a, r) => a + valorMes(r.id, m), 0), 0)
+  const totalFila = (rows: FilaGrid[]) => mesesSuma.reduce((s, m) => s + rows.reduce((a, r) => a + valorMes(r.id, m), 0), 0)
 
   // Color de una celda de variación: ingreso → más real que ppto es bueno; egreso → al revés
   const colorVar = (v: number, tipo: 'ingreso' | 'egreso') =>
@@ -153,7 +157,7 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
               <td style={{ ...stickyBase, background: '#fff', padding: '6px 12px 6px 22px', fontSize: 12, color: '#334155', minWidth: 220, maxWidth: 280,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.nombre}>{r.nombre}</td>
               {meses.map(m => { const v = valorLinea(r, m); return <td key={m} style={cell(v, tipo)}><Monto v={v} l={r} tipo={tipo} ms={acum ? mesesTodos.filter(k => k <= m) : [m]} /></td> })}
-              <td style={{ ...cell(t, tipo, true), borderLeft: '1px solid #e2e8f0', background: '#f8fafc' }}><Monto v={t} l={r} tipo={tipo} ms={mesesTodos} /></td>
+              <td style={{ ...cell(t, tipo, true), borderLeft: '1px solid #e2e8f0', background: '#f8fafc' }}><Monto v={t} l={r} tipo={tipo} ms={mesSel ? [mesSel] : mesesTodos} /></td>
             </tr>
           )
         })])}
@@ -270,7 +274,8 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
           <thead>
             <tr>
               <th style={{ ...thBase, ...stickyBase, zIndex: 3, textAlign: 'left', minWidth: 220 }}>Partida</th>
-              {meses.map(m => <th key={m} style={{ ...thBase, textAlign: 'right', minWidth: 78 }}>{MESES[m - 1]}</th>)}
+              {meses.map(m => <th key={m} style={{ ...thBase, textAlign: 'right', minWidth: 78,
+                ...(mesSel ? (m === mesSel ? { color: '#1e293b', background: '#e0f2fe' } : { color: '#cbd5e1' }) : {}) }}>{MESES[m - 1]}</th>)}
               <th style={{ ...thBase, textAlign: 'right', minWidth: 92, borderLeft: '1px solid #e2e8f0' }}>Total</th>
             </tr>
           </thead>
