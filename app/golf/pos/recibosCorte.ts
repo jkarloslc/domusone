@@ -1,6 +1,7 @@
 import { dbGolf, dbCtrl, dbComp } from '@/lib/supabase'
 import { distribuirConceptosRecibo } from './distribucionIngreso'
 import { distribuirSeccionesRecibo } from '@/lib/distribucionSecciones'
+import { netearCondonacion, esFormaCondonacion } from '@/lib/condonacionRecibo'
 
 /**
  * Recibos de ingreso de un corte POS: UNO POR MES DE VENTA.
@@ -63,7 +64,10 @@ export async function crearRecibosCorte({ idCorte, idCentroIngreso, nombreCentro
       f.monto += Number(p.monto) || 0
       fpMap.set(p.id_forma_fk, f)
     }
-    const formas = Array.from(fpMap.values())
+    // Condonación / Intercambio no es caja ni ingreso: fuera de las formas y descontada del recibo
+    const todas = Array.from(fpMap.values())
+    const formas = todas.filter(f => !esFormaCondonacion(f.forma_nombre))
+    const condMes = todas.filter(f => esFormaCondonacion(f.forma_nombre)).reduce((a, f) => a + f.monto, 0)
     const m = mapFormasPago(formas)
     const fp = (k: Columnas) => m[k] ?? 0
     const parte = n > 1 ? ` (parte ${i + 1} de ${n})` : ''
@@ -101,6 +105,7 @@ export async function crearRecibosCorte({ idCorte, idCentroIngreso, nombreCentro
     const dSec = await distribuirSeccionesRecibo(recibo.id, idCentroIngreso, g.ids)
     dSec.errores.forEach(e => console.error('distribuirSeccionesRecibo:', e))
     dSec.avisos.forEach(a => console.warn('distribuirSeccionesRecibo:', a))
+    if (condMes > 0) await netearCondonacion(recibo.id, condMes, g.total)
 
     creados.push(recibo.id)
   }
@@ -185,7 +190,9 @@ export async function ajustarReciboPorVentaCancelada(idVenta: number, usuario?: 
     f.monto += Number(p.monto) || 0
     fpMap.set(p.id_forma_fk, f)
   }
-  const formas = Array.from(fpMap.values())
+  const todas = Array.from(fpMap.values())
+  const formas = todas.filter(f => !esFormaCondonacion(f.forma_nombre))
+  const condRestante = todas.filter(f => esFormaCondonacion(f.forma_nombre)).reduce((a, f) => a + f.monto, 0)
 
   await Promise.all([
     dbCtrl.from('recibos_ingreso_conceptos').delete().eq('id_recibo_fk', recibo.id),
@@ -203,6 +210,7 @@ export async function ajustarReciboPorVentaCancelada(idVenta: number, usuario?: 
   await distribuirConceptosRecibo(recibo.id, recibo.id_centro_ingreso_fk, ids)
   const dSec = await distribuirSeccionesRecibo(recibo.id, recibo.id_centro_ingreso_fk, ids)
   dSec.errores.forEach(e => console.error('distribuirSeccionesRecibo:', e))
+  await netearCondonacion(recibo.id, condRestante, total)
 
   return `El recibo de ingreso #${recibo.id} se ajustó sin esta venta (nuevo total $${total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}).${avisoBanco}`
 }

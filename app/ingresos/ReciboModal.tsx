@@ -2,6 +2,7 @@
 import { useZonas, SelectZona } from '@/lib/zonas'
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbCfg, dbComp } from '@/lib/supabase'
+import { netearCondonacion } from '@/lib/condonacionRecibo'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Receipt, ChevronLeft, ChevronRight,
@@ -137,6 +138,18 @@ export default function ReciboModal({
   const esConceptos  = esSecciones || centroSel?.tipo_desglose === 'conceptos'
 
   // ── Cargar secciones existentes (vista) o init (nuevo) ──────
+  // Las líneas guardadas están NETAS de condonación (lib/condonacionRecibo.ts):
+  // para editar se muestra lo capturado = monto + monto_condonado (bandas en proporción).
+  const grossUp = <T extends { monto: number; monto_condonado?: number | null; monto_vencido?: number | null; monto_corriente?: number | null; monto_anticipado?: number | null }>(r: T): T => {
+    const cond = Number(r.monto_condonado ?? 0)
+    if (!cond) return r
+    const neto = Number(r.monto) || 0
+    const bruto = Math.round((neto + cond) * 100) / 100
+    const k = neto ? bruto / neto : 0
+    const esc = (v: number | null | undefined) => v == null ? (v ?? null) : Math.round(Number(v) * k * 100) / 100
+    return { ...r, monto: bruto, monto_vencido: esc(r.monto_vencido), monto_corriente: esc(r.monto_corriente), monto_anticipado: esc(r.monto_anticipado) }
+  }
+
   // Siempre muestra TODAS las secciones del config; si hay datos guardados,
   // superpone los montos para que en modo edición sean editables todas.
   useEffect(() => {
@@ -144,10 +157,10 @@ export default function ReciboModal({
     if (recibo) {
       setLoadingSecs(true)
       dbCtrl.from('recibos_ingreso_secciones')
-        .select('id_seccion_fk, nombre_seccion, monto, notas, monto_vencido, monto_corriente, monto_anticipado')
+        .select('id_seccion_fk, nombre_seccion, monto, monto_condonado, notas, monto_vencido, monto_corriente, monto_anticipado')
         .eq('id_recibo_fk', recibo.id)
         .then(({ data }) => {
-          const saved = (data ?? []) as SeccionRow[]
+          const saved = ((data ?? []) as (SeccionRow & { monto_condonado?: number | null })[]).map(grossUp)
           const full  = initSecRowsVal().map(r => {
             const match = saved.find(s => s.id_seccion_fk === r.id_seccion_fk)
             return match ? { ...r, monto: match.monto, notas: match.notas,
@@ -177,7 +190,7 @@ export default function ReciboModal({
     if (recibo) {
       Promise.all([
         dbCtrl.from('recibos_ingreso_conceptos')
-          .select('id_concepto_fk, nombre_concepto, monto, notas, monto_vencido, monto_corriente, monto_anticipado')
+          .select('id_concepto_fk, nombre_concepto, monto, monto_condonado, notas, monto_vencido, monto_corriente, monto_anticipado')
           .eq('id_recibo_fk', recibo.id),
         dbCfg.from('conceptos_ingreso')
           .select('id, nombre, clave, orden')
@@ -185,7 +198,7 @@ export default function ReciboModal({
           .eq('activo', true)
           .order('orden'),
       ]).then(([{ data: saved }, { data: cfg }]) => {
-        const savedRows = (saved ?? []) as ConceptoRow[]
+        const savedRows = ((saved ?? []) as (ConceptoRow & { monto_condonado?: number | null })[]).map(grossUp)
         const full = (cfg ?? []).map((c: Concepto) => {
           const match = savedRows.find(r => r.id_concepto_fk === c.id)
           return match
@@ -444,6 +457,10 @@ export default function ReciboModal({
       await dbCtrl.from('recibos_ingreso_formas_pago').insert(formasPayload)
     }
 
+    // Condonación / Intercambio: se descuenta del total y de las líneas (no suma en ningún lado)
+    try { await netearCondonacion(newRec.id, montoCondonacion || 0, totalFinal) }
+    catch (e: any) { console.error('netearCondonacion:', e?.message ?? e) }
+
     if (form.status === 'Confirmado') {
       await syncMovimientoBancario(newRec.id, form.fecha, folio, form.id_cuenta_bancaria_fk, montoCaja(totalFinal), false)
     }
@@ -524,6 +541,10 @@ export default function ReciboModal({
       )
     }
 
+    // Condonación / Intercambio: se descuenta del total y de las líneas (no suma en ningún lado)
+    try { await netearCondonacion(recibo.id, montoCondonacion || 0, totalFinal) }
+    catch (e: any) { console.error('netearCondonacion:', e?.message ?? e) }
+
     if (recibo.status === 'Confirmado') {
       await syncMovimientoBancario(recibo.id, form.fecha, recibo.folio ?? fmtFolioIng(recibo.id), form.id_cuenta_bancaria_fk, montoCaja(totalFinal), true)
     }
@@ -582,7 +603,7 @@ export default function ReciboModal({
 
       const formas = ((formaRes.data ?? []) as { nombre_forma_pago: string; monto: number }[])
         .map(f => ({ nombre: f.nombre_forma_pago, monto: f.monto }))
-      if ((recibo.monto_condonacion ?? 0) > 0) formas.push({ nombre: 'Condonación / Intercambio', monto: recibo.monto_condonacion ?? 0 })
+      if ((recibo.monto_condonacion ?? 0) > 0) formas.push({ nombre: 'Condonación / Intercambio (no suma al total)', monto: recibo.monto_condonacion ?? 0 })
 
       const centroNombre = centroSel?.nombre ?? 'Sin centro'
       const desgloseRows = esSecciones
