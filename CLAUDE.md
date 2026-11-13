@@ -63,6 +63,9 @@ Vehículos y Maquinaria, Equipo y Herramienta (con combustible, bitácoras, pré
 - Tablas: `ctrl.nomina_cargas` (unique tipo+año+periodo), `ctrl.nomina_cargas_det`, `ctrl.nomina_op_mes` (migr. `20261113180000`).
 - **Pendiente (decisión del usuario: "solo nómina por ahora")**: OPs de cargas sociales (IMSS patronal hoja IMSS, ISN 3%, Infonavit) que contabilidad suma en Sueldos; hoy no tienen OP.
 
+### Vista Árbol compartida (2026-11-13)
+`app/presupuestos/arbolPartidas.tsx` (`construirArbol`, `useArbolUI`, `ControlesArbol`, `EtiquetaNodo`) arma el árbol Rubro → Centro de ingreso / Tipo de gasto → Partida / CC · Área para **Resumen** (ArbolResumen), **Mensual** (GridMensual, `vista='arbol'`) y **Por unidad** (MatrizUnidades) en Comparativo y Flujo. El nivel Zona de egresos (filasConZona / prorrateo por lotes) solo existe en Resumen. Mensual se ordena por el Real del año. Por unidad desplaza dentro de su contenedor (maxHeight 70vh, encabezado y columna Concepto fijos).
+
 ## Ramas
 - Rama principal: `main`
 - Repositorio: https://github.com/jkarloslc/domusone.git
