@@ -1197,7 +1197,7 @@ export default function ComparativoPage() {
           ) : vista === 'arbol' ? (
             <ArbolResumen filas={filas} agrupadores={agrupadores} rubros={rubrosCat} labels={CLASIFICACION_LABELS}
               netoLabel="Balance Neto" {...nombres} nombreCentroIng={nombreCentroIng}
-              mesesPromedio={mesesPromedio}
+              mesesPromedio={mesesPromedio} zonasDeSeccion={zonasCat.zonasDeSeccion}
               onDrill={handleDrill} onDrillOps={handleDrillOps} onManual={handleManual} />
           ) : (
           <div style={{ overflowX: 'auto' }}>

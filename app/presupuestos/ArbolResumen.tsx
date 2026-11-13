@@ -8,6 +8,7 @@ import { rubroDePartida, RUBROS_VACIO, type CatalogoRubros } from '@/lib/rubros'
  *
  * Reemplaza los listados planos por un reporte colapsable:
  *   Ingresos: Rubro → Centro de Ingreso → Partida
+ *             (partidas por sección: Rubro → Zona → Sección)
  *   Egresos:  Rubro → Tipo de gasto     → CC · Área
  * El rubro viene del catálogo (lib/rubros.ts); sin rubro se usa el agrupador.
  * Abre en nivel 1 (~15-20 filas). Los hermanos que pesan menos del umbral
@@ -23,6 +24,7 @@ export type FilaArbol = {
   id_agrupador_fk: number | null; id_tipo_gasto_fk: number | null; tipo_gasto: string | null
   id_centro_ingreso_fk: number | null; id_centro_costo_fk: number | null; id_area_fk: number | null
   id_concepto_fk?: number | null
+  id_seccion_fk?: number | null
   realVal: number; pptoVal: number
 }
 
@@ -40,7 +42,7 @@ const pct = (n: number | null) => n == null || !isFinite(n) ? '—' : `${n.toFix
 
 export default function ArbolResumen<T extends FilaArbol>({
   filas, agrupadores, rubros = RUBROS_VACIO, labels, netoLabel, nombreCC, nombreArea, nombreCentroIng,
-  mesesPromedio, onDrill, onDrillOps, onManual,
+  mesesPromedio, zonasDeSeccion, onDrill, onDrillOps, onManual,
 }: {
   filas: T[]
   agrupadores: { id: number; nombre: string; orden: number }[]
@@ -52,6 +54,8 @@ export default function ArbolResumen<T extends FilaArbol>({
   nombreCentroIng: (id: number) => string
   /** >0 en Acumulado año: meses con movimiento, para la columna Prom. mensual. */
   mesesPromedio: number
+  /** Zonas de una sección: las partidas de ingreso por sección se agrupan por Zona. */
+  zonasDeSeccion?: (idSeccion: number) => { id: number; nombre: string }[]
   onDrill: (nombre: string, tipo: 'ingreso' | 'egreso', partidas: T[]) => void
   onDrillOps: (p: T) => void
   onManual: (pid: number) => void
@@ -98,10 +102,18 @@ export default function ArbolResumen<T extends FilaArbol>({
       })
     }
 
+    // Ingreso por sección (cuotas de Fraccionamiento): el nivel intermedio es la
+    // Zona en vez del centro. Una sección en 2+ zonas va a un nodo combinado
+    // ("Zona A + Zona B") para no contar su ingreso dos veces.
+    const zonasDe = (p: T) => p.id_seccion_fk != null && zonasDeSeccion ? zonasDeSeccion(p.id_seccion_fk) : null
     const nivel2 = (ps: T[], depth: number, pre: string) => tipo === 'ingreso'
       ? agruparPor(ps, depth, pre,
-          p => `ci${p.id_centro_ingreso_fk ?? 0}`,
-          p => p.id_centro_ingreso_fk != null ? nombreCentroIng(p.id_centro_ingreso_fk) : 'Sin centro de ingreso',
+          p => { const z = zonasDe(p); return z ? `zn${z.map(x => x.id).join('-') || 0}` : `ci${p.id_centro_ingreso_fk ?? 0}` },
+          p => {
+            const z = zonasDe(p)
+            if (z) return z.length ? z.map(x => x.nombre).join(' + ') : 'Sin zona'
+            return p.id_centro_ingreso_fk != null ? nombreCentroIng(p.id_centro_ingreso_fk) : 'Sin centro de ingreso'
+          },
           hojas)
       : agruparPor(ps, depth, pre,
           p => p.id_tipo_gasto_fk != null ? `tg${p.id_tipo_gasto_fk}` : `px${p.id}`,
@@ -279,7 +291,7 @@ export default function ArbolResumen<T extends FilaArbol>({
         <div style={{ display: 'flex', gap: 4, background: '#f1f5f9', borderRadius: 18, padding: 3 }}>
           {([1, 2, 3] as const).map(v => (
             <button key={v} onClick={() => cambiarNivel(v)}
-              title={v === 1 ? 'Solo rubros' : v === 2 ? 'Rubro → Centro de ingreso / Tipo de gasto' : 'Todo abierto'}
+              title={v === 1 ? 'Solo rubros' : v === 2 ? 'Rubro → Zona / Centro de ingreso / Tipo de gasto' : 'Todo abierto'}
               style={{ padding: '3px 12px', borderRadius: 14, border: 'none', cursor: 'pointer', fontSize: 12,
                 background: nivel === v ? '#fff' : 'transparent', color: nivel === v ? '#1e293b' : '#64748b',
                 fontWeight: nivel === v ? 600 : 400, boxShadow: nivel === v ? '0 1px 3px rgba(0,0,0,.1)' : 'none' }}>
