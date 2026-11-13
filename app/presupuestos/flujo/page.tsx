@@ -1073,12 +1073,12 @@ export default function FlujoEfectivoPage() {
             <SaldosMensuales meses={resumenesMes} mesSel={filterMes} />
           </>) : modo === 'unidades' ? (
             <MatrizUnidades filas={filas} agrupadores={agrupadores} rubros={rubrosCat} labels={CLASIFICACION_LABELS}
-              netoLabel="Flujo Neto de Efectivo" archivo="Flujo-de-Efectivo" onDrill={handleDrill} />
+              netoLabel="Flujo Neto de Efectivo" archivo="Flujo-de-Efectivo" onDrill={handleDrill} saldos={resumenSaldos} />
           ) : (
             <ArbolResumen filas={filasArbol} agrupadores={agrupadores} rubros={rubrosCat} labels={CLASIFICACION_LABELS}
               netoLabel="Flujo Neto de Efectivo" {...nombres} nombreCentroIng={nombreCentroIng}
               mesesPromedio={mesesPromedio} zonasDeSeccion={zonasCat.zonasDeSeccion}
-              prorrateoLotes={prorrateoLotes} onProrrateoLotes={setProrrateoLotes}
+              prorrateoLotes={prorrateoLotes} onProrrateoLotes={setProrrateoLotes} saldos={resumenSaldos}
               onDrill={handleDrill} onDrillOps={handleDrillOps} onManual={handleManual} />
           )}
           </div>

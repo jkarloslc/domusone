@@ -2,6 +2,7 @@
 import { Fragment, useState } from 'react'
 import { ChevronRight, ChevronDown } from 'lucide-react'
 import { rubroDePartida, RUBROS_VACIO, type CatalogoRubros } from '@/lib/rubros'
+import type { SaldosFila } from '@/lib/saldosFlujo'
 
 /**
  * Vista Árbol del Resumen (Comparativo y Flujo de Efectivo).
@@ -45,7 +46,7 @@ const pct = (n: number | null) => n == null || !isFinite(n) ? '—' : `${n.toFix
 
 export default function ArbolResumen<T extends FilaArbol>({
   filas, agrupadores, rubros = RUBROS_VACIO, labels, netoLabel, nombreCC, nombreArea, nombreCentroIng,
-  mesesPromedio, zonasDeSeccion, prorrateoLotes, onProrrateoLotes, onDrill, onDrillOps, onManual,
+  mesesPromedio, zonasDeSeccion, prorrateoLotes, onProrrateoLotes, saldos, onDrill, onDrillOps, onManual,
 }: {
   filas: T[]
   agrupadores: { id: number; nombre: string; orden: number }[]
@@ -62,6 +63,8 @@ export default function ArbolResumen<T extends FilaArbol>({
   /** Selector de prorrateo del gasto general por lotes (solo si hay egresos con zona). */
   prorrateoLotes?: boolean
   onProrrateoLotes?: (v: boolean) => void
+  /** Flujo de Efectivo: filas Saldo inicial (arriba) y Saldo final / real / diferencia (abajo). */
+  saldos?: SaldosFila | null
   onDrill: (nombre: string, tipo: 'ingreso' | 'egreso', partidas: T[]) => void
   onDrillOps: (p: T) => void
   onManual: (pid: number) => void
@@ -292,6 +295,19 @@ export default function ArbolResumen<T extends FilaArbol>({
     )
   }
 
+
+  // Filas de saldo (Flujo de Efectivo): consolidado de todas las partidas, sin filtros.
+  const filaSaldo = (label: string, v: number | null, fuerte: boolean, nota?: string, colorV?: string) => (
+    <tr className="ppto-print-total" style={{ background: fuerte ? '#e0f2fe' : '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+      <td style={{ padding: '9px 14px', fontWeight: 700, color: '#0c4a6e', fontSize: 12, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+        {label}{nota && <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: '#64748b', marginLeft: 6 }}>{nota}</span>}
+      </td>
+      <td style={{ padding: '9px 14px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700,
+        color: v == null ? '#cbd5e1' : (colorV ?? (v < 0 ? '#dc2626' : '#0c4a6e')) }}>{v == null ? '—' : fmt(v)}</td>
+      <td colSpan={nCols - 2} />
+    </tr>
+  )
+
   const sum = (rs: T[], k: 'realVal' | 'pptoVal') => rs.reduce((s, r) => s + r[k], 0)
   const totIng = filas.filter(f => f.tipo === 'ingreso')
   const totEgr = filas.filter(f => f.tipo === 'egreso')
@@ -337,6 +353,7 @@ export default function ArbolResumen<T extends FilaArbol>({
             </tr>
           </thead>
           <tbody>
+            {saldos && filaSaldo('Saldo inicial', saldos.inicial, false, 'efectivo al inicio del periodo')}
             {secciones.map(({ clas, ing, egr, arbIng, arbEgr }) => {
               if (ing.length === 0 && egr.length === 0) return null
               const L = labels[clas]
@@ -359,6 +376,12 @@ export default function ArbolResumen<T extends FilaArbol>({
             })}
             {totIng.length > 0 && totEgr.length > 0 &&
               balance(netoLabel, sum(totIng, 'realVal') - sum(totEgr, 'realVal'), sum(totIng, 'pptoVal') - sum(totEgr, 'pptoVal'), true)}
+            {saldos && <>
+              {filaSaldo('Saldo final', saldos.final, true, 'saldo inicial + flujo neto (todas las partidas)')}
+              {filaSaldo('Saldo real en banco', saldos.real, false)}
+              {filaSaldo('Diferencia sin conciliar', saldos.diferencia, false, 'real − calculado',
+                saldos.diferencia == null ? undefined : Math.abs(saldos.diferencia) < 1 ? '#15803d' : '#b45309')}
+            </>}
           </tbody>
         </table>
       </div>

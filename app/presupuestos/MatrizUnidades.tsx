@@ -3,6 +3,7 @@ import { Fragment } from 'react'
 import * as XLSX from 'xlsx'
 import { Download } from 'lucide-react'
 import { rubroDePartida, RUBROS_VACIO, type CatalogoRubros } from '@/lib/rubros'
+import type { SaldosFila } from '@/lib/saldosFlujo'
 
 /**
  * Estado de resultados por unidad de negocio (Fase 3 del Árbol).
@@ -28,7 +29,7 @@ const nombreUnidad = (m?: string | null) => m === 'Mantenimiento' ? 'Mantto. Fra
 const fmt = (n: number) => n === 0 ? '—' : (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString('es-MX', { maximumFractionDigits: 0 })
 
 export default function MatrizUnidades<T extends FilaMatriz>({
-  filas, agrupadores, rubros = RUBROS_VACIO, labels, netoLabel, archivo, onDrill,
+  filas, agrupadores, rubros = RUBROS_VACIO, labels, netoLabel, archivo, onDrill, saldos,
 }: {
   filas: T[]
   agrupadores: { id: number; nombre: string; orden: number }[]
@@ -37,6 +38,8 @@ export default function MatrizUnidades<T extends FilaMatriz>({
   netoLabel: string
   archivo: string
   onDrill: (nombre: string, tipo: 'ingreso' | 'egreso', partidas: T[]) => void
+  /** Flujo de Efectivo: saldos consolidados (solo en la columna Total). */
+  saldos?: SaldosFila | null
 }) {
   const unidades = Array.from(new Set(filas.filter(f => f.realVal !== 0).map(f => f.modulo || SIN_UNIDAD)))
     .sort((a, b) => {
@@ -127,6 +130,14 @@ export default function MatrizUnidades<T extends FilaMatriz>({
     )
   }
 
+  const filaSaldo = (label: string, v: number | null, fuerte: boolean, colorV?: string) => (
+    <tr style={{ background: fuerte ? '#e0f2fe' : '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+      <td style={{ ...tdNombre, fontWeight: 700, color: '#0c4a6e', fontSize: 12, textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</td>
+      {unidades.map(u => <td key={u} style={{ ...td, color: '#cbd5e1' }} />)}
+      <td style={{ ...td, fontWeight: 700, color: v == null ? '#cbd5e1' : (colorV ?? (v < 0 ? '#dc2626' : '#0c4a6e')) }}>{v == null ? '—' : fmt(v)}</td>
+    </tr>
+  )
+
   const margen = (i: number, e: number) => i > 0 ? `${((i - e) / i * 100).toFixed(1)}%` : '—'
 
   function exportar() {
@@ -178,6 +189,7 @@ export default function MatrizUnidades<T extends FilaMatriz>({
             </tr>
           </thead>
           <tbody>
+            {saldos && filaSaldo('Saldo inicial', saldos.inicial, false)}
             {secciones.map(({ clas, ing, egr, lIng, lEgr }) => {
               const L = labels[clas]
               return (
@@ -216,6 +228,12 @@ export default function MatrizUnidades<T extends FilaMatriz>({
               )
             })}
             {filaResultado(netoLabel, porUnidad(totIng), porUnidad(totEgr), totIng, totEgr, true)}
+            {saldos && <>
+              {filaSaldo('Saldo final', saldos.final, true)}
+              {filaSaldo('Saldo real en banco', saldos.real, false)}
+              {filaSaldo('Diferencia sin conciliar', saldos.diferencia, false,
+                saldos.diferencia == null ? undefined : Math.abs(saldos.diferencia) < 1 ? '#15803d' : '#b45309')}
+            </>}
           </tbody>
         </table>
       </div>

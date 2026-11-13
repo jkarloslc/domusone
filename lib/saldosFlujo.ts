@@ -142,4 +142,7 @@ export async function guardarSaldo(tipo: 'inicial' | 'real', fecha: string, mont
   if (error) throw new Error(error.message)
 }
 
+/** Saldos que se muestran como filas en el estado de resultados (Árbol / Por unidad). */
+export type SaldosFila = { inicial: number; final: number; real: number | null; diferencia: number | null }
+
 export const FUENTE_LABEL: Record<FuenteSaldo, string> = { manual: 'Manual', banco: 'Estado de cuenta', tesoreria: 'Tesorería' }
