@@ -476,6 +476,8 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
     id_area_fk:         opEdit?.id_area_fk?.toString()       ?? '',
     id_frente_fk:       opEdit?.id_frente_fk?.toString()    ?? '',
     forma_pago:        opEdit?.forma_pago        ?? 'Transferencia',
+    // Fecha de la OP: al crear (o duplicar) es hoy en hora de México; al editar, la guardada.
+    fecha_op:          (!duplicar && opEdit?.fecha_op) ? opEdit.fecha_op : new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' }),
     fecha_vencimiento: duplicar ? '' : (opEdit?.fecha_vencimiento ?? ''),
     concepto:          opEdit?.concepto          ?? '',
     id_tipo_gasto_fk:  opEdit?.id_tipo_gasto_fk?.toString() ?? '',
@@ -877,6 +879,7 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
       setError('Ingresa proveedor o concepto'); return
     }
     if (montoTotal <= 0) { setError('El monto debe ser mayor a cero'); return }
+    if (!form.fecha_op) { setError('La Fecha de la OP es obligatoria'); return }
     if (conOC && ocsSelected.length === 0) { setError('Selecciona al menos una OC'); return }
     // Validación según el modo de asignación elegido (toggle "Único" /
     // "Distribuir — mismo CC" / "Distribuir — CC distintos").
@@ -958,6 +961,7 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
         : (modoDist === 'normal' && zonasCap.ccUsaZonas(form.id_centro_costo_fk) && zonaCap ? Number(zonaCap) : null)),
       id_oc_fk:           (!conOC || ocsSelected.length === 0) ? null : ocsSelected[0].id,
       forma_pago:        form.forma_pago,
+      fecha_op:          form.fecha_op,
       fecha_vencimiento: form.fecha_vencimiento || null,
       concepto:          form.concepto.trim() || null,
       id_tipo_gasto_fk:  form.id_tipo_gasto_fk ? Number(form.id_tipo_gasto_fk) : null,
@@ -1654,12 +1658,18 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
               </div>
             </div>
 
-            <div>
-              <label className="label">Urgencia</label>
-              <select className="select" value={form.urgencia} onChange={setF('urgencia')}
-                style={{ color: URGENCIA_COLOR[form.urgencia] ?? undefined, fontWeight: 600 }}>
-                {URGENCIAS.map(u => <option key={u} value={u}>{u}</option>)}
-              </select>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div>
+                <label className="label">Fecha OP *</label>
+                <input className="input" type="date" value={form.fecha_op} onChange={setF('fecha_op')} />
+              </div>
+              <div>
+                <label className="label">Urgencia</label>
+                <select className="select" value={form.urgencia} onChange={setF('urgencia')}
+                  style={{ color: URGENCIA_COLOR[form.urgencia] ?? undefined, fontWeight: 600 }}>
+                  {URGENCIAS.map(u => <option key={u} value={u}>{u}</option>)}
+                </select>
+              </div>
             </div>
           </Sec>
 
