@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { credencialesPac } from '@/lib/pacConfig'
 
 // ── Leer credenciales PAC desde cfg.configuracion ─────────────
 // IMPORTANTE: usamos la service role key para saltarnos RLS en cfg.configuracion
@@ -20,13 +21,7 @@ async function getPacConfig() {
   const cfg: Record<string, string> = {}
   ;(data ?? []).forEach((r: any) => { cfg[r.clave] = r.valor ?? '' })
 
-  return {
-    // Normalizamos URL: quitamos trailing slash para evitar URLs dobles como '.mx//3/cfdis'
-    url:      (cfg.pac_url || 'https://apisandbox.facturama.mx').replace(/\/$/, ''),
-    user:     cfg.pac_user     || 'domusonetest',
-    pass:     cfg.pac_pass     || 'domusonetest',
-    cp_fiscal: cfg.org_cp_fiscal || '',
-  }
+  return { ...credencialesPac(cfg), cp_fiscal: cfg.org_cp_fiscal || '' }
 }
 
 export async function POST(req: NextRequest) {

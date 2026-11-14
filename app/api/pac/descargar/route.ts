@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { credencialesPac } from '@/lib/pacConfig'
 
 async function getPacConfig() {
   const supabase = createClient(
@@ -17,11 +18,7 @@ async function getPacConfig() {
   const cfg: Record<string, string> = {}
   ;(data ?? []).forEach((r: any) => { cfg[r.clave] = r.valor ?? '' })
 
-  return {
-    url:  (cfg.pac_url  || 'https://apisandbox.facturama.mx').replace(/\/$/, ''),
-    user: cfg.pac_user  || 'domusonetest',
-    pass: cfg.pac_pass  || 'domusonetest',
-  }
+  return credencialesPac(cfg)
 }
 
 // GET /api/pac/descargar?cfdiId=XXX&format=xml|pdf
