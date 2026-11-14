@@ -20,7 +20,7 @@ type Centro       = CentroIngresoAgr
 type ConceptoAgregado = { nombre: string; total: number; recibos: Recibo[]; montoPorRecibo: Record<number, number> }
 type CentroAgregado   = { id: number; nombre: string; total: number; conceptos: ConceptoAgregado[] }
 
-const COLORS = ['#059669', '#2563eb', '#7c3aed', '#d97706', '#dc2626', '#0891b2', '#9333ea', '#92400e']
+const COLORS = ['#267F56', '#1C1D21', '#6B4E79', '#B5761A', '#C23B3B', '#32789A', '#6B4E79', '#7A4B0C']
 
 export default function ReporteIngresosConceptoCentro() {
   const [recibos,      setRecibos]      = useState<Recibo[]>([])
@@ -154,7 +154,7 @@ export default function ReporteIngresosConceptoCentro() {
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         <div className="card" style={{ padding: '14px 20px', flex: '1 1 160px' }}>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total Ingresos</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: '#059669' }}>{fmt(totalGeneral)}</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: '#267F56' }}>{fmt(totalGeneral)}</div>
         </div>
         <div className="card" style={{ padding: '14px 20px', flex: '1 1 100px' }}>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Recibos</div>
@@ -172,13 +172,13 @@ export default function ReporteIngresosConceptoCentro() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '2px solid #e2e8f0' }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '2px solid #E6E8EB' }}>
         {([['jerarquico', 'Centro → Concepto'], ['pivot', 'Pivot Centro × Concepto']] as const).map(([key, label]) => (
           <button key={key} onClick={() => { setTab(key); setExpanded(new Set()) }}
             style={{
               padding: '8px 18px', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600,
               background: 'transparent',
-              borderBottom: tab === key ? '2px solid var(--blue)' : '2px solid transparent',
+              borderBottom: tab === key ? '2px solid #19D3C5' : '2px solid transparent',
               color: tab === key ? 'var(--blue)' : 'var(--text-secondary)',
               marginBottom: -2,
             }}>{label}</button>
@@ -210,7 +210,7 @@ export default function ReporteIngresosConceptoCentro() {
           <div id="reporte-print-area" className="card" style={{ overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }} id="reporte-table">
               <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                <tr style={{ background: '#F8F9FA', borderBottom: '2px solid #E6E8EB' }}>
                   {['Centro / Concepto / Folio', 'Fecha', 'Descripción', 'Total'].map((h, i) => (
                     <th key={h} style={{ padding: '10px 14px', textAlign: i === 3 ? 'right' : 'left', fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                       {h}
@@ -227,7 +227,7 @@ export default function ReporteIngresosConceptoCentro() {
                     <>
                       {/* Fila Centro */}
                       <tr key={keyC} onClick={() => toggle(keyC)}
-                        style={{ background: '#f1f5f9', cursor: 'pointer', borderBottom: '1px solid #e2e8f0' }}>
+                        style={{ background: '#F4F5F7', cursor: 'pointer', borderBottom: '1px solid #E6E8EB' }}>
                         <td style={{ padding: '10px 14px', fontWeight: 700 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             {openC
@@ -254,12 +254,12 @@ export default function ReporteIngresosConceptoCentro() {
                           <>
                             {/* Fila Concepto */}
                             <tr key={keyCP} onClick={() => toggle(keyCP)}
-                              style={{ background: '#fafbfc', cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}>
+                              style={{ background: '#F8F9FA', cursor: 'pointer', borderBottom: '1px solid #F4F5F7' }}>
                               <td style={{ padding: '9px 14px 9px 36px', fontWeight: 600 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                   {openCP
-                                    ? <ChevronDown  size={12} style={{ color: '#64748b' }} />
-                                    : <ChevronRight size={12} style={{ color: '#64748b' }} />}
+                                    ? <ChevronDown  size={12} style={{ color: '#62666E' }} />
+                                    : <ChevronRight size={12} style={{ color: '#62666E' }} />}
                                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: colorC + 'bb', display: 'inline-block' }} />
                                   <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{cp.nombre}</span>
                                   <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>
@@ -268,15 +268,15 @@ export default function ReporteIngresosConceptoCentro() {
                                 </div>
                               </td>
                               <td colSpan={2} />
-                              <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 600, color: '#059669', fontSize: 12 }}>
+                              <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 600, color: '#267F56', fontSize: 12 }}>
                                 {fmt(cp.total)}
                               </td>
                             </tr>
 
                             {/* Recibos del concepto */}
                             {openCP && cp.recibos.map(r => (
-                              <tr key={`r-${r.id}-${cp.nombre}`} style={{ borderBottom: '1px solid #f8fafc' }}>
-                                <td style={{ padding: '7px 14px 7px 62px', fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)' }}>
+                              <tr key={`r-${r.id}-${cp.nombre}`} style={{ borderBottom: '1px solid #F8F9FA' }}>
+                                <td style={{ padding: '7px 14px 7px 62px', fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)' }}>
                                   {r.folio ?? `ING-${r.id}`}
                                 </td>
                                 <td style={{ padding: '7px 14px', fontSize: 12, color: 'var(--text-secondary)' }}>
@@ -298,11 +298,11 @@ export default function ReporteIngresosConceptoCentro() {
                 })}
 
                 {/* Total general */}
-                <tr style={{ background: '#0f172a', borderTop: '2px solid #334155' }}>
-                  <td colSpan={3} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#f8fafc' }}>
+                <tr style={{ background: '#1C1D21', borderTop: '2px solid #33363C' }}>
+                  <td colSpan={3} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#F8F9FA' }}>
                     Total General · {recibos.length} recibos
                   </td>
-                  <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 14, color: '#6ee7b7', fontVariantNumeric: 'tabular-nums' }}>
+                  <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 14, color: '#7CC9A3', fontVariantNumeric: 'tabular-nums' }}>
                     {fmt(totalGeneral)}
                   </td>
                 </tr>
@@ -317,11 +317,11 @@ export default function ReporteIngresosConceptoCentro() {
         <div id="reporte-print-area" style={{ overflowX: 'auto' }}>
           <table style={{ borderCollapse: 'collapse', fontSize: 12, width: '100%' }} id="reporte-table">
             <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+              <tr style={{ background: '#F8F9FA', borderBottom: '2px solid #E6E8EB' }}>
                 <th style={{
                   padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700,
                   color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em',
-                  position: 'sticky', left: 0, background: '#f8fafc', borderRight: '2px solid #e2e8f0', minWidth: 180,
+                  position: 'sticky', left: 0, background: '#F8F9FA', borderRight: '2px solid #E6E8EB', minWidth: 180,
                 }}>
                   Centro de Ingreso
                 </th>
@@ -336,8 +336,8 @@ export default function ReporteIngresosConceptoCentro() {
                 ))}
                 <th style={{
                   padding: '10px 14px', textAlign: 'right', fontSize: 11, fontWeight: 700,
-                  color: '#059669', textTransform: 'uppercase', letterSpacing: '0.06em',
-                  borderLeft: '2px solid #e2e8f0', minWidth: 120,
+                  color: '#267F56', textTransform: 'uppercase', letterSpacing: '0.06em',
+                  borderLeft: '2px solid #E6E8EB', minWidth: 120,
                 }}>
                   Total
                 </th>
@@ -347,8 +347,8 @@ export default function ReporteIngresosConceptoCentro() {
               {centroData.map((c, ci) => {
                 const colorC = COLORS[ci % COLORS.length]
                 return (
-                  <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '9px 14px', fontWeight: 600, color: colorC, position: 'sticky', left: 0, background: '#fff', borderRight: '2px solid #e2e8f0' }}>
+                  <tr key={c.id} style={{ borderBottom: '1px solid #F4F5F7' }}>
+                    <td style={{ padding: '9px 14px', fontWeight: 600, color: colorC, position: 'sticky', left: 0, background: '#fff', borderRight: '2px solid #E6E8EB' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ width: 7, height: 7, borderRadius: '50%', background: colorC, display: 'inline-block', flexShrink: 0 }} />
                         {c.nombre}
@@ -365,7 +365,7 @@ export default function ReporteIngresosConceptoCentro() {
                         </td>
                       )
                     })}
-                    <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: colorC, borderLeft: '2px solid #e2e8f0', fontVariantNumeric: 'tabular-nums' }}>
+                    <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: colorC, borderLeft: '2px solid #E6E8EB', fontVariantNumeric: 'tabular-nums' }}>
                       {fmt(c.total)}
                     </td>
                   </tr>
@@ -373,19 +373,19 @@ export default function ReporteIngresosConceptoCentro() {
               })}
 
               {/* Fila totales */}
-              <tr style={{ background: '#0f172a', borderTop: '2px solid #334155' }}>
-                <td style={{ padding: '10px 14px', fontSize: 12, fontWeight: 700, color: '#f8fafc', position: 'sticky', left: 0, background: '#0f172a', borderRight: '2px solid #334155' }}>
+              <tr style={{ background: '#1C1D21', borderTop: '2px solid #33363C' }}>
+                <td style={{ padding: '10px 14px', fontSize: 12, fontWeight: 700, color: '#F8F9FA', position: 'sticky', left: 0, background: '#1C1D21', borderRight: '2px solid #33363C' }}>
                   Total General
                 </td>
                 {allConceptos.map(cp => {
                   const total = centroData.reduce((s, c) => s + (c.conceptos.find(x => x.nombre === cp)?.total ?? 0), 0)
                   return (
-                    <td key={cp} style={{ padding: '10px 10px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 12, color: total > 0 ? '#6ee7b7' : '#475569' }}>
+                    <td key={cp} style={{ padding: '10px 10px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 12, color: total > 0 ? '#7CC9A3' : '#4A4D54' }}>
                       {total > 0 ? fmt(total) : '—'}
                     </td>
                   )
                 })}
-                <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 13, color: '#6ee7b7', borderLeft: '2px solid #334155', fontVariantNumeric: 'tabular-nums' }}>
+                <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 13, color: '#7CC9A3', borderLeft: '2px solid #33363C', fontVariantNumeric: 'tabular-nums' }}>
                   {fmt(totalGeneral)}
                 </td>
               </tr>

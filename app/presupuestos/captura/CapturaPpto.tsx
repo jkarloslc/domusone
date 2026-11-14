@@ -49,12 +49,12 @@ type Serie = 'cobro' | 'devengado'
 const SERIE_META: Record<Serie, { label: string; corto: string; columna: string; color: string; bg: string; ayuda: string }> = {
   cobro: {
     label: 'Cobro esperado', corto: 'Cobro', columna: 'monto',
-    color: '#15803d', bg: '#f0fdf4',
+    color: '#1F7A50', bg: '#F4F5F7',
     ayuda: 'Lo que se espera COBRAR cada mes (base caja, con el pico de los pagos anualizados). Es la serie que consume el Flujo de Efectivo.',
   },
   devengado: {
     label: 'Generado esperado', corto: 'Generado', columna: 'monto_devengado',
-    color: '#7c3aed', bg: '#faf5ff',
+    color: '#6B4E79', bg: '#F4F5F7',
     ayuda: 'La cuota que corresponde a cada mes, se cobre cuando se cobre. Es la base para medir el área mes a mes y la que consume el Comparativo.',
   },
 }
@@ -67,9 +67,9 @@ const fmtNum = (n: number) =>
 const parseNum = (s: string) => parseFloat(s.replace(/,/g, '').replace(/\s/g, '')) || 0
 
 const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }> = {
-  borrador: { bg: '#fef9c3', color: '#a16207', label: 'Borrador' },
-  aprobado: { bg: '#dcfce7', color: '#15803d', label: 'Aprobado' },
-  cerrado:  { bg: '#f1f5f9', color: '#475569', label: 'Cerrado'  },
+  borrador: { bg: '#E6E8EB', color: '#8A6A12', label: 'Borrador' },
+  aprobado: { bg: '#E6E8EB', color: '#1F7A50', label: 'Aprobado' },
+  cerrado:  { bg: '#F4F5F7', color: '#4A4D54', label: 'Cerrado'  },
 }
 
 const EMPTY_PPTO = { anio: new Date().getFullYear(), nombre: '', descripcion: '', modulo: 'Golf' }
@@ -341,7 +341,7 @@ export default function CapturaPpto({ soloFlujo = false }: { soloFlujo?: boolean
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300 }}>
-        <Loader size={28} color="#94a3b8" className="animate-spin" />
+        <Loader size={28} color="#7A7E87" className="animate-spin" />
       </div>
     )
   }
@@ -359,8 +359,8 @@ export default function CapturaPpto({ soloFlujo = false }: { soloFlujo?: boolean
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '7px 14px', borderRadius: 8,
-              border: '1px solid #e2e8f0', background: '#fff',
-              textDecoration: 'none', fontSize: 13, color: '#374151', fontWeight: 500,
+              border: '1px solid #E6E8EB', background: '#fff',
+              textDecoration: 'none', fontSize: 13, color: '#33363C', fontWeight: 500,
             }}>
             <Settings size={14} /> Catálogo de Partidas
           </Link>
@@ -381,11 +381,11 @@ export default function CapturaPpto({ soloFlujo = false }: { soloFlujo?: boolean
         }}>
           <div style={{
             width: 64, height: 64, borderRadius: '50%',
-            background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: '#F4F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <BookOpen size={28} color="#94a3b8" />
+            <BookOpen size={28} color="#7A7E87" />
           </div>
-          <p style={{ color: '#64748b', fontWeight: 500, margin: 0 }}>No hay presupuestos registrados</p>
+          <p style={{ color: '#62666E', fontWeight: 500, margin: 0 }}>No hay presupuestos registrados</p>
           {puedeEscribir && (
             <button className="btn-primary" onClick={() => setModalNew(true)}
               style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -401,7 +401,7 @@ export default function CapturaPpto({ soloFlujo = false }: { soloFlujo?: boolean
             display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
           }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#33363C', whiteSpace: 'nowrap' }}>
                 Presupuesto:
               </span>
               <select className="input" style={{ width: 'auto', minWidth: 260 }}
@@ -419,7 +419,7 @@ export default function CapturaPpto({ soloFlujo = false }: { soloFlujo?: boolean
 
             {/* ── Serie que se está capturando ─────────────────────── */}
             {!soloFlujo && <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Serie:</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#33363C', whiteSpace: 'nowrap' }}>Serie:</span>
               <div style={{ display: 'flex', gap: 4 }}>
                 {(['cobro', 'devengado'] as Serie[]).map(sr => {
                   const meta = SERIE_META[sr]
@@ -429,8 +429,8 @@ export default function CapturaPpto({ soloFlujo = false }: { soloFlujo?: boolean
                   return (
                     <button key={sr} onClick={() => { setEditCell(null); setSerie(sr) }} title={meta.ayuda}
                       style={{ padding: '6px 12px', fontSize: 12, fontWeight: on ? 700 : 500, borderRadius: 8, cursor: 'pointer',
-                        border: '1px solid', borderColor: on ? meta.color : '#e2e8f0',
-                        background: on ? meta.bg : '#fff', color: on ? meta.color : '#64748b' }}>
+                        border: '1px solid', borderColor: on ? meta.color : '#E6E8EB',
+                        background: on ? meta.bg : '#fff', color: on ? meta.color : '#62666E' }}>
                       {meta.label}
                       <span style={{ fontSize: 10, fontWeight: 500, opacity: .75, marginLeft: 5 }}>
                         {capturadas ? `${capturadas} celdas` : 'sin capturar'}
@@ -454,14 +454,14 @@ export default function CapturaPpto({ soloFlujo = false }: { soloFlujo?: boolean
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{
                     fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 12,
-                    background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0',
+                    background: '#F4F5F7', color: '#4A4D54', border: '1px solid #E6E8EB',
                   }}>
                     {selPpto.modulo ?? 'General'}
                   </span>
                   <span style={{
                     fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 12,
-                    background: st.bg, color: st.color,
-                    border: `1px solid ${st.color}33`,
+                    background: st.color, color: '#fff',
+                    border: '1px solid #E6E8EB',
                   }}>
                     {st.label}
                   </span>
@@ -482,7 +482,7 @@ export default function CapturaPpto({ soloFlujo = false }: { soloFlujo?: boolean
             })()}
 
             {loadingDet && (
-              <Loader size={15} color="#94a3b8" className="animate-spin" />
+              <Loader size={15} color="#7A7E87" className="animate-spin" />
             )}
           </div>
 
@@ -492,9 +492,9 @@ export default function CapturaPpto({ soloFlujo = false }: { soloFlujo?: boolean
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               justifyContent: 'center', padding: '40px 24px', gap: 10,
             }}>
-              <p style={{ color: '#94a3b8', margin: 0 }}>
+              <p style={{ color: '#7A7E87', margin: 0 }}>
                 No hay partidas activas.{' '}
-                <Link href="/presupuestos/partidas" style={{ color: '#1e40af' }}>Crear partidas</Link>
+                <Link href="/presupuestos/partidas" style={{ color: '#1C1D21' }}>Crear partidas</Link>
                 {' '}para comenzar la captura.
               </p>
             </div>
@@ -506,15 +506,15 @@ export default function CapturaPpto({ soloFlujo = false }: { soloFlujo?: boolean
                 display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
                 padding: '8px 12px', marginBottom: 8, borderRadius: 8,
                 background: SERIE_META[serie].bg,
-                border: `1px solid ${SERIE_META[serie].color}33`,
+                border: '1px solid #E6E8EB',
                 fontSize: 12, color: SERIE_META[serie].color,
               }}>
                 <strong>Capturando: {SERIE_META[serie].label}</strong>
-                <span style={{ color: '#475569' }}>{soloFlujo
+                <span style={{ color: '#4A4D54' }}>{soloFlujo
                   ? 'Monto neto del mes (sin IVA), tal como se espera mover en bancos. Flujo lo toma tal cual.'
                   : SERIE_META[serie].ayuda}</span>
                 {serie === 'devengado' && Object.keys(detDevengado).length === 0 && (
-                  <span style={{ color: '#92400e' }}>
+                  <span style={{ color: '#7A4B0C' }}>
                     Todavía no hay nada capturado en esta serie: el Comparativo sigue usando el presupuesto de cobro y lo marca como tal.
                   </span>
                 )}
@@ -522,12 +522,12 @@ export default function CapturaPpto({ soloFlujo = false }: { soloFlujo?: boolean
               <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 900 }}>
                 <thead>
-                  <tr style={{ background: '#1e293b', color: '#fff' }}>
-                    <th style={{ ...thS, textAlign: 'left', minWidth: 200, position: 'sticky', left: 0, background: '#1e293b', zIndex: 2 }}>
+                  <tr style={{ background: '#26282D', color: '#fff' }}>
+                    <th style={{ ...thS, textAlign: 'left', minWidth: 200, position: 'sticky', left: 0, background: '#26282D', zIndex: 2 }}>
                       Partida
                     </th>
                     {MESES.map(m => <th key={m} style={{ ...thS, minWidth: 88 }}>{m}</th>)}
-                    <th style={{ ...thS, minWidth: 110, background: '#0f172a' }}>Total Anual</th>
+                    <th style={{ ...thS, minWidth: 110, background: '#1C1D21' }}>Total Anual</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -540,7 +540,7 @@ export default function CapturaPpto({ soloFlujo = false }: { soloFlujo?: boolean
                       <Fragment key={clas}>
                         {ing.length > 0 && (
                           <>
-                            <SectionHeader label={labels.ingresos} color="#15803d" bg="#f0fdf4" border="#bbf7d0" />
+                            <SectionHeader label={labels.ingresos} color="#1F7A50" bg="#F4F5F7" border="#E6E8EB" />
                             {ing.map((p, i) => (
                               <PartidaRow key={p.id} p={p} detMap={detMap}
                                 editCell={editCell} editVal={editVal}
@@ -549,17 +549,17 @@ export default function CapturaPpto({ soloFlujo = false }: { soloFlujo?: boolean
                                 onCommit={() => { if (skipBlurRef.current) return; commitCell() }}
                                 onKeyDown={handleKey} onPaste={handlePaste}
                                 puedeEscribir={puedeEscribir && !cerrado}
-                                rowBg={i % 2 === 0 ? '#fff' : '#f9fafb'} accentBg="#f0fdf4" />
+                                rowBg={i % 2 === 0 ? '#fff' : '#F8F9FA'} accentBg="#F4F5F7" />
                             ))}
                             <TotalRow label={`Total ${labels.ingresos}`} lista={ing} detMap={detMap}
-                              color="#15803d" bg="#dcfce7" bgTotal="#bbf7d0"
+                              color="#1F7A50" bg="#E6E8EB" bgTotal="#E6E8EB"
                               totalMesFn={totalMes} totalGeneralFn={totalGeneral} />
                           </>
                         )}
 
                         {egr.length > 0 && (
                           <>
-                            <SectionHeader label={labels.egresos} color="#b91c1c" bg="#fef2f2" border="#fecaca" />
+                            <SectionHeader label={labels.egresos} color="#A83232" bg="#F4F5F7" border="#E6E8EB" />
                             {egr.map((p, i) => (
                               <PartidaRow key={p.id} p={p} detMap={detMap}
                                 editCell={editCell} editVal={editVal}
@@ -568,32 +568,32 @@ export default function CapturaPpto({ soloFlujo = false }: { soloFlujo?: boolean
                                 onCommit={() => { if (skipBlurRef.current) return; commitCell() }}
                                 onKeyDown={handleKey} onPaste={handlePaste}
                                 puedeEscribir={puedeEscribir && !cerrado}
-                                rowBg={i % 2 === 0 ? '#fff' : '#f9fafb'} accentBg="#fef2f2" />
+                                rowBg={i % 2 === 0 ? '#fff' : '#F8F9FA'} accentBg="#F4F5F7" />
                             ))}
                             <TotalRow label={`Total ${labels.egresos}`} lista={egr} detMap={detMap}
-                              color="#b91c1c" bg="#fee2e2" bgTotal="#fecaca"
+                              color="#A83232" bg="#E6E8EB" bgTotal="#E6E8EB"
                               totalMesFn={totalMes} totalGeneralFn={totalGeneral} />
                           </>
                         )}
 
                         {ing.length > 0 && egr.length > 0 && (
-                          <tr style={{ background: '#334155', color: '#fff', fontWeight: 700 }}>
-                            <td style={{ ...tdS, position: 'sticky', left: 0, background: '#334155', zIndex: 1,
+                          <tr style={{ background: '#33363C', color: '#fff', fontWeight: 700 }}>
+                            <td style={{ ...tdS, position: 'sticky', left: 0, background: '#33363C', zIndex: 1,
                               fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em' }}>
                               {labels.balance}
                             </td>
                             {MESES.map((_, i) => {
                               const bal = totalMes(i + 1, ing) - totalMes(i + 1, egr)
                               return (
-                                <td key={i} style={{ ...tdS, textAlign: 'right', color: bal >= 0 ? '#86efac' : '#fca5a5' }}>
+                                <td key={i} style={{ ...tdS, textAlign: 'right', color: bal >= 0 ? '#7CC9A3' : '#EBB5B5' }}>
                                   {fmtNum(Math.abs(bal))}{bal < 0 ? ' —' : ''}
                                 </td>
                               )
                             })}
-                            <td style={{ ...tdS, textAlign: 'right', background: '#1e293b' }}>
+                            <td style={{ ...tdS, textAlign: 'right', background: '#26282D' }}>
                               {(() => {
                                 const bal = totalGeneral(ing) - totalGeneral(egr)
-                                return <span style={{ color: bal >= 0 ? '#86efac' : '#fca5a5' }}>
+                                return <span style={{ color: bal >= 0 ? '#7CC9A3' : '#EBB5B5' }}>
                                   {fmtNum(Math.abs(bal))}{bal < 0 ? ' —' : ''}
                                 </span>
                               })()}
@@ -606,23 +606,23 @@ export default function CapturaPpto({ soloFlujo = false }: { soloFlujo?: boolean
 
                   {/* BALANCE */}
                   {ingresos.length > 0 && egresos.length > 0 && (
-                    <tr style={{ background: '#1e293b', color: '#fff', fontWeight: 700 }}>
-                      <td style={{ ...tdS, position: 'sticky', left: 0, background: '#1e293b', zIndex: 1,
+                    <tr style={{ background: '#26282D', color: '#fff', fontWeight: 700 }}>
+                      <td style={{ ...tdS, position: 'sticky', left: 0, background: '#26282D', zIndex: 1,
                         fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em' }}>
                         Balance Neto
                       </td>
                       {MESES.map((_, i) => {
                         const bal = totalMes(i + 1, ingresos) - totalMes(i + 1, egresos)
                         return (
-                          <td key={i} style={{ ...tdS, textAlign: 'right', color: bal >= 0 ? '#86efac' : '#fca5a5' }}>
+                          <td key={i} style={{ ...tdS, textAlign: 'right', color: bal >= 0 ? '#7CC9A3' : '#EBB5B5' }}>
                             {fmtNum(Math.abs(bal))}{bal < 0 ? ' —' : ''}
                           </td>
                         )
                       })}
-                      <td style={{ ...tdS, textAlign: 'right', background: '#0f172a' }}>
+                      <td style={{ ...tdS, textAlign: 'right', background: '#1C1D21' }}>
                         {(() => {
                           const bal = totalGeneral(ingresos) - totalGeneral(egresos)
-                          return <span style={{ color: bal >= 0 ? '#86efac' : '#fca5a5' }}>
+                          return <span style={{ color: bal >= 0 ? '#7CC9A3' : '#EBB5B5' }}>
                             {fmtNum(Math.abs(bal))}{bal < 0 ? ' —' : ''}
                           </span>
                         })()}
@@ -636,10 +636,10 @@ export default function CapturaPpto({ soloFlujo = false }: { soloFlujo?: boolean
           )}
 
           {!puedeEscribir && (
-            <p style={{ color: '#94a3b8', fontSize: 12, marginTop: 10 }}>Vista de solo lectura</p>
+            <p style={{ color: '#7A7E87', fontSize: 12, marginTop: 10 }}>Vista de solo lectura</p>
           )}
           {cerrado && (
-            <p style={{ color: '#94a3b8', fontSize: 12, marginTop: 10 }}>Presupuesto cerrado — no se puede modificar</p>
+            <p style={{ color: '#7A7E87', fontSize: 12, marginTop: 10 }}>Presupuesto cerrado — no se puede modificar</p>
           )}
         </>
       )}
@@ -765,7 +765,7 @@ export default function CapturaPpto({ soloFlujo = false }: { soloFlujo?: boolean
           }
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <p style={{ margin: '0 0 4px', fontSize: 13, color: '#64748b' }}>
+            <p style={{ margin: '0 0 4px', fontSize: 13, color: '#62666E' }}>
               Status actual:{' '}
               <span style={{ fontWeight: 600, color: STATUS_STYLE[selPpto.status].color }}>
                 {STATUS_STYLE[selPpto.status].label}
@@ -778,13 +778,13 @@ export default function CapturaPpto({ soloFlujo = false }: { soloFlujo?: boolean
                 return (
                   <button key={s} onClick={() => handleStatus(s)}
                     style={{
-                      padding: '12px 16px', borderRadius: 10, border: `1px solid ${st.color}33`,
+                      padding: '12px 16px', borderRadius: 10, border: '1px solid #E6E8EB',
                       cursor: 'pointer', fontWeight: 600, fontSize: 14, textAlign: 'left',
                       background: st.bg, color: st.color, transition: 'opacity .15s',
                     }}>
                     Cambiar a {st.label}
                     {s === 'cerrado' && (
-                      <span style={{ fontWeight: 400, fontSize: 12, display: 'block', marginTop: 2, color: '#94a3b8' }}>
+                      <span style={{ fontWeight: 400, fontSize: 12, display: 'block', marginTop: 2, color: '#7A7E87' }}>
                         El presupuesto no podrá modificarse
                       </span>
                     )}
@@ -856,9 +856,9 @@ function PartidaRow({ p, detMap, editCell, editVal, setEditVal, inputRef,
   const total = MESES.reduce((s, _, i) => s + (detMap[p.id]?.[i + 1] ?? 0), 0)
 
   return (
-    <tr style={{ background: rowBg, borderBottom: '1px solid #f1f5f9' }}>
+    <tr style={{ background: rowBg, borderBottom: '1px solid #F4F5F7' }}>
       <td style={{ ...tdS, position: 'sticky', left: 0, background: rowBg, zIndex: 1,
-        fontWeight: 600, color: '#1e293b', borderRight: '1px solid #e2e8f0' }}>
+        fontWeight: 600, color: '#26282D', borderRight: '1px solid #E6E8EB' }}>
         {p.nombre}
       </td>
       {MESES.map((_, i) => {
@@ -875,7 +875,7 @@ function PartidaRow({ p, detMap, editCell, editVal, setEditVal, inputRef,
                 onBlur={onCommit} onKeyDown={onKeyDown} onPaste={onPaste}
                 style={{
                   width: '100%', padding: '4px 6px',
-                  border: '2px solid #1d4ed8', borderRadius: 4,
+                  border: '2px solid #26282D', borderRadius: 4,
                   textAlign: 'right', fontSize: 13, outline: 'none', boxSizing: 'border-box',
                 }}
               />
@@ -883,7 +883,7 @@ function PartidaRow({ p, detMap, editCell, editVal, setEditVal, inputRef,
               <span style={{
                 display: 'block', padding: '4px 8px', borderRadius: 4,
                 cursor: puedeEscribir ? 'pointer' : 'default',
-                color: val ? '#1e293b' : '#cbd5e1',
+                color: val ? '#26282D' : '#C9CCD3',
               }}
                 onMouseEnter={e => { if (puedeEscribir) (e.currentTarget as HTMLElement).style.background = accentBg }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}>
@@ -894,9 +894,9 @@ function PartidaRow({ p, detMap, editCell, editVal, setEditVal, inputRef,
         )
       })}
       <td style={{ ...tdS, textAlign: 'right', fontWeight: 700,
-        color: total ? '#1e293b' : '#cbd5e1',
-        background: total ? '#f8fafc' : 'transparent',
-        borderLeft: '1px solid #e2e8f0' }}>
+        color: total ? '#26282D' : '#C9CCD3',
+        background: total ? '#F8F9FA' : 'transparent',
+        borderLeft: '1px solid #E6E8EB' }}>
         {total ? fmtNum(total) : '—'}
       </td>
     </tr>
@@ -906,10 +906,10 @@ function PartidaRow({ p, detMap, editCell, editVal, setEditVal, inputRef,
 const thS: React.CSSProperties = {
   padding: '10px 10px', fontWeight: 600, fontSize: 11,
   textTransform: 'uppercase', letterSpacing: '.05em', textAlign: 'right',
-  borderBottom: '1px solid #334155',
+  borderBottom: '1px solid #33363C',
 }
 const tdS: React.CSSProperties = { padding: '8px 10px', fontSize: 13 }
 const lbl: React.CSSProperties = {
   display: 'flex', flexDirection: 'column', gap: 5,
-  fontSize: 13, fontWeight: 500, color: '#374151',
+  fontSize: 13, fontWeight: 500, color: '#33363C',
 }

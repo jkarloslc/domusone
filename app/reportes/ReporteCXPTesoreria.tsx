@@ -18,11 +18,11 @@ const diasVencido = (fecha: string | null) => {
 }
 
 const BANDAS = [
-  { key: 'por_vencer', label: 'Por vencer', min: null as number | null, max: 0 as number | null,  color: '#15803d' },
-  { key: '1_30',       label: '1-30 días',  min: 1,  max: 30,   color: '#d97706' },
-  { key: '31_60',      label: '31-60 días', min: 31, max: 60,   color: '#ea580c' },
-  { key: '61_90',      label: '61-90 días', min: 61, max: 90,   color: '#dc2626' },
-  { key: '+90',        label: '+90 días',   min: 91, max: null, color: '#7f1d1d' },
+  { key: 'por_vencer', label: 'Por vencer', min: null as number | null, max: 0 as number | null,  color: '#1F7A50' },
+  { key: '1_30',       label: '1-30 días',  min: 1,  max: 30,   color: '#B5761A' },
+  { key: '31_60',      label: '31-60 días', min: 31, max: 60,   color: '#C8642A' },
+  { key: '61_90',      label: '61-90 días', min: 61, max: 90,   color: '#C23B3B' },
+  { key: '+90',        label: '+90 días',   min: 91, max: null, color: '#8C2A2A' },
 ]
 const enBanda = (d: number, b: typeof BANDAS[number]) =>
   b.min === null ? d <= 0 : b.max === null ? d >= b.min : d >= b.min && d <= b.max
@@ -178,7 +178,7 @@ export default function ReporteCXPTesoreria() {
   }, [opsPendientes, sd])
   const proximoPago = gruposPago[0] ?? null
   const proximoDiff = proximoPago ? diasA(proximoPago.fechaPago) : null
-  const proximoColor = proximoDiff === null ? '#94a3b8' : proximoDiff < 0 ? '#dc2626' : proximoDiff === 0 ? '#15803d' : '#3F4A75'
+  const proximoColor = proximoDiff === null ? '#7A7E87' : proximoDiff < 0 ? '#C23B3B' : proximoDiff === 0 ? '#1F7A50' : '#1C1D21'
 
   const porProveedor = useMemo(() => {
     const m = new Map<number, { id: number; nombre: string; rfc: string | null; ops: any[]; saldo: number; vencido: number }>()
@@ -275,7 +275,7 @@ export default function ReporteCXPTesoreria() {
 
   const th: React.CSSProperties = { textAlign: 'right' }
   const num: React.CSSProperties = { textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
-  const folio: React.CSSProperties = { fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }
+  const folio: React.CSSProperties = { fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }
   const concepto: React.CSSProperties = { fontSize: 12, color: 'var(--text-secondary)', maxWidth: 240 }
 
   return (
@@ -321,13 +321,13 @@ export default function ReporteCXPTesoreria() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 20, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', marginBottom: 20, flexWrap: 'wrap' }}>
         {TABS.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             style={{ padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13,
               fontFamily: 'var(--font-body)', fontWeight: tab === t.key ? 600 : 400,
               color: tab === t.key ? 'var(--blue)' : 'var(--text-muted)',
-              borderBottom: tab === t.key ? '2px solid var(--blue)' : '2px solid transparent', marginBottom: -1 }}>
+              borderBottom: tab === t.key ? '2px solid #19D3C5' : '2px solid transparent', marginBottom: -1 }}>
             {t.label}
           </button>
         ))}
@@ -337,9 +337,9 @@ export default function ReporteCXPTesoreria() {
         {/* KPIs */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
           {[
-            <KpiCard key="t" label="Total por Pagar" value={fmt(totalPorPagar)} color="#3F4A75" icon={FileText} />,
-            <KpiCard key="v" label="Vencido" value={fmt(totalVencido)} color="#dc2626" icon={AlertTriangle} />,
-            <KpiCard key="p" label="Por Vencer" value={fmt(totalPorVencer)} color="#d97706" icon={Clock} />,
+            <KpiCard key="t" label="Total por Pagar" value={fmt(totalPorPagar)} color="#1C1D21" icon={FileText} />,
+            <KpiCard key="v" label="Vencido" value={fmt(totalVencido)} color="#C23B3B" icon={AlertTriangle} />,
+            <KpiCard key="p" label="Por Vencer" value={fmt(totalPorVencer)} color="#B5761A" icon={Clock} />,
             <KpiCard key="n"
               label={proximoPago ? `Próx. Pago · Martes ${fmtCorta(proximoPago.fechaPago)}` : 'Próx. Pago'}
               value={proximoPago ? fmt(proximoPago.total) : '—'} color={proximoColor} icon={Calendar} />,
@@ -365,11 +365,11 @@ export default function ReporteCXPTesoreria() {
                         <tbody>
                           {gruposPago.map(g => {
                             const diff = diasA(g.fechaPago)
-                            const estado = diff < 0 ? { label: 'Atrasado', color: '#b91c1c' }
-                              : diff === 0 ? { label: 'Se paga HOY', color: '#15803d' }
-                              : { label: `En ${diff} día${diff === 1 ? '' : 's'}`, color: '#b45309' }
+                            const estado = diff < 0 ? { label: 'Atrasado', color: '#A83232' }
+                              : diff === 0 ? { label: 'Se paga HOY', color: '#1F7A50' }
+                              : { label: `En ${diff} día${diff === 1 ? '' : 's'}`, color: '#96600F' }
                             return [
-                              <tr key={`h-${g.fechaPago.toISOString()}`} style={{ background: '#f8fafc' }}>
+                              <tr key={`h-${g.fechaPago.toISOString()}`} style={{ background: '#F8F9FA' }}>
                                 <td colSpan={4} style={{ fontWeight: 700 }}>
                                   Martes {fmtLarga(g.fechaPago)}
                                   <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 600, color: estado.color }}>{estado.label}</span>
@@ -409,7 +409,7 @@ export default function ReporteCXPTesoreria() {
                 <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Sin saldos pendientes por proveedor</div>
               ) : (
                 <div className="card" style={{ overflow: 'hidden' }}>
-                  <div style={{ padding: '8px 12px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end' }}>
+                  <div style={{ padding: '8px 12px', borderBottom: '1px solid #E6E8EB', display: 'flex', justifyContent: 'flex-end' }}>
                     <button className="btn-ghost" style={{ fontSize: 12 }}
                       onClick={() => setAbiertos(todosAbiertos ? new Set() : new Set(porProveedor.map(p => p.id)))}>
                       {todosAbiertos ? 'Colapsar todo' : 'Expandir todo'}
@@ -429,18 +429,18 @@ export default function ReporteCXPTesoreria() {
                                 {open ? <ChevronDown size={13} style={{ verticalAlign: -2, marginRight: 4 }} /> : <ChevronRight size={13} style={{ verticalAlign: -2, marginRight: 4 }} />}
                                 {p.nombre}
                               </td>
-                              <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)' }}>{p.rfc ?? '—'}</td>
+                              <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--text-secondary)' }}>{p.rfc ?? '—'}</td>
                               <td style={{ ...num, fontSize: 13 }}>{p.ops.length}</td>
                               <td style={{ ...num, fontWeight: 700, color: 'var(--blue)' }}>{fmt(p.saldo)}</td>
-                              <td style={{ ...num, color: p.vencido > 0 ? '#dc2626' : 'var(--text-muted)', fontWeight: p.vencido > 0 ? 600 : 400 }}>{p.vencido > 0 ? fmt(p.vencido) : '—'}</td>
+                              <td style={{ ...num, color: p.vencido > 0 ? '#C23B3B' : 'var(--text-muted)', fontWeight: p.vencido > 0 ? 600 : 400 }}>{p.vencido > 0 ? fmt(p.vencido) : '—'}</td>
                             </tr>,
                             ...(open ? p.ops.map(op => {
                               const venc = diasVencido(op.fecha_vencimiento) > 0
                               return (
-                                <tr key={`o-${op.id}`} style={{ background: '#fafbfc' }}>
+                                <tr key={`o-${op.id}`} style={{ background: '#F8F9FA' }}>
                                   <td style={{ ...folio, paddingLeft: 32 }}>{op.folio}</td>
                                   <td style={concepto}>{op.concepto ?? '—'}</td>
-                                  <td style={{ ...num, fontSize: 12, color: venc ? '#dc2626' : 'var(--text-muted)' }}>{fmtFecha(op.fecha_vencimiento)}</td>
+                                  <td style={{ ...num, fontSize: 12, color: venc ? '#C23B3B' : 'var(--text-muted)' }}>{fmtFecha(op.fecha_vencimiento)}</td>
                                   <td style={num}>{fmt(sd(op))}</td>
                                   <td style={{ textAlign: 'right' }}><StatusBadge status={op.status} /></td>
                                 </tr>
@@ -452,7 +452,7 @@ export default function ReporteCXPTesoreria() {
                           <td colSpan={2} style={{ color: 'var(--blue)' }}>TOTAL</td>
                           <td style={num}>{opsPendientes.length}</td>
                           <td style={{ ...num, color: 'var(--blue)' }}>{fmt(totalPorPagar)}</td>
-                          <td style={{ ...num, color: totalVencido > 0 ? '#dc2626' : 'var(--text-muted)' }}>{totalVencido > 0 ? fmt(totalVencido) : '—'}</td>
+                          <td style={{ ...num, color: totalVencido > 0 ? '#C23B3B' : 'var(--text-muted)' }}>{totalVencido > 0 ? fmt(totalVencido) : '—'}</td>
                         </tr>
                       </tbody>
                     </table>
@@ -477,7 +477,7 @@ export default function ReporteCXPTesoreria() {
                             <span style={{ fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: b.color }}>{fmt(b.total)}</span>
                           </div>
                         </div>
-                        <div style={{ height: 8, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
+                        <div style={{ height: 8, background: '#F4F5F7', borderRadius: 4, overflow: 'hidden' }}>
                           <div style={{ height: '100%', width: `${pct}%`, background: b.color, borderRadius: 4 }} />
                         </div>
                       </div>
@@ -494,7 +494,7 @@ export default function ReporteCXPTesoreria() {
                         </thead>
                         <tbody>
                           {antiguedad.filter(b => b.count > 0).map(b => [
-                            <tr key={`b-${b.key}`} style={{ background: '#f8fafc' }}>
+                            <tr key={`b-${b.key}`} style={{ background: '#F8F9FA' }}>
                               <td colSpan={5} style={{ fontWeight: 700, color: b.color }}>
                                 <span style={{ display: 'inline-block', width: 9, height: 9, borderRadius: '50%', background: b.color, marginRight: 8 }} />
                                 {b.label} <span style={{ fontWeight: 400, fontSize: 12, color: 'var(--text-muted)' }}>· {b.count} documentos</span>
@@ -512,7 +512,7 @@ export default function ReporteCXPTesoreria() {
                                   <td style={{ fontSize: 12, color: b.color, fontWeight: 600 }}>{fmtFecha(op.fecha_vencimiento)}</td>
                                   <td style={{ ...num, fontSize: 12 }}>{diasVencido(op.fecha_vencimiento)}</td>
                                   <td style={num}>{fmt(sd(op))}</td>
-                                  <td style={{ fontSize: 12, color: ciclo && diasA(ciclo.fechaPago) < 0 ? '#b91c1c' : 'var(--text-muted)' }}>
+                                  <td style={{ fontSize: 12, color: ciclo && diasA(ciclo.fechaPago) < 0 ? '#A83232' : 'var(--text-muted)' }}>
                                     {ciclo ? `Martes ${fmtCorta(ciclo.fechaPago)}` : '—'}
                                   </td>
                                 </tr>
@@ -555,8 +555,8 @@ export default function ReporteCXPTesoreria() {
                               <td style={{ ...num, fontWeight: 700, color: r.status === 'Cancelada' ? 'var(--text-muted)' : 'var(--blue)' }}>{fmt(r.monto_total)}</td>
                               <td>
                                 <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                                  background: ok ? '#f0fdf4' : '#f1f5f9', color: ok ? '#15803d' : '#64748b',
-                                  border: `1px solid ${ok ? '#bbf7d0' : '#e2e8f0'}` }}>{r.status}</span>
+                                  background: ok ? '#1F7A50' : '#F4F5F7', color: ok ? '#fff' : '#62666E',
+                                  border: `1px solid ${ok ? '#1F7A50' : '#E6E8EB'}` }}>{r.status}</span>
                               </td>
                             </tr>
                           )

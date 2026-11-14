@@ -43,7 +43,7 @@ export default function PoloPage() {
       />
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '2px solid #e2e8f0', marginBottom: 20, gap: 0, overflowX: 'auto' }}>
+      <div style={{ display: 'flex', borderBottom: '2px solid #E6E8EB', marginBottom: 20, gap: 0, overflowX: 'auto' }}>
         {TABS.map(t => {
           const Icon = t.icon
           return (
@@ -52,8 +52,8 @@ export default function PoloPage() {
               padding: '9px 18px', fontSize: 13, background: 'none', border: 'none',
               cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
               fontWeight: tab === t.key ? 600 : 400,
-              color: tab === t.key ? '#065f46' : '#94a3b8',
-              borderBottom: tab === t.key ? '2px solid #065f46' : '2px solid transparent',
+              color: tab === t.key ? '#1C1D21' : '#7A7E87',
+              borderBottom: tab === t.key ? '2px solid #19D3C5' : '2px solid transparent',
               marginBottom: -2, transition: 'all 0.15s',
             }}>
               <Icon size={14} />

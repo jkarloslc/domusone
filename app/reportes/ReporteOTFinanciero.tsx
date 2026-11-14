@@ -10,8 +10,8 @@ const fmtFecha = (f: string | null) => f ? new Date(f + 'T12:00:00').toLocaleDat
 
 const STATUSES = ['Pendiente','En Proceso','En Pausa','Completada','Cancelada']
 const statusColor = (s: string) =>
-  s === 'Completada' ? '#15803d' : s === 'En Proceso' ? '#2563eb' :
-  s === 'En Pausa' ? '#7c3aed' : s === 'Cancelada' ? '#94a3b8' : '#d97706'
+  s === 'Completada' ? '#1F7A50' : s === 'En Proceso' ? '#1C1D21' :
+  s === 'En Pausa' ? '#6B4E79' : s === 'Cancelada' ? '#7A7E87' : '#B5761A'
 
 export default function ReporteOTFinanciero() {
   const [rows,        setRows]        = useState<any[]>([])
@@ -117,7 +117,7 @@ export default function ReporteOTFinanciero() {
     <div>
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16, padding: '12px 16px',
-        background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        background: '#F8F9FA', borderRadius: 10, border: '1px solid #E6E8EB' }}>
         <select className="select" style={{ fontSize: 12, height: 28, padding: '2px 8px', minWidth: 110 }}
           value={fEmpresa} onChange={e => setFEmpresa(e.target.value)}>
           <option value="">Empresa</option>
@@ -153,14 +153,14 @@ export default function ReporteOTFinanciero() {
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
         {[
           { label: 'OTs',           value: rows.length,       color: 'var(--blue)', bg: 'var(--blue-pale)' },
-          { label: 'Con costo reg.', value: conCosto,         color: '#7c3aed',     bg: '#f5f3ff' },
-          { label: 'Total MO',      value: fmt$(totalMO),     color: '#b45309',     bg: '#fef3c7' },
-          { label: 'Total Recursos', value: fmt$(totalRec),   color: '#0891b2',     bg: '#ecfeff' },
-          { label: 'Costo Total',   value: fmt$(totalGen),    color: '#15803d',     bg: '#f0fdf4' },
+          { label: 'Con costo reg.', value: conCosto,         color: '#6B4E79',     bg: '#F4F5F7' },
+          { label: 'Total MO',      value: fmt$(totalMO),     color: '#96600F',     bg: '#E6E8EB' },
+          { label: 'Total Recursos', value: fmt$(totalRec),   color: '#32789A',     bg: '#F4F5F7' },
+          { label: 'Costo Total',   value: fmt$(totalGen),    color: '#1F7A50',     bg: '#F4F5F7' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '10px 16px', background: k.bg, flex: '1 1 120px', maxWidth: 220 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{k.label}</div>
+          <div key={k.label} className="card" style={{ padding: '10px 16px', background: '#fff', flex: '1 1 120px', maxWidth: 220 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)',  }}>{k.value}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
           </div>
         ))}
       </div>
@@ -187,12 +187,12 @@ export default function ReporteOTFinanciero() {
                   {/* Fila CC */}
                   <div onClick={() => setOpenCC(p => ({ ...p, [ccKey]: !isOpenCC }))}
                     style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-                      background: '#1e3a5f', cursor: 'pointer', userSelect: 'none' }}>
-                    {isOpenCC ? <ChevronDown size={13} style={{ color: '#93c5fd', flexShrink: 0 }} /> : <ChevronRight size={13} style={{ color: '#93c5fd', flexShrink: 0 }} />}
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#e0f2fe', flex: 1 }}>{ccGrp.label}</span>
-                    <span style={{ fontSize: 11, color: '#93c5fd' }}>MO: {fmt$(ccMO)}</span>
-                    <span style={{ fontSize: 11, color: '#93c5fd', marginLeft: 12 }}>Rec: {fmt$(ccRec)}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#7dd3fc', marginLeft: 16, minWidth: 120, textAlign: 'right' }}>{fmt$(ccTot)}</span>
+                      background: '#26282D', cursor: 'pointer', userSelect: 'none' }}>
+                    {isOpenCC ? <ChevronDown size={13} style={{ color: '#C9CCD3', flexShrink: 0 }} /> : <ChevronRight size={13} style={{ color: '#C9CCD3', flexShrink: 0 }} />}
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#E6E8EB', flex: 1 }}>{ccGrp.label}</span>
+                    <span style={{ fontSize: 11, color: '#C9CCD3' }}>MO: {fmt$(ccMO)}</span>
+                    <span style={{ fontSize: 11, color: '#C9CCD3', marginLeft: 12 }}>Rec: {fmt$(ccRec)}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#C9CCD3', marginLeft: 16, minWidth: 120, textAlign: 'right' }}>{fmt$(ccTot)}</span>
                   </div>
 
                   {isOpenCC && Object.entries(ccGrp.areas).map(([aKey, aGrp]) => {
@@ -207,12 +207,12 @@ export default function ReporteOTFinanciero() {
                         {/* Fila Área */}
                         <div onClick={() => setOpenArea(p => ({ ...p, [groupKey]: !isOpenA }))}
                           style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px 8px 28px',
-                            background: '#f0f9ff', borderBottom: '1px solid #e2e8f0', cursor: 'pointer', userSelect: 'none' }}>
-                          {isOpenA ? <ChevronDown size={12} style={{ color: '#0891b2', flexShrink: 0 }} /> : <ChevronRight size={12} style={{ color: '#0891b2', flexShrink: 0 }} />}
-                          <span style={{ fontSize: 12, fontWeight: 700, color: '#0c4a6e', flex: 1 }}>{aGrp.label}</span>
-                          <span style={{ fontSize: 11, color: '#0891b2' }}>MO: {fmt$(aMO)}</span>
-                          <span style={{ fontSize: 11, color: '#0891b2', marginLeft: 12 }}>Rec: {fmt$(aRec)}</span>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: '#0284c7', marginLeft: 16, minWidth: 120, textAlign: 'right' }}>{fmt$(aTot)}</span>
+                            background: '#F4F5F7', borderBottom: '1px solid #E6E8EB', cursor: 'pointer', userSelect: 'none' }}>
+                          {isOpenA ? <ChevronDown size={12} style={{ color: '#62666E', flexShrink: 0 }} /> : <ChevronRight size={12} style={{ color: '#62666E', flexShrink: 0 }} />}
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#1F4E66', flex: 1 }}>{aGrp.label}</span>
+                          <span style={{ fontSize: 11, color: '#32789A' }}>MO: {fmt$(aMO)}</span>
+                          <span style={{ fontSize: 11, color: '#32789A', marginLeft: 12 }}>Rec: {fmt$(aRec)}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#32789A', marginLeft: 16, minWidth: 120, textAlign: 'right' }}>{fmt$(aTot)}</span>
                         </div>
 
                         {isOpenA && Object.entries(aGrp.frentes).map(([fKey, fGrp]) => {
@@ -223,16 +223,16 @@ export default function ReporteOTFinanciero() {
                             <div key={fKey}>
                               {/* Fila Frente */}
                               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 14px 6px 44px',
-                                background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
-                                <span style={{ fontSize: 11, fontWeight: 600, color: '#475569', flex: 1 }}>⬦ {fGrp.label}</span>
+                                background: '#F8F9FA', borderBottom: '1px solid #F4F5F7' }}>
+                                <span style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', flex: 1 }}>⬦ {fGrp.label}</span>
                                 <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>MO: {fmt$(fMO)}</span>
                                 <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 10 }}>Rec: {fmt$(fRec)}</span>
-                                <span style={{ fontSize: 11, fontWeight: 600, color: '#334155', marginLeft: 14, minWidth: 120, textAlign: 'right' }}>{fmt$(fTot)}</span>
+                                <span style={{ fontSize: 11, fontWeight: 600, color: '#33363C', marginLeft: 14, minWidth: 120, textAlign: 'right' }}>{fmt$(fTot)}</span>
                               </div>
                               {/* Tabla OTs */}
                               <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                                 <thead>
-                                  <tr style={{ background: '#f1f5f9' }}>
+                                  <tr style={{ background: '#F4F5F7' }}>
                                     <th style={{ padding: '5px 10px 5px 56px', textAlign: 'left', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)' }}>Folio</th>
                                     <th style={{ padding: '5px 10px', textAlign: 'left', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)' }}>Título</th>
                                     <th style={{ padding: '5px 10px', textAlign: 'left', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)' }}>Status</th>
@@ -243,8 +243,8 @@ export default function ReporteOTFinanciero() {
                                 </thead>
                                 <tbody>
                                   {fGrp.ots.map((ot: OTRow) => (
-                                    <tr key={ot.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                      <td style={{ padding: '6px 10px 6px 56px', fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)', fontWeight: 600 }}>{ot.folio}</td>
+                                    <tr key={ot.id} style={{ borderBottom: '1px solid #F4F5F7' }}>
+                                      <td style={{ padding: '6px 10px 6px 56px', fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--blue)', fontWeight: 600 }}>{ot.folio}</td>
                                       <td style={{ padding: '6px 10px' }}>
                                         <div style={{ fontSize: 12, fontWeight: 500 }}>{ot.titulo}</div>
                                         {ot.tipo_trabajo && <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{ot.tipo_trabajo}</div>}
@@ -252,10 +252,10 @@ export default function ReporteOTFinanciero() {
                                       <td style={{ padding: '6px 10px' }}>
                                         <span style={{ fontSize: 10, fontWeight: 700, color: statusColor(ot.status) }}>{ot.status}</span>
                                       </td>
-                                      <td style={{ padding: '6px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#b45309' }}>
+                                      <td style={{ padding: '6px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#96600F' }}>
                                         {ot._mo > 0 ? fmt$(ot._mo) : '—'}
                                       </td>
-                                      <td style={{ padding: '6px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#0891b2' }}>
+                                      <td style={{ padding: '6px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#32789A' }}>
                                         {ot._rec > 0 ? fmt$(ot._rec) : '—'}
                                       </td>
                                       <td style={{ padding: '6px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}>
@@ -274,11 +274,11 @@ export default function ReporteOTFinanciero() {
 
                   {/* Subtotal CC */}
                   {isOpenCC && (
-                    <div style={{ display: 'flex', gap: 10, padding: '8px 14px', background: '#dbeafe',
-                      borderTop: '1px solid #bfdbfe', justifyContent: 'flex-end' }}>
-                      <span style={{ fontSize: 11, color: '#1e40af' }}>Subtotal MO: {fmt$(ccMO)}</span>
-                      <span style={{ fontSize: 11, color: '#1e40af', marginLeft: 12 }}>Subtotal Recursos: {fmt$(ccRec)}</span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#1e3a8a', marginLeft: 16 }}>Total {ccGrp.label}: {fmt$(ccTot)}</span>
+                    <div style={{ display: 'flex', gap: 10, padding: '8px 14px', background: '#E6E8EB',
+                      borderTop: '1px solid #C9CCD3', justifyContent: 'flex-end' }}>
+                      <span style={{ fontSize: 11, color: '#1C1D21' }}>Subtotal MO: {fmt$(ccMO)}</span>
+                      <span style={{ fontSize: 11, color: '#1C1D21', marginLeft: 12 }}>Subtotal Recursos: {fmt$(ccRec)}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#1C1D21', marginLeft: 16 }}>Total {ccGrp.label}: {fmt$(ccTot)}</span>
                     </div>
                   )}
                 </div>
@@ -286,10 +286,10 @@ export default function ReporteOTFinanciero() {
             })}
 
             {/* Gran Total */}
-            <div style={{ display: 'flex', gap: 10, padding: '12px 16px', background: '#1e3a5f',
+            <div style={{ display: 'flex', gap: 10, padding: '12px 16px', background: '#26282D',
               borderRadius: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-              <span style={{ fontSize: 12, color: '#93c5fd' }}>Total MO: {fmt$(totalMO)}</span>
-              <span style={{ fontSize: 12, color: '#93c5fd', marginLeft: 14 }}>Total Recursos: {fmt$(totalRec)}</span>
+              <span style={{ fontSize: 12, color: '#C9CCD3' }}>Total MO: {fmt$(totalMO)}</span>
+              <span style={{ fontSize: 12, color: '#C9CCD3', marginLeft: 14 }}>Total Recursos: {fmt$(totalRec)}</span>
               <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginLeft: 20 }}>Gran Total: {fmt$(totalGen)}</span>
             </div>
           </div>

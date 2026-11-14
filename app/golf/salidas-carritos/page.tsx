@@ -53,18 +53,18 @@ const nc = (s: { nombre: string; apellido_paterno: string | null; apellido_mater
   s ? [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ') : '—'
 
 const TIPO_LABEL: Record<string, string> = {
-  SALIDA_TALLER:     '🔧 Salida a Taller',
-  REGRESO_TALLER:    '✅ Regreso de Taller',
-  PRESTAMO_TERCERO:  '🤝 Préstamo a Tercero',
-  INCIDENCIA:        '⚠️ Incidencia',
-  SALIDA_DEFINITIVA: '🚗 Salida Definitiva',
+  SALIDA_TALLER:     'Salida a Taller',
+  REGRESO_TALLER:    'Regreso de Taller',
+  PRESTAMO_TERCERO:  'Préstamo a Tercero',
+  INCIDENCIA:        'Incidencia',
+  SALIDA_DEFINITIVA: 'Salida Definitiva',
 }
 const TIPO_COLOR: Record<string, { color: string; bg: string }> = {
-  SALIDA_TALLER:     { color: '#d97706', bg: '#fffbeb' },
-  REGRESO_TALLER:    { color: '#15803d', bg: '#f0fdf4' },
-  PRESTAMO_TERCERO:  { color: '#2563eb', bg: '#eff6ff' },
-  INCIDENCIA:        { color: '#dc2626', bg: '#fef2f2' },
-  SALIDA_DEFINITIVA: { color: '#7c3aed', bg: '#f5f3ff' },
+  SALIDA_TALLER:     { color: '#B5761A', bg: '#F4F5F7' },
+  REGRESO_TALLER:    { color: '#1F7A50', bg: '#F4F5F7' },
+  PRESTAMO_TERCERO:  { color: '#1C1D21', bg: '#F4F5F7' },
+  INCIDENCIA:        { color: '#C23B3B', bg: '#F4F5F7' },
+  SALIDA_DEFINITIVA: { color: '#6B4E79', bg: '#F4F5F7' },
 }
 
 type Tab = 'salidas' | 'bitacora'
@@ -254,12 +254,12 @@ export default function SalidasCarritosPage() {
             <RefreshCw size={13} /> Actualizar
           </button>
           {puedeEscribir && tab === 'salidas' && (
-            <button className="btn-primary" onClick={() => setShowModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#059669' }}>
+            <button className="btn-primary" onClick={() => setShowModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#267F56' }}>
               <Plus size={14} /> Registrar Salida
             </button>
           )}
           {puedeEscribir && tab === 'bitacora' && (
-            <button className="btn-primary" onClick={() => setShowNuevaBitacora(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#059669' }}>
+            <button className="btn-primary" onClick={() => setShowNuevaBitacora(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#267F56' }}>
               <Plus size={14} /> Nuevo registro
             </button>
           )}
@@ -267,7 +267,7 @@ export default function SalidasCarritosPage() {
       />
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 20 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', marginBottom: 20 }}>
         {TABS.map(t => {
           const Icon = t.icon
           return (
@@ -276,8 +276,8 @@ export default function SalidasCarritosPage() {
               padding: '10px 20px', fontSize: 13, background: 'none', border: 'none',
               cursor: 'pointer', fontFamily: 'inherit',
               fontWeight: tab === t.key ? 600 : 400,
-              color: tab === t.key ? '#059669' : '#94a3b8',
-              borderBottom: tab === t.key ? '2px solid #059669' : '2px solid transparent',
+              color: tab === t.key ? '#1C1D21' : '#7A7E87',
+              borderBottom: tab === t.key ? '2px solid #19D3C5' : '2px solid transparent',
               marginBottom: -1,
             }}>
               <Icon size={14} /> {t.label}
@@ -292,18 +292,18 @@ export default function SalidasCarritosPage() {
           {/* Stats */}
           <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
             {[
-              { label: esHoy ? 'Salidas Hoy' : 'Salidas del Día', value: stats.total,      color: '#2563eb', bg: '#eff6ff', icon: Car    },
-              { label: 'En ronda de juego',                       value: stats.enRonda,    color: '#16a34a', bg: '#f0fdf4', icon: LogOut },
-              { label: 'Regresados',                              value: stats.regresados, color: '#64748b', bg: '#f8fafc', icon: LogIn  },
+              { label: esHoy ? 'Salidas Hoy' : 'Salidas del Día', value: stats.total,      color: '#1C1D21', bg: '#F4F5F7', icon: Car    },
+              { label: 'En ronda de juego',                       value: stats.enRonda,    color: '#267F56', bg: '#F4F5F7', icon: LogOut },
+              { label: 'Regresados',                              value: stats.regresados, color: '#62666E', bg: '#F8F9FA', icon: LogIn  },
             ].map(card => {
               const Icon = card.icon
               return (
-                <div key={card.label} className="card" style={{ flex: '1 1 160px', maxWidth: 220, padding: '14px 18px', background: card.bg, border: `1px solid ${card.color}22` }}>
+                <div key={card.label} className="card" style={{ flex: '1 1 160px', maxWidth: 220, padding: '14px 18px', background: '#fff', border: '1px solid #E6E8EB' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                     <Icon size={14} style={{ color: card.color }} />
-                    <span style={{ fontSize: 11, color: '#64748b' }}>{card.label}</span>
+                    <span style={{ fontSize: 11, color: '#62666E' }}>{card.label}</span>
                   </div>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: card.color, lineHeight: 1 }}>{card.value}</div>
+                  <div style={{ fontSize: 28, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)', lineHeight: 1 }}>{card.value}</div>
                 </div>
               )
             })}
@@ -312,7 +312,7 @@ export default function SalidasCarritosPage() {
           {/* Filtros */}
           <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Filter size={13} style={{ color: '#94a3b8' }} />
+              <Filter size={13} style={{ color: '#7A7E87' }} />
               <input
                 type="date"
                 value={fecha}
@@ -324,7 +324,7 @@ export default function SalidasCarritosPage() {
               {(['todos', 'en_ronda', 'regresados'] as const).map(s => (
                 <button key={s} onClick={() => setFiltroStatus(s)} style={{
                   padding: '7px 14px', fontSize: 12, fontWeight: filtroStatus === s ? 600 : 400,
-                  background: filtroStatus === s ? '#059669' : 'var(--surface-800)',
+                  background: filtroStatus === s ? '#267F56' : 'var(--surface-800)',
                   color: filtroStatus === s ? '#fff' : 'var(--text-muted)',
                   border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s',
                 }}>
@@ -332,7 +332,7 @@ export default function SalidasCarritosPage() {
                 </button>
               ))}
             </div>
-            {esHoy && <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>● Hoy</span>}
+            {esHoy && <span style={{ fontSize: 12, color: '#267F56', fontWeight: 600 }}>● Hoy</span>}
           </div>
 
           {/* Tabla */}
@@ -368,8 +368,8 @@ export default function SalidasCarritosPage() {
                           <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 2 }}>
                             {s.cat_carritos?.placa && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Placa {s.cat_carritos.placa}</span>}
                             {s.cat_carritos?.tipo && (
-                              <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, background: s.cat_carritos.tipo === 'ELECTRICO' ? '#eff6ff' : '#fffbeb', color: s.cat_carritos.tipo === 'ELECTRICO' ? '#1d4ed8' : '#92400e', fontWeight: 600 }}>
-                                {s.cat_carritos.tipo === 'ELECTRICO' ? '⚡ Eléctrico' : '⛽ Combustión'}
+                              <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, background: s.cat_carritos.tipo === 'ELECTRICO' ? '#F4F5F7' : '#B5761A', color: s.cat_carritos.tipo === 'ELECTRICO' ? '#26282D' : '#fff', fontWeight: 600 }}>
+                                {s.cat_carritos.tipo === 'ELECTRICO' ? 'Eléctrico' : 'Combustión'}
                               </span>
                             )}
                           </div>
@@ -383,7 +383,7 @@ export default function SalidasCarritosPage() {
                         </td>
                         <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                            <Clock size={11} style={{ color: '#16a34a' }} />
+                            <Clock size={11} style={{ color: '#267F56' }} />
                             <span style={{ fontSize: 13, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{fmtHora(s.fecha_salida)}</span>
                           </div>
                           <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtFecha(s.fecha_salida)}</div>
@@ -391,11 +391,11 @@ export default function SalidasCarritosPage() {
                         <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                           {s.fecha_regreso ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                              <Clock size={11} style={{ color: '#64748b' }} />
+                              <Clock size={11} style={{ color: '#62666E' }} />
                               <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>{fmtHora(s.fecha_regreso)}</span>
                             </div>
                           ) : (
-                            <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#dcfce7', color: '#16a34a' }}>En ronda</span>
+                            <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#1F7A50', color: '#fff' }}>En ronda</span>
                           )}
                         </td>
                         <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)' }}>
@@ -405,14 +405,14 @@ export default function SalidasCarritosPage() {
                           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                             <button
                               className="btn-ghost"
-                              style={{ padding: '4px 6px', color: '#64748b' }}
+                              style={{ padding: '4px 6px', color: '#62666E' }}
                               onClick={() => abrirTicket(s, false)}
                               title="Consultar ticket">
                               <Eye size={13} />
                             </button>
                             <button
                               className="btn-ghost"
-                              style={{ padding: '4px 6px', color: '#64748b' }}
+                              style={{ padding: '4px 6px', color: '#62666E' }}
                               onClick={() => abrirTicket(s, true)}
                               title="Reimprimir ticket">
                               <Printer size={13} />
@@ -420,7 +420,7 @@ export default function SalidasCarritosPage() {
                             {enRonda && puedeEscribir && (
                               <button
                                 className="btn-ghost"
-                                style={{ padding: '4px 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, color: '#2563eb', opacity: isRegreso ? 0.5 : 1 }}
+                                style={{ padding: '4px 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, color: '#1C1D21', opacity: isRegreso ? 0.5 : 1 }}
                                 onClick={() => registrarRegreso(s.id)}
                                 disabled={isRegreso}
                                 title="Registrar regreso a motor lobby">
@@ -446,27 +446,27 @@ export default function SalidasCarritosPage() {
         <>
           {/* Stats */}
           <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
-            <div className="card" style={{ flex: '1 1 160px', maxWidth: 220, padding: '14px 18px', background: '#eff6ff', border: '1px solid #2563eb22' }}>
+            <div className="card" style={{ flex: '1 1 160px', maxWidth: 220, padding: '14px 18px', background: '#F4F5F7', border: '1px solid #1C1D2122' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <BookOpen size={14} style={{ color: '#2563eb' }} />
-                <span style={{ fontSize: 11, color: '#64748b' }}>Registros</span>
+                <BookOpen size={14} style={{ color: '#1C1D21' }} />
+                <span style={{ fontSize: 11, color: '#62666E' }}>Registros</span>
               </div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: '#2563eb', lineHeight: 1 }}>{loadingBit ? '—' : entriesBit.length}</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: '#1C1D21', lineHeight: 1 }}>{loadingBit ? '—' : entriesBit.length}</div>
             </div>
           </div>
 
           {/* Filtros */}
           <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 320 }}>
-              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
+              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
                 placeholder="Buscar carrito, socio o descripción…" value={busquedaBit} onChange={e => setBusquedaBit(e.target.value)} />
-              {busquedaBit && <button onClick={() => setBusquedaBit('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+              {busquedaBit && <button onClick={() => setBusquedaBit('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2 }}><X size={12} /></button>}
             </div>
             <select
               value={filtroTipoBit}
               onChange={e => setFiltroTipoBit(e.target.value)}
-              style={{ padding: '7px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', outline: 'none', fontFamily: 'inherit' }}>
+              style={{ padding: '7px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', outline: 'none', fontFamily: 'inherit' }}>
               <option value="">Todos los tipos</option>
               {Object.entries(TIPO_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
@@ -492,7 +492,7 @@ export default function SalidasCarritosPage() {
                       <div style={{ fontSize: 12 }}>Usa "Nuevo registro" para agregar el primero</div>
                     </td></tr>
                   ) : entriesBitF.map(e => {
-                    const tc = TIPO_COLOR[e.tipo_evento] ?? { color: '#475569', bg: '#f8fafc' }
+                    const tc = TIPO_COLOR[e.tipo_evento] ?? { color: '#4A4D54', bg: '#F8F9FA' }
                     const car = carritosMap[e.id_carrito_fk]
                     const socio = e.id_socio_fk != null ? sociosMap[e.id_socio_fk] : null
                     const carDesc = car ? ([car.marca, car.modelo].filter(Boolean).join(' ') || 'Carrito') : `Carrito #${e.id_carrito_fk}`
@@ -507,17 +507,17 @@ export default function SalidasCarritosPage() {
                           {socio?.numero_socio && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>#{socio.numero_socio}</div>}
                         </td>
                         <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: tc.bg, color: tc.color }}>
+                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: tc.color, color: '#fff'}}>
                             {TIPO_LABEL[e.tipo_evento] ?? e.tipo_evento}
                           </span>
                         </td>
                         <td style={{ padding: '10px 14px', color: 'var(--text-primary)', maxWidth: 240 }}>
                           <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.descripcion}</div>
-                          {e.observaciones && <div style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic', marginTop: 2 }}>{e.observaciones}</div>}
+                          {e.observaciones && <div style={{ fontSize: 11, color: '#7A7E87', fontStyle: 'italic', marginTop: 2 }}>{e.observaciones}</div>}
                         </td>
                         <td style={{ padding: '10px 14px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 12 }}>
                           {fmtDt(e.fecha_evento)}
-                          {e.fecha_fin && <div style={{ fontSize: 10, color: '#94a3b8' }}>→ {fmtDt(e.fecha_fin)}</div>}
+                          {e.fecha_fin && <div style={{ fontSize: 10, color: '#7A7E87' }}>→ {fmtDt(e.fecha_fin)}</div>}
                         </td>
                       </tr>
                     )

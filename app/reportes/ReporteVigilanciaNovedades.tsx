@@ -19,7 +19,7 @@ const TABS: [Tab, string][] = [
   ['pendientes', 'Pendientes y antigüedad'], ['cumplimiento', 'Cumplimiento de partes'],
 ]
 const CLASES = ['Incidencia', 'Acceso', 'Rutina']
-const CLASE_COLOR: Record<string, string> = { Incidencia: '#dc2626', Acceso: '#2563eb', Rutina: '#64748b' }
+const CLASE_COLOR: Record<string, string> = { Incidencia: '#C23B3B', Acceso: '#1C1D21', Rutina: '#62666E' }
 const CRITS = ['Crítica', 'Alta', 'Media', 'Baja']
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 const mesLabel = (m: string) => `${MESES[Number(m.slice(5, 7)) - 1]} ${m.slice(0, 4)}`
@@ -39,8 +39,8 @@ async function traerTodo(q: (de: number, a: number) => PromiseLike<{ data: any[]
   return out
 }
 
-const Barra = ({ v, max, color = '#475569' }: { v: number; max: number; color?: string }) => (
-  <div style={{ background: '#f1f5f9', borderRadius: 4, height: 8, minWidth: 80 }}>
+const Barra = ({ v, max, color = '#4A4D54' }: { v: number; max: number; color?: string }) => (
+  <div style={{ background: '#F4F5F7', borderRadius: 4, height: 8, minWidth: 80 }}>
     <div style={{ width: `${max ? (v / max) * 100 : 0}%`, height: 8, borderRadius: 4, background: color }} />
   </div>
 )
@@ -163,7 +163,7 @@ export default function ReporteVigilanciaNovedades() {
     const max = lista[0]?.n ?? 0
     return (
       <div className="card" style={{ overflow: 'hidden', marginBottom: 16 }}>
-        <div style={{ padding: '12px 16px', fontWeight: 600, fontSize: 13, borderBottom: '1px solid #e2e8f0' }}>{titulo}</div>
+        <div style={{ padding: '12px 16px', fontWeight: 600, fontSize: 13, borderBottom: '1px solid #E6E8EB' }}>{titulo}</div>
         <div className="table-wrapper"><table>
           <thead><tr>{th('')}{th('Novedades', true)}{th('%', true)}{opts?.columnaClases && CLASES.map(c => th(c, true))}{th('Alta/Crítica', true)}{th('Abiertas', true)}<th style={{ width: 140 }}></th></tr></thead>
           <tbody>
@@ -172,7 +172,7 @@ export default function ReporteVigilanciaNovedades() {
                 <td style={{ fontSize: 13, fontWeight: 500 }}>{r.k}</td>
                 <td style={num}>{r.n}</td><td style={{ ...num, color: 'var(--text-muted)' }}>{pct(r.n, total)}</td>
                 {opts?.columnaClases && CLASES.map(c => <td key={c} style={num}>{r.fs.filter(f => f.clase === c).length || '—'}</td>)}
-                <td style={{ ...num, color: graves(r.fs) ? '#dc2626' : 'var(--text-muted)', fontWeight: graves(r.fs) ? 600 : 400 }}>{graves(r.fs) || '—'}</td>
+                <td style={{ ...num, color: graves(r.fs) ? '#C23B3B' : 'var(--text-muted)', fontWeight: graves(r.fs) ? 600 : 400 }}>{graves(r.fs) || '—'}</td>
                 <td style={num}>{abiertas(r.fs) || '—'}</td>
                 <td><Barra v={r.n} max={max} color={opts?.colorFn?.(r.k)} /></td>
               </tr>))}
@@ -202,21 +202,21 @@ export default function ReporteVigilanciaNovedades() {
       <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
         {TABS.map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)} style={{ padding: '8px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: tab === k ? 600 : 400,
-            color: tab === k ? 'var(--text-primary)' : 'var(--text-muted)', borderBottom: `2px solid ${tab === k ? '#475569' : 'transparent'}`, marginBottom: -1 }}>{l}</button>))}
+            color: tab === k ? 'var(--text-primary)' : 'var(--text-muted)', borderBottom: `2px solid ${tab === k ? '#4A4D54' : 'transparent'}`, marginBottom: -1 }}>{l}</button>))}
       </div>
 
-      {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', borderRadius: 6, color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{error}</div>}
+      {error && <div style={{ padding: '10px 14px', background: '#F4F5F7', borderRadius: 6, color: '#C23B3B', fontSize: 13, marginBottom: 12 }}>{error}</div>}
 
       <div id="reporte-print-area">
         {tab === 'resumen' && <>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
             {[
-              { label: 'Novedades', value: total, icon: ClipboardList, color: '#475569' },
-              { label: 'Partes en el periodo', value: partes.length, icon: ClipboardList, color: '#475569' },
-              { label: 'Promedio por parte', value: partes.length ? (filas.length / partes.length).toFixed(1) : '—', icon: ClipboardList, color: '#475569' },
-              { label: '% Incidencias', value: pct(datos.filter(f => f.clase === 'Incidencia').length, total), icon: AlertTriangle, color: '#dc2626' },
-              { label: 'Alta / Crítica', value: graves(datos), icon: AlertTriangle, color: '#ea580c' },
-              { label: 'Sin cerrar', value: abiertas(datos), icon: Clock, color: '#d97706' },
+              { label: 'Novedades', value: total, icon: ClipboardList, color: '#4A4D54' },
+              { label: 'Partes en el periodo', value: partes.length, icon: ClipboardList, color: '#4A4D54' },
+              { label: 'Promedio por parte', value: partes.length ? (filas.length / partes.length).toFixed(1) : '—', icon: ClipboardList, color: '#4A4D54' },
+              { label: '% Incidencias', value: pct(datos.filter(f => f.clase === 'Incidencia').length, total), icon: AlertTriangle, color: '#C23B3B' },
+              { label: 'Alta / Crítica', value: graves(datos), icon: AlertTriangle, color: '#C8642A' },
+              { label: 'Sin cerrar', value: abiertas(datos), icon: Clock, color: '#B5761A' },
             ].map(k => <div key={k.label} style={{ flex: '1 1 170px', maxWidth: 240 }}><KpiCard label={k.label} value={k.value} icon={k.icon} color={k.color} /></div>)}
           </div>
           {tablaRanking('Por clase', porClase, { colorFn: k => CLASE_COLOR[k] })}
@@ -226,7 +226,7 @@ export default function ReporteVigilanciaNovedades() {
             {tablaRanking('Por turno', porTurno)}
           </div>
           <div className="card" style={{ overflow: 'hidden', marginBottom: 16 }}>
-            <div style={{ padding: '12px 16px', fontWeight: 600, fontSize: 13, borderBottom: '1px solid #e2e8f0' }}>Tendencia mensual</div>
+            <div style={{ padding: '12px 16px', fontWeight: 600, fontSize: 13, borderBottom: '1px solid #E6E8EB' }}>Tendencia mensual</div>
             <div className="table-wrapper"><table>
               <thead><tr>{th('Mes')}{th('Total', true)}{CLASES.map(c => th(c, true))}{th('Alta/Crítica', true)}{th('Abiertas', true)}<th style={{ width: 160 }}></th></tr></thead>
               <tbody>{porMes.map(m => (
@@ -242,7 +242,7 @@ export default function ReporteVigilanciaNovedades() {
               {porHora.map(x => (
                 <div key={x.h} title={`${x.h}:00 — ${x.n}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
                   <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{x.n || ''}</div>
-                  <div style={{ width: '100%', background: '#475569', borderRadius: '3px 3px 0 0', height: `${(x.n / Math.max(1, ...porHora.map(y => y.n))) * 80}px`, minHeight: x.n ? 2 : 0 }} />
+                  <div style={{ width: '100%', background: '#4A4D54', borderRadius: '3px 3px 0 0', height: `${(x.n / Math.max(1, ...porHora.map(y => y.n))) * 80}px`, minHeight: x.n ? 2 : 0 }} />
                   <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 2 }}>{x.h}</div>
                 </div>))}
             </div>
@@ -260,21 +260,21 @@ export default function ReporteVigilanciaNovedades() {
 
         {tab === 'pendientes' && <>
           <div className="card" style={{ overflow: 'hidden', marginBottom: 16 }}>
-            <div style={{ padding: '12px 16px', fontWeight: 600, fontSize: 13, borderBottom: '1px solid #e2e8f0' }}>Antigüedad de novedades sin cerrar (días desde la fecha del parte)</div>
+            <div style={{ padding: '12px 16px', fontWeight: 600, fontSize: 13, borderBottom: '1px solid #E6E8EB' }}>Antigüedad de novedades sin cerrar (días desde la fecha del parte)</div>
             <div className="table-wrapper"><table>
               <thead><tr>{th('Antigüedad')}{CRITS.map(c => th(c, true))}{th('Total', true)}</tr></thead>
               <tbody>
                 {bandas.map(([l, a, b]) => { const fs = pend.filter(p => p.dias >= a && p.dias <= b)
                   return <tr key={l}><td style={{ fontSize: 13 }}>{l}</td>{CRITS.map(c => <td key={c} style={num}>{fs.filter(f => f.crit === c).length || '—'}</td>)}<td style={{ ...num, fontWeight: 600 }}>{fs.length}</td></tr> })}
-                <tr style={{ background: '#f8fafc', fontWeight: 600 }}><td style={{ fontSize: 13 }}>Total</td>{CRITS.map(c => <td key={c} style={num}>{pend.filter(f => f.crit === c).length || '—'}</td>)}<td style={num}>{pend.length}</td></tr>
+                <tr style={{ background: '#F8F9FA', fontWeight: 600 }}><td style={{ fontSize: 13 }}>Total</td>{CRITS.map(c => <td key={c} style={num}>{pend.filter(f => f.crit === c).length || '—'}</td>)}<td style={num}>{pend.length}</td></tr>
               </tbody>
             </table></div>
           </div>
           <div className="card" style={{ overflow: 'hidden' }}>
-            <div style={{ padding: '12px 16px', fontWeight: 600, fontSize: 13, borderBottom: '1px solid #e2e8f0' }}>Las 30 más antiguas sin cerrar</div>
+            <div style={{ padding: '12px 16px', fontWeight: 600, fontSize: 13, borderBottom: '1px solid #E6E8EB' }}>Las 30 más antiguas sin cerrar</div>
             <div className="table-wrapper"><table id="reporte-table">
               <thead><tr>{th('Fecha')}{th('Días', true)}{th('Tipo')}{th('Ubicación / Lote')}{th('Crit.')}{th('Status')}</tr></thead>
-              <tbody>{pend.length === 0 ? <tr><td colSpan={6} style={{ textAlign: 'center', padding: 28, color: '#15803d' }}><CheckCircle size={14} style={{ verticalAlign: -2 }} /> Sin pendientes</td></tr>
+              <tbody>{pend.length === 0 ? <tr><td colSpan={6} style={{ textAlign: 'center', padding: 28, color: '#1F7A50' }}><CheckCircle size={14} style={{ verticalAlign: -2 }} /> Sin pendientes</td></tr>
                 : pend.slice(0, 30).map(f => (
                 <tr key={f.id}><td style={{ fontSize: 12 }}>{new Date(f.fecha + 'T12:00:00').toLocaleDateString('es-MX')}</td><td style={{ ...num, fontWeight: 600 }}>{f.dias}</td>
                   <td style={{ fontSize: 12 }}>{f.tipo}</td><td style={{ fontSize: 12 }}>{f.lote ?? (f.ubic.join(', ') || '—')}</td><td>{critPill(f.crit)}</td><td style={{ fontSize: 12 }}>{f.status}</td></tr>))}</tbody>
@@ -284,17 +284,17 @@ export default function ReporteVigilanciaNovedades() {
 
         {tab === 'cumplimiento' && (
           <div className="card" style={{ overflow: 'hidden' }}>
-            <div style={{ padding: '12px 16px', fontWeight: 600, fontSize: 13, borderBottom: '1px solid #e2e8f0' }}>Partes del periodo por mes (se esperan 1 por día)</div>
+            <div style={{ padding: '12px 16px', fontWeight: 600, fontSize: 13, borderBottom: '1px solid #E6E8EB' }}>Partes del periodo por mes (se esperan 1 por día)</div>
             <div className="table-wrapper"><table>
               <thead><tr>{th('Mes')}{th('Días', true)}{th('Con parte', true)}{th('Sin parte', true)}{th('Cobertura', true)}{th('Enviados', true)}{th('Sin revisar', true)}{th('Novedades', true)}{th('Prom./parte', true)}</tr></thead>
               <tbody>{cumplimiento.map(([m, x]) => (
                 <tr key={m}><td style={{ fontSize: 13 }}>{mesLabel(m)}</td><td style={num}>{x.dias}</td><td style={num}>{x.conParte}</td>
-                  <td style={{ ...num, color: x.dias - x.conParte ? '#dc2626' : 'var(--text-muted)', fontWeight: x.dias - x.conParte ? 600 : 400 }}>{x.dias - x.conParte || '—'}</td>
+                  <td style={{ ...num, color: x.dias - x.conParte ? '#C23B3B' : 'var(--text-muted)', fontWeight: x.dias - x.conParte ? 600 : 400 }}>{x.dias - x.conParte || '—'}</td>
                   <td style={num}>{pct(x.conParte, x.dias)}</td><td style={num}>{x.enviados}</td>
-                  <td style={{ ...num, color: x.sinRevisar ? '#dc2626' : 'var(--text-muted)' }}>{x.sinRevisar || '—'}</td><td style={num}>{x.novs}</td>
+                  <td style={{ ...num, color: x.sinRevisar ? '#C23B3B' : 'var(--text-muted)' }}>{x.sinRevisar || '—'}</td><td style={num}>{x.novs}</td>
                   <td style={num}>{x.conParte ? (x.novs / x.conParte).toFixed(1) : '—'}</td></tr>))}
                 {(() => { const t = cumplimiento.reduce((a, [, x]) => ({ d: a.d + x.dias, p: a.p + x.conParte, e: a.e + x.enviados, s: a.s + x.sinRevisar, n: a.n + x.novs }), { d: 0, p: 0, e: 0, s: 0, n: 0 })
-                  return <tr style={{ background: '#f8fafc', fontWeight: 600 }}><td style={{ fontSize: 13 }}>Total</td><td style={num}>{t.d}</td><td style={num}>{t.p}</td><td style={num}>{t.d - t.p}</td><td style={num}>{pct(t.p, t.d)}</td><td style={num}>{t.e}</td><td style={num}>{t.s}</td><td style={num}>{t.n}</td><td style={num}>{t.p ? (t.n / t.p).toFixed(1) : '—'}</td></tr> })()}
+                  return <tr style={{ background: '#F8F9FA', fontWeight: 600 }}><td style={{ fontSize: 13 }}>Total</td><td style={num}>{t.d}</td><td style={num}>{t.p}</td><td style={num}>{t.d - t.p}</td><td style={num}>{pct(t.p, t.d)}</td><td style={num}>{t.e}</td><td style={num}>{t.s}</td><td style={num}>{t.n}</td><td style={num}>{t.p ? (t.n / t.p).toFixed(1) : '—'}</td></tr> })()}
               </tbody>
             </table></div>
           </div>

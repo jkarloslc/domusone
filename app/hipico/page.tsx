@@ -21,7 +21,7 @@ const CABALLERIZAS_MODULOS = [
     label: 'Arrendatarios',
     desc: 'Propietarios de caballos, datos de contacto y expediente',
     icon: Users,
-    color: '#7c3aed',
+    color: '#6B4E79',
     href: '/hipico/arrendatarios',
   },
   {
@@ -29,7 +29,7 @@ const CABALLERIZAS_MODULOS = [
     label: 'Caballerizas',
     desc: 'Catálogo de boxes, secciones y disponibilidad',
     icon: Home,
-    color: '#b45309',
+    color: '#96600F',
     href: '/hipico/caballerizas',
   },
   {
@@ -37,7 +37,7 @@ const CABALLERIZAS_MODULOS = [
     label: 'Instalaciones',
     desc: 'Pistas, paddocks y salones con su ocupación y calendario',
     icon: MapPin,
-    color: '#0f766e',
+    color: '#126B63',
     href: '/hipico/instalaciones',
   },
   {
@@ -45,7 +45,7 @@ const CABALLERIZAS_MODULOS = [
     label: 'Eventos Ecuestres',
     desc: 'Concursos, torneos y eventos ecuestres con ingresos y gastos',
     icon: Star,
-    color: '#9333ea',
+    color: '#6B4E79',
     href: '/hipico/eventos-ecuestres',
   },
   {
@@ -53,7 +53,7 @@ const CABALLERIZAS_MODULOS = [
     label: 'Cobranza',
     desc: 'Cargos, pagos y estado de cuenta por socio',
     icon: DollarSign,
-    color: '#dc2626',
+    color: '#C23B3B',
     href: '/hipico/cobranza',
   },
   {
@@ -61,7 +61,7 @@ const CABALLERIZAS_MODULOS = [
     label: 'Reportes',
     desc: 'Estado de cuenta, cobranza y servicios por caballo',
     icon: BarChart3,
-    color: '#1d4ed8',
+    color: '#26282D',
     href: '/reportes?grupo=hipico',
   },
 ]
@@ -79,7 +79,7 @@ function ModuloCard({ m }: { m: Modulo }) {
         padding: '18px 20px',
         textAlign: 'left',
         background: '#fff',
-        border: '1px solid #e2e8f0',
+        border: '1px solid #E6E8EB',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
@@ -87,9 +87,8 @@ function ModuloCard({ m }: { m: Modulo }) {
         textDecoration: 'none',
       }}
     >
-      <div style={{
+      <div className="icon-chip" style={{
         width: 40, height: 40, borderRadius: 10,
-        background: m.color + '15',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0, color: m.color,
       }}>
@@ -99,7 +98,7 @@ function ModuloCard({ m }: { m: Modulo }) {
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{m.label}</div>
         <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{m.desc}</div>
       </div>
-      <ChevronRight size={14} style={{ color: '#cbd5e1', flexShrink: 0 }} />
+      <ChevronRight size={14} style={{ color: '#C9CCD3', flexShrink: 0 }} />
     </Link>
   )
 }
@@ -108,12 +107,12 @@ function _SectionSeparator({ label, color, icon: Icon }: { label: string; color:
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{ width: 28, height: 28, borderRadius: 8, background: color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', color }}>
+        <div className="icon-chip" style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Icon size={15} />
         </div>
         <span style={{ fontSize: 13, fontWeight: 700, color, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{label}</span>
       </div>
-      <div style={{ flex: 1, height: 1, background: color + '22' }} />
+      <div style={{ flex: 1, height: 1, background: '#F4F5F7' }} />
     </div>
   )
 }

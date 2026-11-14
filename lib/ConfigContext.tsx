@@ -28,9 +28,9 @@ const defaults: Config = {
   org_correo:        '',
   moneda:            'MXN',
   app_version:       '1.0.0',
-  color_sidebar_bg:           '#2d3660',
-  color_sidebar_acento:       '#C4A048',
-  color_sidebar_acento_claro: '#E8CA75',
+  color_sidebar_bg:           '#1C1D21',
+  color_sidebar_acento:       '#19D3C5',
+  color_sidebar_acento_claro: '#FFFFFF',
 }
 
 const ConfigContext = createContext<{

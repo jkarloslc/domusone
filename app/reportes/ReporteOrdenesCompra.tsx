@@ -42,8 +42,8 @@ export default function ReporteOrdenesCompra() {
   const total = rows.reduce((a, r) => a + Number(r.total || 0), 0)
 
   const statusColor = (s: string) =>
-    s === 'Autorizada' ? '#15803d' : s === 'Borrador' ? '#d97706' :
-    s === 'Cerrada'    ? '#2563eb' : s === 'Cancelada' ? '#dc2626' : '#64748b'
+    s === 'Autorizada' ? '#1F7A50' : s === 'Borrador' ? '#B5761A' :
+    s === 'Cerrada'    ? '#1C1D21' : s === 'Cancelada' ? '#C23B3B' : '#62666E'
 
   const STATUS = ['Borrador','Autorizada','Enviada al Prov','Cerrada','Cancelada']
 
@@ -108,7 +108,7 @@ export default function ReporteOrdenesCompra() {
               <tr><td colSpan={10} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin registros</td></tr>
             ) : rows.map((r, i) => (
               <tr key={i}>
-                <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
+                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
                 <td style={{ fontSize: 13 }}>{provMap[r.id_proveedor_fk] ?? '—'}</td>
                 <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{fmtF(r.fecha_oc)}</td>
                 <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{fmtF(r.fecha_entrega_est)}</td>
@@ -118,8 +118,8 @@ export default function ReporteOrdenesCompra() {
                 <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: 'var(--blue)' }}>{fmt(r.total)}</td>
                 <td>
                   <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                    color: statusColor(r.status), background: statusColor(r.status) + '15',
-                    border: `1px solid ${statusColor(r.status)}40` }}>
+                    color: '#fff', background: statusColor(r.status),
+                    border: `1px solid ${statusColor(r.status)}` }}>
                     {r.status}
                   </span>
                 </td>

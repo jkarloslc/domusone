@@ -214,7 +214,7 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
       </>}
     >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 13 }}>{error}</div>}
+          {error && <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
 
           {/* Datos generales */}
           <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: 12 }}>
@@ -256,7 +256,7 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Línea {i + 1}</span>
                       {detalles.length > 1 && (
-                        <button className="btn-ghost" style={{ padding: '2px 6px', color: '#dc2626' }} onClick={() => removeLinea(i)}>
+                        <button className="btn-ghost" style={{ padding: '2px 6px', color: '#C23B3B' }} onClick={() => removeLinea(i)}>
                           <Trash2 size={12} />
                         </button>
                       )}
@@ -332,14 +332,14 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
                       {d.url_comprobante ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface-800)' }}>
                           {/\.(jpg|jpeg|png|gif|webp)$/i.test(d.url_comprobante)
-                            ? <ImageIcon size={14} style={{ color: '#2563eb', flexShrink: 0 }} />
-                            : <FileText size={14} style={{ color: '#dc2626', flexShrink: 0 }} />}
+                            ? <ImageIcon size={14} style={{ color: '#1C1D21', flexShrink: 0 }} />
+                            : <FileText size={14} style={{ color: '#62666E', flexShrink: 0 }} />}
                           <a href={d.url_comprobante} target="_blank" rel="noreferrer"
                             style={{ fontSize: 12, color: 'var(--blue)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {decodeURIComponent(d.url_comprobante.split('/').pop() ?? 'Ver archivo')}
                           </a>
                           <button type="button" onClick={() => setDet(i, 'url_comprobante', '')}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: 0, flexShrink: 0 }}>
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#C23B3B', padding: 0, flexShrink: 0 }}>
                             <XCircle size={14} />
                           </button>
                         </div>

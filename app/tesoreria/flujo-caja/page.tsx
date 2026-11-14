@@ -28,7 +28,7 @@ type PeriodoRow = {
 type CapturaRow = { concepto: string; id_centro_costo_fk: number; monto_por_pago: number }
 type IngresoRow = { id_centro_costo_fk: number; mes: string; monto_mensual: number }
 
-const CC_COLORS = ['#0E8A6B', '#3374C4', '#C2437A', '#E0A028', '#6B4FA8', '#8A8F98', '#0EA5A0', '#B4552B', '#4C6EF5', '#A3419C']
+const CC_COLORS = ['#267F56', '#33363C', '#B34D72', '#B5761A', '#6B4E79', '#8A8F98', '#178A80', '#A8501F', '#33363C', '#6B4E79']
 const colorDeCC = (idx: number) => CC_COLORS[idx % CC_COLORS.length]
 
 function primerDiaMes(anio: number, mes1a12: number): string {
@@ -198,13 +198,13 @@ export default function FlujoCajaPage() {
                 onChange={e => setPeriodoId(Number(e.target.value))}
                 style={{
                   appearance: 'none', font: 'inherit', fontSize: 13, fontWeight: 600,
-                  padding: '9px 34px 9px 14px', borderRadius: 8, border: '1px solid #d3dce9',
+                  padding: '9px 34px 9px 14px', borderRadius: 8, border: '1px solid #C9CCD3',
                   background: '#fff', color: 'var(--text-primary)', cursor: 'pointer',
                 }}
               >
                 {periodos.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
               </select>
-              <ChevronDown size={14} style={{ position: 'absolute', right: 12, top: 11, pointerEvents: 'none', color: '#7a8aa3' }} />
+              <ChevronDown size={14} style={{ position: 'absolute', right: 12, top: 11, pointerEvents: 'none', color: '#7A7E87' }} />
             </div>
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               {fdate(parseISODateUTC(periodo.fecha_inicio))} – {fdate(parseISODateUTC(periodo.fecha_fin))}
@@ -215,7 +215,7 @@ export default function FlujoCajaPage() {
               </button>
             )}
             {canDelete() && (
-              <button className="btn-ghost" onClick={eliminarPeriodo} style={{ color: '#dc2626', marginLeft: 'auto' }}>
+              <button className="btn-ghost" onClick={eliminarPeriodo} style={{ color: '#C23B3B', marginLeft: 'auto' }}>
                 <Trash2 size={13} /> Archivar periodo
               </button>
             )}
@@ -259,7 +259,7 @@ export default function FlujoCajaPage() {
               </Control>
             </div>
             {puedeEditar && (
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, paddingTop: 14, borderTop: '1px solid #eef1f6' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, paddingTop: 14, borderTop: '1px solid #F4F5F7' }}>
                 <button className="btn-ghost" onClick={vaciarEgresos}>
                   <Eraser size={13} /> Vaciar egresos
                 </button>
@@ -329,15 +329,15 @@ export default function FlujoCajaPage() {
 // ── Estilos compartidos ──────────────────────────────────────
 const inputStyle: React.CSSProperties = {
   width: '100%', font: 'inherit', fontSize: 13, padding: '7px 10px',
-  border: '1px solid #d3dce9', borderRadius: 6, background: '#f7f9fc',
+  border: '1px solid #C9CCD3', borderRadius: 6, background: '#F8F9FA',
 }
-const sectionTitle: React.CSSProperties = { fontSize: 15, margin: '0 0 2px', color: '#1F3864' }
-const sectionCap: React.CSSProperties = { fontSize: 12, color: '#7a8aa3', margin: '0 0 12px' }
+const sectionTitle: React.CSSProperties = { fontSize: 15, margin: '0 0 2px', color: '#26282D' }
+const sectionCap: React.CSSProperties = { fontSize: 12, color: '#7A7E87', margin: '0 0 12px' }
 
 function Control({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label style={{ display: 'block', fontSize: 11, letterSpacing: '.09em', textTransform: 'uppercase', color: '#7a8aa3', fontWeight: 700, marginBottom: 7 }}>
+      <label style={{ display: 'block', fontSize: 11, letterSpacing: '.09em', textTransform: 'uppercase', color: '#7A7E87', fontWeight: 700, marginBottom: 7 }}>
         {label}
       </label>
       {children}
@@ -349,16 +349,16 @@ function Seg<T extends string | number>({ options, value, onChange, disabled }: 
   options: { v: T; l: string }[]; value: T; onChange?: (v: T) => void; disabled?: boolean
 }) {
   return (
-    <div style={{ display: 'flex', border: '1px solid #d3dce9', borderRadius: 6, overflow: 'hidden' }}>
+    <div style={{ display: 'flex', border: '1px solid #C9CCD3', borderRadius: 6, overflow: 'hidden' }}>
       {options.map((o, i) => (
         <button key={String(o.v)} type="button" disabled={disabled}
           onClick={() => onChange?.(o.v)}
           style={{
             flex: 1, appearance: 'none', border: 'none', font: 'inherit', fontSize: 12.5,
             padding: '7px 8px', cursor: disabled ? 'default' : 'pointer', whiteSpace: 'nowrap',
-            borderLeft: i > 0 ? '1px solid #d3dce9' : 'none',
-            background: value === o.v ? '#1F3864' : '#f0f4fa',
-            color: value === o.v ? '#fff' : '#4a5b77',
+            borderLeft: i > 0 ? '1px solid #C9CCD3' : 'none',
+            background: value === o.v ? '#26282D' : '#F4F5F7',
+            color: value === o.v ? '#fff' : '#4A4D54',
             fontWeight: value === o.v ? 700 : 400,
           }}>
           {o.l}
@@ -372,8 +372,8 @@ function Chip({ active, onClick, label, color }: { active: boolean; onClick: () 
   return (
     <button type="button" onClick={onClick} style={{
       appearance: 'none', font: 'inherit', fontSize: 12.5, padding: '6px 13px', borderRadius: 999,
-      cursor: 'pointer', border: '1px solid ' + (active ? '#1F3864' : '#d3dce9'),
-      background: active ? '#1F3864' : '#fff', color: active ? '#fff' : '#4a5b77',
+      cursor: 'pointer', border: '1px solid ' + (active ? '#26282D' : '#C9CCD3'),
+      background: active ? '#26282D' : '#fff', color: active ? '#fff' : '#4A4D54',
       fontWeight: active ? 700 : 400, display: 'flex', alignItems: 'center', gap: 7,
     }}>
       {color && <i style={{ width: 9, height: 9, borderRadius: 2, display: 'block', background: active ? '#fff' : color }} />}
@@ -409,13 +409,13 @@ function MatrizEgresos({ centros, matriz, diasTotal, puedeEditar, dataVersion, p
               const porPago = centros.reduce((a, cc) => a + (matriz[c.id]?.[cc.id] ?? 0), 0)
               const totalPeriodo = totalConcepto(c.id, diasTotal)
               return (
-                <tr key={c.id} style={{ borderBottom: '1px solid #e6ecf4' }}>
+                <tr key={c.id} style={{ borderBottom: '1px solid #E6E8EB' }}>
                   <td style={{ ...tdLeft, minWidth: 200 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
                       <i style={{ width: 9, height: 9, borderRadius: 2, background: GCOLOR[c.grupo], display: 'block' }} />
                       {c.nombre}
                     </div>
-                    <div style={{ fontSize: 11, color: '#7a8aa3' }}>{c.sigla} · {c.calendarioDesc}</div>
+                    <div style={{ fontSize: 11, color: '#7A7E87' }}>{c.sigla} · {c.calendarioDesc}</div>
                   </td>
                   {centros.map(cc => (
                     <td key={cc.id} style={td}>
@@ -478,7 +478,7 @@ function MatrizIngresos({ centros, ingresos, meses, puedeEditar, dataVersion, pe
             {centros.map((cc, i) => {
               const total = meses.reduce((a, m) => a + (ingresos[cc.id]?.[isoOf(m)] ?? 0), 0)
               return (
-                <tr key={cc.id} style={{ borderBottom: '1px solid #e6ecf4' }}>
+                <tr key={cc.id} style={{ borderBottom: '1px solid #E6E8EB' }}>
                   <td style={{ ...tdLeft, minWidth: 180 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
                       <i style={{ width: 9, height: 9, borderRadius: 2, background: colorDeCC(i), display: 'block' }} />
@@ -528,14 +528,14 @@ function MatrizIngresos({ centros, ingresos, meses, puedeEditar, dataVersion, pe
 }
 
 const tblStyle: React.CSSProperties = { width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }
-const th: React.CSSProperties = { padding: '9px 10px', textAlign: 'right', fontSize: 10.5, letterSpacing: '.07em', textTransform: 'uppercase', color: '#7a8aa3', borderBottom: '1.5px solid #1F3864', whiteSpace: 'nowrap' }
+const th: React.CSSProperties = { padding: '9px 10px', textAlign: 'right', fontSize: 10.5, letterSpacing: '.07em', textTransform: 'uppercase', color: '#7A7E87', borderBottom: '1.5px solid #26282D', whiteSpace: 'nowrap' }
 const thLeft: React.CSSProperties = { ...th, textAlign: 'left' }
 const td: React.CSSProperties = { padding: '5px 7px', textAlign: 'right' }
 const tdLeft: React.CSSProperties = { ...td, textAlign: 'left', padding: '8px 10px' }
-const tdTot: React.CSSProperties = { ...td, fontWeight: 700, background: '#f0f4fa' }
+const tdTot: React.CSSProperties = { ...td, fontWeight: 700, background: '#F4F5F7' }
 const cellInput: React.CSSProperties = {
   width: '100%', minWidth: 74, font: 'inherit', fontSize: 12.5, textAlign: 'right',
-  padding: '5px 7px', border: '1px solid #d3dce9', borderRadius: 5, background: '#f7f9fc',
+  padding: '5px 7px', border: '1px solid #C9CCD3', borderRadius: 5, background: '#F8F9FA',
 }
 
 // ── KPIs ──────────────────────────────────────────────────────
@@ -550,12 +550,12 @@ function KpisRow({ kpis, filtroCC, centros }: { kpis: ReturnType<typeof calcular
     { k: 'Ingreso de equilibrio', v: mxn0(kpis.ingresoEquilibrioMensual), n: 'Mensual, para cerrar en cero' },
   ]
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(166px,1fr))', gap: 1, background: '#d3dce9', border: '1px solid #d3dce9', borderRadius: 8, overflow: 'hidden', marginBottom: 26 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(166px,1fr))', gap: 1, background: '#C9CCD3', border: '1px solid #C9CCD3', borderRadius: 8, overflow: 'hidden', marginBottom: 26 }}>
       {cells.map(c => (
-        <div key={c.k} style={{ background: c.tone === 'neg' ? '#f6e6e8' : '#fff', padding: '14px 16px' }}>
-          <div style={{ fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: '#7a8aa3', fontWeight: 700 }}>{c.k}</div>
-          <div style={{ fontSize: 21, fontWeight: 700, marginTop: 5, color: c.tone === 'neg' ? '#b23a48' : c.tone === 'pos' ? '#0e8a6b' : '#152540' }}>{c.v}</div>
-          <div style={{ fontSize: 11.5, color: '#7a8aa3', marginTop: 3 }}>{c.n}</div>
+        <div key={c.k} style={{ background: c.tone === 'neg' ? '#E6E8EB' : '#fff', padding: '14px 16px' }}>
+          <div style={{ fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: '#7A7E87', fontWeight: 700 }}>{c.k}</div>
+          <div style={{ fontSize: 21, fontWeight: 700, marginTop: 5, color: c.tone === 'neg' ? '#A83232' : c.tone === 'pos' ? '#267F56' : '#1C1D21' }}>{c.v}</div>
+          <div style={{ fontSize: 11.5, color: '#7A7E87', marginTop: 3 }}>{c.n}</div>
         </div>
       ))}
     </div>
@@ -588,7 +588,7 @@ function TablaCentrosCosto({ centros, diasTotal, ingresos, meses }: { centros: C
             {filas.map((f, i) => {
               const w = Math.abs(f.res) / maxAbs * 50, left = f.res < 0 ? 50 - w : 50
               return (
-                <tr key={f.cc.id} style={{ borderBottom: '1px solid #e6ecf4' }}>
+                <tr key={f.cc.id} style={{ borderBottom: '1px solid #E6E8EB' }}>
                   <td style={tdLeft}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                       <i style={{ width: 11, height: 11, borderRadius: 2, background: colorDeCC(i), display: 'block' }} />
@@ -597,11 +597,11 @@ function TablaCentrosCosto({ centros, diasTotal, ingresos, meses }: { centros: C
                   </td>
                   <td style={td}>{f.ing ? mxn0(f.ing) : '—'}</td>
                   <td style={td}>{f.eg ? mxn0(f.eg) : '—'}</td>
-                  <td style={{ ...td, color: f.res < 0 ? '#b23a48' : undefined, fontWeight: 700 }}>{(f.res >= 0 ? '+' : '') + mxn0(f.res)}</td>
-                  <td style={{ ...td, color: '#7a8aa3' }}>{tEg ? Math.round(f.eg / tEg * 100) : 0}%</td>
+                  <td style={{ ...td, color: f.res < 0 ? '#A83232' : undefined, fontWeight: 700 }}>{(f.res >= 0 ? '+' : '') + mxn0(f.res)}</td>
+                  <td style={{ ...td, color: '#7A7E87' }}>{tEg ? Math.round(f.eg / tEg * 100) : 0}%</td>
                   <td style={{ ...td, width: 180 }}>
-                    <span style={{ display: 'block', width: '100%', height: 9, background: '#e6ecf4', borderRadius: 2, position: 'relative', overflow: 'hidden', minWidth: 90 }}>
-                      <span style={{ position: 'absolute', top: 0, bottom: 0, left: left + '%', width: w + '%', borderRadius: 2, background: f.res >= 0 ? '#0e8a6b' : '#b23a48' }} />
+                    <span style={{ display: 'block', width: '100%', height: 9, background: '#E6E8EB', borderRadius: 2, position: 'relative', overflow: 'hidden', minWidth: 90 }}>
+                      <span style={{ position: 'absolute', top: 0, bottom: 0, left: left + '%', width: w + '%', borderRadius: 2, background: f.res >= 0 ? '#267F56' : '#A83232' }} />
                     </span>
                   </td>
                 </tr>
@@ -613,7 +613,7 @@ function TablaCentrosCosto({ centros, diasTotal, ingresos, meses }: { centros: C
               <td style={tdLeft}><strong>Consolidado</strong></td>
               <td style={tdTot}>{mxn0(tIng)}</td>
               <td style={tdTot}>{mxn0(tEg)}</td>
-              <td style={{ ...tdTot, color: tIng - tEg < 0 ? '#b23a48' : undefined }}>{(tIng - tEg >= 0 ? '+' : '') + mxn0(tIng - tEg)}</td>
+              <td style={{ ...tdTot, color: tIng - tEg < 0 ? '#A83232' : undefined }}>{(tIng - tEg >= 0 ? '+' : '') + mxn0(tIng - tEg)}</td>
               <td style={tdTot}>100%</td><td style={tdTot} />
             </tr>
           </tfoot>
@@ -627,7 +627,7 @@ function TablaCentrosCosto({ centros, diasTotal, ingresos, meses }: { centros: C
 function ChartSaldo({ dias, hover, setHover }: { dias: DiaCalc[]; hover: number | null; setHover: (i: number | null) => void }) {
   const W = 960, H = 320, M = { t: 18, r: 16, b: 40, l: 84 }
   const iw = W - M.l - M.r, ih = H - M.t - M.b
-  if (!dias.length) return <div style={{ color: '#7a8aa3', fontSize: 13, padding: 20 }}>Sin datos para graficar.</div>
+  if (!dias.length) return <div style={{ color: '#7A7E87', fontSize: 13, padding: 20 }}>Sin datos para graficar.</div>
   const vals = dias.map(d => d.saldo)
   let mx = Math.max(0, ...vals), mn = Math.min(0, ...vals)
   const pad = (mx - mn) * 0.12 || 1e5
@@ -653,7 +653,7 @@ function ChartSaldo({ dias, hover, setHover }: { dias: DiaCalc[]; hover: number 
   const negPts = [`${M.l},${y0}`, ...dias.map((d, i) => `${X(i)},${d.saldo < 0 ? Y(d.saldo) : y0}`), `${X(dias.length - 1)},${y0}`]
   const line = dias.map((d, i) => `${X(i)},${Y(d.saldo)}`).join(' ')
   let mi = 0; dias.forEach((d, i) => { if (d.saldo < dias[mi].saldo) mi = i })
-  const mcolor = dias[mi].saldo < 0 ? '#B23A48' : '#0E8A6B'
+  const mcolor = dias[mi].saldo < 0 ? '#A83232' : '#267F56'
 
   function onMove(e: React.MouseEvent<SVGRectElement>) {
     const r = (e.target as SVGRectElement).ownerSVGElement!.getBoundingClientRect()
@@ -669,47 +669,47 @@ function ChartSaldo({ dias, hover, setHover }: { dias: DiaCalc[]; hover: number 
       <svg viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', width: '100%', minWidth: 660, height: 'auto' }}>
         {ticks.map(v => (
           <g key={v}>
-            <line x1={M.l} y1={Y(v)} x2={W - M.r} y2={Y(v)} stroke="#e6ecf4" strokeWidth={1} />
-            <text x={M.l - 9} y={Y(v) + 4} textAnchor="end" fontSize={11} fill="#7a8aa3">{kFmt(v)}</text>
+            <line x1={M.l} y1={Y(v)} x2={W - M.r} y2={Y(v)} stroke="#E6E8EB" strokeWidth={1} />
+            <text x={M.l - 9} y={Y(v) + 4} textAnchor="end" fontSize={11} fill="#7A7E87">{kFmt(v)}</text>
           </g>
         ))}
         {meses.map((m, k) => (
           <g key={m.i}>
-            {k > 0 && <line x1={X(m.i)} y1={M.t} x2={X(m.i)} y2={M.t + ih} stroke="#d3dce9" strokeWidth={1} strokeDasharray="3 3" />}
-            <text x={X(m.i) + 6} y={M.t + 13} fontSize={10.5} fontWeight="bold" fill="#7a8aa3" letterSpacing="0.06em">{m.label}</text>
+            {k > 0 && <line x1={X(m.i)} y1={M.t} x2={X(m.i)} y2={M.t + ih} stroke="#C9CCD3" strokeWidth={1} strokeDasharray="3 3" />}
+            <text x={X(m.i) + 6} y={M.t + 13} fontSize={10.5} fontWeight="bold" fill="#7A7E87" letterSpacing="0.06em">{m.label}</text>
           </g>
         ))}
-        <polygon points={posPts.join(' ')} fill="#2563A8" fillOpacity={0.13} />
-        <polygon points={negPts.join(' ')} fill="#B23A48" fillOpacity={0.24} />
-        <line x1={M.l} y1={y0} x2={W - M.r} y2={y0} stroke="#4a5b77" strokeWidth={1.5} />
-        <polyline points={line} fill="none" stroke="#2563A8" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+        <polygon points={posPts.join(' ')} fill="#33363C" fillOpacity={0.13} />
+        <polygon points={negPts.join(' ')} fill="#A83232" fillOpacity={0.24} />
+        <line x1={M.l} y1={y0} x2={W - M.r} y2={y0} stroke="#4A4D54" strokeWidth={1.5} />
+        <polyline points={line} fill="none" stroke="#33363C" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         <circle cx={X(mi)} cy={Y(dias[mi].saldo)} r={5} fill={mcolor} stroke="#fff" strokeWidth={2} />
         <text x={X(mi) > M.l + iw * 0.6 ? X(mi) - 11 : X(mi) + 11} y={Math.min(Math.max(Y(dias[mi].saldo) - 13, M.t + 30), M.t + ih - 6)}
           textAnchor={X(mi) > M.l + iw * 0.6 ? 'end' : 'start'} fontSize={11.5} fontWeight="bold" fill={mcolor}>
           mínimo {mxn0(dias[mi].saldo)} · {fdate(dias[mi].ts)}
         </text>
         {dias.filter((_, i) => i % 7 === 0).map((d, k) => (
-          <text key={k} x={X(dias.indexOf(d))} y={M.t + ih + 18} textAnchor="middle" fontSize={10} fill="#7a8aa3">{new Date(d.ts).getUTCDate()}</text>
+          <text key={k} x={X(dias.indexOf(d))} y={M.t + ih + 18} textAnchor="middle" fontSize={10} fill="#7A7E87">{new Date(d.ts).getUTCDate()}</text>
         ))}
-        {hd && <line x1={X(hover!)} y1={M.t} x2={X(hover!)} y2={M.t + ih} stroke="#7a8aa3" strokeWidth={1} strokeDasharray="3 3" />}
-        {hd && <circle cx={X(hover!)} cy={Y(hd.saldo)} r={5} fill="#2563A8" stroke="#fff" strokeWidth={2} />}
+        {hd && <line x1={X(hover!)} y1={M.t} x2={X(hover!)} y2={M.t + ih} stroke="#7A7E87" strokeWidth={1} strokeDasharray="3 3" />}
+        {hd && <circle cx={X(hover!)} cy={Y(hd.saldo)} r={5} fill="#33363C" stroke="#fff" strokeWidth={2} />}
         <rect x={M.l} y={M.t} width={iw} height={ih} fill="transparent" style={{ cursor: 'crosshair' }}
           onMouseMove={onMove} onMouseLeave={() => setHover(null)} />
       </svg>
       {hd && (
         <div style={{
           position: 'absolute', pointerEvents: 'none', left: `${(X(hover!) / W) * 100}%`, top: 8,
-          transform: 'translateX(-50%)', background: '#fff', border: '1px solid #d3dce9', borderRadius: 6,
-          padding: '8px 10px', fontSize: 12, boxShadow: '0 6px 20px rgba(31,56,100,.12)', minWidth: 170, zIndex: 5,
+          transform: 'translateX(-50%)', background: '#fff', border: '1px solid #C9CCD3', borderRadius: 6,
+          padding: '8px 10px', fontSize: 12, boxShadow: '0 6px 20px rgba(28,29,33,.12)', minWidth: 170, zIndex: 5,
         }}>
-          <div style={{ fontWeight: 700, color: '#1F3864', marginBottom: 5 }}>{flong(hd.ts)}</div>
+          <div style={{ fontWeight: 700, color: '#26282D', marginBottom: 5 }}>{flong(hd.ts)}</div>
           {hd.ingreso > 0 && <Row l="Ingreso" v={mxn0(hd.ingreso)} />}
           {Object.entries(hd.detalleConcepto).map(([c, v]) => (
             <Row key={c} l={CPT[c as ConceptoId].nombre} v={'−' + mxn0(v as number)} />
           ))}
           {!hd.ingreso && !Object.keys(hd.detalleConcepto).length && <Row l="Sin movimientos" v="" />}
-          <hr style={{ border: 0, borderTop: '1px solid #e6ecf4', margin: '5px 0' }} />
-          <Row l="Saldo" v={mxn0(hd.saldo)} strong color={hd.saldo < 0 ? '#B23A48' : undefined} />
+          <hr style={{ border: 0, borderTop: '1px solid #E6E8EB', margin: '5px 0' }} />
+          <Row l="Saldo" v={mxn0(hd.saldo)} strong color={hd.saldo < 0 ? '#A83232' : undefined} />
         </div>
       )}
     </div>
@@ -723,7 +723,7 @@ function ChartEgresos({ semanas, criterio, centros, hover, setHover }: {
 }) {
   const w = 960, h = 300, m = { t: 18, r: 16, b: 52, l: 84 }
   const iw = w - m.l - m.r, ih = h - m.t - m.b
-  if (!semanas.length) return <div style={{ color: '#7a8aa3', fontSize: 13, padding: 20 }}>Sin datos para graficar.</div>
+  if (!semanas.length) return <div style={{ color: '#7A7E87', fontSize: 13, padding: 20 }}>Sin datos para graficar.</div>
   const series = criterio === 'cc'
     ? centros.map((cc, i) => ({ id: cc.id, nombre: cc.nombre, color: colorDeCC(i) }))
     : GRUPOS.map(g => ({ id: g.id, nombre: g.nombre, color: g.color }))
@@ -753,8 +753,8 @@ function ChartEgresos({ semanas, criterio, centros, hover, setHover }: {
       <svg viewBox={`0 0 ${w} ${h}`} style={{ display: 'block', width: '100%', minWidth: 660, height: 'auto' }}>
         {ticks.map(v => (
           <g key={v}>
-            <line x1={m.l} y1={Y(v)} x2={w - m.r} y2={Y(v)} stroke="#e6ecf4" strokeWidth={1} />
-            <text x={m.l - 9} y={Y(v) + 4} textAnchor="end" fontSize={11} fill="#7a8aa3">{kFmt(v)}</text>
+            <line x1={m.l} y1={Y(v)} x2={w - m.r} y2={Y(v)} stroke="#E6E8EB" strokeWidth={1} />
+            <text x={m.l - 9} y={Y(v) + 4} textAnchor="end" fontSize={11} fill="#7A7E87">{kFmt(v)}</text>
           </g>
         ))}
         {semanas.map((s, i) => {
@@ -769,13 +769,13 @@ function ChartEgresos({ semanas, criterio, centros, hover, setHover }: {
                 acc += val
                 return <rect key={g.id} x={x0} y={y1} width={bw} height={hh} rx={2} fill={g.color} />
               })}
-              {s.egreso > 0 && <text x={cx} y={Y(s.egreso) - 7} textAnchor="middle" fontSize={10.5} fontWeight="bold" fill="#4a5b77">{kFmt(s.egreso)}</text>}
-              <text x={cx} y={m.t + ih + 16} textAnchor="middle" fontSize={10} fill="#7a8aa3">{new Date(s.inicio).getUTCDate()}</text>
-              <text x={cx} y={m.t + ih + 28} textAnchor="middle" fontSize={9.5} fill="#7a8aa3">{MESES[new Date(s.inicio).getUTCMonth()]}</text>
+              {s.egreso > 0 && <text x={cx} y={Y(s.egreso) - 7} textAnchor="middle" fontSize={10.5} fontWeight="bold" fill="#4A4D54">{kFmt(s.egreso)}</text>}
+              <text x={cx} y={m.t + ih + 16} textAnchor="middle" fontSize={10} fill="#7A7E87">{new Date(s.inicio).getUTCDate()}</text>
+              <text x={cx} y={m.t + ih + 28} textAnchor="middle" fontSize={9.5} fill="#7A7E87">{MESES[new Date(s.inicio).getUTCMonth()]}</text>
             </g>
           )
         })}
-        <line x1={m.l} y1={m.t + ih} x2={w - m.r} y2={m.t + ih} stroke="#4a5b77" strokeWidth={1.5} />
+        <line x1={m.l} y1={m.t + ih} x2={w - m.r} y2={m.t + ih} stroke="#4A4D54" strokeWidth={1.5} />
         <rect x={m.l} y={m.t} width={iw} height={ih} fill="transparent" style={{ cursor: 'crosshair' }}
           onMouseMove={onMove} onMouseLeave={() => setHover(null)} />
       </svg>
@@ -783,24 +783,24 @@ function ChartEgresos({ semanas, criterio, centros, hover, setHover }: {
         <div style={{
           position: 'absolute', pointerEvents: 'none',
           left: `${((m.l + gap * hover! + gap / 2) / w) * 100}%`, top: 8, transform: 'translateX(-50%)',
-          background: '#fff', border: '1px solid #d3dce9', borderRadius: 6, padding: '8px 10px', fontSize: 12,
-          boxShadow: '0 6px 20px rgba(31,56,100,.12)', minWidth: 170, zIndex: 5,
+          background: '#fff', border: '1px solid #C9CCD3', borderRadius: 6, padding: '8px 10px', fontSize: 12,
+          boxShadow: '0 6px 20px rgba(28,29,33,.12)', minWidth: 170, zIndex: 5,
         }}>
-          <div style={{ fontWeight: 700, color: '#1F3864', marginBottom: 5 }}>{fdate(hs.inicio)} – {fdate(hs.fin)}</div>
+          <div style={{ fontWeight: 700, color: '#26282D', marginBottom: 5 }}>{fdate(hs.inicio)} – {fdate(hs.fin)}</div>
           {series.filter(g => valorSerie(hs, g.id) > 0).map(g => (
             <Row key={g.id} l={g.nombre} v={mxn0(valorSerie(hs, g.id))} />
           ))}
-          <hr style={{ border: 0, borderTop: '1px solid #e6ecf4', margin: '5px 0' }} />
+          <hr style={{ border: 0, borderTop: '1px solid #E6E8EB', margin: '5px 0' }} />
           <Row l="Egresos" v={mxn0(hs.egreso)} />
           <Row l="Ingresos" v={mxn0(hs.ingreso)} />
-          <Row l="Saldo al cierre" v={mxn0(hs.saldo)} strong color={hs.saldo < 0 ? '#B23A48' : undefined} />
+          <Row l="Saldo al cierre" v={mxn0(hs.saldo)} strong color={hs.saldo < 0 ? '#A83232' : undefined} />
         </div>
       )}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 18px', marginTop: 10, paddingTop: 10, borderTop: '1px solid #e6ecf4' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 18px', marginTop: 10, paddingTop: 10, borderTop: '1px solid #E6E8EB' }}>
         {series.map(g => {
           const tot = semanas.reduce((a, s) => a + valorSerie(s, g.id), 0)
           return (
-            <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#4a5b77', opacity: tot ? 1 : 0.45 }}>
+            <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#4A4D54', opacity: tot ? 1 : 0.45 }}>
               <i style={{ width: 11, height: 11, borderRadius: 2, display: 'block', background: g.color }} />
               {g.nombre}{!tot && ' · $0'}
             </div>
@@ -840,12 +840,12 @@ function TablaSemanal({ semanas }: { semanas: SemanaCalc[] }) {
               ti += s.ingreso; te += s.egreso
               const neto = s.ingreso - s.egreso
               return (
-                <tr key={i} style={{ borderBottom: '1px solid #e6ecf4', background: top3.has(i) && s.egreso ? '#f0f4fa' : undefined }}>
+                <tr key={i} style={{ borderBottom: '1px solid #E6E8EB', background: top3.has(i) && s.egreso ? '#F4F5F7' : undefined }}>
                   <td style={tdLeft}>{fdate(s.inicio)} – {fdate(s.fin)}</td>
                   <td style={td}>{s.ingreso ? mxn0(s.ingreso) : '—'}</td>
                   <td style={td}>{s.egreso ? mxn0(s.egreso) : '—'}</td>
-                  <td style={{ ...td, color: neto < 0 ? '#b23a48' : undefined }}>{(neto >= 0 ? '+' : '') + mxn0(neto)}</td>
-                  <td style={{ ...td, color: s.saldo < 0 ? '#b23a48' : undefined }}>{mxn0(s.saldo)}</td>
+                  <td style={{ ...td, color: neto < 0 ? '#A83232' : undefined }}>{(neto >= 0 ? '+' : '') + mxn0(neto)}</td>
+                  <td style={{ ...td, color: s.saldo < 0 ? '#A83232' : undefined }}>{mxn0(s.saldo)}</td>
                 </tr>
               )
             })}
@@ -854,8 +854,8 @@ function TablaSemanal({ semanas }: { semanas: SemanaCalc[] }) {
             <tr>
               <td style={tdLeft}><strong>Periodo</strong></td>
               <td style={tdTot}>{mxn0(ti)}</td><td style={tdTot}>{mxn0(te)}</td>
-              <td style={{ ...tdTot, color: ti - te < 0 ? '#b23a48' : undefined }}>{(ti - te >= 0 ? '+' : '') + mxn0(ti - te)}</td>
-              <td style={{ ...tdTot, color: semanas[semanas.length - 1].saldo < 0 ? '#b23a48' : undefined }}>{mxn0(semanas[semanas.length - 1].saldo)}</td>
+              <td style={{ ...tdTot, color: ti - te < 0 ? '#A83232' : undefined }}>{(ti - te >= 0 ? '+' : '') + mxn0(ti - te)}</td>
+              <td style={{ ...tdTot, color: semanas[semanas.length - 1].saldo < 0 ? '#A83232' : undefined }}>{mxn0(semanas[semanas.length - 1].saldo)}</td>
             </tr>
           </tfoot>
         </table>
@@ -886,13 +886,13 @@ function ListaCompromisos({ dias }: { dias: DiaCalc[] }) {
             const unit = Math.round((tot[c] ?? 0) / f.length)
             const cuando = f.length > 4 ? `${f.length} pagos de ${mxn0(unit)}` : f.map(fdate).join(' · ')
             return (
-              <li key={c} style={{ display: 'grid', gridTemplateColumns: '11px 1fr auto', gap: 10, alignItems: 'baseline', padding: '8px 0', borderBottom: '1px solid #e6ecf4', fontSize: 13 }}>
+              <li key={c} style={{ display: 'grid', gridTemplateColumns: '11px 1fr auto', gap: 10, alignItems: 'baseline', padding: '8px 0', borderBottom: '1px solid #E6E8EB', fontSize: 13 }}>
                 <i style={{ width: 11, height: 11, borderRadius: 2, background: GCOLOR[CPT[c].grupo], alignSelf: 'center' }} />
-                <span>{CPT[c].nombre}<span style={{ display: 'block', fontSize: 11.5, color: '#7a8aa3' }}>{cuando}</span></span>
+                <span>{CPT[c].nombre}<span style={{ display: 'block', fontSize: 11.5, color: '#7A7E87' }}>{cuando}</span></span>
                 <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}>{mxn0(tot[c] ?? 0)}</span>
               </li>
             )
-          }) : <li style={{ padding: '14px 0', color: '#7a8aa3', fontSize: 13 }}>Sin egresos capturados en este filtro.</li>}
+          }) : <li style={{ padding: '14px 0', color: '#7A7E87', fontSize: 13 }}>Sin egresos capturados en este filtro.</li>}
         </ul>
       </div>
     </div>
@@ -910,13 +910,13 @@ function ListaPicos({ dias }: { dias: DiaCalc[] }) {
           {picos.length ? picos.map(d => {
             const cs = (Object.keys(d.detalleConcepto) as ConceptoId[]).sort((a, b) => (d.detalleConcepto[b] ?? 0) - (d.detalleConcepto[a] ?? 0))
             return (
-              <li key={d.ts} style={{ display: 'grid', gridTemplateColumns: '11px 1fr auto', gap: 10, alignItems: 'baseline', padding: '8px 0', borderBottom: '1px solid #e6ecf4', fontSize: 13 }}>
+              <li key={d.ts} style={{ display: 'grid', gridTemplateColumns: '11px 1fr auto', gap: 10, alignItems: 'baseline', padding: '8px 0', borderBottom: '1px solid #E6E8EB', fontSize: 13 }}>
                 <i style={{ width: 11, height: 11, borderRadius: 2, background: GCOLOR[CPT[cs[0]].grupo], alignSelf: 'center' }} />
-                <span>{flong(d.ts)}<span style={{ display: 'block', fontSize: 11.5, color: '#7a8aa3' }}>{cs.map(c => CPT[c].nombre).join(' + ')}</span></span>
+                <span>{flong(d.ts)}<span style={{ display: 'block', fontSize: 11.5, color: '#7A7E87' }}>{cs.map(c => CPT[c].nombre).join(' + ')}</span></span>
                 <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}>{mxn0(d.egreso)}</span>
               </li>
             )
-          }) : <li style={{ padding: '14px 0', color: '#7a8aa3', fontSize: 13 }}>Sin egresos capturados en este filtro.</li>}
+          }) : <li style={{ padding: '14px 0', color: '#7A7E87', fontSize: 13 }}>Sin egresos capturados en este filtro.</li>}
         </ul>
       </div>
     </div>
@@ -931,7 +931,7 @@ function Narrativa({ dias, semanas, kpis, filtroCC, centros, matriz }: {
   const alcance = filtroCC === 'all' ? 'el consolidado' : (centros.find(c => c.id === filtroCC)?.nombre ?? '')
   if (!kpis.egreso && !kpis.ingreso) {
     return (
-      <div className="card" style={{ borderLeft: '3px solid #D4A574', padding: '14px 16px', fontSize: 13, color: '#4a5b77' }}>
+      <div className="card" style={{ borderLeft: '3px solid #D4A574', padding: '14px 16px', fontSize: 13, color: '#4A4D54' }}>
         <strong>Sin datos en este filtro</strong>
         <ul style={{ margin: '8px 0 0', paddingLeft: 18 }}>
           <li>No hay montos capturados para {alcance}. Escribe los importes en la matriz de arriba.</li>
@@ -957,8 +957,8 @@ function Narrativa({ dias, semanas, kpis, filtroCC, centros, matriz }: {
   const fds = dias.filter(d => d.egreso > 0 && ((new Date(d.ts).getUTCDay() + 6) % 7) >= 5)
   if (fds.length) li.push(`${fds.length} fechas de pago caen en fin de semana (${fds.map(d => flong(d.ts)).join(', ')}): la transferencia debe quedar fondeada el día hábil previo.`)
   return (
-    <div className="card" style={{ borderLeft: '3px solid #D4A574', padding: '14px 16px', fontSize: 13, color: '#4a5b77', marginBottom: 20 }}>
-      <strong style={{ color: '#152540' }}>Cómo se lee este escenario</strong>
+    <div className="card" style={{ borderLeft: '3px solid #D4A574', padding: '14px 16px', fontSize: 13, color: '#4A4D54', marginBottom: 20 }}>
+      <strong style={{ color: '#1C1D21' }}>Cómo se lee este escenario</strong>
       <ul style={{ margin: '8px 0 0', paddingLeft: 18 }}>
         {li.map((t, i) => <li key={i} style={{ marginBottom: 5 }}>{t}</li>)}
       </ul>
@@ -1064,13 +1064,13 @@ function ModalPeriodo({ periodos, onClose, onCreado }: {
               <option value="">No copiar — empezar en blanco</option>
               {periodos.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
             </select>
-            <p style={{ fontSize: 11.5, color: '#7a8aa3', marginTop: 5 }}>
+            <p style={{ fontSize: 11.5, color: '#7A7E87', marginTop: 5 }}>
               Copia los montos por pago y los ingresos mensuales del periodo elegido (los meses se acomodan por posición relativa).
             </p>
           </div>
         )}
         {error && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', color: '#b23a48', fontSize: 12.5 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', color: '#A83232', fontSize: 12.5 }}>
             <AlertTriangle size={14} /> {error}
           </div>
         )}
@@ -1078,4 +1078,4 @@ function ModalPeriodo({ periodos, onClose, onCreado }: {
     </ModalShell>
   )
 }
-const lbl: React.CSSProperties = { display: 'block', fontSize: 11, letterSpacing: '.05em', textTransform: 'uppercase', color: '#7a8aa3', fontWeight: 700, marginBottom: 6 }
+const lbl: React.CSSProperties = { display: 'block', fontSize: 11, letterSpacing: '.05em', textTransform: 'uppercase', color: '#7A7E87', fontWeight: 700, marginBottom: 6 }

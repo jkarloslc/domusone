@@ -79,7 +79,7 @@ export default function ReporteVisitantes() {
               {lotes.map((l: any) => (
                 <button key={l.id} onClick={() => selectLote(l)}
                   style={{ display: 'flex', width: '100%', padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--blue)', fontSize: 14, fontWeight: 600 }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                   {l.cve_lote ?? `#${l.lote}`}
                 </button>
@@ -131,7 +131,7 @@ export default function ReporteVisitantes() {
                 </td>
                 <td style={{ fontSize: 12 }}>{r.tipo_pase ?? '—'}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{fmtFecha(r.vigencia_desde)}</td>
-                <td style={{ fontSize: 12, color: r.vigencia_hasta ? '#15803d' : 'var(--text-muted)' }}>{fmtFecha(r.vigencia_hasta)}</td>
+                <td style={{ fontSize: 12, color: r.vigencia_hasta ? '#1F7A50' : 'var(--text-muted)' }}>{fmtFecha(r.vigencia_hasta)}</td>
               </tr>
             )})}
           </tbody>

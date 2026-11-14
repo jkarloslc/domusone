@@ -15,14 +15,14 @@ type StatCat   = { id: number; nombre: string; count: number }
 
 // Paleta de colores para categorías (cicla si hay más de 8)
 const CAT_COLORS = [
-  { color: '#2563eb', bg: '#eff6ff' },
-  { color: '#7c3aed', bg: '#f5f3ff' },
-  { color: '#0891b2', bg: '#ecfeff' },
-  { color: '#059669', bg: '#ecfdf5' },
-  { color: '#d97706', bg: '#fffbeb' },
-  { color: '#dc2626', bg: '#fef2f2' },
-  { color: '#64748b', bg: '#f8fafc' },
-  { color: '#c026d3', bg: '#fdf4ff' },
+  { color: '#1C1D21', bg: '#F4F5F7' },
+  { color: '#6B4E79', bg: '#F4F5F7' },
+  { color: '#32789A', bg: '#F4F5F7' },
+  { color: '#267F56', bg: '#F4F5F7' },
+  { color: '#B5761A', bg: '#F4F5F7' },
+  { color: '#C23B3B', bg: '#F4F5F7' },
+  { color: '#62666E', bg: '#F8F9FA' },
+  { color: '#8E739B', bg: '#F4F5F7' },
 ]
 
 export default function MiembrosPage() {
@@ -225,19 +225,19 @@ export default function MiembrosPage() {
       {/* Stats — status */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
         {[
-          { label: 'Total socios', value: stats.total,    icon: Users,        color: 'var(--blue)', bg: '#eff6ff' },
-          { label: 'Activos',      value: stats.activos,  icon: CheckCircle,  color: '#16a34a',     bg: '#f0fdf4' },
-          { label: 'Vencidos',     value: stats.vencidos, icon: AlertCircle,  color: '#d97706',     bg: '#fffbeb' },
-          { label: 'Inactivos',    value: stats.inactivos,icon: XCircle,      color: '#64748b',     bg: '#f8fafc' },
+          { label: 'Total socios', value: stats.total,    icon: Users,        color: 'var(--blue)', bg: '#F4F5F7' },
+          { label: 'Activos',      value: stats.activos,  icon: CheckCircle,  color: '#267F56',     bg: '#F4F5F7' },
+          { label: 'Vencidos',     value: stats.vencidos, icon: AlertCircle,  color: '#B5761A',     bg: '#F4F5F7' },
+          { label: 'Inactivos',    value: stats.inactivos,icon: XCircle,      color: '#62666E',     bg: '#F8F9FA' },
         ].map(card => {
           const Icon = card.icon
           return (
-            <div key={card.label} className="card" style={{ flex: '1 1 130px', maxWidth: 190, padding: '14px 18px', background: card.bg, border: `1px solid ${card.color}22` }}>
+            <div key={card.label} className="card" style={{ flex: '1 1 130px', maxWidth: 190, padding: '14px 18px', background: '#fff', border: '1px solid #E6E8EB' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <Icon size={14} style={{ color: card.color }} />
                 <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{card.label}</span>
               </div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: card.color, lineHeight: 1 }}>{card.value}</div>
+              <div style={{ fontSize: 28, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)', lineHeight: 1 }}>{card.value}</div>
             </div>
           )
         })}
@@ -246,8 +246,8 @@ export default function MiembrosPage() {
       {/* Stats — por categoría (grid compacto) */}
       {statsCat.length > 0 && (
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-            Por categoría {filtroCat !== '' && <span style={{ color: '#2563eb', cursor: 'pointer', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }} onClick={() => setFiltroCat('')}>· limpiar filtro ×</span>}
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#7A7E87', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+            Por categoría {filtroCat !== '' && <span style={{ color: '#1C1D21', cursor: 'pointer', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }} onClick={() => setFiltroCat('')}>· limpiar filtro ×</span>}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 8 }}>
             {statsCat.map((cat, idx) => {
@@ -260,15 +260,15 @@ export default function MiembrosPage() {
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
-                    border: `1.5px solid ${activo ? palette.color : palette.color + '33'}`,
-                    background: activo ? palette.bg : '#fafafa',
+                    border: `1.5px solid ${activo ? '#19D3C5' : '#E6E8EB'}`,
+                    background: activo ? 'rgba(25,211,197,0.10)' : '#fff',
                     transition: 'all 0.15s', outline: 'none', textAlign: 'left',
-                    boxShadow: activo ? `0 0 0 2px ${palette.color}22` : 'none',
+                    boxShadow: 'none',
                   }}>
-                  <div style={{ fontSize: 11, color: activo ? palette.color : '#64748b', fontWeight: activo ? 600 : 400, lineHeight: 1.3, flex: 1, marginRight: 6 }}>
+                  <div style={{ fontSize: 11, color: activo ? '#1C1D21' : '#62666E', fontWeight: activo ? 600 : 400, lineHeight: 1.3, flex: 1, marginRight: 6 }}>
                     {cat.nombre}
                   </div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: palette.color, lineHeight: 1, flexShrink: 0 }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: '#1C1D21', lineHeight: 1, flexShrink: 0 }}>
                     {cat.count}
                   </div>
                 </button>
@@ -312,14 +312,14 @@ export default function MiembrosPage() {
         {/* Filtro cobranza */}
         <div style={{ display: 'flex', gap: 4 }}>
           {([
-            { key: 'todos',     label: 'Todos',        color: '#64748b', bg: '#f8fafc', activeBg: '#f1f5f9',  activeBorder: '#94a3b8' },
-            { key: 'adeudo',    label: 'Con adeudo',   color: '#dc2626', bg: '#fef2f2', activeBg: '#fee2e2',  activeBorder: '#fca5a5' },
-            { key: 'corriente', label: 'Al corriente', color: '#15803d', bg: '#f0fdf4', activeBg: '#dcfce7',  activeBorder: '#86efac' },
+            { key: 'todos',     label: 'Todos',        color: '#1C1D21', bg: '#F8F9FA', activeBg: '#E6E8EB',  activeBorder: '#1C1D21' },
+            { key: 'adeudo',    label: 'Con adeudo',   color: '#C23B3B', bg: '#F4F5F7', activeBg: '#E6E8EB',  activeBorder: '#C9CCD3' },
+            { key: 'corriente', label: 'Al corriente', color: '#1F7A50', bg: '#F4F5F7', activeBg: '#E6E8EB',  activeBorder: '#C9CCD3' },
           ] as const).map(opt => {
             const active = filtroCobranza === opt.key
             return (
               <button key={opt.key} onClick={() => setFiltroCobranza(opt.key)}
-                style={{ padding: '7px 12px', fontSize: 12, fontWeight: active ? 700 : 500, borderRadius: 8, cursor: 'pointer', border: `1px solid ${active ? opt.activeBorder : 'var(--border)'}`, background: active ? opt.activeBg : '#fff', color: active ? opt.color : 'var(--text-muted)', whiteSpace: 'nowrap', transition: 'all 0.15s' }}>
+                style={{ padding: '7px 12px', fontSize: 12, fontWeight: active ? 700 : 500, borderRadius: 8, cursor: 'pointer', border: `1px solid ${active ? opt.color : 'var(--border)'}`, background: active ? opt.color : '#fff', color: active ? '#fff' : 'var(--text-muted)', whiteSpace: 'nowrap', transition: 'all 0.15s' }}>
                 {opt.label}
               </button>
             )
@@ -367,7 +367,7 @@ export default function MiembrosPage() {
                   <tr key={s.id} style={{ borderBottom: '1px solid var(--border)', opacity: isDel ? 0.4 : 1, transition: 'background 0.1s' }}
                     onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)'}
                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono, monospace)', fontSize: 12 }}>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>
                       {s.numero_socio ?? '—'}
                     </td>
                     <td style={{ padding: '10px 14px', fontWeight: 500, color: 'var(--text-primary)' }}>
@@ -378,18 +378,18 @@ export default function MiembrosPage() {
                       {s.cat_categorias_socios?.nombre
                         ? <span style={{
                             fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                            background: catPalette ? catPalette.bg : '#f1f5f9',
-                            color: catPalette ? catPalette.color : '#64748b',
+                            background: '#E6E8EB',
+                            color: '#1C1D21',
                           }}>
                             {s.cat_categorias_socios.nombre}
                           </span>
                         : <span style={{ color: 'var(--text-muted)' }}>—</span>
                       }
                     </td>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono, monospace)', fontSize: 12 }}>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>
                       {s.numero_tarjeta ?? '—'}
                     </td>
-                    <td style={{ padding: '10px 14px', color: status === 'vencido' ? '#dc2626' : 'var(--text-secondary)', fontSize: 12 }}>
+                    <td style={{ padding: '10px 14px', color: status === 'vencido' ? '#C23B3B' : 'var(--text-secondary)', fontSize: 12 }}>
                       {s.fecha_vencimiento
                         ? new Date(s.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
                         : '—'}
@@ -399,8 +399,8 @@ export default function MiembrosPage() {
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       {tieneAdeudo
-                        ? <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', whiteSpace: 'nowrap' }}>Con adeudo</span>
-                        : <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', whiteSpace: 'nowrap' }}>Al corriente</span>
+                        ? <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: '#C23B3B', color: '#fff', border: '1px solid #C23B3B', whiteSpace: 'nowrap' }}>Con adeudo</span>
+                        : <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: '#1F7A50', color: '#fff', border: '1px solid #1F7A50', whiteSpace: 'nowrap' }}>Al corriente</span>
                       }
                     </td>
                     <td style={{ padding: '10px 14px' }}>
@@ -414,7 +414,7 @@ export default function MiembrosPage() {
                           </button>
                         )}
                         {puedeEliminar && (
-                          <button className="btn-ghost" style={{ padding: '4px 8px', color: '#dc2626' }} title="Eliminar" onClick={() => handleDelete(s)} disabled={isDel}>
+                          <button className="btn-ghost" style={{ padding: '4px 8px', color: '#C23B3B' }} title="Eliminar" onClick={() => handleDelete(s)} disabled={isDel}>
                             <Trash2 size={13} />
                           </button>
                         )}

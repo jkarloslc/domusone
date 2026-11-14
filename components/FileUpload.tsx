@@ -61,13 +61,13 @@ export default function FileUpload({ value, onChange, accept, folder, label, pre
       {value && (
         <div style={{
           marginBottom: 8, padding: '10px 12px',
-          background: '#f8fafc', border: '1px solid #e2e8f0',
+          background: '#F8F9FA', border: '1px solid #E6E8EB',
           borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10
         }}>
           {preview && isImage(value) ? (
             <img src={value} alt="preview" style={{ height: 60, maxWidth: 120, objectFit: 'cover', borderRadius: 5 }} />
           ) : (
-            <div style={{ width: 36, height: 36, background: '#dbeafe', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 36, height: 36, background: '#E6E8EB', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               {isImage(value) ? <Image size={16} style={{ color: 'var(--blue)' }} /> : <FileText size={16} style={{ color: 'var(--blue)' }} />}
             </div>
           )}
@@ -80,7 +80,7 @@ export default function FileUpload({ value, onChange, accept, folder, label, pre
             <a href={value} target="_blank" rel="noopener noreferrer" className="btn-ghost" style={{ padding: '4px 8px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <ExternalLink size={11} /> Ver
             </a>
-            <button className="btn-ghost" onClick={handleRemove} style={{ padding: '4px 8px', fontSize: 11, color: '#dc2626' }}>
+            <button className="btn-ghost" onClick={handleRemove} style={{ padding: '4px 8px', fontSize: 11, color: '#C23B3B' }}>
               <X size={11} /> Quitar
             </button>
           </div>
@@ -93,8 +93,8 @@ export default function FileUpload({ value, onChange, accept, folder, label, pre
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,
           padding: '7px 14px', borderRadius: 7, fontSize: 12,
-          border: '1px dashed #94a3b8',
-          background: uploading ? '#f8fafc' : '#fff',
+          border: '1px dashed #7A7E87',
+          background: uploading ? '#F8F9FA' : '#fff',
           color: uploading ? 'var(--text-muted)' : 'var(--blue)',
           fontFamily: 'var(--font-body)', fontWeight: 500,
           transition: 'all 0.15s',
@@ -106,7 +106,7 @@ export default function FileUpload({ value, onChange, accept, folder, label, pre
         </div>
       </label>
 
-      {error && <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4 }}>{error}</div>}
+      {error && <div style={{ fontSize: 11, color: '#C23B3B', marginTop: 4 }}>{error}</div>}
     </div>
   )
 }

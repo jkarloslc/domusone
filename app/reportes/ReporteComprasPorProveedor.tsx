@@ -18,13 +18,13 @@ type ProvGroup = {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  Borrador:         '#d97706',
-  'Pendiente Auth': '#7c3aed',
-  Autorizada:       '#2563eb',
-  'Enviada al Prov':'#0891b2',
-  'Recibida Parcial':'#059669',
-  Cerrada:          '#15803d',
-  Cancelada:        '#dc2626',
+  Borrador:         '#B5761A',
+  'Pendiente Auth': '#6B4E79',
+  Autorizada:       '#1C1D21',
+  'Enviada al Prov':'#32789A',
+  'Recibida Parcial':'#267F56',
+  Cerrada:          '#1F7A50',
+  Cancelada:        '#C23B3B',
 }
 
 export default function ReporteComprasPorProveedor() {
@@ -146,7 +146,7 @@ export default function ReporteComprasPorProveedor() {
         <div id="reporte-print-area" className="card" style={{ overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+              <tr style={{ background: '#F8F9FA', borderBottom: '2px solid #E6E8EB' }}>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Proveedor / Folio</th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Centro de Costo</th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Fecha</th>
@@ -160,7 +160,7 @@ export default function ReporteComprasPorProveedor() {
                   {/* Fila proveedor */}
                   <tr key={`prov-${g.provId}`}
                     onClick={() => toggle(g.provId)}
-                    style={{ background: '#f1f5f9', cursor: 'pointer', borderBottom: '1px solid #e2e8f0' }}>
+                    style={{ background: '#F4F5F7', cursor: 'pointer', borderBottom: '1px solid #E6E8EB' }}>
                     <td style={{ padding: '10px 14px', fontWeight: 700, color: 'var(--text-primary)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         {expanded.has(g.provId)
@@ -179,8 +179,8 @@ export default function ReporteComprasPorProveedor() {
                   </tr>
                   {/* Detalle OCs */}
                   {expanded.has(g.provId) && g.ocs.map(oc => (
-                    <tr key={`oc-${oc.id}`} style={{ borderBottom: '1px solid #f1f5f9', background: '#fff' }}>
-                      <td style={{ padding: '8px 14px 8px 38px', fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)' }}>
+                    <tr key={`oc-${oc.id}`} style={{ borderBottom: '1px solid #F4F5F7', background: '#fff' }}>
+                      <td style={{ padding: '8px 14px 8px 38px', fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)' }}>
                         {oc.folio}
                       </td>
                       <td style={{ padding: '8px 14px', fontSize: 12, color: 'var(--text-secondary)' }}>
@@ -192,9 +192,9 @@ export default function ReporteComprasPorProveedor() {
                       <td style={{ padding: '8px 14px' }}>
                         <span style={{
                           fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                          background: (STATUS_COLOR[oc.status] ?? '#64748b') + '18',
-                          color: STATUS_COLOR[oc.status] ?? '#64748b',
-                          border: `1px solid ${(STATUS_COLOR[oc.status] ?? '#64748b')}40`,
+                          background: (STATUS_COLOR[oc.status] ?? '#62666E'),
+                          color: '#fff',
+                          border: `1px solid ${(STATUS_COLOR[oc.status] ?? '#62666E')}`,
                         }}>{oc.status}</span>
                       </td>
                       <td style={{ padding: '8px 14px', textAlign: 'right', fontSize: 12, fontWeight: 600 }}>
@@ -205,11 +205,11 @@ export default function ReporteComprasPorProveedor() {
                 </>
               ))}
               {/* Total general */}
-              <tr style={{ background: '#0f172a', borderTop: '2px solid #334155' }}>
-                <td colSpan={4} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#f8fafc' }}>
+              <tr style={{ background: '#1C1D21', borderTop: '2px solid #33363C' }}>
+                <td colSpan={4} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#F8F9FA' }}>
                   Total General ({grupos.length} proveedores · {ocs.length} OCs)
                 </td>
-                <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 14, color: '#f8fafc' }}>
+                <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 14, color: '#F8F9FA' }}>
                   {fmt(totalGeneral)}
                 </td>
               </tr>

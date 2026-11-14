@@ -79,12 +79,12 @@ const UNIDADES_OBRA = [
 ]
 
 const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
-  'Borrador':      { bg: '#f1f5f9', color: '#475569' },
-  'En Revisión':   { bg: '#fef3c7', color: '#92400e' },
-  'Aprobado':      { bg: '#dbeafe', color: '#1d4ed8' },
-  'En Ejecución':  { bg: '#dcfce7', color: '#15803d' },
-  'Terminado':     { bg: '#d1fae5', color: '#065f46' },
-  'Cancelado':     { bg: '#fee2e2', color: '#991b1b' },
+  'Borrador':      { bg: '#F4F5F7', color: '#4A4D54' },
+  'En Revisión':   { bg: '#E6E8EB', color: '#7A4B0C' },
+  'Aprobado':      { bg: '#E6E8EB', color: '#26282D' },
+  'En Ejecución':  { bg: '#E6E8EB', color: '#1F7A50' },
+  'Terminado':     { bg: '#E6E8EB', color: '#17603F' },
+  'Cancelado':     { bg: '#E6E8EB', color: '#8C2A2A' },
 }
 
 
@@ -196,7 +196,7 @@ export default function CapexPage() {
         {STATUS_LIST.map(s => {
           const cnt = proyectos.filter(p => p.status === s).length
           if (!cnt) return null
-          const c = STATUS_COLOR[s] ?? { bg: '#f1f5f9', color: '#475569' }
+          const c = STATUS_COLOR[s] ?? { bg: '#F4F5F7', color: '#4A4D54' }
           return (
             <div key={s} className="card card-hover" style={{ padding: '12px 18px', minWidth: 100, cursor: 'pointer', borderBottom: filterStatus === s ? '2px solid var(--blue)' : undefined }}
               onClick={() => setFilterStatus(prev => prev === s ? '' : s)}>
@@ -257,7 +257,7 @@ export default function CapexPage() {
               : proyectos.length === 0
                 ? <tr><td colSpan={10} style={{ textAlign: 'center', padding: 56, color: 'var(--text-muted)' }}>Sin proyectos registrados</td></tr>
                 : proyectos.map(p => {
-                  const sc = STATUS_COLOR[p.status] ?? { bg: '#f1f5f9', color: '#475569' }
+                  const sc = STATUS_COLOR[p.status] ?? { bg: '#F4F5F7', color: '#4A4D54' }
                   return (
                     <tr key={p.id} style={{ cursor: 'pointer' }}
                       onClick={() => { setEditing(p); setModal(true) }}>
@@ -272,7 +272,7 @@ export default function CapexPage() {
                       <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{p.id_area_fk ? areaMap[p.id_area_fk] ?? '—' : '—'}</td>
                       <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{p.tipo ?? '—'}</td>
                       <td>
-                        <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: sc.bg, color: sc.color }}>
+                        <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: sc.color, color: '#fff'}}>
                           {p.status}
                         </span>
                       </td>
@@ -467,7 +467,7 @@ function ProyectoModal({ proyecto, ccs, areas, onClose, onSaved }: ProyectoModal
     >
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', padding: '0 24px' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', padding: '0 24px' }}>
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               disabled={t.id !== 'generales' && !proyectoId}
@@ -475,7 +475,7 @@ function ProyectoModal({ proyecto, ccs, areas, onClose, onSaved }: ProyectoModal
                 padding: '11px 16px', background: 'none', border: 'none', cursor: t.id !== 'generales' && !proyectoId ? 'not-allowed' : 'pointer',
                 fontSize: 13, fontFamily: 'var(--font-body)', fontWeight: tab === t.id ? 600 : 400,
                 color: tab === t.id ? 'var(--blue)' : 'var(--text-muted)',
-                borderBottom: tab === t.id ? '2px solid var(--blue)' : '2px solid transparent',
+                borderBottom: tab === t.id ? '2px solid #19D3C5' : '2px solid transparent',
                 marginBottom: -1, opacity: t.id !== 'generales' && !proyectoId ? 0.4 : 1,
               }}>
               {t.label}
@@ -492,7 +492,7 @@ function ProyectoModal({ proyecto, ccs, areas, onClose, onSaved }: ProyectoModal
         {tab === 'generales' && (
           <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto' }}>
             {error && (
-              <div style={{ padding: 10, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>
+              <div style={{ padding: 10, background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>
                 {error}
               </div>
             )}
@@ -541,10 +541,10 @@ function ProyectoModal({ proyecto, ccs, areas, onClose, onSaved }: ProyectoModal
               <label className="label">Status</label>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {STATUS_LIST.map(s => {
-                  const c = STATUS_COLOR[s] ?? { bg: '#f1f5f9', color: '#475569' }
+                  const c = STATUS_COLOR[s] ?? { bg: '#F4F5F7', color: '#4A4D54' }
                   return (
                     <button key={s} onClick={() => setForm(f => ({ ...f, status: s }))}
-                      style={{ padding: '5px 14px', borderRadius: 99, border: form.status === s ? `2px solid ${c.color}` : '2px solid #e2e8f0', background: form.status === s ? c.bg : '#fff', color: form.status === s ? c.color : '#94a3b8', fontSize: 12, fontWeight: form.status === s ? 700 : 400, cursor: 'pointer' }}>
+                      style={{ padding: '5px 14px', borderRadius: 99, border: form.status === s ? `2px solid ${c.color}` : '2px solid #E6E8EB', background: form.status === s ? c.bg : '#fff', color: form.status === s ? c.color : '#7A7E87', fontSize: 12, fontWeight: form.status === s ? 700 : 400, cursor: 'pointer' }}>
                       {s}
                     </button>
                   )
@@ -637,13 +637,13 @@ function FrentesPartidasTab({ proyectoId, puedeEscribir, frentes, setFrente, sel
   return (
     <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
       {/* Panel izquierdo: frentes */}
-      <div style={{ width: 200, borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-        <div style={{ padding: '12px 12px 8px', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>
+      <div style={{ width: 200, borderRight: '1px solid #E6E8EB', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+        <div style={{ padding: '12px 12px 8px', fontSize: 10, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '.08em' }}>
           Frentes de Obra
         </div>
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {frentes.map(f => (
-            <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 12px', cursor: 'pointer', background: selectedFrente === f.id ? '#eff6ff' : 'transparent', borderLeft: selectedFrente === f.id ? '3px solid var(--blue)' : '3px solid transparent' }}
+            <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 12px', cursor: 'pointer', background: selectedFrente === f.id ? '#F4F5F7' : 'transparent', borderLeft: selectedFrente === f.id ? '3px solid var(--blue)' : '3px solid transparent' }}
               onClick={() => setSelectedFrente(f.id)}>
               <span style={{ flex: 1, fontSize: 12, fontWeight: selectedFrente === f.id ? 600 : 400, color: selectedFrente === f.id ? 'var(--blue)' : 'var(--text-primary)', lineHeight: 1.3 }}>{f.nombre}</span>
               {puedeEscribir && (
@@ -655,7 +655,7 @@ function FrentesPartidasTab({ proyectoId, puedeEscribir, frentes, setFrente, sel
           ))}
         </div>
         {puedeEscribir && (
-          <div style={{ padding: '8px 10px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: 5 }}>
+          <div style={{ padding: '8px 10px', borderTop: '1px solid #E6E8EB', display: 'flex', gap: 5 }}>
             <input className="input" style={{ fontSize: 11, padding: '5px 8px', flex: 1 }}
               placeholder="Nuevo frente…" value={nuevoFrente}
               onChange={e => setNuevoFrente(e.target.value)}
@@ -830,17 +830,17 @@ function PartidasPanel({ frenteId, puedeEscribir, partidas, insumos, setInsumos,
       {/* Tabla de partidas */}
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
         <thead>
-          <tr style={{ background: '#f8fafc' }}>
+          <tr style={{ background: '#F8F9FA' }}>
             <th style={thSt}>Clave</th>
             <th style={{ ...thSt, textAlign: 'left', minWidth: 180 }}>Descripción</th>
             <th style={thSt}>Und</th>
             <th style={{ ...thSt, textAlign: 'right' }}>Cant.</th>
-            <th style={{ ...thSt, textAlign: 'right', color: '#1d4ed8' }}>PU Mat.</th>
-            <th style={{ ...thSt, textAlign: 'right', color: '#7c3aed' }}>PU M.O.</th>
-            <th style={{ ...thSt, textAlign: 'right', color: '#15803d' }}>PU Maq.</th>
-            <th style={{ ...thSt, textAlign: 'right', color: '#d97706' }}>PU Eq.M</th>
-            <th style={{ ...thSt, textAlign: 'right', color: '#0f766e' }}>PU Total</th>
-            <th style={{ ...thSt, textAlign: 'right', color: '#15803d' }}>Monto</th>
+            <th style={{ ...thSt, textAlign: 'right', color: '#26282D' }}>PU Mat.</th>
+            <th style={{ ...thSt, textAlign: 'right', color: '#6B4E79' }}>PU M.O.</th>
+            <th style={{ ...thSt, textAlign: 'right', color: '#1F7A50' }}>PU Maq.</th>
+            <th style={{ ...thSt, textAlign: 'right', color: '#B5761A' }}>PU Eq.M</th>
+            <th style={{ ...thSt, textAlign: 'right', color: '#126B63' }}>PU Total</th>
+            <th style={{ ...thSt, textAlign: 'right', color: '#1F7A50' }}>Monto</th>
             <th style={{ ...thSt, width: 60 }}></th>
           </tr>
         </thead>
@@ -850,7 +850,7 @@ function PartidasPanel({ frenteId, puedeEscribir, partidas, insumos, setInsumos,
           )}
           {partidas.map(p => (
             <>
-              <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9', background: expanded.has(p.id) ? '#f0f9ff' : 'white' }}>
+              <tr key={p.id} style={{ borderBottom: '1px solid #F4F5F7', background: expanded.has(p.id) ? '#F4F5F7' : 'white' }}>
                 <td style={{ ...tdSt, width: 70 }}>
                   {editingP?.id === p.id
                     ? <input className="input" style={{ fontSize: 11, padding: '2px 5px', width: 60 }} defaultValue={p.clave ?? ''} onBlur={e => { saveEditPartida(p, 'clave', e.target.value || null as any); setEditingP(null) }} autoFocus />
@@ -870,12 +870,12 @@ function PartidasPanel({ frenteId, puedeEscribir, partidas, insumos, setInsumos,
                 <td style={{ ...tdSt, textAlign: 'right' }}>
                   <InlineNum value={p.cantidad} disabled={!puedeEscribir} onChange={v => saveEditPartida(p, 'cantidad', v)} />
                 </td>
-                <td style={{ ...tdSt, textAlign: 'right', color: '#1d4ed8' }}>{fmtC(p.pu_materiales)}</td>
-                <td style={{ ...tdSt, textAlign: 'right', color: '#7c3aed' }}>{fmtC(p.pu_mano_obra)}</td>
-                <td style={{ ...tdSt, textAlign: 'right', color: '#15803d' }}>{fmtC(p.pu_maquinaria)}</td>
-                <td style={{ ...tdSt, textAlign: 'right', color: '#d97706' }}>{fmtC(p.pu_equipo_menor)}</td>
-                <td style={{ ...tdSt, textAlign: 'right', fontWeight: 600, color: '#0f766e' }}>{fmtC(p.pu_total)}</td>
-                <td style={{ ...tdSt, textAlign: 'right', fontWeight: 600, color: '#15803d' }}>{fmt(p.monto_total)}</td>
+                <td style={{ ...tdSt, textAlign: 'right', color: '#26282D' }}>{fmtC(p.pu_materiales)}</td>
+                <td style={{ ...tdSt, textAlign: 'right', color: '#6B4E79' }}>{fmtC(p.pu_mano_obra)}</td>
+                <td style={{ ...tdSt, textAlign: 'right', color: '#1F7A50' }}>{fmtC(p.pu_maquinaria)}</td>
+                <td style={{ ...tdSt, textAlign: 'right', color: '#B5761A' }}>{fmtC(p.pu_equipo_menor)}</td>
+                <td style={{ ...tdSt, textAlign: 'right', fontWeight: 600, color: '#126B63' }}>{fmtC(p.pu_total)}</td>
+                <td style={{ ...tdSt, textAlign: 'right', fontWeight: 600, color: '#1F7A50' }}>{fmt(p.monto_total)}</td>
                 <td style={tdSt}>
                   <div style={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
                     <button className="btn-ghost" style={{ padding: '3px 5px', color: expanded.has(p.id) ? 'var(--blue)' : undefined }}
@@ -892,7 +892,7 @@ function PartidasPanel({ frenteId, puedeEscribir, partidas, insumos, setInsumos,
               </tr>
               {expanded.has(p.id) && (
                 <tr key={`ins-${p.id}`}>
-                  <td colSpan={10} style={{ padding: 0, background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                  <td colSpan={10} style={{ padding: 0, background: '#F8F9FA', borderBottom: '2px solid #E6E8EB' }}>
                     <InsumosPanel
                       partida={p}
                       insumos={insumos[p.id] ?? []}
@@ -906,9 +906,9 @@ function PartidasPanel({ frenteId, puedeEscribir, partidas, insumos, setInsumos,
           ))}
           {/* Total frente */}
           {partidas.length > 0 && (
-            <tr style={{ background: '#eff6ff', borderTop: '2px solid #bfdbfe' }}>
-              <td colSpan={9} style={{ ...tdSt, textAlign: 'right', fontWeight: 700, color: '#0f766e', fontSize: 12 }}>Total frente</td>
-              <td style={{ ...tdSt, textAlign: 'right', fontWeight: 700, color: '#15803d', fontSize: 13 }}>{fmt(totalFrente)}</td>
+            <tr style={{ background: '#F4F5F7', borderTop: '2px solid #C9CCD3' }}>
+              <td colSpan={9} style={{ ...tdSt, textAlign: 'right', fontWeight: 700, color: '#126B63', fontSize: 12 }}>Total frente</td>
+              <td style={{ ...tdSt, textAlign: 'right', fontWeight: 700, color: '#1F7A50', fontSize: 13 }}>{fmt(totalFrente)}</td>
               <td style={tdSt}></td>
             </tr>
           )}
@@ -917,12 +917,12 @@ function PartidasPanel({ frenteId, puedeEscribir, partidas, insumos, setInsumos,
 
       {/* Formulario nueva partida */}
       {puedeEscribir && (
-        <div style={{ padding: '10px 14px', background: '#fafafa', borderTop: '1px solid #e2e8f0' }}>
+        <div style={{ padding: '10px 14px', background: '#fafafa', borderTop: '1px solid #E6E8EB' }}>
           {/* Elegir desde el catálogo de conceptos (Mantenimiento) */}
           <div style={{ position: 'relative', marginBottom: 8 }}>
             {conceptoSel ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: 6, fontSize: 12 }}>
-                <span style={{ fontWeight: 700, color: '#0f766e' }}>{conceptoSel.codigo}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 6, fontSize: 12 }}>
+                <span style={{ fontWeight: 700, color: '#126B63' }}>{conceptoSel.codigo}</span>
                 <span style={{ flex: 1, color: 'var(--text-secondary)' }}>{conceptoSel.descripcion}</span>
                 <span style={{ color: 'var(--text-muted)' }}>PU catálogo: {fmt(conceptoSel.pu_venta)}</span>
                 <button className="btn-ghost" style={{ padding: '2px 6px' }} onClick={quitarConcepto} title="Quitar selección">
@@ -931,16 +931,16 @@ function PartidasPanel({ frenteId, puedeEscribir, partidas, insumos, setInsumos,
               </div>
             ) : (
               <>
-                <input className="input" style={{ fontSize: 12 }} placeholder="🔍 Elegir concepto del catálogo (código o descripción)…"
+                <input className="input" style={{ fontSize: 12 }} placeholder="Elegir concepto del catálogo (código o descripción)…"
                   value={catSearch} onChange={e => setCatSearch(e.target.value)} />
                 {catResults.length > 0 && (
                   <div className="card" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, maxHeight: 200, overflowY: 'auto', padding: '4px 0' }}>
                     {catResults.map(c => (
                       <button key={c.id} onClick={() => elegirConcepto(c)}
                         style={{ display: 'flex', width: '100%', textAlign: 'left', gap: 8, padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 11 }}
-                        onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                        <span style={{ color: '#0f766e', fontWeight: 600, minWidth: 60 }}>{c.codigo}</span>
+                        <span style={{ color: '#126B63', fontWeight: 600, minWidth: 60 }}>{c.codigo}</span>
                         <span style={{ flex: 1 }}>{c.descripcion}</span>
                         <span style={{ color: 'var(--text-muted)' }}>{fmt(c.pu_venta)}/{c.unidad}</span>
                       </button>
@@ -991,10 +991,10 @@ type InsumosPanelProps = {
 }
 
 const TIPO_COLOR: Record<TipoInsumo, { bg: string; color: string; label: string }> = {
-  material:      { bg: '#dbeafe', color: '#1d4ed8', label: 'Material' },
-  mano_obra:     { bg: '#ede9fe', color: '#7c3aed', label: 'Mano de Obra' },
-  maquinaria:    { bg: '#dcfce7', color: '#15803d', label: 'Maquinaria' },
-  equipo_menor:  { bg: '#fef3c7', color: '#d97706', label: 'Equipo Menor' },
+  material:      { bg: '#E6E8EB', color: '#26282D', label: 'Material' },
+  mano_obra:     { bg: '#E6E8EB', color: '#6B4E79', label: 'Mano de Obra' },
+  maquinaria:    { bg: '#E6E8EB', color: '#1F7A50', label: 'Maquinaria' },
+  equipo_menor:  { bg: '#E6E8EB', color: '#B5761A', label: 'Equipo Menor' },
 }
 
 const EMPTY_INS = {
@@ -1123,13 +1123,13 @@ function InsumosPanel({ partida, insumos, puedeEscribir, onChanged }: InsumosPan
         return (
           <div key={tipo} style={{ marginBottom: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-              <span style={{ padding: '1px 7px', borderRadius: 99, fontSize: 10, fontWeight: 700, background: tc.bg, color: tc.color }}>{tc.label}</span>
+              <span style={{ padding: '1px 7px', borderRadius: 99, fontSize: 10, fontWeight: 700, background: tc.color, color: '#fff'}}>{tc.label}</span>
               {list.length > 0 && <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>PU: <strong>{fmtC(subtotal)}</strong></span>}
             </div>
             {list.length > 0 && (
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                 <thead>
-                  <tr style={{ background: '#f1f5f9' }}>
+                  <tr style={{ background: '#F4F5F7' }}>
                     <th style={{ ...thSt, textAlign: 'left' }}>Descripción</th>
                     <th style={thSt}>Unidad</th>
                     <th style={{ ...thSt, textAlign: 'right' }}>Cant.</th>
@@ -1140,7 +1140,7 @@ function InsumosPanel({ partida, insumos, puedeEscribir, onChanged }: InsumosPan
                 </thead>
                 <tbody>
                   {list.map(i => (
-                    <tr key={i.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <tr key={i.id} style={{ borderBottom: '1px solid #F4F5F7' }}>
                       <td style={{ ...tdSt, color: 'var(--text-secondary)' }}>{i.descripcion}</td>
                       <td style={{ ...tdSt, textAlign: 'center', color: 'var(--text-muted)' }}>{i.unidad ?? '—'}</td>
                       <td style={{ ...tdSt, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtC(i.cantidad)}</td>
@@ -1162,8 +1162,8 @@ function InsumosPanel({ partida, insumos, puedeEscribir, onChanged }: InsumosPan
 
       {/* Formulario agregar insumo */}
       {puedeEscribir && (
-        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 6, padding: 10, marginTop: 6 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Agregar Insumo</div>
+        <div style={{ background: '#fff', border: '1px solid #E6E8EB', borderRadius: 6, padding: 10, marginTop: 6 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Agregar Insumo</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
             {/* Tipo */}
             <div>
@@ -1200,14 +1200,14 @@ function InsumosPanel({ partida, insumos, puedeEscribir, onChanged }: InsumosPan
                   {results.map(r => (
                     <button key={r.id} onClick={() => selectResult(r)}
                       style={{ display: 'flex', width: '100%', textAlign: 'left', gap: 8, padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 11 }}
-                      onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                       {form.tipo === 'mano_obra'
                         ? <><span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{nombreCompletoColaborador(r)}</span><span style={{ color: 'var(--text-muted)' }}>{r.puesto ?? ''}</span></>
                         : form.tipo === 'maquinaria'
-                          ? <><span style={{ color: '#15803d', fontWeight: 600 }}>{r.nombre}</span><span style={{ color: 'var(--text-muted)' }}>{r.unidad_odometro ?? 'hr'}</span></>
+                          ? <><span style={{ color: '#1F7A50', fontWeight: 600 }}>{r.nombre}</span><span style={{ color: 'var(--text-muted)' }}>{r.unidad_odometro ?? 'hr'}</span></>
                           : form.tipo === 'equipo_menor'
-                            ? <><span style={{ color: '#d97706', fontWeight: 600 }}>{r.descripcion}</span><span style={{ color: 'var(--text-muted)' }}>{r.tipo ?? ''}</span></>
+                            ? <><span style={{ color: '#B5761A', fontWeight: 600 }}>{r.descripcion}</span><span style={{ color: 'var(--text-muted)' }}>{r.tipo ?? ''}</span></>
                             : <><span style={{ color: 'var(--blue)', fontWeight: 600, minWidth: 60 }}>{r.clave}</span><span style={{ flex: 1 }}>{r.nombre}</span><span style={{ color: 'var(--text-muted)' }}>{r.unidad}</span></>
                       }
                     </button>
@@ -1235,7 +1235,7 @@ function InsumosPanel({ partida, insumos, puedeEscribir, onChanged }: InsumosPan
                 value={form.precio_unitario} onChange={e => setForm(f => ({ ...f, precio_unitario: e.target.value }))} />
             </div>
             {/* Monto preview */}
-            <div style={{ padding: '4px 8px', background: '#f0fdf4', borderRadius: 5, fontSize: 11, fontWeight: 600, color: '#15803d', minWidth: 70, textAlign: 'right' }}>
+            <div style={{ padding: '4px 8px', background: '#1F7A50', borderRadius: 5, fontSize: 11, fontWeight: 600, color: '#fff', minWidth: 70, textAlign: 'right' }}>
               {form.cantidad && form.precio_unitario ? fmt(Number(form.cantidad) * Number(form.precio_unitario)) : '—'}
             </div>
             <button className="btn-primary" style={{ padding: '6px 12px', fontSize: 11 }} onClick={addInsumo}
@@ -1356,7 +1356,7 @@ function ExplosionTab({ proyectoId }: { proyectoId: number }) {
                 </tbody>
                 {filtered.length > 0 && (
                   <tfoot>
-                    <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
+                    <tr style={{ background: '#F8F9FA', borderTop: '2px solid #E6E8EB' }}>
                       <td colSpan={4} style={{ ...tdSt, fontWeight: 700, textAlign: 'right', color: TIPO_COLOR[tabTipo].color }}>Subtotal {TIPO_TABS.find(t => t.id === tabTipo)?.label}</td>
                       <td style={{ ...tdSt, textAlign: 'right', fontWeight: 700, color: TIPO_COLOR[tabTipo].color }}>{fmt(subtotal)}</td>
                     </tr>
@@ -1406,8 +1406,8 @@ function InlineNum({ value, onChange, disabled }: { value: number; onChange: (v:
 // Estilos de tabla reutilizables
 const thSt: React.CSSProperties = {
   padding: '7px 10px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-  letterSpacing: '.05em', color: '#94a3b8', whiteSpace: 'nowrap', textAlign: 'center',
-  background: '#f8fafc',
+  letterSpacing: '.05em', color: '#7A7E87', whiteSpace: 'nowrap', textAlign: 'center',
+  background: '#F8F9FA',
 }
 const tdSt: React.CSSProperties = {
   padding: '7px 10px', verticalAlign: 'middle',

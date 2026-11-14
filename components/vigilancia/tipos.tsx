@@ -43,15 +43,15 @@ export const STATUS_NOV = ['Abierto', 'En curso', 'Cerrado']
 export const CRITICIDADES = ['Baja', 'Media', 'Alta', 'Crítica']
 
 export const CRIT_COLOR: Record<string, { bg: string; color: string }> = {
-  'Baja':    { bg: '#f1f5f9', color: '#64748b' },
-  'Media':   { bg: '#fffbeb', color: '#d97706' },
-  'Alta':    { bg: '#fff7ed', color: '#ea580c' },
-  'Crítica': { bg: '#fef2f2', color: '#dc2626' },
+  'Baja':    { bg: '#F4F5F7', color: '#62666E' },
+  'Media':   { bg: '#F4F5F7', color: '#B5761A' },
+  'Alta':    { bg: '#F4F5F7', color: '#C8642A' },
+  'Crítica': { bg: '#F4F5F7', color: '#C23B3B' },
 }
 export const STATUS_NOV_COLOR: Record<string, { bg: string; color: string }> = {
-  'Abierto':  { bg: '#fef2f2', color: '#dc2626' },
-  'En curso': { bg: '#eff6ff', color: '#2563eb' },
-  'Cerrado':  { bg: '#f0fdf4', color: '#15803d' },
+  'Abierto':  { bg: '#F4F5F7', color: '#C23B3B' },
+  'En curso': { bg: '#F4F5F7', color: '#1C1D21' },
+  'Cerrado':  { bg: '#F4F5F7', color: '#1F7A50' },
 }
 
 export const fmtFecha = (d: string | null | undefined) =>
@@ -64,7 +64,7 @@ export const hoyISO = () => {
 }
 
 export const Pill = ({ txt, c }: { txt: string; c: { bg: string; color: string } }) => (
-  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: c.bg, color: c.color, whiteSpace: 'nowrap' }}>{txt}</span>
+  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: c.color, color: '#fff', whiteSpace: 'nowrap' }}>{txt}</span>
 )
 
 // Rutinas frecuentes: un toque crea la novedad ya cerrada y "Sin Novedad"

@@ -94,10 +94,10 @@ export default function ConfiguracionPage() {
       />
 
       {debugMsg && (
-        <div style={{ padding: '10px 14px', marginBottom: 20, borderRadius: 6, fontSize: 12, fontFamily: 'monospace',
-          background: debugMsg.startsWith('ERROR') ? 'rgba(239,68,68,0.1)' : '#f0fdf4',
-          border: `1px solid ${debugMsg.startsWith('ERROR') ? 'rgba(239,68,68,0.3)' : '#bbf7d0'}`,
-          color: debugMsg.startsWith('ERROR') ? '#dc2626' : '#15803d' }}>
+        <div style={{ padding: '10px 14px', marginBottom: 20, borderRadius: 6, fontSize: 12, fontVariantNumeric: 'tabular-nums',
+          background: '#F4F5F7',
+          border: '1px solid #E6E8EB', borderLeft: `3px solid ${debugMsg.startsWith('ERROR') ? '#C23B3B' : '#1F7A50'}`,
+          color: debugMsg.startsWith('ERROR') ? '#C23B3B' : '#1F7A50' }}>
           {debugMsg}
         </div>
       )}
@@ -109,7 +109,7 @@ export default function ConfiguracionPage() {
       ) : (
         grupos.map(grupo => (
           <div key={grupo} className="card" style={{ marginBottom: 20, overflow: 'hidden' }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid #E6E8EB', background: '#F8F9FA' }}>
               <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                 {GRUPOS[grupo] ?? grupo}
               </span>
@@ -118,7 +118,7 @@ export default function ConfiguracionPage() {
               {rows.filter(r => r.grupo === grupo).map(row => (
                 <div key={row.clave} style={{
                   display: 'grid', gridTemplateColumns: '220px 1fr', gap: 16,
-                  padding: '12px 20px', borderBottom: '1px solid #f8fafc', alignItems: 'center',
+                  padding: '12px 20px', borderBottom: '1px solid #F8F9FA', alignItems: 'center',
                 }}>
                   <div>
                     <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>{row.etiqueta ?? row.clave}</div>
@@ -129,10 +129,10 @@ export default function ConfiguracionPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         {/* Preview del logo */}
                         {values[row.clave] ? (
-                          <img src={values[row.clave]} alt="Logo" style={{ height: 48, maxWidth: 140, objectFit: 'contain', borderRadius: 6, border: '1px solid #e2e8f0', padding: 4, background: '#fff' }} />
+                          <img src={values[row.clave]} alt="Logo" style={{ height: 48, maxWidth: 140, objectFit: 'contain', borderRadius: 6, border: '1px solid #E6E8EB', padding: 4, background: '#fff' }} />
                         ) : (
-                          <div style={{ width: 80, height: 48, borderRadius: 6, border: '1px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
-                            <Image size={18} style={{ color: '#cbd5e1' }} />
+                          <div style={{ width: 80, height: 48, borderRadius: 6, border: '1px dashed #C9CCD3', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8F9FA' }}>
+                            <Image size={18} style={{ color: '#C9CCD3' }} />
                           </div>
                         )}
                         <label style={{ cursor: 'pointer' }}>
@@ -143,7 +143,7 @@ export default function ConfiguracionPage() {
                           </span>
                         </label>
                         {values[row.clave] && (
-                          <button className="btn-ghost" style={{ fontSize: 11, color: '#dc2626' }}
+                          <button className="btn-ghost" style={{ fontSize: 11, color: '#C23B3B' }}
                             onClick={async () => {
                               await dbCfg.from('configuracion').update({ valor: '' }).eq('clave', 'org_logo_url')
                               setValues(v => ({ ...v, org_logo_url: '' }))
@@ -155,12 +155,12 @@ export default function ConfiguracionPage() {
                       </div>
                     ) : row.tipo === 'color' ? (
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <input type="color" value={values[row.clave] || '#2563eb'}
+                        <input type="color" value={values[row.clave] || '#1C1D21'}
                           onChange={e => setValues(v => ({ ...v, [row.clave]: e.target.value }))}
-                          style={{ width: 36, height: 32, padding: 2, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 6, cursor: 'pointer' }} />
+                          style={{ width: 36, height: 32, padding: 2, background: '#fff', border: '1px solid #E6E8EB', borderRadius: 6, cursor: 'pointer' }} />
                         <input className="input" value={values[row.clave] ?? ''}
                           onChange={e => setValues(v => ({ ...v, [row.clave]: e.target.value }))}
-                          style={{ fontFamily: 'monospace', maxWidth: 120 }} />
+                          style={{ fontVariantNumeric: 'tabular-nums', maxWidth: 120 }} />
                       </div>
                     ) : row.tipo === 'textarea' ? (
                       <textarea className="input" rows={9} value={values[row.clave] ?? ''}
@@ -185,9 +185,9 @@ export default function ConfiguracionPage() {
 
       {saved && (
         <div style={{ position: 'fixed', bottom: 24, right: 24, padding: '12px 20px',
-          background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8,
+          background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #1F7A50', borderRadius: 8,
           display: 'flex', alignItems: 'center', gap: 8,
-          color: '#15803d', fontSize: 13, fontWeight: 500, animation: 'slideUp 0.3s ease-out' }}>
+          color: '#1F7A50', fontSize: 13, fontWeight: 500, animation: 'slideUp 0.3s ease-out' }}>
           <CheckCircle size={15} /> Configuración guardada correctamente
         </div>
       )}

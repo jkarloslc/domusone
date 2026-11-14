@@ -604,12 +604,12 @@ export default function POSPage() {
 
     const html = `
       <p>Estimado cliente,</p>
-      <p>Adjuntamos su comprobante fiscal con folio <strong style="font-family:monospace">${v.folio_fiscal}</strong>.</p>
+      <p>Adjuntamos su comprobante fiscal con folio <strong style="font-variant-numeric:tabular-nums">${v.folio_fiscal}</strong>.</p>
       <table style="border-collapse:collapse;font-size:13px;margin-top:8px">
-        <tr><td style="padding:3px 12px 3px 0;color:#64748b">Venta #:</td><td><strong>${String(v.folio_dia).padStart(4,'0')}</strong></td></tr>
-        <tr><td style="padding:3px 12px 3px 0;color:#64748b">Total:</td><td><strong>${fmt$(v.total)}</strong></td></tr>
+        <tr><td style="padding:3px 12px 3px 0;color:#62666E">Venta #:</td><td><strong>${String(v.folio_dia).padStart(4,'0')}</strong></td></tr>
+        <tr><td style="padding:3px 12px 3px 0;color:#62666E">Total:</td><td><strong>${fmt$(v.total)}</strong></td></tr>
       </table>
-      <p style="margin-top:12px;color:#64748b;font-size:12px">Los archivos XML y PDF se encuentran adjuntos.</p>
+      <p style="margin-top:12px;color:#62666E;font-size:12px">Los archivos XML y PDF se encuentran adjuntos.</p>
     `
 
     const res = await fetchConAuth('/api/send-email', {
@@ -825,7 +825,7 @@ export default function POSPage() {
         <td>#${String(f.folio_dia ?? f.id).padStart(4, '0')}</td>
         <td>${esc(f.nombre_cliente ?? 'Publico General')}</td>
         <td>${esc(f._cfdi?.folio_factura ?? '—')}</td>
-        <td style="font-family:monospace;font-size:10px;word-break:break-all">${esc(f.folio_fiscal)}</td>
+        <td style="font-variant-numeric:tabular-nums;font-size:10px;word-break:break-all">${esc(f.folio_fiscal)}</td>
         <td>${esc(f._cfdi?.receptor_rfc ?? '—')}</td>
         <td class="right"><span class="status-badge ${cancelada ? 'status-cancel' : 'status-ok'}">${cancelada ? 'Cancelada' : 'Vigente'}</span></td>
         <td class="right">${fmt(f.total ?? 0)}</td>
@@ -846,45 +846,45 @@ export default function POSPage() {
 <title>Corte de Caja #${String(c.id).padStart(4,'0')}</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: Arial, sans-serif; font-size:12px; color:#1e293b; background:#fff; padding:20mm 18mm; }
+  body { font-family: Arial, sans-serif; font-size:12px; color:#26282D; background:#fff; padding:20mm 18mm; }
   @media print { body { padding:10mm 12mm; } @page { size:A4; margin:0; } }
-  h1 { font-size:16px; font-weight:700; color:#0f172a; margin-bottom:2px; }
-  h2 { font-size:14px; font-weight:700; color:#1e293b; margin:14px 0 6px; border-bottom:2px solid #e2e8f0; padding-bottom:4px; }
-  .header { display:flex; align-items:center; gap:16px; margin-bottom:12px; border-bottom:2px solid #2563eb; padding-bottom:12px; }
+  h1 { font-size:16px; font-weight:700; color:#1C1D21; margin-bottom:2px; }
+  h2 { font-size:14px; font-weight:700; color:#26282D; margin:14px 0 6px; border-bottom:2px solid #E6E8EB; padding-bottom:4px; }
+  .header { display:flex; align-items:center; gap:16px; margin-bottom:12px; border-bottom:2px solid #1C1D21; padding-bottom:12px; }
   .header img { height:52px; max-width:160px; object-fit:contain; }
-  .club-sub { font-size:11px; color:#64748b; margin-top:2px; }
+  .club-sub { font-size:11px; color:#62666E; margin-top:2px; }
   .folio { margin-left:auto; text-align:right; }
-  .folio-title { font-size:13px; font-weight:600; color:#2563eb; }
-  .folio-num { font-size:10px; color:#94a3b8; }
+  .folio-title { font-size:13px; font-weight:600; color:#1C1D21; }
+  .folio-num { font-size:10px; color:#7A7E87; }
   table { width:100%; border-collapse:collapse; margin-bottom:8px; }
-  th { background:#f1f5f9; color:#475569; font-size:10px; text-transform:uppercase; letter-spacing:.05em; padding:6px 10px; text-align:left; }
-  td { padding:7px 10px; border-bottom:1px solid #f1f5f9; font-size:12px; }
+  th { background:#F4F5F7; color:#4A4D54; font-size:10px; text-transform:uppercase; letter-spacing:.05em; padding:6px 10px; text-align:left; }
+  td { padding:7px 10px; border-bottom:1px solid #F4F5F7; font-size:12px; }
   .right { text-align:right; }
   .bold { font-weight:700; }
-  .total-row td { font-size:14px; font-weight:800; color:#059669; border-top:2px solid #e2e8f0; padding-top:10px; }
+  .total-row td { font-size:14px; font-weight:800; color:#267F56; border-top:2px solid #E6E8EB; padding-top:10px; }
   .kpi-grid { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; margin:14px 0; }
-  .kpi { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; }
-  .kpi-label { font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:.05em; }
+  .kpi { background:#F8F9FA; border:1px solid #E6E8EB; border-radius:8px; padding:10px 12px; }
+  .kpi-label { font-size:10px; color:#62666E; text-transform:uppercase; letter-spacing:.05em; }
   .kpi-value { font-size:20px; font-weight:800; margin-top:2px; }
-  .kpi-green { color:#059669; }
-  .kpi-red   { color:#dc2626; }
-  .kpi-blue  { color:#2563eb; }
+  .kpi-green { color:#267F56; }
+  .kpi-red   { color:#C23B3B; }
+  .kpi-blue  { color:#1C1D21; }
   .meta { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:14px 0; font-size:12px; }
   .meta-item { display:flex; gap:8px; }
-  .meta-label { color:#94a3b8; min-width:80px; }
-  .meta-value { font-weight:600; color:#1e293b; }
-  .recibo-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; background:#dcfce7; color:#15803d; margin-top:4px; }
+  .meta-label { color:#7A7E87; min-width:80px; }
+  .meta-value { font-weight:600; color:#26282D; }
+  .recibo-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; background:#E6E8EB; color:#1F7A50; margin-top:4px; }
   .status-badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:10px; font-weight:700; }
-  .status-ok { background:#dcfce7; color:#15803d; }
-  .status-cancel { background:#fef2f2; color:#dc2626; }
-  .footer { margin-top:24px; border-top:1px solid #e2e8f0; padding-top:12px; text-align:center; font-size:10px; color:#94a3b8; }
+  .status-ok { background:#E6E8EB; color:#1F7A50; }
+  .status-cancel { background:#F4F5F7; color:#C23B3B; }
+  .footer { margin-top:24px; border-top:1px solid #E6E8EB; padding-top:12px; text-align:center; font-size:10px; color:#7A7E87; }
   .no-print { margin-bottom:16px; }
   @media print { .no-print { display:none; } }
 </style>
 </head>
 <body>
 <div class="no-print">
-  <button onclick="window.print()" style="padding:8px 20px;background:#059669;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨 Imprimir</button>
+  <button onclick="window.print()" style="padding:8px 20px;background:#267F56;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">Imprimir</button>
 </div>
 
 <div class="header">
@@ -923,7 +923,7 @@ ${desglose.length > 0 ? `
     ${filasDesglose}
     <tr class="total-row"><td class="bold">TOTAL NETO</td><td class="right bold">${fmt(c.total_neto)}</td></tr>
   </tbody>
-</table>` : '<p style="color:#94a3b8;font-size:12px;padding:10px 0">Sin desglose de formas de pago registrado.</p>'}
+</table>` : '<p style="color:#7A7E87;font-size:12px;padding:10px 0">Sin desglose de formas de pago registrado.</p>'}
 
 <h2>Detalle de Servicios / Productos Cobrados</h2>
 ${detalleProd.length > 0 ? `
@@ -933,7 +933,7 @@ ${detalleProd.length > 0 ? `
     ${filasProductos}
     <tr class="total-row"><td class="bold">TOTAL COBRADO</td><td class="right bold">${cantProd}</td><td class="right bold">${fmt(totalProd)}</td></tr>
   </tbody>
-</table>` : '<p style="color:#94a3b8;font-size:12px;padding:10px 0">Sin conceptos cobrados en este corte.</p>'}
+</table>` : '<p style="color:#7A7E87;font-size:12px;padding:10px 0">Sin conceptos cobrados en este corte.</p>'}
 
 <h2>Detalle de Operaciones del Día</h2>
 ${operaciones.length > 0 ? `
@@ -943,7 +943,7 @@ ${operaciones.length > 0 ? `
     ${filasOps}
     <tr class="total-row"><td class="bold">OPERACIONES</td><td></td><td class="right bold">${operaciones.length}</td><td class="right bold">Pagadas ${fmt(totalOpsPagadas)}${totalOpsCanceladas > 0 ? ` · Canceladas ${fmt(totalOpsCanceladas)}` : ''}</td><td class="right bold">${fmt(totalOps)}</td></tr>
   </tbody>
-</table>` : '<p style="color:#94a3b8;font-size:12px;padding:10px 0">Sin operaciones registradas en este corte.</p>'}
+</table>` : '<p style="color:#7A7E87;font-size:12px;padding:10px 0">Sin operaciones registradas en este corte.</p>'}
 
 <h2>Detalle de Facturas del Día</h2>
 ${facturasCorte.length > 0 ? `
@@ -953,7 +953,7 @@ ${facturasCorte.length > 0 ? `
     ${filasFacturas}
     <tr class="total-row"><td class="bold" colspan="5">FACTURADO (vigente)</td><td></td><td class="right bold">${fmt(totalFacturado)}</td></tr>
   </tbody>
-</table>` : '<p style="color:#94a3b8;font-size:12px;padding:10px 0">Sin facturas emitidas en este corte.</p>'}
+</table>` : '<p style="color:#7A7E87;font-size:12px;padding:10px 0">Sin facturas emitidas en este corte.</p>'}
 
 <div class="footer">
   Corte generado el ${fdt(c.fecha_corte)} · ${esc(orgNombre)}
@@ -1087,8 +1087,8 @@ ${facturasCorte.length > 0 ? `
       if (ids.length === 0) { alert('El corte no tiene ventas pagadas: no se generó recibo.'); return }
       fetchCortes()
       alert(ids.length === 1
-        ? `✅ Recibo de ingreso #${ids[0]} generado exitosamente.`
-        : `✅ ${ids.length} recibos de ingreso generados (uno por mes de venta): #${ids.join(', #')}.`)
+        ? `Recibo de ingreso #${ids[0]} generado exitosamente.`
+        : `${ids.length} recibos de ingreso generados (uno por mes de venta): #${ids.join(', #')}.`)
     } catch (e: any) {
       alert('Error: ' + e.message)
     } finally {
@@ -1200,7 +1200,7 @@ ${facturasCorte.length > 0 ? `
       <PageHeader
         backHref="/golf"
         icon={ShoppingCart}
-        color="#059669"
+        color="#267F56"
         eyebrowLabel="POS Ventas"
         title="Punto de Venta"
         actions={<button className="btn-ghost" onClick={() => { fetchStats(); if (tab === 'ventas') fetchVentas() }} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1210,28 +1210,28 @@ ${facturasCorte.length > 0 ? `
 
       {/* Error de DB visible */}
       {dbError && (
-        <div style={{ marginBottom: 16, padding: '12px 16px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, fontSize: 13, color: '#dc2626', fontFamily: 'monospace' }}>
-          ⚠ {dbError}
+        <div style={{ marginBottom: 16, padding: '12px 16px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 10, fontSize: 13, color: '#C23B3B', fontVariantNumeric: 'tabular-nums' }}>
+          {dbError}
         </div>
       )}
 
       {/* Stats del día */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
         {[
-          { label: 'Ventas hoy',       value: statsHoy.ventas,          color: '#059669', bg: '#ecfdf5' },
-          { label: 'Total del día',    value: fmt$(statsHoy.total),     color: '#2563eb', bg: '#eff6ff' },
-          { label: 'Por cortar',       value: statsHoy.pendCorte,       color: statsHoy.pendCorte > 0 ? '#d97706' : '#059669', bg: statsHoy.pendCorte > 0 ? '#fffbeb' : '#ecfdf5' },
-          { label: 'Ingresos POS este mes', value: fmt$(ingresosMes),  color: '#7c3aed', bg: '#f5f3ff' },
+          { label: 'Ventas hoy',       value: statsHoy.ventas,          color: '#267F56', bg: '#F4F5F7' },
+          { label: 'Total del día',    value: fmt$(statsHoy.total),     color: '#1C1D21', bg: '#F4F5F7' },
+          { label: 'Por cortar',       value: statsHoy.pendCorte,       color: statsHoy.pendCorte > 0 ? '#B5761A' : '#267F56', bg: '#F4F5F7' },
+          { label: 'Ingresos POS este mes', value: fmt$(ingresosMes),  color: '#6B4E79', bg: '#F4F5F7' },
         ].map(c => (
-          <div key={c.label} className="card" style={{ flex: '1 1 140px', maxWidth: 220, padding: '12px 16px', background: c.bg, border: `1px solid ${c.color}22` }}>
-            <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>{c.label}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+          <div key={c.label} className="card" style={{ flex: '1 1 140px', maxWidth: 220, padding: '12px 16px', background: '#fff', border: '1px solid #E6E8EB' }}>
+            <div style={{ fontSize: 11, color: '#62666E', marginBottom: 4 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: c.color, marginRight: 6, verticalAlign: 'middle' }} />{c.label}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{c.value}</div>
           </div>
         ))}
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 20, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', marginBottom: 20, flexWrap: 'wrap' }}>
         {TABS.map(t => {
           const Icon = t.icon
           return (
@@ -1240,8 +1240,8 @@ ${facturasCorte.length > 0 ? `
               padding: '10px 20px', fontSize: 13, background: 'none', border: 'none',
               cursor: 'pointer', fontFamily: 'inherit',
               fontWeight: tab === t.key ? 600 : 400,
-              color: tab === t.key ? '#059669' : '#94a3b8',
-              borderBottom: tab === t.key ? '2px solid #059669' : '2px solid transparent',
+              color: tab === t.key ? '#1C1D21' : '#7A7E87',
+              borderBottom: tab === t.key ? '2px solid #19D3C5' : '2px solid transparent',
               marginBottom: -1, whiteSpace: 'nowrap',
             }}>
               <Icon size={14} /> {t.label}
@@ -1255,15 +1255,15 @@ ${facturasCorte.length > 0 ? `
         <div>
           {/* Centros de venta */}
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Centro de Venta</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Centro de Venta</div>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {centros.map(c => (
                 <button key={c.id} onClick={() => setCentroActivo(c)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 20px', border: `2px solid ${centroActivo?.id === c.id ? '#059669' : '#e2e8f0'}`, borderRadius: 12, background: centroActivo?.id === c.id ? '#ecfdf5' : '#fff', cursor: 'pointer', transition: 'all 0.15s' }}>
-                  <Store size={16} style={{ color: centroActivo?.id === c.id ? '#059669' : '#94a3b8' }} />
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 20px', border: `2px solid ${centroActivo?.id === c.id ? '#19D3C5' : '#E6E8EB'}`, borderRadius: 12, background: centroActivo?.id === c.id ? 'rgba(25,211,197,0.08)' : '#fff', cursor: 'pointer', transition: 'all 0.15s' }}>
+                  <Store size={16} style={{ color: centroActivo?.id === c.id ? '#1C1D21' : '#7A7E87' }} />
                   <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: centroActivo?.id === c.id ? '#065f46' : '#1e293b' }}>{c.nombre}</div>
-                    {c.descripcion && <div style={{ fontSize: 11, color: '#94a3b8' }}>{c.descripcion}</div>}
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#1C1D21' }}>{c.nombre}</div>
+                    {c.descripcion && <div style={{ fontSize: 11, color: '#7A7E87' }}>{c.descripcion}</div>}
                   </div>
                 </button>
               ))}
@@ -1277,17 +1277,17 @@ ${facturasCorte.length > 0 ? `
                 if (centroVentaDirectaBloqueada(centroActivo.id)) { alert(MENSAJE_BLOQUEO_VENTA_DIRECTA); return }
                 setShowVenta(true)
               }} className="btn-primary"
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 24px', fontSize: 14, fontWeight: 700, background: '#059669' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 24px', fontSize: 14, fontWeight: 600 }}>
                 <Plus size={16} /> Nueva Venta — {centroActivo.nombre}
               </button>
               <button onClick={() => setShowCorte(true)}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 24px', fontSize: 13, fontWeight: 600, border: '1px solid #e2e8f0', borderRadius: 10, background: '#fff', color: '#475569', cursor: 'pointer' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 24px', fontSize: 13, fontWeight: 600, border: '1px solid #E6E8EB', borderRadius: 10, background: '#fff', color: '#4A4D54', cursor: 'pointer' }}>
                 <Scissors size={14} /> Corte de Caja
               </button>
             </div>
           )}
           {!centroActivo && (
-            <div className="card" style={{ padding: 32, textAlign: 'center', color: '#94a3b8' }}>
+            <div className="card" style={{ padding: 32, textAlign: 'center', color: '#7A7E87' }}>
               <Store size={32} style={{ margin: '0 auto 10px' }} />
               <div>Selecciona un centro de venta para comenzar</div>
             </div>
@@ -1300,25 +1300,25 @@ ${facturasCorte.length > 0 ? `
         <>
           <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: 280 }}>
-              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
+              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
                 placeholder="Buscar cliente o folio…" value={busquedaV} onChange={e => setBusquedaV(e.target.value)} />
-              {busquedaV && <button onClick={() => setBusquedaV('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+              {busquedaV && <button onClick={() => setBusquedaV('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2 }}><X size={12} /></button>}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>Del</span>
+              <span style={{ fontSize: 12, color: '#62666E', whiteSpace: 'nowrap' }}>Del</span>
               <input type="date" value={filtroFechaDesde} onChange={e => setFiltroFechaDesde(e.target.value)}
-                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
+                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>al</span>
+              <span style={{ fontSize: 12, color: '#62666E', whiteSpace: 'nowrap' }}>al</span>
               <input type="date" value={filtroFechaHasta} onChange={e => setFiltroFechaHasta(e.target.value)}
                 min={filtroFechaDesde}
-                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
+                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
             </div>
             <FiltroAgrupadorCentro centros={centrosAgr} agrupadores={agrupadores} filtroAgr={filtroAgr} setFiltroAgr={v => { setFiltroAgr(v) }} filtroCentro={filtroCentro} setFiltroCentro={v => { setFiltroCentro(v) }} />
             <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}
-              style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
+              style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
               <option value="">Todos</option>
               <option value="PAGADA">Pagada</option>
               <option value="CANCELADA">Cancelada</option>
@@ -1326,9 +1326,9 @@ ${facturasCorte.length > 0 ? `
           </div>
 
           {loadingV ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Cargando…</div>
+            <div style={{ padding: 40, textAlign: 'center', color: '#7A7E87' }}>Cargando…</div>
           ) : ventasF.length === 0 ? (
-            <div className="card" style={{ padding: 48, textAlign: 'center', color: '#94a3b8' }}>
+            <div className="card" style={{ padding: 48, textAlign: 'center', color: '#7A7E87' }}>
               <History size={32} style={{ margin: '0 auto 10px' }} />
               <div style={{ fontWeight: 500 }}>Sin ventas en este período</div>
             </div>
@@ -1339,77 +1339,77 @@ ${facturasCorte.length > 0 ? `
                 const centro  = centros.find(c => c.id === v.id_centro_fk)
                 const cancelada = v.status === 'CANCELADA'
                 return (
-                  <div key={v.id} className="card" style={{ padding: 0, overflow: 'hidden', opacity: cancelada ? 0.6 : 1, borderLeft: `4px solid ${cancelada ? '#e2e8f0' : '#059669'}` }}>
+                  <div key={v.id} className="card" style={{ padding: 0, overflow: 'hidden', opacity: cancelada ? 0.6 : 1, borderLeft: `4px solid ${cancelada ? '#E6E8EB' : '#267F56'}` }}>
                     <div onClick={() => setExpandidoV(abierto ? null : v.id)}
                       style={{ padding: '11px 16px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', flexWrap: 'wrap' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f8fafc'}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FA'}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#fff'}>
-                      <div style={{ color: '#94a3b8', flexShrink: 0 }}>
+                      <div style={{ color: '#7A7E87', flexShrink: 0 }}>
                         {abierto ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                       </div>
-                      <div style={{ fontSize: 12, color: '#94a3b8', flexShrink: 0, minWidth: 60 }}>
+                      <div style={{ fontSize: 12, color: '#7A7E87', flexShrink: 0, minWidth: 60 }}>
                         #{String(v.id).padStart(6, '0')}<br />
-                        <span style={{ color: '#64748b' }}>Día {v.folio_dia}</span>
+                        <span style={{ color: '#62666E' }}>Día {v.folio_dia}</span>
                       </div>
                       <div style={{ flex: 1, minWidth: 140 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{v.nombre_cliente}</div>
-                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>{v.nombre_cliente}</div>
+                        <div style={{ fontSize: 11, color: '#62666E', marginTop: 1 }}>
                           {fmtDT(v.fecha)}
-                          {centro && <span style={{ marginLeft: 8, padding: '1px 6px', borderRadius: 20, background: '#f1f5f9', color: '#475569', fontWeight: 600 }}>{centro.nombre}</span>}
+                          {centro && <span style={{ marginLeft: 8, padding: '1px 6px', borderRadius: 20, background: '#F4F5F7', color: '#4A4D54', fontWeight: 600 }}>{centro.nombre}</span>}
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: cancelada ? '#f8fafc' : '#ecfdf5', color: cancelada ? '#64748b' : '#15803d', fontWeight: 600 }}>
+                        <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: cancelada ? '#F8F9FA' : '#1F7A50', color: cancelada ? '#62666E' : '#fff', fontWeight: 600 }}>
                           {v.status}
                         </span>
                         {!v.id_corte_fk && !cancelada && (
-                          <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, background: '#fffbeb', color: '#d97706', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
+                          <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, background: '#B5761A', color: '#fff', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
                             <AlertCircle size={9} /> Por cortar
                           </span>
                         )}
-                        <span style={{ fontSize: 15, fontWeight: 800, color: cancelada ? '#94a3b8' : '#1e293b' }}>{fmt$(v.total)}</span>
+                        <span style={{ fontSize: 15, fontWeight: 800, color: cancelada ? '#7A7E87' : '#26282D' }}>{fmt$(v.total)}</span>
                       </div>
                     </div>
                     {abierto && (
-                      <div style={{ borderTop: '1px solid #f1f5f9', padding: '10px 16px', background: '#fafafa', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                        <div style={{ fontSize: 12, color: '#64748b', flex: 1 }}>
+                      <div style={{ borderTop: '1px solid #F4F5F7', padding: '10px 16px', background: '#fafafa', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <div style={{ fontSize: 12, color: '#62666E', flex: 1 }}>
                           {v.usuario_crea && <span>Cajero: <strong>{v.usuario_crea}</strong></span>}
-                          {v.num_impresiones > 0 && <span style={{ marginLeft: 12, color: '#94a3b8' }}>🖨 {v.num_impresiones}× impreso</span>}
+                          {v.num_impresiones > 0 && <span style={{ marginLeft: 12, color: '#7A7E87' }}>{v.num_impresiones}× impreso</span>}
                           {v.facturada && v.folio_fiscal && (
-                            <div style={{ marginTop: 4, fontSize: 11, fontFamily: 'monospace', color: '#7c3aed', wordBreak: 'break-all' }}>
+                            <div style={{ marginTop: 4, fontSize: 11, fontVariantNumeric: 'tabular-nums', color: '#6B4E79', wordBreak: 'break-all' }}>
                               UUID: {v.folio_fiscal}
                             </div>
                           )}
                         </div>
                         <div style={{ display: 'flex', gap: 6 }}>
                           <button onClick={() => reimprimirTicket(v)}
-                            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
+                            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#1C1D21', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
                             <Printer size={11} /> {v.num_impresiones > 0 ? 'Reimprimir' : 'Ticket'}
                           </button>
                           {!cancelada && !v.facturada && (
                             <button onClick={() => abrirFacturarPOS(v)}
-                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
+                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#fff', background: '#6B4E79', border: '1px solid #6B4E79', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
                               <FileCheck size={11} /> Facturar
                             </button>
                           )}
                           {v.facturada && (
-                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, background: '#ede9fe', color: '#7c3aed', fontWeight: 700 }}>Facturada</span>
+                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, background: '#6B4E79', color: '#fff', fontWeight: 700 }}>Facturada</span>
                           )}
                           {v.facturada && v.folio_fiscal && (
                             <button onClick={() => verPdfFactura(v)} disabled={viendoPdf === `${v.id}-view`}
-                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', opacity: viendoPdf === `${v.id}-view` ? 0.6 : 1 }}>
+                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#fff', background: '#6B4E79', border: '1px solid #6B4E79', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', opacity: viendoPdf === `${v.id}-view` ? 0.6 : 1 }}>
                               {viendoPdf === `${v.id}-view` ? <Loader size={11} className="animate-spin" /> : <FileCheck size={11} />} PDF
                             </button>
                           )}
                           {!cancelada && esAdminMesa && (
                             origenPorVenta.has(v.id) ? (
                               <span title={`Folio ${origenPorVenta.get(v.id)!.folio ?? '—'} — cancélalo desde ${origenPorVenta.get(v.id)!.ruta}`}
-                                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#94a3b8', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '4px 10px' }}>
+                                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#7A7E87', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 6, padding: '4px 10px' }}>
                                 <Lock size={11} /> Cancelar desde {origenPorVenta.get(v.id)!.ruta}
                               </span>
                             ) : (
                               <button onClick={() => cancelarVenta(v.id)}
-                                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
+                                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#fff', background: '#C23B3B', border: '1px solid #C23B3B', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
                                 <Ban size={11} /> Cancelar
                               </button>
                             )
@@ -1421,9 +1421,9 @@ ${facturasCorte.length > 0 ? `
                 )
               })}
               {/* Total del filtro */}
-              <div style={{ textAlign: 'right', fontSize: 12, color: '#64748b', marginTop: 4 }}>
+              <div style={{ textAlign: 'right', fontSize: 12, color: '#62666E', marginTop: 4 }}>
                 {ventasF.filter(v => v.status === 'PAGADA').length} venta{ventasF.filter(v => v.status === 'PAGADA').length !== 1 ? 's' : ''} ·
-                <span style={{ fontWeight: 700, color: '#059669', marginLeft: 6 }}>
+                <span style={{ fontWeight: 700, color: '#267F56', marginLeft: 6 }}>
                   {fmt$(ventasF.filter(v => v.status === 'PAGADA').reduce((a, v) => a + v.total, 0))}
                 </span>
               </div>
@@ -1438,22 +1438,22 @@ ${facturasCorte.length > 0 ? `
           {/* Encabezado */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
             <input type="date" value={fechaMesa} onChange={e => { setFechaMesa(e.target.value); setEditandoPagos(null) }}
-              style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
+              style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
             <button className="btn-ghost" onClick={fetchVentasMesa} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
               <RefreshCw size={12} className={loadingMesa ? 'animate-spin' : ''} /> Actualizar
             </button>
             <div style={{ flex: 1 }} />
             {!esAdminMesa && (
-              <span style={{ fontSize: 12, padding: '4px 12px', borderRadius: 20, background: '#fef9ec', border: '1px solid #fcd34d', color: '#92400e', fontWeight: 600 }}>
+              <span style={{ fontSize: 12, padding: '4px 12px', borderRadius: 20, background: '#B5761A', border: '1px solid #B5761A', color: '#fff', fontWeight: 600 }}>
                 Solo lectura — la edición requiere rol Admin o Superadmin
               </span>
             )}
           </div>
 
           {loadingMesa ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}><Loader size={20} className="animate-spin" style={{ margin: '0 auto' }} /></div>
+            <div style={{ padding: 40, textAlign: 'center', color: '#7A7E87' }}><Loader size={20} className="animate-spin" style={{ margin: '0 auto' }} /></div>
           ) : ventasMesa.length === 0 ? (
-            <div className="card" style={{ padding: 48, textAlign: 'center', color: '#94a3b8' }}>
+            <div className="card" style={{ padding: 48, textAlign: 'center', color: '#7A7E87' }}>
               <CreditCard size={32} style={{ margin: '0 auto 10px' }} />
               <div style={{ fontWeight: 500 }}>Sin ventas registradas en esta fecha</div>
             </div>
@@ -1462,14 +1462,14 @@ ${facturasCorte.length > 0 ? `
               {/* Resumen del día */}
               <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
                 {[
-                  { label: 'Total ventas', value: fmt$(ventasMesa.filter(v => v.status === 'PAGADA').reduce((a, v) => a + v.total, 0)), color: '#059669', bg: '#ecfdf5' },
-                  { label: 'Transacciones', value: ventasMesa.filter(v => v.status === 'PAGADA').length, color: '#2563eb', bg: '#eff6ff' },
-                  { label: 'Por cortar', value: ventasMesa.filter(v => v.status === 'PAGADA' && !v.id_corte_fk).length, color: '#d97706', bg: '#fffbeb' },
-                  { label: 'Canceladas', value: ventasMesa.filter(v => v.status === 'CANCELADA').length, color: '#dc2626', bg: '#fef2f2' },
+                  { label: 'Total ventas', value: fmt$(ventasMesa.filter(v => v.status === 'PAGADA').reduce((a, v) => a + v.total, 0)), color: '#267F56', bg: '#F4F5F7' },
+                  { label: 'Transacciones', value: ventasMesa.filter(v => v.status === 'PAGADA').length, color: '#1C1D21', bg: '#F4F5F7' },
+                  { label: 'Por cortar', value: ventasMesa.filter(v => v.status === 'PAGADA' && !v.id_corte_fk).length, color: '#B5761A', bg: '#F4F5F7' },
+                  { label: 'Canceladas', value: ventasMesa.filter(v => v.status === 'CANCELADA').length, color: '#C23B3B', bg: '#F4F5F7' },
                 ].map(s => (
-                  <div key={s.label} className="card" style={{ flex: '1 1 130px', maxWidth: 180, padding: '10px 14px', background: s.bg, border: `1px solid ${s.color}22` }}>
-                    <div style={{ fontSize: 11, color: '#64748b', marginBottom: 3 }}>{s.label}</div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: s.color }}>{s.value}</div>
+                  <div key={s.label} className="card" style={{ flex: '1 1 130px', maxWidth: 180, padding: '10px 14px', background: '#fff', border: '1px solid #E6E8EB' }}>
+                    <div style={{ fontSize: 11, color: '#62666E', marginBottom: 3 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: s.color, marginRight: 6, verticalAlign: 'middle' }} />{s.label}</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{s.value}</div>
                   </div>
                 ))}
               </div>
@@ -1479,9 +1479,9 @@ ${facturasCorte.length > 0 ? `
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                      <tr style={{ borderBottom: '1px solid #E6E8EB', background: '#F8F9FA' }}>
                         {['Folio', 'Cliente', 'Centro', 'Hora', 'Total', 'Formas de Pago', 'Estado', esAdminMesa ? 'Acción' : ''].filter(Boolean).map(h => (
-                          <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
+                          <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#62666E', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -1494,29 +1494,29 @@ ${facturasCorte.length > 0 ? `
                         const puedeEditar = esAdminMesa && !cancelada && !cortada
 
                         return (
-                          <tr key={v.id} style={{ borderBottom: '1px solid #f1f5f9', opacity: cancelada ? 0.55 : 1, background: editando ? '#f0fdf4' : undefined }}>
+                          <tr key={v.id} style={{ borderBottom: '1px solid #F4F5F7', opacity: cancelada ? 0.55 : 1, background: editando ? '#F4F5F7' : undefined }}>
                             {/* Folio */}
                             <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                              <div style={{ fontWeight: 700, fontSize: 12, fontFamily: 'monospace', color: '#2563eb' }}>
+                              <div style={{ fontWeight: 700, fontSize: 12, fontVariantNumeric: 'tabular-nums', color: '#1C1D21' }}>
                                 #{String(v.folio_dia).padStart(4, '0')}
                               </div>
-                              <div style={{ fontSize: 10, color: '#94a3b8' }}>ID {v.id}</div>
+                              <div style={{ fontSize: 10, color: '#7A7E87' }}>ID {v.id}</div>
                             </td>
                             {/* Cliente */}
                             <td style={{ padding: '10px 14px' }}>
-                              <div style={{ fontWeight: 600, color: '#1e293b' }}>{v.nombre_cliente}</div>
-                              {v.es_socio && <div style={{ fontSize: 10, color: '#059669', fontWeight: 600 }}>Socio</div>}
+                              <div style={{ fontWeight: 600, color: '#26282D' }}>{v.nombre_cliente}</div>
+                              {v.es_socio && <div style={{ fontSize: 10, color: '#267F56', fontWeight: 600 }}>Socio</div>}
                             </td>
                             {/* Centro */}
-                            <td style={{ padding: '10px 14px', fontSize: 12, color: '#475569', whiteSpace: 'nowrap' }}>
+                            <td style={{ padding: '10px 14px', fontSize: 12, color: '#4A4D54', whiteSpace: 'nowrap' }}>
                               {centro?.nombre ?? `#${v.id_centro_fk}`}
                             </td>
                             {/* Hora */}
-                            <td style={{ padding: '10px 14px', fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>
+                            <td style={{ padding: '10px 14px', fontSize: 12, color: '#62666E', whiteSpace: 'nowrap' }}>
                               {new Date(v.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
                             </td>
                             {/* Total */}
-                            <td style={{ padding: '10px 14px', fontWeight: 700, color: cancelada ? '#94a3b8' : '#059669', whiteSpace: 'nowrap', fontSize: 14 }}>
+                            <td style={{ padding: '10px 14px', fontWeight: 700, color: cancelada ? '#7A7E87' : '#267F56', whiteSpace: 'nowrap', fontSize: 14 }}>
                               {fmt$(v.total)}
                             </td>
                             {/* Formas de pago + editor */}
@@ -1533,7 +1533,7 @@ ${facturasCorte.length > 0 ? `
                                           const fp = formasMesa.find(f => f.id === Number(e.target.value))
                                           setPagosEdit(prev => prev.map((x, j) => j === i ? { ...x, id_forma_fk: fp?.id ?? null, forma_nombre: fp?.nombre ?? '' } : x))
                                         }}
-                                        style={{ flex: 2, padding: '5px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none', background: '#fff' }}>
+                                        style={{ flex: 2, padding: '5px 8px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 6, fontFamily: 'inherit', outline: 'none', background: '#fff' }}>
                                         <option value="">— Forma de pago —</option>
                                         {formasMesa.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
                                       </select>
@@ -1541,10 +1541,10 @@ ${facturasCorte.length > 0 ? `
                                         value={lp.monto}
                                         onChange={e => setPagosEdit(prev => prev.map((x, j) => j === i ? { ...x, monto: e.target.value } : x))}
                                         placeholder="Monto"
-                                        style={{ flex: 1, padding: '5px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none', minWidth: 80 }} />
+                                        style={{ flex: 1, padding: '5px 8px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 6, fontFamily: 'inherit', outline: 'none', minWidth: 80 }} />
                                       {pagosEdit.length > 1 && (
                                         <button onClick={() => setPagosEdit(prev => prev.filter((_, j) => j !== i))}
-                                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: 2, flexShrink: 0 }}>
+                                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#C23B3B', padding: 2, flexShrink: 0 }}>
                                           <Trash2 size={13} />
                                         </button>
                                       )}
@@ -1555,26 +1555,26 @@ ${facturasCorte.length > 0 ? `
                                     const suma = pagosEdit.reduce((a, l) => a + (parseFloat(l.monto) || 0), 0)
                                     const diff = Math.abs(suma - v.total)
                                     return (
-                                      <div style={{ fontSize: 11, color: diff > 0.01 ? '#dc2626' : '#059669', fontWeight: 600 }}>
+                                      <div style={{ fontSize: 11, color: diff > 0.01 ? '#C23B3B' : '#267F56', fontWeight: 600 }}>
                                         Suma: {fmt$(suma)} / Total: {fmt$(v.total)}
                                         {diff > 0.01 ? ` — diferencia: ${fmt$(diff)}` : ' ✓'}
                                       </div>
                                     )
                                   })()}
-                                  {errorPagos && <div style={{ fontSize: 11, color: '#dc2626' }}>{errorPagos}</div>}
+                                  {errorPagos && <div style={{ fontSize: 11, color: '#C23B3B' }}>{errorPagos}</div>}
                                   {/* Acciones del editor */}
                                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                                     <button onClick={() => setPagosEdit(prev => [...prev, { id_forma_fk: null, forma_nombre: '', monto: '' }])}
-                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, padding: '4px 8px', border: '1px dashed #a7f3d0', borderRadius: 6, background: '#f0fdf4', color: '#059669', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, padding: '4px 8px', border: '1px dashed #1F7A50', borderRadius: 6, background: '#1F7A50', color: '#fff', cursor: 'pointer', fontFamily: 'inherit' }}>
                                       <Plus size={11} /> Agregar línea
                                     </button>
                                     <button onClick={() => guardarPagos(v)} disabled={savingPagos}
-                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '4px 12px', border: 'none', borderRadius: 6, background: '#059669', color: '#fff', cursor: 'pointer', opacity: savingPagos ? 0.6 : 1 }}>
+                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '4px 12px', border: 'none', borderRadius: 6, background: '#267F56', color: '#fff', cursor: 'pointer', opacity: savingPagos ? 0.6 : 1 }}>
                                       {savingPagos ? <Loader size={11} className="animate-spin" /> : <CheckCircle size={11} />}
                                       {savingPagos ? 'Guardando…' : 'Guardar'}
                                     </button>
                                     <button onClick={() => { setEditandoPagos(null); setPagosEdit([]); setErrorPagos('') }}
-                                      style={{ fontSize: 11, padding: '4px 10px', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', color: '#64748b', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                      style={{ fontSize: 11, padding: '4px 10px', border: '1px solid #E6E8EB', borderRadius: 6, background: '#fff', color: '#62666E', cursor: 'pointer', fontFamily: 'inherit' }}>
                                       Cancelar
                                     </button>
                                   </div>
@@ -1585,12 +1585,12 @@ ${facturasCorte.length > 0 ? `
                             <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                 <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, display: 'inline-block',
-                                  background: cancelada ? '#f8fafc' : '#ecfdf5', color: cancelada ? '#64748b' : '#15803d' }}>
+                                  background: cancelada ? '#F8F9FA' : '#1F7A50', color: cancelada ? '#62666E' : '#fff' }}>
                                   {v.status}
                                 </span>
                                 {!cancelada && (
                                   <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, fontWeight: 600, display: 'inline-block',
-                                    background: cortada ? '#f0fdf4' : '#fffbeb', color: cortada ? '#15803d' : '#d97706' }}>
+                                    background: cortada ? '#1F7A50' : '#B5761A', color: '#fff' }}>
                                     {cortada ? `✓ Cortada #${v.id_corte_fk}` : '⏳ Por cortar'}
                                   </span>
                                 )}
@@ -1601,12 +1601,12 @@ ${facturasCorte.length > 0 ? `
                               <td style={{ padding: '10px 14px' }}>
                                 {puedeEditar && !editando && (
                                   <button onClick={() => abrirEditarPagos(v)}
-                                    style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '5px 10px', border: '1px solid #bfdbfe', borderRadius: 6, background: '#eff6ff', color: '#2563eb', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                    style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '5px 10px', border: '1px solid #C9CCD3', borderRadius: 6, background: '#F4F5F7', color: '#1C1D21', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                     <Pencil size={11} /> Editar pagos
                                   </button>
                                 )}
                                 {cortada && !cancelada && (
-                                  <span style={{ fontSize: 10, color: '#94a3b8', fontStyle: 'italic' }}>Cortada — no editable</span>
+                                  <span style={{ fontSize: 10, color: '#7A7E87', fontStyle: 'italic' }}>Cortada — no editable</span>
                                 )}
                               </td>
                             )}
@@ -1627,25 +1627,25 @@ ${facturasCorte.length > 0 ? `
         <>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
             <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: 280 }}>
-              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
+              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
                 placeholder="Buscar cliente…" value={busquedaFact} onChange={e => setBusquedaFact(e.target.value)} />
-              {busquedaFact && <button onClick={() => setBusquedaFact('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+              {busquedaFact && <button onClick={() => setBusquedaFact('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2 }}><X size={12} /></button>}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>Del</span>
+              <span style={{ fontSize: 12, color: '#62666E', whiteSpace: 'nowrap' }}>Del</span>
               <input type="date" value={fechaFact} onChange={e => setFechaFact(e.target.value)}
-                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
+                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>al</span>
+              <span style={{ fontSize: 12, color: '#62666E', whiteSpace: 'nowrap' }}>al</span>
               <input type="date" value={fechaFactFin} onChange={e => setFechaFactFin(e.target.value)}
                 min={fechaFact}
-                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
+                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
             </div>
             <FiltroAgrupadorCentro centros={centrosAgr} agrupadores={agrupadores} filtroAgr={filtroAgrFact} setFiltroAgr={v => { setFiltroAgrFact(v) }} filtroCentro={filtroCentroFact} setFiltroCentro={v => { setFiltroCentroFact(v) }} />
             <select value={filtroFormaPagoFact} onChange={e => setFiltroFormaPagoFact(e.target.value)}
-              style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
+              style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
               <option value="">Todas las formas de pago</option>
               {formasPago.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
             </select>
@@ -1655,9 +1655,9 @@ ${facturasCorte.length > 0 ? `
           </div>
 
           {loadingF ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}><Loader size={20} className="animate-spin" style={{ margin: '0 auto' }} /></div>
+            <div style={{ padding: 40, textAlign: 'center', color: '#7A7E87' }}><Loader size={20} className="animate-spin" style={{ margin: '0 auto' }} /></div>
           ) : facturasF.length === 0 ? (
-            <div className="card" style={{ padding: 48, textAlign: 'center', color: '#94a3b8' }}>
+            <div className="card" style={{ padding: 48, textAlign: 'center', color: '#7A7E87' }}>
               <FileCheck size={32} style={{ margin: '0 auto 10px' }} />
               <div style={{ fontWeight: 500 }}>{facturas.length === 0 ? 'Sin facturas emitidas en el período seleccionado' : 'Sin coincidencias para la búsqueda'}</div>
             </div>
@@ -1666,9 +1666,9 @@ ${facturasCorte.length > 0 ? `
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                    <tr style={{ borderBottom: '1px solid #E6E8EB', background: '#F8F9FA' }}>
                       {['Folio Factura', 'Cliente', 'Centro', 'UUID Fiscal', 'Fecha', 'Total', 'Forma de Pago', 'Receptor', 'Enviado', 'Acciones'].map(h => (
-                        <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
+                        <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#62666E', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -1677,19 +1677,19 @@ ${facturasCorte.length > 0 ? `
                       const cfdi = v._cfdi
                       const centro = centros.find(c => c.id === v.id_centro_fk)
                       return (
-                        <tr key={v.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <tr key={v.id} style={{ borderBottom: '1px solid #F4F5F7' }}>
                           <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                            <div style={{ fontWeight: 700, fontFamily: 'monospace', color: '#2563eb' }}>{cfdi?.folio_factura ?? '—'}</div>
-                            <div style={{ fontSize: 10, color: '#94a3b8' }}>Ticket #{String(v.id).padStart(6, '0')}</div>
+                            <div style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: '#1C1D21' }}>{cfdi?.folio_factura ?? '—'}</div>
+                            <div style={{ fontSize: 10, color: '#7A7E87' }}>Ticket #{String(v.id).padStart(6, '0')}</div>
                           </td>
-                          <td style={{ padding: '10px 14px', fontWeight: 600, color: '#1e293b' }}>{v.nombre_cliente}</td>
-                          <td style={{ padding: '10px 14px', fontSize: 12, color: '#475569' }}>{centro?.nombre ?? `#${v.id_centro_fk}`}</td>
+                          <td style={{ padding: '10px 14px', fontWeight: 600, color: '#26282D' }}>{v.nombre_cliente}</td>
+                          <td style={{ padding: '10px 14px', fontSize: 12, color: '#4A4D54' }}>{centro?.nombre ?? `#${v.id_centro_fk}`}</td>
                           <td style={{ padding: '10px 14px', maxWidth: 220 }}>
-                            <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#7c3aed', wordBreak: 'break-all' }}>{v.folio_fiscal ?? '—'}</div>
+                            <div style={{ fontSize: 11, fontVariantNumeric: 'tabular-nums', color: '#6B4E79', wordBreak: 'break-all' }}>{v.folio_fiscal ?? '—'}</div>
                           </td>
-                          <td style={{ padding: '10px 14px', fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>{fmtDT(v.fecha)}</td>
-                          <td style={{ padding: '10px 14px', fontWeight: 700, color: '#059669', whiteSpace: 'nowrap' }}>{fmt$(v.total)}</td>
-                          <td style={{ padding: '10px 14px', fontSize: 12, color: '#475569' }}>
+                          <td style={{ padding: '10px 14px', fontSize: 12, color: '#62666E', whiteSpace: 'nowrap' }}>{fmtDT(v.fecha)}</td>
+                          <td style={{ padding: '10px 14px', fontWeight: 700, color: '#267F56', whiteSpace: 'nowrap' }}>{fmt$(v.total)}</td>
+                          <td style={{ padding: '10px 14px', fontSize: 12, color: '#4A4D54' }}>
                             {v._pagos.length > 0
                               ? v._pagos.map((p: any) => p.forma_nombre).filter(Boolean).join(', ') || '—'
                               : '—'}
@@ -1697,15 +1697,15 @@ ${facturasCorte.length > 0 ? `
                           <td style={{ padding: '10px 14px', fontSize: 12 }}>
                             {cfdi ? (
                               <div>
-                                <div style={{ fontWeight: 600, color: '#1e293b' }}>{cfdi.receptor_rfc ?? '—'}</div>
-                                <div style={{ fontSize: 11, color: '#64748b' }}>{cfdi.receptor_email ?? 'Sin email'}</div>
+                                <div style={{ fontWeight: 600, color: '#26282D' }}>{cfdi.receptor_rfc ?? '—'}</div>
+                                <div style={{ fontSize: 11, color: '#62666E' }}>{cfdi.receptor_email ?? 'Sin email'}</div>
                               </div>
-                            ) : <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Sin datos</span>}
+                            ) : <span style={{ color: '#7A7E87', fontStyle: 'italic' }}>Sin datos</span>}
                           </td>
                           <td style={{ padding: '10px 14px', textAlign: 'center' }}>
                             {cfdi?.enviado_email
-                              ? <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#dcfce7', color: '#15803d', fontWeight: 600 }}>Enviado</span>
-                              : <span style={{ fontSize: 11, color: '#94a3b8' }}>—</span>}
+                              ? <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#1F7A50', color: '#fff', fontWeight: 600 }}>Enviado</span>
+                              : <span style={{ fontSize: 11, color: '#7A7E87' }}>—</span>}
                           </td>
                           <td style={{ padding: '10px 14px' }}>
                             {(() => {
@@ -1720,13 +1720,13 @@ ${facturasCorte.length > 0 ? `
                               return (
                                 <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap', alignItems: 'center' }}>
                                   {cancelada && (
-                                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#fef2f2', color: '#dc2626', whiteSpace: 'nowrap' }}>
+                                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#C23B3B', color: '#fff', whiteSpace: 'nowrap' }}>
                                       Cancelada
                                     </span>
                                   )}
                                   {cancelada && (
                                     <button onClick={() => abrirFacturarPOS(v)}
-                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#fff', background: '#6B4E79', border: '1px solid #6B4E79', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                       <FileCheck size={11} /> Facturar de nuevo
                                     </button>
                                   )}
@@ -1734,12 +1734,12 @@ ${facturasCorte.length > 0 ? `
                                   {tienePdfBD ? (
                                     <a href={`data:application/pdf;base64,${v._cfdi.pdf_b64}`}
                                       download={`${v.folio_fiscal ?? 'factura'}.pdf`}
-                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '4px 10px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#fff', background: '#6B4E79', border: '1px solid #6B4E79', borderRadius: 6, padding: '4px 10px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
                                       <FileCheck size={11} /> PDF
                                     </a>
                                   ) : tienePAC ? (
                                     <button onClick={() => descargarDesdePAC(v, 'pdf')} disabled={descargando === keyPdf}
-                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: descargando === keyPdf ? 0.6 : 1 }}>
+                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#fff', background: '#6B4E79', border: '1px solid #6B4E79', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: descargando === keyPdf ? 0.6 : 1 }}>
                                       {descargando === keyPdf ? <Loader size={11} className="animate-spin" /> : <FileCheck size={11} />} PDF
                                     </button>
                                   ) : null}
@@ -1751,31 +1751,31 @@ ${facturasCorte.length > 0 ? `
                                       const a = document.createElement('a'); a.href = url; a.download = `${v.folio_fiscal ?? 'cfdi'}.xml`; a.click()
                                       URL.revokeObjectURL(url)
                                     }}
-                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#1C1D21', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                       XML
                                     </button>
                                   ) : tienePAC ? (
                                     <button onClick={() => descargarDesdePAC(v, 'xml')} disabled={descargando === keyXml}
-                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: descargando === keyXml ? 0.6 : 1 }}>
+                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#1C1D21', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: descargando === keyXml ? 0.6 : 1 }}>
                                       {descargando === keyXml ? <Loader size={11} className="animate-spin" /> : null} XML
                                     </button>
                                   ) : null}
                                   {/* Reenviar email */}
                                   {(emailDest || tienePAC) && (
                                     <button onClick={() => reenviarEmailFactura(v)} disabled={reenvEmail === v.id}
-                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#065f46', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: reenvEmail === v.id ? 0.6 : 1 }}>
+                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#fff', background: '#1F7A50', border: '1px solid #1F7A50', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: reenvEmail === v.id ? 0.6 : 1 }}>
                                       {reenvEmail === v.id ? <Loader size={11} className="animate-spin" /> : <Send size={11} />}
                                       Reenviar
                                     </button>
                                   )}
                                   {/* Sin datos del PAC — solo mostrar UUID */}
                                   {!tienePAC && !tienePdfBD && !tieneXmlBD && (
-                                    <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>Sin ID PAC</span>
+                                    <span style={{ fontSize: 11, color: '#7A7E87', fontStyle: 'italic' }}>Sin ID PAC</span>
                                   )}
                                   {/* Cancelar CFDI */}
                                   {tienePAC && !cancelada && esAdminMesa && (
                                     <button onClick={() => { setCancelarFacturaV(v); setMotivoCancel('02'); setErrCancelFactura('') }}
-                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#fff', background: '#C23B3B', border: '1px solid #C23B3B', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                       <XCircle size={11} /> Cancelar
                                     </button>
                                   )}
@@ -1788,11 +1788,11 @@ ${facturasCorte.length > 0 ? `
                     })}
                   </tbody>
                   <tfoot>
-                    <tr style={{ borderTop: '2px solid #e2e8f0', background: '#f8fafc' }}>
-                      <td colSpan={5} style={{ padding: '10px 14px', textAlign: 'right', fontSize: 12, fontWeight: 700, color: '#475569' }}>
+                    <tr style={{ borderTop: '2px solid #E6E8EB', background: '#F8F9FA' }}>
+                      <td colSpan={5} style={{ padding: '10px 14px', textAlign: 'right', fontSize: 12, fontWeight: 700, color: '#4A4D54' }}>
                         Total ({facturasF.length} factura{facturasF.length !== 1 ? 's' : ''})
                       </td>
-                      <td style={{ padding: '10px 14px', fontWeight: 700, color: '#059669', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '10px 14px', fontWeight: 700, color: '#267F56', whiteSpace: 'nowrap' }}>
                         {fmt$(facturasF.reduce((a, v) => a + (Number(v.total) || 0), 0))}
                       </td>
                       <td colSpan={4}></td>
@@ -1810,18 +1810,18 @@ ${facturasCorte.length > 0 ? `
         <>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>Del</span>
+              <span style={{ fontSize: 12, color: '#62666E', whiteSpace: 'nowrap' }}>Del</span>
               <input type="date" value={filtroCorteDesde} onChange={e => { setFiltroCorteDesde(e.target.value); setPageC(0) }}
-                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
+                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>al</span>
+              <span style={{ fontSize: 12, color: '#62666E', whiteSpace: 'nowrap' }}>al</span>
               <input type="date" value={filtroCorteHasta} onChange={e => { setFiltroCorteHasta(e.target.value); setPageC(0) }}
                 min={filtroCorteDesde}
-                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
+                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
             </div>
             <FiltroAgrupadorCentro centros={centrosAgr} agrupadores={agrupadores} filtroAgr={filtroAgrCorte} setFiltroAgr={v => { setFiltroAgrCorte(v); setPageC(0) }} filtroCentro={filtroCorteCentro} setFiltroCentro={v => { setFiltroCorteCentro(v); setPageC(0) }} />
-            <span style={{ fontSize: 12, color: '#94a3b8' }}>{totalC} corte{totalC !== 1 ? 's' : ''}</span>
+            <span style={{ fontSize: 12, color: '#7A7E87' }}>{totalC} corte{totalC !== 1 ? 's' : ''}</span>
             <div style={{ flex: 1 }} />
             <button className="btn-ghost" onClick={fetchCortes} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
               <RefreshCw size={12} /> Actualizar
@@ -1829,9 +1829,9 @@ ${facturasCorte.length > 0 ? `
           </div>
 
           {loadingC ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Cargando…</div>
+            <div style={{ padding: 40, textAlign: 'center', color: '#7A7E87' }}>Cargando…</div>
           ) : cortes.length === 0 ? (
-            <div className="card" style={{ padding: 48, textAlign: 'center', color: '#94a3b8' }}>
+            <div className="card" style={{ padding: 48, textAlign: 'center', color: '#7A7E87' }}>
               <Scissors size={32} style={{ margin: '0 auto 10px' }} />
               <div style={{ fontWeight: 500 }}>Sin cortes registrados</div>
               <div style={{ fontSize: 12, marginTop: 4 }}>Realiza un corte de caja desde el Punto de Venta</div>
@@ -1856,28 +1856,28 @@ ${facturasCorte.length > 0 ? `
                         onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)'}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
                         <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                          <div style={{ fontWeight: 700, color: '#1e293b' }}>#{String(c.id).padStart(4, '0')}</div>
-                          <div style={{ fontSize: 11, color: '#94a3b8' }}>{fmtDT(c.fecha_corte)}</div>
+                          <div style={{ fontWeight: 700, color: '#26282D' }}>#{String(c.id).padStart(4, '0')}</div>
+                          <div style={{ fontSize: 11, color: '#7A7E87' }}>{fmtDT(c.fecha_corte)}</div>
                         </td>
                         <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontWeight: 500 }}>
                           {c.centro_nombre}
                         </td>
                         <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                          <div style={{ fontSize: 12, color: '#475569' }}>{fmtD(c.fecha_inicio)}</div>
-                          <div style={{ fontSize: 11, color: '#94a3b8' }}>— {fmtD(c.fecha_fin)}</div>
+                          <div style={{ fontSize: 12, color: '#4A4D54' }}>{fmtD(c.fecha_inicio)}</div>
+                          <div style={{ fontSize: 11, color: '#7A7E87' }}>— {fmtD(c.fecha_fin)}</div>
                         </td>
                         <td style={{ padding: '10px 14px', textAlign: 'center' }}>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>{c.num_ventas}</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: '#267F56' }}>{c.num_ventas}</span>
                         </td>
                         <td style={{ padding: '10px 14px', textAlign: 'center' }}>
                           {(c.num_canceladas ?? 0) > 0
-                            ? <span style={{ fontSize: 12, fontWeight: 700, color: '#dc2626' }}>{c.num_canceladas}</span>
-                            : <span style={{ color: '#cbd5e1' }}>—</span>}
+                            ? <span style={{ fontSize: 12, fontWeight: 700, color: '#C23B3B' }}>{c.num_canceladas}</span>
+                            : <span style={{ color: '#C9CCD3' }}>—</span>}
                         </td>
                         <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontSize: 15, fontWeight: 800, color: '#059669' }}>{fmt$(c.total_neto)}</span>
+                          <span style={{ fontSize: 15, fontWeight: 800, color: '#267F56' }}>{fmt$(c.total_neto)}</span>
                           {c.total_cancelado > 0 && (
-                            <div style={{ fontSize: 11, color: '#dc2626' }}>−{fmt$(c.total_cancelado)} cancelado</div>
+                            <div style={{ fontSize: 11, color: '#C23B3B' }}>−{fmt$(c.total_cancelado)} cancelado</div>
                           )}
                         </td>
                         <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12 }}>
@@ -1885,11 +1885,11 @@ ${facturasCorte.length > 0 ? `
                         </td>
                         <td style={{ padding: '10px 14px' }}>
                           {c.id_recibo_ingreso ? (
-                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#dcfce7', color: '#15803d', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#1F7A50', color: '#fff', fontWeight: 600, whiteSpace: 'nowrap' }}>
                               ✓ #{c.id_recibo_ingreso}
                             </span>
                           ) : (
-                            <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>Sin recibo</span>
+                            <span style={{ fontSize: 11, color: '#7A7E87', fontStyle: 'italic' }}>Sin recibo</span>
                           )}
                         </td>
                         <td style={{ padding: '10px 14px' }}>
@@ -1897,13 +1897,13 @@ ${facturasCorte.length > 0 ? `
                             <button
                               onClick={() => imprimirCorte(c)}
                               title="Imprimir corte de caja"
-                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#1C1D21', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                               <Printer size={11} /> Imprimir
                             </button>
                             <button
                               onClick={() => abrirFacturasCorte(c)}
                               title="Ver facturas de este corte"
-                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#fff', background: '#6B4E79', border: '1px solid #6B4E79', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                               <FileCheck size={11} /> Facturas
                             </button>
                             {!c.id_recibo_ingreso && puedeEscribir && (
@@ -1911,13 +1911,13 @@ ${facturasCorte.length > 0 ? `
                                 onClick={() => generarReciboCorte(c)}
                                 disabled={generandoRecibo === c.id || !hasCentroIngreso}
                                 title="Generar recibo de ingreso"
-                                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#059669', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: (generandoRecibo === c.id || !hasCentroIngreso) ? 0.5 : 1 }}>
+                                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#fff', background: '#1F7A50', border: '1px solid #1F7A50', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: (generandoRecibo === c.id || !hasCentroIngreso) ? 0.5 : 1 }}>
                                 {generandoRecibo === c.id ? <Loader size={11} /> : <Receipt size={11} />}
                                 {generandoRecibo === c.id ? 'Generando…' : 'Recibo'}
                               </button>
                             )}
                             {!c.id_recibo_ingreso && !hasCentroIngreso && (
-                              <span style={{ fontSize: 10, color: '#dc2626', whiteSpace: 'nowrap' }}>
+                              <span style={{ fontSize: 10, color: '#C23B3B', whiteSpace: 'nowrap' }}>
                                 Sin mapeo POS
                               </span>
                             )}
@@ -1925,7 +1925,7 @@ ${facturasCorte.length > 0 ? `
                               <button
                                 onClick={() => alert(`Recibo de ingreso #${c.id_recibo_ingreso} ya generado. Puedes consultarlo en el módulo de Ingresos.`)}
                                 title="Ver recibo de ingreso"
-                                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#475569', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#4A4D54', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                 <FileText size={11} /> Recibo #{c.id_recibo_ingreso}
                               </button>
                             )}
@@ -1951,19 +1951,19 @@ ${facturasCorte.length > 0 ? `
       {tab === 'catalogo' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {loadingCfg ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Cargando…</div>
+            <div style={{ padding: 40, textAlign: 'center', color: '#7A7E87' }}>Cargando…</div>
           ) : (
             <div className="card" style={{ padding: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: '#1e293b' }}>Productos y Servicios</div>
-                  <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{productos.filter(pasaCatalogo).length} registros · el precio es el monto final cobrado al cliente</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: '#26282D' }}>Productos y Servicios</div>
+                  <div style={{ fontSize: 12, color: '#62666E', marginTop: 2 }}>{productos.filter(pasaCatalogo).length} registros · el precio es el monto final cobrado al cliente</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <FiltroAgrupadorCentro centros={centrosAgr} agrupadores={agrupadores} filtroAgr={filtroAgrCat} setFiltroAgr={v => { setFiltroAgrCat(v) }} filtroCentro={filtroCatalogoCentro} setFiltroCentro={v => { setFiltroCatalogoCentro(v) }} />
                   {puedeEditarCatalogo && (
                     <button onClick={() => setEditingProd({ tipo: 'SERVICIO', aplica_iva: true, iva_pct: 16, activo: true, precio: 0, costo: 0, precio_variable: false, id_centro_fk: centros[0]?.id ?? null })}
-                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer' }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#267F56', color: '#fff', cursor: 'pointer' }}>
                       <Plus size={13} /> Nuevo producto / servicio
                     </button>
                   )}
@@ -1972,8 +1972,8 @@ ${facturasCorte.length > 0 ? `
 
               {/* Form edición */}
               {editingProd && (
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 16, marginBottom: 16 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>
+                <div style={{ background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10, padding: 16, marginBottom: 16 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#26282D', marginBottom: 12 }}>
                     {editingProd.id ? 'Editar producto / servicio' : 'Nuevo producto / servicio'}
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
@@ -1985,32 +1985,32 @@ ${facturasCorte.length > 0 ? `
                       { k: 'iva_pct', label: '% IVA',            type: 'number' },
                     ] as { k: keyof Producto; label: string; type: string }[]).map(f => (
                       <div key={f.k}>
-                        <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', marginBottom: 3, display: 'block' }}>{f.label}</label>
+                        <label style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', marginBottom: 3, display: 'block' }}>{f.label}</label>
                         <input type={f.type} value={(editingProd[f.k] as any) ?? ''}
                           onChange={e => setEditingProd(p => ({ ...p, [f.k]: f.type === 'number' ? (parseFloat(e.target.value) || 0) : e.target.value }))}
-                          style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                          style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 6, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
                       </div>
                     ))}
                     <div>
-                      <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', marginBottom: 3, display: 'block' }}>Tipo</label>
+                      <label style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', marginBottom: 3, display: 'block' }}>Tipo</label>
                       <select value={editingProd.tipo ?? 'SERVICIO'} onChange={e => setEditingProd(p => ({ ...p, tipo: e.target.value }))}
-                        style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none' }}>
+                        style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 6, fontFamily: 'inherit', outline: 'none' }}>
                         <option value="SERVICIO">Servicio</option>
                         <option value="PRODUCTO">Producto</option>
                       </select>
                     </div>
                     <div>
-                      <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', marginBottom: 3, display: 'block' }}>Centro de Venta</label>
+                      <label style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', marginBottom: 3, display: 'block' }}>Centro de Venta</label>
                       <select value={editingProd.id_centro_fk ?? ''} onChange={e => setEditingProd(p => ({ ...p, id_centro_fk: e.target.value ? Number(e.target.value) : null }))}
-                        style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none' }}>
+                        style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 6, fontFamily: 'inherit', outline: 'none' }}>
                         <option value="">— Todos —</option>
                         {centros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', marginBottom: 3, display: 'block' }}>Concepto de Ingreso</label>
+                      <label style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', marginBottom: 3, display: 'block' }}>Concepto de Ingreso</label>
                       <select value={editingProd.id_concepto_ingreso_fk ?? ''} onChange={e => setEditingProd(p => ({ ...p, id_concepto_ingreso_fk: e.target.value ? Number(e.target.value) : null }))}
-                        style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none' }}>
+                        style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 6, fontFamily: 'inherit', outline: 'none' }}>
                         <option value="">— Sin asignar —</option>
                         {conceptosIngreso
                           .filter(co => {
@@ -2021,14 +2021,14 @@ ${facturasCorte.length > 0 ? `
                       </select>
                     </div>
                     <div>
-                      <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', marginBottom: 3, display: 'block' }}>Clave SAT (Producto/Servicio)</label>
+                      <label style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', marginBottom: 3, display: 'block' }}>Clave SAT (Producto/Servicio)</label>
                       <ClaveProdServPicker value={editingProd.clave_prod_serv ?? ''}
                         onChange={clave => setEditingProd(p => ({ ...p, clave_prod_serv: clave || null }))} />
                     </div>
                   </div>
                   {!editingProd.id_concepto_ingreso_fk && (
-                    <div style={{ marginTop: 8, fontSize: 11, color: '#d97706' }}>
-                      ⚠ Sin concepto asignado, este producto caerá en "Otros" (si existe) al distribuir el ingreso del corte.
+                    <div style={{ marginTop: 8, fontSize: 11, color: '#B5761A' }}>
+                      Sin concepto asignado, este producto caerá en "Otros" (si existe) al distribuir el ingreso del corte.
                     </div>
                   )}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
@@ -2038,29 +2038,29 @@ ${facturasCorte.length > 0 ? `
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
                       <input type="checkbox" checked={editingProd.precio_variable ?? false} onChange={e => setEditingProd(p => ({ ...p, precio_variable: e.target.checked }))} />
-                      <span>Precio Variable <span style={{ color: '#d97706', fontWeight: 600 }}>(el cajero puede modificarlo al vender)</span></span>
+                      <span>Precio Variable <span style={{ color: '#B5761A', fontWeight: 600 }}>(el cajero puede modificarlo al vender)</span></span>
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
                       <input type="checkbox" checked={editingProd.activo ?? true} onChange={e => setEditingProd(p => ({ ...p, activo: e.target.checked }))} />
                       Activo
                     </label>
                   </div>
-                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 12, cursor: 'pointer', marginTop: 8, padding: '8px 10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8 }}>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 12, cursor: 'pointer', marginTop: 8, padding: '8px 10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
                     <input type="checkbox" style={{ marginTop: 2 }} checked={editingProd.solo_venta_por_recibo ?? false}
                       onChange={e => setEditingProd(p => ({ ...p, solo_venta_por_recibo: e.target.checked }))} />
                     <span>
-                      <span style={{ fontWeight: 700, color: '#b91c1c' }}>🔒 Solo venta desde su módulo (Recibos)</span>
+                      <span style={{ fontWeight: 700, color: '#A83232' }}>Solo venta desde su módulo (Recibos)</span>
                       <br />
-                      <span style={{ color: '#7f1d1d' }}>El cobro de este producto vive en otro módulo (cuotas, membresías, rentas, etc.); bloquea su venta directa en POS.</span>
+                      <span style={{ color: '#8C2A2A' }}>El cobro de este producto vive en otro módulo (cuotas, membresías, rentas, etc.); bloquea su venta directa en POS.</span>
                     </span>
                   </label>
                   <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                     <button onClick={guardarProducto} disabled={savingProd}
-                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer' }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#267F56', color: '#fff', cursor: 'pointer' }}>
                       {savingProd ? <Loader size={12} /> : <Save size={12} />} Guardar
                     </button>
                     <button onClick={() => setEditingProd(null)}
-                      style={{ padding: '7px 12px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
+                      style={{ padding: '7px 12px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', cursor: 'pointer' }}>
                       Cancelar
                     </button>
                   </div>
@@ -2073,41 +2073,41 @@ ${facturasCorte.length > 0 ? `
                   const centro = centros.find(c => c.id === p.id_centro_fk)
                   const concepto = conceptosIngreso.find(co => co.id === p.id_concepto_ingreso_fk)
                   return (
-                    <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', border: '1px solid #f1f5f9', borderRadius: 8, background: p.activo ? '#fff' : '#f8fafc', opacity: p.activo ? 1 : 0.55 }}>
+                    <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', border: '1px solid #F4F5F7', borderRadius: 8, background: p.activo ? '#fff' : '#F8F9FA', opacity: p.activo ? 1 : 0.55 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{p.nombre}</div>
-                        <div style={{ fontSize: 11, color: '#64748b', display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
-                          {p.sku && <span style={{ fontFamily: 'monospace' }}>{p.sku}</span>}
-                          {centro && <span>📍 {centro.nombre}</span>}
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>{p.nombre}</div>
+                        <div style={{ fontSize: 11, color: '#62666E', display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
+                          {p.sku && <span style={{ fontVariantNumeric: 'tabular-nums' }}>{p.sku}</span>}
+                          {centro && <span>{centro.nombre}</span>}
                           {concepto
-                            ? <span style={{ padding: '1px 7px', borderRadius: 10, background: '#f5f3ff', color: '#6d28d9', fontWeight: 600 }}>💰 {concepto.nombre}</span>
-                            : <span style={{ padding: '1px 7px', borderRadius: 10, background: '#fffbeb', color: '#d97706', fontWeight: 600 }}>Sin concepto</span>}
-                          <span style={{ padding: '1px 7px', borderRadius: 10, background: p.tipo === 'PRODUCTO' ? '#eff6ff' : '#ecfdf5', color: p.tipo === 'PRODUCTO' ? '#1d4ed8' : '#065f46', fontWeight: 600 }}>
-                            {p.tipo === 'PRODUCTO' ? '📦 Producto' : '⚡ Servicio'}
+                            ? <span style={{ padding: '1px 7px', borderRadius: 10, background: '#6B4E79', color: '#fff', fontWeight: 600 }}>{concepto.nombre}</span>
+                            : <span style={{ padding: '1px 7px', borderRadius: 10, background: '#B5761A', color: '#fff', fontWeight: 600 }}>Sin concepto</span>}
+                          <span style={{ padding: '1px 7px', borderRadius: 10, background: p.tipo === 'PRODUCTO' ? '#F4F5F7' : '#1F7A50', color: p.tipo === 'PRODUCTO' ? '#26282D' : '#fff', fontWeight: 600 }}>
+                            {p.tipo === 'PRODUCTO' ? 'Producto' : 'Servicio'}
                           </span>
                           {p.aplica_iva
-                            ? <span style={{ padding: '1px 7px', borderRadius: 10, background: '#ecfdf5', color: '#065f46', fontWeight: 600 }}>IVA {p.iva_pct}% inc.</span>
-                            : <span style={{ padding: '1px 7px', borderRadius: 10, background: '#f1f5f9', color: '#64748b' }}>Exento</span>}
+                            ? <span style={{ padding: '1px 7px', borderRadius: 10, background: '#1F7A50', color: '#fff', fontWeight: 600 }}>IVA {p.iva_pct}% inc.</span>
+                            : <span style={{ padding: '1px 7px', borderRadius: 10, background: '#F4F5F7', color: '#62666E' }}>Exento</span>}
                           {p.precio_variable && (
-                            <span style={{ padding: '1px 7px', borderRadius: 10, background: '#fffbeb', color: '#d97706', fontWeight: 600 }}>
+                            <span style={{ padding: '1px 7px', borderRadius: 10, background: '#B5761A', color: '#fff', fontWeight: 600 }}>
                               Precio variable
                             </span>
                           )}
                           {p.solo_venta_por_recibo && (
-                            <span style={{ padding: '1px 7px', borderRadius: 10, background: '#fef2f2', color: '#b91c1c', fontWeight: 600 }}>
-                              🔒 Solo desde su módulo
+                            <span style={{ padding: '1px 7px', borderRadius: 10, background: '#C23B3B', color: '#fff', fontWeight: 600 }}>
+                              Solo desde su módulo
                             </span>
                           )}
-                          {!p.activo && <span style={{ color: '#dc2626', fontWeight: 600 }}>Inactivo</span>}
+                          {!p.activo && <span style={{ color: '#C23B3B', fontWeight: 600 }}>Inactivo</span>}
                         </div>
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: '#059669' }}>{fmt$(p.precio)}</div>
-                        {p.costo > 0 && <div style={{ fontSize: 10, color: '#94a3b8' }}>Costo {fmt$(p.costo)}</div>}
+                        <div style={{ fontSize: 15, fontWeight: 700, color: '#267F56' }}>{fmt$(p.precio)}</div>
+                        {p.costo > 0 && <div style={{ fontSize: 10, color: '#7A7E87' }}>Costo {fmt$(p.costo)}</div>}
                       </div>
                       {puedeEditarCatalogo && (
                         <button onClick={() => { setEditingProd(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-                          style={{ fontSize: 11, color: '#475569', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', flexShrink: 0 }}>
+                          style={{ fontSize: 11, color: '#4A4D54', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', flexShrink: 0 }}>
                           Editar
                         </button>
                       )}
@@ -2115,12 +2115,12 @@ ${facturasCorte.length > 0 ? `
                   )
                 })}
                 {productos.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '32px 0', color: '#94a3b8', fontSize: 13 }}>
+                  <div style={{ textAlign: 'center', padding: '32px 0', color: '#7A7E87', fontSize: 13 }}>
                     Sin productos configurados. Usa el botón "Nuevo producto / servicio" para agregar.
                   </div>
                 )}
                 {productos.length > 0 && (filtroCatalogoCentro || filtroAgrCat) && productos.filter(pasaCatalogo).length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '32px 0', color: '#94a3b8', fontSize: 13 }}>
+                  <div style={{ textAlign: 'center', padding: '32px 0', color: '#7A7E87', fontSize: 13 }}>
                     Sin productos para el centro de venta seleccionado.
                   </div>
                 )}
@@ -2134,12 +2134,12 @@ ${facturasCorte.length > 0 ? `
       {tab === 'config' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {loadingCfg ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Cargando…</div>
+            <div style={{ padding: 40, textAlign: 'center', color: '#7A7E87' }}>Cargando…</div>
           ) : (
             <>
               {/* Datos del ticket */}
               <div className="card" style={{ padding: 20, maxWidth: 600 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 14 }}>Datos del Ticket / Club</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#26282D', marginBottom: 14 }}>Datos del Ticket / Club</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   {([
                     { k: 'razon_social', label: 'Razón Social' },
@@ -2148,59 +2148,59 @@ ${facturasCorte.length > 0 ? `
                     { k: 'telefono',     label: 'Teléfono' },
                   ] as { k: keyof CfgPos; label: string }[]).map(f => (
                     <div key={f.k}>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>{f.label}</label>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>{f.label}</label>
                       <input value={(cfgForm[f.k] as string) ?? ''} onChange={e => setCfgForm(p => ({ ...p, [f.k]: e.target.value }))}
-                        style={{ width: '100%', padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                        style={{ width: '100%', padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
                     </div>
                   ))}
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Dirección</label>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>Dirección</label>
                     <input value={(cfgForm.direccion as string) ?? ''} onChange={e => setCfgForm(p => ({ ...p, direccion: e.target.value }))}
-                      style={{ width: '100%', padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                      style={{ width: '100%', padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
                   </div>
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Leyenda del ticket</label>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>Leyenda del ticket</label>
                     <input value={(cfgForm.leyenda_ticket as string) ?? ''} onChange={e => setCfgForm(p => ({ ...p, leyenda_ticket: e.target.value }))}
-                      style={{ width: '100%', padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                      style={{ width: '100%', padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
                   </div>
                 </div>
                 <button onClick={guardarCfg} disabled={savingCfg}
-                  style={{ marginTop: 14, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: savingCfg ? 0.6 : 1 }}>
+                  style={{ marginTop: 14, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#267F56', color: '#fff', cursor: 'pointer', opacity: savingCfg ? 0.6 : 1 }}>
                   {savingCfg ? 'Guardando…' : 'Guardar Datos'}
                 </button>
               </div>
 
               {/* Centros de venta — gestionados en Catálogos del Club → Centros de Venta POS */}
-              <div className="card" style={{ padding: '14px 20px', maxWidth: 600, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <div className="card" style={{ padding: '14px 20px', maxWidth: 600, background: '#F8F9FA', border: '1px solid #E6E8EB' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Store size={14} color="#059669" />
-                  <span style={{ fontSize: 13, color: '#475569' }}>
+                  <Store size={14} color="#62666E" />
+                  <span style={{ fontSize: 13, color: '#4A4D54' }}>
                     Los centros de venta y su mapeo a centros de ingreso se administran en{' '}
-                    <a href="/golf/catalogos" style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>Catálogos del Club → Centros de Venta POS</a>.
+                    <a href="/golf/catalogos" style={{ color: '#1C1D21', fontWeight: 600, textDecoration: 'none' }}>Catálogos del Club → Centros de Venta POS</a>.
                   </span>
                 </div>
               </div>
 
               {/* Reglas de Corte de Caja */}
               <div className="card" style={{ padding: 20, maxWidth: 600 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 4 }}>Reglas del Corte de Caja</div>
-                <div style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#26282D', marginBottom: 4 }}>Reglas del Corte de Caja</div>
+                <div style={{ fontSize: 12, color: '#62666E', marginBottom: 16 }}>
                   Controla qué validaciones se aplican al momento de cerrar un corte.
                 </div>
 
                 {/* Toggle: exigir facturación */}
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, padding: '14px 16px', border: `1px solid ${exigirFacturacion ? '#a7f3d0' : '#e2e8f0'}`, borderRadius: 10, background: exigirFacturacion ? '#f0fdf4' : '#fafafa', transition: 'all 0.2s' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, padding: '14px 16px', border: '1px solid #E6E8EB', borderRadius: 10, background: exigirFacturacion ? '#F4F5F7' : '#fafafa', transition: 'all 0.2s' }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginBottom: 3 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#26282D', marginBottom: 3 }}>
                       Exigir que todas las ventas estén facturadas
                     </div>
-                    <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>
+                    <div style={{ fontSize: 12, color: '#62666E', lineHeight: 1.5 }}>
                       {exigirFacturacion
-                        ? '🔒 Activo — el corte queda bloqueado si hay ventas sin factura emitida.'
-                        : '⚡ Inactivo (modo bypass) — el corte permite ventas sin facturar. Útil durante operación paralela con ERP anterior.'}
+                        ? 'Activo — el corte queda bloqueado si hay ventas sin factura emitida.'
+                        : 'Inactivo (modo bypass) — el corte permite ventas sin facturar. Útil durante operación paralela con ERP anterior.'}
                     </div>
                     {!exigirFacturacion && (
-                      <div style={{ marginTop: 6, fontSize: 11, padding: '3px 10px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 20, color: '#92400e', fontWeight: 600, display: 'inline-block' }}>
+                      <div style={{ marginTop: 6, fontSize: 11, padding: '3px 10px', background: '#B5761A', border: '1px solid #B5761A', borderRadius: 20, color: '#fff', fontWeight: 600, display: 'inline-block' }}>
                         Modo producción paralela / bypass activo
                       </div>
                     )}
@@ -2211,7 +2211,7 @@ ${facturasCorte.length > 0 ? `
                     disabled={savingToggle}
                     style={{
                       flexShrink: 0, width: 48, height: 26, borderRadius: 13,
-                      background: exigirFacturacion ? '#059669' : '#cbd5e1',
+                      background: exigirFacturacion ? '#267F56' : '#C9CCD3',
                       border: 'none', cursor: savingToggle ? 'wait' : 'pointer',
                       position: 'relative', transition: 'background 0.2s', opacity: savingToggle ? 0.6 : 1,
                     }}
@@ -2230,49 +2230,49 @@ ${facturasCorte.length > 0 ? `
 
               {/* Numeración de Facturas */}
               <div className="card" style={{ padding: 20, maxWidth: 600 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 4 }}>Numeración de Facturas</div>
-                <div style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#26282D', marginBottom: 4 }}>Numeración de Facturas</div>
+                <div style={{ fontSize: 12, color: '#62666E', marginBottom: 16 }}>
                   El folio de cada factura combina la <strong>Serie</strong> del centro de venta (se configura en{' '}
-                  <a href="/golf/catalogos" style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>Catálogos del Club → Centros de Venta POS</a>)
+                  <a href="/golf/catalogos" style={{ color: '#1C1D21', fontWeight: 600, textDecoration: 'none' }}>Catálogos del Club → Centros de Venta POS</a>)
                   {' '}con un <strong>folio consecutivo propio de cada serie</strong> (ej. GOLF-0001, GOLF-0002… e HIPICO-0001, HIPICO-0002… por separado).
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
                   {Object.keys(proximosFolioPorSerie).length === 0 ? (
-                    <span style={{ fontSize: 12, color: '#94a3b8' }}>Sin series configuradas todavía.</span>
+                    <span style={{ fontSize: 12, color: '#7A7E87' }}>Sin series configuradas todavía.</span>
                   ) : Object.entries(proximosFolioPorSerie).map(([serie, num]) => (
                     <div key={serie} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 12, color: '#64748b', minWidth: 90 }}>{serie}</span>
-                      <span style={{ fontSize: 14, fontWeight: 700, fontFamily: 'monospace', color: '#7c3aed' }}>
+                      <span style={{ fontSize: 12, color: '#62666E', minWidth: 90 }}>{serie}</span>
+                      <span style={{ fontSize: 14, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: '#6B4E79' }}>
                         {serie}-{String(num).padStart(4, '0')}
                       </span>
-                      <span style={{ fontSize: 11, color: '#94a3b8' }}>(próximo folio)</span>
+                      <span style={{ fontSize: 11, color: '#7A7E87' }}>(próximo folio)</span>
                     </div>
                   ))}
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
                   <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Serie</label>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>Serie</label>
                     <select value={serieFolioInput} onChange={e => setSerieFolioInput(e.target.value)}
-                      style={{ width: 140, padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', background: '#fff' }}>
+                      style={{ width: 140, padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, fontFamily: 'inherit', outline: 'none', background: '#fff' }}>
                       <option value="">Elige…</option>
                       {Object.keys(proximosFolioPorSerie).map(serie => <option key={serie} value={serie}>{serie}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Reiniciar folio inicial</label>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>Reiniciar folio inicial</label>
                     <input type="number" min={1} value={folioFacturaInput} onChange={e => setFolioFacturaInput(e.target.value)}
                       placeholder="ej. 1000"
-                      style={{ width: 140, padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                      style={{ width: 140, padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
                   </div>
                   <button onClick={guardarFolioFacturaInicial} disabled={savingFolioFactura || !folioFacturaInput || !serieFolioInput}
-                    style={{ padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: (savingFolioFactura || !folioFacturaInput || !serieFolioInput) ? 0.6 : 1 }}>
+                    style={{ padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#267F56', color: '#fff', cursor: 'pointer', opacity: (savingFolioFactura || !folioFacturaInput || !serieFolioInput) ? 0.6 : 1 }}>
                     {savingFolioFactura ? 'Guardando…' : 'Aplicar'}
                   </button>
                 </div>
                 {errFolioFactura && (
-                  <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{errFolioFactura}</div>
+                  <div style={{ marginTop: 10, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>{errFolioFactura}</div>
                 )}
               </div>
 
@@ -2364,7 +2364,7 @@ ${facturasCorte.length > 0 ? `
                 Cerrar
               </button>
               <button onClick={handleCancelarFactura} disabled={cancelandoFactura}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#dc2626', color: '#fff', cursor: 'pointer', opacity: cancelandoFactura ? 0.6 : 1 }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#C23B3B', color: '#fff', cursor: 'pointer', opacity: cancelandoFactura ? 0.6 : 1 }}>
                 {cancelandoFactura ? <Loader size={13} className="animate-spin" /> : <XCircle size={13} />}
                 {cancelandoFactura ? 'Cancelando…' : 'Confirmar Cancelación'}
               </button>
@@ -2372,23 +2372,23 @@ ${facturasCorte.length > 0 ? `
           }
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ display: 'flex', gap: 8, padding: '10px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+            <div style={{ display: 'flex', gap: 8, padding: '10px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 8, fontSize: 12, color: '#7A4B0C' }}>
               <AlertTriangle size={15} style={{ flexShrink: 0 }} />
               Esta acción no puede deshacerse. La cancelación se envía al SAT a través del PAC.
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 6 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', display: 'block', marginBottom: 6 }}>
                 Motivo de Cancelación (SAT)
               </label>
               <select value={motivoCancel} onChange={e => setMotivoCancel(e.target.value)}
-                style={{ width: '100%', padding: '8px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
+                style={{ width: '100%', padding: '8px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
                 {MOTIVOS_CANCELACION_CFDI.map(m => (
                   <option key={m.clave} value={m.clave}>{m.clave} — {m.desc}</option>
                 ))}
               </select>
             </div>
             {errCancelFactura && (
-              <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+              <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>
                 {errCancelFactura}
               </div>
             )}
@@ -2407,9 +2407,9 @@ ${facturasCorte.length > 0 ? `
           onClose={() => { setFacturasCorteModal(null); setFacturasCorteData([]) }}
         >
           {loadingFacturasCorte ? (
-            <div style={{ padding: 30, textAlign: 'center', color: '#94a3b8' }}><Loader size={18} className="animate-spin" style={{ margin: '0 auto' }} /></div>
+            <div style={{ padding: 30, textAlign: 'center', color: '#7A7E87' }}><Loader size={18} className="animate-spin" style={{ margin: '0 auto' }} /></div>
           ) : facturasCorteData.length === 0 ? (
-            <div style={{ padding: 24, textAlign: 'center', color: '#94a3b8' }}>
+            <div style={{ padding: 24, textAlign: 'center', color: '#7A7E87' }}>
               <FileCheck size={26} style={{ margin: '0 auto 8px' }} />
               <div style={{ fontWeight: 500, fontSize: 13 }}>Sin facturas emitidas en este corte</div>
             </div>
@@ -2420,27 +2420,27 @@ ${facturasCorte.length > 0 ? `
                 const cancelada = cfdi?.status === 'Cancelada'
                 const keyView = `${v.id}-view`
                 return (
-                  <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: 8, flexWrap: 'wrap' }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, fontFamily: 'monospace', color: '#2563eb', minWidth: 56 }}>
+                  <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', border: '1px solid #E6E8EB', borderRadius: 8, flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: '#1C1D21', minWidth: 56 }}>
                       {cfdi?.folio_factura ?? '—'}
                     </div>
                     <div style={{ flex: 1, minWidth: 160 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{cfdi?.receptor_nombre ?? v.nombre_cliente ?? 'Publico General'}</div>
-                      <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#7c3aed', wordBreak: 'break-all' }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>{cfdi?.receptor_nombre ?? v.nombre_cliente ?? 'Publico General'}</div>
+                      <div style={{ fontSize: 11, fontVariantNumeric: 'tabular-nums', color: '#6B4E79', wordBreak: 'break-all' }}>
                         {v.folio_fiscal}
                       </div>
                       {cfdi?.receptor_rfc && (
-                        <div style={{ fontSize: 11, color: '#64748b' }}>{cfdi.receptor_rfc}</div>
+                        <div style={{ fontSize: 11, color: '#62666E' }}>{cfdi.receptor_rfc}</div>
                       )}
                     </div>
-                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: cancelada ? '#fef2f2' : '#dcfce7', color: cancelada ? '#dc2626' : '#15803d' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: cancelada ? '#C23B3B' : '#1F7A50', color: '#fff' }}>
                       {cancelada ? 'Cancelada' : 'Vigente'}
                     </span>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', minWidth: 90, textAlign: 'right' }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#26282D', minWidth: 90, textAlign: 'right' }}>
                       ${v.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                     </div>
                     <button onClick={() => verPdfFactura(v)} disabled={viendoPdf === keyView}
-                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: viendoPdf === keyView ? 0.6 : 1 }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#fff', background: '#6B4E79', border: '1px solid #6B4E79', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: viendoPdf === keyView ? 0.6 : 1 }}>
                       {viendoPdf === keyView ? <Loader size={11} className="animate-spin" /> : <FileCheck size={11} />} PDF
                     </button>
                   </div>
@@ -2462,11 +2462,11 @@ function PagosVenta({ idVenta }: { idVenta: number }) {
     dbGolf.from('ctrl_ventas_pagos').select('forma_nombre, monto').eq('id_venta_fk', idVenta)
       .then(({ data }) => setPagos((data ?? []) as { forma_nombre: string; monto: number }[]))
   }, [idVenta])
-  if (!pagos.length) return <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>Sin pagos registrados</span>
+  if (!pagos.length) return <span style={{ fontSize: 11, color: '#7A7E87', fontStyle: 'italic' }}>Sin pagos registrados</span>
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
       {pagos.map((p, i) => (
-        <span key={i} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f0fdf4', border: '1px solid #a7f3d0', color: '#065f46', fontWeight: 600, whiteSpace: 'nowrap' }}>
+        <span key={i} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#1F7A50', border: '1px solid #1F7A50', color: '#fff', fontWeight: 600, whiteSpace: 'nowrap' }}>
           {p.forma_nombre} · {fmt$(p.monto)}
         </span>
       ))}

@@ -155,7 +155,7 @@ export default function InvitadosPage() {
             </button>
           )}
           {puedeEscribir && (
-            <button className="btn-primary" onClick={() => { setEditando(null); setShowModal(true) }} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#d97706' }}>
+            <button className="btn-primary" onClick={() => { setEditando(null); setShowModal(true) }} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#B5761A' }}>
               <Plus size={14} /> Nuevo Invitado
             </button>
           )}
@@ -164,23 +164,23 @@ export default function InvitadosPage() {
 
       {/* Política de tope */}
       {showPolitica && puedeEscribir && (
-        <div className="card" style={{ marginBottom: 20, padding: '16px 20px', background: '#fffbeb', border: '1px solid #fde68a' }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#92400e', marginBottom: 4 }}>Tope Anual de Visitas por Invitado</div>
-          <div style={{ fontSize: 11, color: '#78716c', marginBottom: 14 }}>
+        <div className="card" style={{ marginBottom: 20, padding: '16px 20px', background: '#F4F5F7', border: '1px solid #E6E8EB' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#7A4B0C', marginBottom: 4 }}>Tope Anual de Visitas por Invitado</div>
+          <div style={{ fontSize: 11, color: '#62666E', marginBottom: 14 }}>
             Máximo de visitas al campo por año calendario que puede acumular un mismo invitado, sumando todos los socios que lo hayan traído. Aplica igual para todo tipo de socio, e incluye tanto accesos con pase como Green Fee.
           </div>
           {loadingPolitica ? (
-            <div style={{ padding: 12 }}><Loader size={16} className="animate-spin" color="#d97706" /></div>
+            <div style={{ padding: 12 }}><Loader size={16} className="animate-spin" color="#B5761A" /></div>
           ) : (
             <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, color: '#92400e', marginBottom: 4, display: 'block' }}>Límite anual (visitas)</label>
+                <label style={{ fontSize: 11, fontWeight: 600, color: '#7A4B0C', marginBottom: 4, display: 'block' }}>Límite anual (visitas)</label>
                 <input type="number" min={1} value={politica.limite_anual}
                   onChange={e => setPolitica(p => ({ ...p, limite_anual: Math.max(1, Number(e.target.value)) }))}
-                  style={{ width: 100, padding: '7px 10px', fontSize: 13, border: '1px solid #fde68a', borderRadius: 8, fontFamily: 'inherit' }} />
+                  style={{ width: 100, padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, fontFamily: 'inherit' }} />
               </div>
               <button onClick={guardarPolitica} disabled={savingPolitica}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#d97706', color: '#fff', cursor: 'pointer', opacity: savingPolitica ? 0.7 : 1 }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#B5761A', color: '#fff', cursor: 'pointer', opacity: savingPolitica ? 0.7 : 1 }}>
                 {savingPolitica ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
                 Guardar
               </button>
@@ -192,13 +192,13 @@ export default function InvitadosPage() {
       {/* KPIs */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { label: 'Invitados Registrados', value: stats.total,      color: '#d97706', bg: '#fffbeb' },
-          { label: `Visitas ${anioActual}`,  value: stats.visitasAnio, color: '#2563eb', bg: '#eff6ff' },
-          { label: 'En Tope Anual',          value: stats.enTope,      color: '#dc2626', bg: '#fef2f2' },
+          { label: 'Invitados Registrados', value: stats.total,      color: '#B5761A', bg: '#F4F5F7' },
+          { label: `Visitas ${anioActual}`,  value: stats.visitasAnio, color: '#1C1D21', bg: '#F4F5F7' },
+          { label: 'En Tope Anual',          value: stats.enTope,      color: '#C23B3B', bg: '#F4F5F7' },
         ].map(card => (
-          <div key={card.label} className="card" style={{ flex: '1 1 160px', maxWidth: 220, padding: '12px 16px', background: card.bg, border: `1px solid ${card.color}22` }}>
-            <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>{card.label}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: card.color }}>{card.value}</div>
+          <div key={card.label} className="card" style={{ flex: '1 1 160px', maxWidth: 220, padding: '12px 16px', background: '#fff', border: '1px solid #E6E8EB' }}>
+            <div style={{ fontSize: 11, color: '#62666E', marginBottom: 4 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: card.color, marginRight: 6, verticalAlign: 'middle' }} />{card.label}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{card.value}</div>
           </div>
         ))}
       </div>
@@ -206,16 +206,16 @@ export default function InvitadosPage() {
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 260px', maxWidth: 340 }}>
-          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
           <input
-            style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
             placeholder="Buscar invitado…"
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
           />
-          {busqueda && <button onClick={() => setBusqueda('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+          {busqueda && <button onClick={() => setBusqueda('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2 }}><X size={12} /></button>}
         </div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#475569', cursor: 'pointer' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#4A4D54', cursor: 'pointer' }}>
           <input type="checkbox" checked={soloActivos} onChange={e => setSoloActivos(e.target.checked)} />
           Solo activos
         </label>
@@ -250,19 +250,19 @@ export default function InvitadosPage() {
                   <>
                     <tr key={inv.id}
                       onClick={() => setExpandido(abierto ? null : inv.id)}
-                      style={{ borderBottom: abierto ? 'none' : '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.1s', background: abierto ? '#fffbeb' : '' }}
+                      style={{ borderBottom: abierto ? 'none' : '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.1s', background: abierto ? '#F4F5F7' : '' }}
                       onMouseEnter={e => { if (!abierto) (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)' }}
                       onMouseLeave={e => { if (!abierto) (e.currentTarget as HTMLElement).style.background = '' }}>
-                      <td style={{ padding: '10px 10px 10px 14px', width: 28, color: '#94a3b8' }}>
+                      <td style={{ padding: '10px 10px 10px 14px', width: 28, color: '#7A7E87' }}>
                         {abierto ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                       </td>
                       <td style={{ padding: '10px 14px' }}>
                         <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{nombreCompletoInv(inv)}</div>
-                        {!inv.activo && <div style={{ fontSize: 11, color: '#94a3b8' }}>Inactivo</div>}
+                        {!inv.activo && <div style={{ fontSize: 11, color: '#7A7E87' }}>Inactivo</div>}
                       </td>
                       <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12 }}>{inv.telefono ?? '—'}</td>
                       <td style={{ padding: '10px 14px' }}>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 700, fontSize: 14, padding: '2px 10px', borderRadius: 20, background: alTope ? '#fef2f2' : '#f0fdf4', color: alTope ? '#dc2626' : '#15803d' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 700, fontSize: 14, padding: '2px 10px', borderRadius: 20, background: alTope ? '#C23B3B' : '#1F7A50', color: '#fff' }}>
                           {alTope && <AlertTriangle size={12} />}
                           {vAnio}/{politica.limite_anual}
                         </span>
@@ -277,7 +277,7 @@ export default function InvitadosPage() {
                             onClick={e => { e.stopPropagation(); handleDelete(inv) }}
                             disabled={deletingId === inv.id}
                             title="Eliminar invitado"
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: 4, opacity: deletingId === inv.id ? 0.5 : 1 }}>
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#C23B3B', padding: 4, opacity: deletingId === inv.id ? 0.5 : 1 }}>
                             {deletingId === inv.id ? <Loader size={14} className="animate-spin" /> : <Trash2 size={14} />}
                           </button>
                         </td>
@@ -290,34 +290,34 @@ export default function InvitadosPage() {
                           <div style={{ padding: '16px 20px 20px 48px', background: '#fafafa' }}>
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                              <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                                 Historial de Visitas (cruzado entre socios)
                               </div>
                               {puedeEscribir && (
                                 <button
                                   onClick={e => { e.stopPropagation(); setEditando(inv); setShowModal(true) }}
-                                  style={{ fontSize: 12, fontWeight: 600, color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer' }}>
+                                  style={{ fontSize: 12, fontWeight: 600, color: '#1C1D21', background: 'none', border: 'none', cursor: 'pointer' }}>
                                   Editar datos
                                 </button>
                               )}
                             </div>
 
                             {visitas.length === 0 ? (
-                              <div style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Sin visitas registradas</div>
+                              <div style={{ fontSize: 12, color: '#7A7E87', fontStyle: 'italic' }}>Sin visitas registradas</div>
                             ) : (
                               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                                 <thead>
-                                  <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                  <tr style={{ borderBottom: '1px solid #E6E8EB' }}>
                                     {['Fecha de Acceso', 'Anfitrión (Socio)'].map(h => (
-                                      <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                                      <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                                     ))}
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {visitas.map(v => (
-                                    <tr key={v.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                      <td style={{ padding: '7px 10px', color: '#1e293b', whiteSpace: 'nowrap' }}>{fmtFecha(v.fecha_entrada)}</td>
-                                      <td style={{ padding: '7px 10px', color: '#475569' }}>{v.anfitrion}</td>
+                                    <tr key={v.id} style={{ borderBottom: '1px solid #F4F5F7' }}>
+                                      <td style={{ padding: '7px 10px', color: '#26282D', whiteSpace: 'nowrap' }}>{fmtFecha(v.fecha_entrada)}</td>
+                                      <td style={{ padding: '7px 10px', color: '#4A4D54' }}>{v.anfitrion}</td>
                                     </tr>
                                   ))}
                                 </tbody>

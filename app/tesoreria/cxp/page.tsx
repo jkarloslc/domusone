@@ -26,11 +26,11 @@ const diasVencido = (fecha: string | null) => {
 }
 
 const bandaAntigüedad = (dias: number) => {
-  if (dias <= 0)  return { label: 'Por vencer',  color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' }
-  if (dias <= 30) return { label: '1-30 días',   color: '#d97706', bg: '#fffbeb', border: '#fde68a' }
-  if (dias <= 60) return { label: '31-60 días',  color: '#ea580c', bg: '#fff7ed', border: '#fed7aa' }
-  if (dias <= 90) return { label: '61-90 días',  color: '#dc2626', bg: '#fef2f2', border: '#fecaca' }
-  return             { label: '+90 días',        color: '#7f1d1d', bg: '#fef2f2', border: '#fca5a5' }
+  if (dias <= 0)  return { label: 'Por vencer',  color: '#1F7A50', bg: '#F4F5F7', border: '#E6E8EB' }
+  if (dias <= 30) return { label: '1-30 días',   color: '#B5761A', bg: '#F4F5F7', border: '#E6E8EB' }
+  if (dias <= 60) return { label: '31-60 días',  color: '#C8642A', bg: '#F4F5F7', border: '#E6E8EB' }
+  if (dias <= 90) return { label: '61-90 días',  color: '#C23B3B', bg: '#F4F5F7', border: '#E6E8EB' }
+  return             { label: '+90 días',        color: '#8C2A2A', bg: '#F4F5F7', border: '#C9CCD3' }
 }
 
 // ── Ciclo semanal de pago ───────────────────────────────────
@@ -56,10 +56,10 @@ const fmtLarga = (d: Date) => d.toLocaleDateString('es-MX', { day: '2-digit', mo
 function PagoBadge({ fechaPago }: { fechaPago: Date }) {
   const diff = Math.round((fechaPago.getTime() - toDateOnly(new Date()).getTime()) / 86400000)
   let label: string, color: string, bg: string, border: string
-  if (diff < 0)        { label = `Atrasado · ${fmtCorta(fechaPago)}`;      color = '#b91c1c'; bg = '#fef2f2'; border = '#fecaca' }
-  else if (diff === 0) { label = 'Hoy — día de pago';                     color = '#15803d'; bg = '#eafaf0'; border = '#bbf7d0' }
-  else if (diff <= 7)  { label = `Martes ${fmtCorta(fechaPago)} · ${diff}d`; color = '#b45309'; bg = '#fff8ea'; border = '#fde68a' }
-  else                 { label = `Martes ${fmtCorta(fechaPago)}`;          color = '#64748b'; bg = '#f1f5f9'; border = '#e2e8f0' }
+  if (diff < 0)        { label = `Atrasado · ${fmtCorta(fechaPago)}`;      color = '#A83232'; bg = '#F4F5F7'; border = '#E6E8EB' }
+  else if (diff === 0) { label = 'Hoy — día de pago';                     color = '#1F7A50'; bg = '#E6E8EB'; border = '#E6E8EB' }
+  else if (diff <= 7)  { label = `Martes ${fmtCorta(fechaPago)} · ${diff}d`; color = '#96600F'; bg = '#F4F5F7'; border = '#E6E8EB' }
+  else                 { label = `Martes ${fmtCorta(fechaPago)}`;          color = '#62666E'; bg = '#F4F5F7'; border = '#E6E8EB' }
   return (
     <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 999,
       background: bg, color, border: `1px solid ${border}`, whiteSpace: 'nowrap' }}>{label}</span>
@@ -217,7 +217,7 @@ export default function CXPPage() {
   }, [opsPendientes])
   const proximoPago = gruposPago[0] ?? null
   const proximoDiff  = proximoPago ? Math.round((proximoPago.fechaPago.getTime() - toDateOnly(new Date()).getTime()) / 86400000) : null
-  const proximoColor = proximoDiff === null ? '#94a3b8' : proximoDiff < 0 ? '#dc2626' : proximoDiff === 0 ? '#15803d' : '#3F4A75'
+  const proximoColor = proximoDiff === null ? '#7A7E87' : proximoDiff < 0 ? '#C23B3B' : proximoDiff === 0 ? '#1F7A50' : '#1C1D21'
 
   const porProveedor = proveedores.map(prov => {
     const misOps = opsPendientes.filter(o => o.id_proveedor_fk === prov.id)
@@ -267,9 +267,9 @@ export default function CXPPage() {
 
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
-        <KpiCard label="Total por Pagar" value={fmt(totalPorPagar)} color="#3F4A75" icon={FileText} />
-        <KpiCard label="Vencido" value={fmt(totalVencido)} color="#dc2626" icon={AlertTriangle} />
-        <KpiCard label="Por Vencer" value={fmt(totalPorVencer)} color="#d97706" icon={Clock} />
+        <KpiCard label="Total por Pagar" value={fmt(totalPorPagar)} color="#1C1D21" icon={FileText} />
+        <KpiCard label="Vencido" value={fmt(totalVencido)} color="#C23B3B" icon={AlertTriangle} />
+        <KpiCard label="Por Vencer" value={fmt(totalPorVencer)} color="#B5761A" icon={Clock} />
         <KpiCard
           label={proximoPago ? `Próx. Pago · Martes ${fmtCorta(proximoPago.fechaPago)}` : 'Próx. Pago'}
           value={proximoPago ? fmt(proximoPago.total) : '—'}
@@ -300,13 +300,13 @@ export default function CXPPage() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 20 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', marginBottom: 20 }}>
         {tabs.map(t => (
           <button key={t.key} onClick={() => setTab(t.key as any)}
             style={{ padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13,
               fontFamily: 'var(--font-body)', fontWeight: tab === t.key ? 600 : 400,
               color: tab === t.key ? 'var(--blue)' : 'var(--text-muted)',
-              borderBottom: tab === t.key ? '2px solid var(--blue)' : '2px solid transparent', marginBottom: -1 }}>
+              borderBottom: tab === t.key ? '2px solid #19D3C5' : '2px solid transparent', marginBottom: -1 }}>
             {t.label}
           </button>
         ))}
@@ -315,7 +315,7 @@ export default function CXPPage() {
       {/* ── TAB: Programación de Pago (ciclo martes-lunes → martes siguiente) ── */}
       {tab === 'programacion' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className="card" style={{ padding: '12px 18px', background: '#fffbeb', border: '1px solid #fde68a', fontSize: 12.5, color: '#78350f' }}>
+          <div className="card" style={{ padding: '12px 18px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', fontSize: 12.5, color: '#7A4B0C' }}>
             Toda OP autorizada y enviada a CxP entre el martes y el lunes siguiente se da por recibida esa semana y se paga el martes siguiente. Los grupos de abajo se calculan automáticamente a partir de la fecha en que cada OP quedó autorizada / entró a CxP.
           </div>
 
@@ -326,13 +326,13 @@ export default function CXPPage() {
           ) : gruposPago.map(g => {
             const diff = Math.round((g.fechaPago.getTime() - toDateOnly(new Date()).getTime()) / 86400000)
             const estado = diff < 0
-              ? { label: `Atrasado — debió pagarse el martes ${fmtCorta(g.fechaPago)}`, color: '#b91c1c' }
+              ? { label: `Atrasado — debió pagarse el martes ${fmtCorta(g.fechaPago)}`, color: '#A83232' }
               : diff === 0
-                ? { label: 'Se paga HOY', color: '#15803d' }
-                : { label: `En ${diff} día${diff === 1 ? '' : 's'}`, color: '#b45309' }
+                ? { label: 'Se paga HOY', color: '#1F7A50' }
+                : { label: `En ${diff} día${diff === 1 ? '' : 's'}`, color: '#96600F' }
             return (
               <div key={g.fechaPago.toISOString()} className="card" style={{ overflow: 'hidden' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>Martes {fmtLarga(g.fechaPago)}</div>
                     <div style={{ fontSize: 12, fontWeight: 600, color: estado.color }}>{estado.label}</div>
@@ -355,7 +355,7 @@ export default function CXPPage() {
                       const prov = proveedores.find(p => p.id === op.id_proveedor_fk)
                       return (
                         <tr key={op.id}>
-                          <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{op.folio}</td>
+                          <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{op.folio}</td>
                           <td style={{ fontSize: 13 }}>{prov?.nombre ?? '—'}</td>
                           <td style={{ fontSize: 12, color: 'var(--text-secondary)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
                           <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{fmtFecha(op.fecha_autorizacion || op.created_at)}</td>
@@ -410,10 +410,10 @@ export default function CXPPage() {
                   {filteredProvs.map(p => (
                     <tr key={p.id}>
                       <td style={{ fontWeight: 600 }}>{p.nombre}</td>
-                      <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)' }}>{p.rfc ?? '—'}</td>
+                      <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--text-secondary)' }}>{p.rfc ?? '—'}</td>
                       <td style={{ textAlign: 'right', fontSize: 13 }}>{p.count}</td>
                       <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 15, color: 'var(--blue)' }}>{fmt(p.saldo)}</td>
-                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: p.vencido > 0 ? '#dc2626' : 'var(--text-muted)', fontWeight: p.vencido > 0 ? 600 : 400 }}>
+                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: p.vencido > 0 ? '#C23B3B' : 'var(--text-muted)', fontWeight: p.vencido > 0 ? 600 : 400 }}>
                         {p.vencido > 0 ? fmt(p.vencido) : '—'}
                       </td>
                       <td>
@@ -428,7 +428,7 @@ export default function CXPPage() {
                   <tr style={{ background: 'var(--blue-pale)', fontWeight: 700 }}>
                     <td colSpan={3} style={{ color: 'var(--blue)' }}>TOTAL</td>
                     <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 16, color: 'var(--blue)' }}>{fmt(totalPorPagar)}</td>
-                    <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: totalVencido > 0 ? '#dc2626' : 'var(--text-muted)' }}>{totalVencido > 0 ? fmt(totalVencido) : '—'}</td>
+                    <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: totalVencido > 0 ? '#C23B3B' : 'var(--text-muted)' }}>{totalVencido > 0 ? fmt(totalVencido) : '—'}</td>
                     <td></td>
                   </tr>
                 </tbody>
@@ -456,7 +456,7 @@ export default function CXPPage() {
                       <span style={{ fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: banda.color }}>{fmt(b.total)}</span>
                     </div>
                   </div>
-                  <div style={{ height: 8, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{ height: 8, background: '#F4F5F7', borderRadius: 4, overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${pct}%`, background: banda.color, borderRadius: 4, transition: 'width 0.5s ease' }} />
                   </div>
                 </div>
@@ -488,7 +488,7 @@ export default function CXPPage() {
                         const ciclo = cicloDePago(op.fecha_autorizacion || op.created_at)
                         return (
                           <tr key={op.id}>
-                            <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{op.folio}</td>
+                            <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{op.folio}</td>
                             <td style={{ fontSize: 13 }}>{prov?.nombre ?? '—'}</td>
                             <td style={{ fontSize: 12, color: 'var(--text-secondary)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
                             <td style={{ fontSize: 12, color: banda.color, fontWeight: 600 }}>{fmtFecha(op.fecha_vencimiento)}</td>
@@ -534,7 +534,7 @@ export default function CXPPage() {
               <tbody>
                 {remesasFiltradas.map(r => (
                   <tr key={r.id}>
-                    <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
+                    <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
                     <td style={{ fontSize: 13 }}>{r.proveedores?.nombre ?? '—'}</td>
                     <td style={{ fontSize: 13, textAlign: 'center' }}>{r._numOps}</td>
                     <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{fmtFecha(r.fecha_pago)}</td>
@@ -588,8 +588,8 @@ function RemesaStatusBadge({ status }: { status: string }) {
   const ok = status === 'Aplicado'
   return (
     <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-      background: ok ? '#f0fdf4' : '#f1f5f9', color: ok ? '#15803d' : '#64748b',
-      border: `1px solid ${ok ? '#bbf7d0' : '#e2e8f0'}` }}>
+      background: ok ? '#1F7A50' : '#F4F5F7', color: ok ? '#fff' : '#62666E',
+      border: `1px solid ${ok ? '#1F7A50' : '#E6E8EB'}` }}>
       {status}
     </span>
   )
@@ -654,24 +654,24 @@ function ProveedorCXP({ prov, almMap, refreshKey, opCoincide, onClose, onOpenOP 
     } catch {}
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+      : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
     const iframe = document.createElement('iframe')
     iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
     document.body.appendChild(iframe)
     iframe.contentDocument!.open()
     iframe.contentDocument!.write(`<!DOCTYPE html><html><head><title>Estado de Cuenta — ${prov.nombre}</title>
       <style>
-        body { font-family: Arial, sans-serif; padding: 40px; font-size: 12px; color: #1e293b; }
-        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
-        .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
-        .org-sub { font-size: 11px; color: #64748b; }
-        .doc-title { font-size: 14px; font-weight: 600; color: #0D4F80; margin-bottom: 2px; }
-        .sub { color: #64748b; font-size: 11px; margin-bottom: 20px; }
+        body { font-family: Arial, sans-serif; padding: 40px; font-size: 12px; color: #26282D; }
+        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #1C1D21; margin-bottom: 18px; }
+        .org-nombre { font-size: 18px; font-weight: 700; color: #1C1D21; margin: 0 0 2px; }
+        .org-sub { font-size: 11px; color: #62666E; }
+        .doc-title { font-size: 14px; font-weight: 600; color: #1C1D21; margin-bottom: 2px; }
+        .sub { color: #62666E; font-size: 11px; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-        td, th { border: 1px solid #e2e8f0; padding: 7px 10px; }
-        th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
-        .total { background: #eff6ff; font-weight: 700; color: #0D4F80; }
-        .venc { color: #dc2626; font-weight: 600; }
+        td, th { border: 1px solid #E6E8EB; padding: 7px 10px; }
+        th { background: #F4F5F7; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+        .total { background: #F4F5F7; font-weight: 700; color: #1C1D21; }
+        .venc { color: #C23B3B; font-weight: 600; }
         @page { margin: 1.2cm; }
       </style></head><body>
       <div class="org-header">
@@ -689,7 +689,7 @@ function ProveedorCXP({ prov, almMap, refreshKey, opCoincide, onClose, onOpenOP 
         <thead><tr><th>Folio</th><th>Concepto</th><th>Fecha OP</th><th>Vencimiento</th><th>Monto</th><th>Pagado</th><th>Saldo</th><th>Status</th></tr></thead>
         <tbody>
           ${ops.map(o => `<tr>
-            <td style="font-family:monospace">${o.folio}</td>
+            <td style="font-variant-numeric:tabular-nums">${o.folio}</td>
             <td>${o.concepto ?? '—'}</td>
             <td>${fmtFecha(o.fecha_op)}</td>
             <td class="${diasVencido(o.fecha_vencimiento)>0&&o.status!=='Pagada'?'venc':''}">${fmtFecha(o.fecha_vencimiento)}</td>
@@ -704,7 +704,7 @@ function ProveedorCXP({ prov, almMap, refreshKey, opCoincide, onClose, onOpenOP 
             <td></td></tr>
         </tbody>
       </table>
-      <p style="font-size:11px;color:#64748b;margin-top:24px">Documento generado por DomusOne · ${new Date().toLocaleString('es-MX')}</p>
+      <p style="font-size:11px;color:#62666E;margin-top:24px">Documento generado por DomusOne · ${new Date().toLocaleString('es-MX')}</p>
       </body></html>`)
     iframe.contentDocument!.close()
     setTimeout(() => {
@@ -723,10 +723,10 @@ function ProveedorCXP({ prov, almMap, refreshKey, opCoincide, onClose, onOpenOP 
     <ModalShell modulo="tesoreria" titulo={prov.nombre} onClose={onClose} maxWidth={1100}
     >
 
-        <div style={{ display: 'flex', gap: 10, padding: '14px 24px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 10, padding: '14px 24px', borderBottom: '1px solid #F4F5F7', flexWrap: 'wrap' }}>
           {[
             { label: 'Saldo Pendiente', value: fmt(saldoTotal),           color: 'var(--blue)' },
-            { label: 'Pagado',          value: fmt(pagadoTotal),          color: '#15803d' },
+            { label: 'Pagado',          value: fmt(pagadoTotal),          color: '#1F7A50' },
             { label: 'Documentos',      value: String(opsFiltradas.length), color: 'var(--text-secondary)' },
           ].map(s => (
             <div key={s.label} style={{ textAlign: 'center', flex: 1, minWidth: 100 }}>
@@ -736,7 +736,7 @@ function ProveedorCXP({ prov, almMap, refreshKey, opCoincide, onClose, onOpenOP 
           ))}
         </div>
 
-        <div style={{ padding: '10px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ padding: '10px 24px', borderBottom: '1px solid #F4F5F7', display: 'flex', alignItems: 'center', gap: 8 }}>
           <label className="label" style={{ margin: 0 }}>Status</label>
           <select className="select" style={{ maxWidth: 220 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
             <option value="">Todos</option>
@@ -745,11 +745,11 @@ function ProveedorCXP({ prov, almMap, refreshKey, opCoincide, onClose, onOpenOP 
         </div>
 
         {canWrite('tesoreria') && selected.size > 0 && (
-          <div style={{ padding: '10px 24px', borderBottom: '1px solid #bbf7d0', background: '#f0fdf4',
+          <div style={{ padding: '10px 24px', borderBottom: '1px solid #E6E8EB', background: '#F4F5F7',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <div style={{ fontSize: 12.5, color: '#15803d' }}>
+            <div style={{ fontSize: 12.5, color: '#1F7A50' }}>
               <strong>{selected.size}</strong> OP{selected.size === 1 ? '' : "'s"} seleccionada{selected.size === 1 ? '' : 's'} · Total <strong>{fmt(totalSeleccionado)}</strong>
-              {selected.size === 1 && <span style={{ color: '#78350f', marginLeft: 8 }}>— selecciona 2 o más para pagarlas juntas en una remesa</span>}
+              {selected.size === 1 && <span style={{ color: '#7A4B0C', marginLeft: 8 }}>— selecciona 2 o más para pagarlas juntas en una remesa</span>}
             </div>
             <button className="btn-primary" style={{ fontSize: 12 }} disabled={selected.size < 2}
               onClick={() => setShowPagoRemesa(true)}>
@@ -794,23 +794,23 @@ function ProveedorCXP({ prov, almMap, refreshKey, opCoincide, onClose, onOpenOP 
                         )}
                       </td>
                     )}
-                    <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{op.folio}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)' }}>{op.folio_factura ?? '—'}</td>
+                    <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{op.folio}</td>
+                    <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--text-secondary)' }}>{op.folio_factura ?? '—'}</td>
                     <td style={{ fontSize: 12, maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
-                    <td style={{ fontSize: 12, color: vencido ? '#dc2626' : 'var(--text-secondary)', fontWeight: vencido ? 600 : 400 }}>
+                    <td style={{ fontSize: 12, color: vencido ? '#C23B3B' : 'var(--text-secondary)', fontWeight: vencido ? 600 : 400 }}>
                       {fmtFecha(op.fecha_vencimiento)}
                       {vencido && <span style={{ fontSize: 10, marginLeft: 4 }}>({dias}d)</span>}
                     </td>
                     <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(op.monto)}</td>
-                    <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#15803d' }}>{fmt(op.monto_pagado ?? 0)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: op.status === 'Pagada' ? '#15803d' : 'var(--blue)' }}>
+                    <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#1F7A50' }}>{fmt(op.monto_pagado ?? 0)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: op.status === 'Pagada' ? '#1F7A50' : 'var(--blue)' }}>
                       {fmt(op.saldo ?? op.monto)}
                     </td>
                     {/* Indicadores PDF/XML de la OP */}
                     <td>
                       <div style={{ display: 'flex', gap: 3 }}>
-                        {op.pdf_factura && <span style={{ fontSize: 9, padding: '1px 4px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 3, fontWeight: 600 }}>PDF</span>}
-                        {op.xml_factura && <span style={{ fontSize: 9, padding: '1px 4px', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: 3, fontWeight: 600 }}>XML</span>}
+                        {op.pdf_factura && <span style={{ fontSize: 9, padding: '1px 4px', background: '#C23B3B', color: '#fff', border: '1px solid #C23B3B', borderRadius: 3, fontWeight: 600 }}>PDF</span>}
+                        {op.xml_factura && <span style={{ fontSize: 9, padding: '1px 4px', background: '#1F7A50', color: '#fff', border: '1px solid #1F7A50', borderRadius: 3, fontWeight: 600 }}>XML</span>}
                       </div>
                     </td>
                     <td><StatusBadge status={op.status} /></td>
@@ -819,7 +819,7 @@ function ProveedorCXP({ prov, almMap, refreshKey, opCoincide, onClose, onOpenOP 
                         const ciclo = cicloDePago(op.fecha_autorizacion || op.created_at)
                         return ciclo ? <PagoBadge fechaPago={ciclo.fechaPago} /> : '—'
                       })() : op.status === 'Pagada' ? (
-                        <span style={{ fontSize: 11, color: '#15803d' }}>Pagada {fmtFecha(op.fecha_pago)}</span>
+                        <span style={{ fontSize: 11, color: '#1F7A50' }}>Pagada {fmtFecha(op.fecha_pago)}</span>
                       ) : '—'}
                     </td>
                     <td>
@@ -940,7 +940,7 @@ function PagoRemesaModal({ prov, ops, onClose, onSuccess }: { prov: any; ops: an
               style={{ fontSize: 12, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4 }}>
               <ExternalLink size={11} /> Ver archivo
             </a>
-            <button className="btn-ghost" style={{ padding: '2px 6px', fontSize: 11, color: '#dc2626' }}
+            <button className="btn-ghost" style={{ padding: '2px 6px', fontSize: 11, color: '#C23B3B' }}
               onClick={() => setForm(f => ({ ...f, [campo]: '' }))}>
               <Trash2 size={11} />
             </button>
@@ -961,7 +961,7 @@ function PagoRemesaModal({ prov, ops, onClose, onSuccess }: { prov: any; ops: an
     <ModalShell modulo="tesoreria" titulo="Pago Agrupado (Remesa)" subtitulo={`${prov.nombre} · ${ops.length} OPs`}
       onClose={onClose} maxWidth={640}>
       <div style={{ padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto', maxHeight: 'calc(90vh - 140px)' }}>
-        {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+        {error && <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>{error}</div>}
 
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
@@ -970,7 +970,7 @@ function PagoRemesaModal({ prov, ops, onClose, onSuccess }: { prov: any; ops: an
             <tbody>
               {ops.map(o => (
                 <tr key={o.id}>
-                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{o.folio}</td>
+                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{o.folio}</td>
                   <td style={{ fontSize: 12, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.concepto ?? '—'}</td>
                   <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(o.saldo ?? o.monto)}</td>
                 </tr>
@@ -1013,9 +1013,9 @@ function PagoRemesaModal({ prov, ops, onClose, onSuccess }: { prov: any; ops: an
             {form.id_cuenta_bancaria_fk && (() => {
               const cb = cuentasBanc.find(c => c.id === Number(form.id_cuenta_bancaria_fk))
               return cb ? (
-                <div style={{ marginTop: 6, padding: '6px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, fontSize: 12, display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#15803d' }}>Saldo disponible: <strong>{fmt(cb.saldo ?? 0)}</strong></span>
-                  {montoTotal > (cb.saldo ?? 0) && <span style={{ color: '#dc2626', fontWeight: 600 }}>⚠ Saldo insuficiente</span>}
+                <div style={{ marginTop: 6, padding: '6px 10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 6, fontSize: 12, display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#1F7A50' }}>Saldo disponible: <strong>{fmt(cb.saldo ?? 0)}</strong></span>
+                  {montoTotal > (cb.saldo ?? 0) && <span style={{ color: '#C23B3B', fontWeight: 600 }}>Saldo insuficiente</span>}
                 </div>
               ) : null
             })()}
@@ -1024,7 +1024,7 @@ function PagoRemesaModal({ prov, ops, onClose, onSuccess }: { prov: any; ops: an
 
         <div><label className="label">No. Referencia / Transferencia</label>
           <input className="input" value={form.referencia} onChange={setF('referencia')}
-            style={{ fontFamily: 'monospace' }} placeholder="ej. 202503240001" />
+            style={{ fontVariantNumeric: 'tabular-nums' }} placeholder="ej. 202503240001" />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -1108,13 +1108,13 @@ function RemesaDetail({ remesa, onClose }: { remesa: any; onClose: () => void })
     iframe.contentDocument!.open()
     iframe.contentDocument!.write(`<!DOCTYPE html><html><head><title>Comprobante ${remesa.folio}</title>
       <style>
-        body { font-family: Arial, sans-serif; padding: 40px; font-size: 12px; color: #1e293b; }
-        .doc-title { font-size: 16px; font-weight: 700; color: #0D4F80; margin-bottom: 2px; }
-        .sub { color: #64748b; font-size: 11px; margin-bottom: 20px; }
+        body { font-family: Arial, sans-serif; padding: 40px; font-size: 12px; color: #26282D; }
+        .doc-title { font-size: 16px; font-weight: 700; color: #1C1D21; margin-bottom: 2px; }
+        .sub { color: #62666E; font-size: 11px; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-        td, th { border: 1px solid #e2e8f0; padding: 7px 10px; }
-        th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
-        .total { background: #eff6ff; font-weight: 700; color: #0D4F80; }
+        td, th { border: 1px solid #E6E8EB; padding: 7px 10px; }
+        th { background: #F4F5F7; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+        .total { background: #F4F5F7; font-weight: 700; color: #1C1D21; }
         @page { margin: 1.2cm; }
       </style></head><body>
       <div class="doc-title">Comprobante de Pago Agrupado — ${remesa.folio}</div>
@@ -1123,14 +1123,14 @@ function RemesaDetail({ remesa, onClose }: { remesa: any; onClose: () => void })
         <thead><tr><th>Folio OP</th><th>Concepto</th><th>Monto</th></tr></thead>
         <tbody>
           ${abonos.map(a => `<tr>
-            <td style="font-family:monospace">${a.ordenes_pago?.folio ?? '—'}</td>
+            <td style="font-variant-numeric:tabular-nums">${a.ordenes_pago?.folio ?? '—'}</td>
             <td>${a.ordenes_pago?.concepto ?? '—'}</td>
             <td style="text-align:right">${fmt(a.monto)}</td>
           </tr>`).join('')}
           <tr class="total"><td colspan="2">TOTAL PAGADO</td><td style="text-align:right">${fmt(remesa.monto_total)}</td></tr>
         </tbody>
       </table>
-      <p style="font-size:11px;color:#64748b;margin-top:24px">Documento generado por DomusOne · ${new Date().toLocaleString('es-MX')}</p>
+      <p style="font-size:11px;color:#62666E;margin-top:24px">Documento generado por DomusOne · ${new Date().toLocaleString('es-MX')}</p>
       </body></html>`)
     iframe.contentDocument!.close()
     setTimeout(() => {
@@ -1148,17 +1148,17 @@ function RemesaDetail({ remesa, onClose }: { remesa: any; onClose: () => void })
           <RemesaStatusBadge status={remesa.status} />
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Fecha de pago: {fmtFecha(remesa.fecha_pago)}</span>
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Forma: {remesa.forma_pago}</span>
-          {remesa.referencia && <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace' }}>Ref: {remesa.referencia}</span>}
+          {remesa.referencia && <span style={{ fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>Ref: {remesa.referencia}</span>}
         </div>
 
         {remesa.status === 'Cancelada' && (
-          <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#991b1b' }}>
+          <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #8C2A2A', borderRadius: 8, fontSize: 12, color: '#8C2A2A' }}>
             Reversada por <strong>{remesa.cancelado_by ?? '—'}</strong> el {fmtFecha(remesa.cancelado_at)}.
             {remesa.cancelado_motivo && <div style={{ marginTop: 4 }}>Motivo: {remesa.cancelado_motivo}</div>}
           </div>
         )}
 
-        {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+        {error && <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>{error}</div>}
 
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
@@ -1169,7 +1169,7 @@ function RemesaDetail({ remesa, onClose }: { remesa: any; onClose: () => void })
                 <tr><td colSpan={4} style={{ textAlign: 'center', padding: 24 }}><RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></td></tr>
               ) : abonos.map(a => (
                 <tr key={a.id}>
-                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{a.ordenes_pago?.folio ?? '—'}</td>
+                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{a.ordenes_pago?.folio ?? '—'}</td>
                   <td style={{ fontSize: 12 }}>{a.ordenes_pago?.concepto ?? '—'}</td>
                   <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', textDecoration: a.status === 'Cancelada' ? 'line-through' : 'none', color: a.status === 'Cancelada' ? 'var(--text-muted)' : 'inherit' }}>{fmt(a.monto)}</td>
                   <td><RemesaStatusBadge status={a.status} /></td>
@@ -1188,21 +1188,21 @@ function RemesaDetail({ remesa, onClose }: { remesa: any; onClose: () => void })
         <div style={{ display: 'flex', gap: 8 }}>
           {(remesa.comprobante) && (
             <a href={remesa.comprobante} target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: '#eff6ff', color: 'var(--blue)', border: '1px solid #bfdbfe', borderRadius: 6, textDecoration: 'none' }}>
+              style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: '#F4F5F7', color: 'var(--blue)', border: '1px solid #C9CCD3', borderRadius: 6, textDecoration: 'none' }}>
               <CheckCircle size={11} /> Comprobante
             </a>
           )}
           {(remesa.complemento_pago) && (
             <a href={remesa.complemento_pago} target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: '#fdf4ff', color: '#7c3aed', border: '1px solid #e9d5ff', borderRadius: 6, textDecoration: 'none' }}>
+              style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: '#6B4E79', color: '#fff', border: '1px solid #6B4E79', borderRadius: 6, textDecoration: 'none' }}>
               <FileText size={11} /> Complemento SAT
             </a>
           )}
         </div>
 
         {fechaEdit && remesa.status === 'Aplicado' && (
-          <div style={{ padding: 14, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#b45309', marginBottom: 4 }}>Cambiar fecha de pago de la remesa</div>
+          <div style={{ padding: 14, background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#96600F', marginBottom: 4 }}>Cambiar fecha de pago de la remesa</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>Se actualiza en todas las OPs de la remesa, sus pagos y el movimiento bancario. Montos y saldos no cambian.</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 10, marginBottom: 10 }}>
               <div><label className="label">Fecha de pago *</label>
@@ -1222,13 +1222,13 @@ function RemesaDetail({ remesa, onClose }: { remesa: any; onClose: () => void })
         )}
 
         {showReversar && remesa.status === 'Aplicado' && (
-          <div style={{ padding: 14, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#991b1b', marginBottom: 8 }}>Motivo de la reversión *</div>
+          <div style={{ padding: 14, background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#8C2A2A', marginBottom: 8 }}>Motivo de la reversión *</div>
             <textarea className="input" rows={2} value={motivo} onChange={e => setMotivo(e.target.value)}
               style={{ resize: 'vertical', marginBottom: 10 }} placeholder="ej. Referencia bancaria equivocada, transferencia rechazada, etc." />
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button className="btn-secondary" onClick={() => { setShowReversar(false); setMotivo(''); setError('') }}>Cancelar</button>
-              <button className="btn-primary" style={{ background: '#dc2626' }} onClick={handleReversar} disabled={reversando}>
+              <button className="btn-primary" style={{ background: '#C23B3B' }} onClick={handleReversar} disabled={reversando}>
                 {reversando ? <Loader size={13} className="animate-spin" /> : <RotateCcw size={13} />}
                 Confirmar Reversión
               </button>
@@ -1244,7 +1244,7 @@ function RemesaDetail({ remesa, onClose }: { remesa: any; onClose: () => void })
             </button>
           )}
           {remesa.status === 'Aplicado' && canDelete() && !showReversar && (
-            <button className="btn-secondary" style={{ color: '#dc2626', borderColor: '#fecaca' }} onClick={() => setShowReversar(true)}>
+            <button className="btn-secondary" style={{ color: '#C23B3B', borderColor: '#E6E8EB' }} onClick={() => setShowReversar(true)}>
               <RotateCcw size={13} /> Reversar Remesa
             </button>
           )}
@@ -1498,7 +1498,7 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
               style={{ fontSize: 12, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4 }}>
               <ExternalLink size={11} /> Ver archivo
             </a>
-            <button className="btn-ghost" style={{ padding: '2px 6px', fontSize: 11, color: '#dc2626' }}
+            <button className="btn-ghost" style={{ padding: '2px 6px', fontSize: 11, color: '#C23B3B' }}
               onClick={() => setForm(f => ({ ...f, [campo]: '' }))}>
               <Trash2 size={11} />
             </button>
@@ -1527,7 +1527,7 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
         </div>
 
         {/* Concepto / datos de factura */}
-        <div style={{ padding: '10px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', flexWrap: 'wrap', gap: '4px 20px' }}>
+        <div style={{ padding: '10px 24px', borderBottom: '1px solid #F4F5F7', display: 'flex', flexWrap: 'wrap', gap: '4px 20px' }}>
           <div>
             <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Concepto</div>
             <div style={{ fontSize: 13 }}>{op.concepto ?? '—'}</div>
@@ -1535,7 +1535,7 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
           {op.folio_factura && (
             <div>
               <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Folio Factura</div>
-              <div style={{ fontSize: 13, fontFamily: 'monospace' }}>{op.folio_factura}</div>
+              <div style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>{op.folio_factura}</div>
             </div>
           )}
           {op.fecha_factura && (
@@ -1559,13 +1559,13 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
         </div>
 
         {/* Saldo */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 0, borderBottom: '1px solid #f1f5f9' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 0, borderBottom: '1px solid #F4F5F7' }}>
           {[
             { label: 'Total OP',  value: fmt(op.monto),             color: 'var(--text-primary)' },
-            { label: 'Pagado',    value: fmt(op.monto_pagado ?? 0), color: '#15803d' },
+            { label: 'Pagado',    value: fmt(op.monto_pagado ?? 0), color: '#1F7A50' },
             { label: 'Saldo',     value: fmt(saldoActual),          color: 'var(--blue)' },
           ].map((s, i) => (
-            <div key={s.label} style={{ padding: '12px 20px', textAlign: 'center', borderRight: i < 2 ? '1px solid #f1f5f9' : 'none' }}>
+            <div key={s.label} style={{ padding: '12px 20px', textAlign: 'center', borderRight: i < 2 ? '1px solid #F4F5F7' : 'none' }}>
               <div style={{ fontSize: 18, fontWeight: 700, color: s.color, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.label}</div>
             </div>
@@ -1574,24 +1574,24 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
 
         {/* Documentos de la OP (PDF + XML vienen de la Orden de Pago) */}
         {(op.pdf_factura || op.xml_factura) && (
-          <div style={{ padding: '10px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 8, background: '#fafafa' }}>
+          <div style={{ padding: '10px 24px', borderBottom: '1px solid #F4F5F7', display: 'flex', alignItems: 'center', gap: 8, background: '#fafafa' }}>
             <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Factura:</span>
             {op.pdf_factura && (
               <a href={op.pdf_factura} target="_blank" rel="noopener noreferrer"
                 style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px',
-                  background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 6, textDecoration: 'none' }}>
+                  background: '#C23B3B', color: '#fff', border: '1px solid #C23B3B', borderRadius: 6, textDecoration: 'none' }}>
                 <FileText size={11} /> PDF Factura
               </a>
             )}
             {op.xml_factura && (
               <a href={op.xml_factura} target="_blank" rel="noopener noreferrer"
                 style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px',
-                  background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: 6, textDecoration: 'none' }}>
+                  background: '#1F7A50', color: '#fff', border: '1px solid #1F7A50', borderRadius: 6, textDecoration: 'none' }}>
                 <FileText size={11} /> XML Factura
               </a>
             )}
             {!op.pdf_factura && !op.xml_factura && (
-              <span style={{ fontSize: 11, color: '#d97706' }}>Sin documentos adjuntos — edita la OP para subirlos</span>
+              <span style={{ fontSize: 11, color: '#B5761A' }}>Sin documentos adjuntos — edita la OP para subirlos</span>
             )}
           </div>
         )}
@@ -1619,13 +1619,13 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
               <div key={a.id} className="card" style={{ padding: '12px 14px', marginBottom: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(a.monto)}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#1F7A50', fontVariantNumeric: 'tabular-nums' }}>{fmt(a.monto)}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                       {fmtFecha(a.fecha_abono)} · {a.forma_pago}
-                      {a.referencia && <span style={{ marginLeft: 6, fontFamily: 'monospace' }}>Ref: {a.referencia}</span>}
+                      {a.referencia && <span style={{ marginLeft: 6, fontVariantNumeric: 'tabular-nums' }}>Ref: {a.referencia}</span>}
                       {a.id_cuenta_bancaria_fk && cuentasBanc.length > 0 && (() => {
                         const cb = cuentasBanc.find(c => c.id === a.id_cuenta_bancaria_fk)
-                        return cb ? <span style={{ marginLeft: 6, color: '#0f766e' }}>🏦 {cb.banco}{cb.numero_cuenta ? ` ···${cb.numero_cuenta.slice(-4)}` : ''}</span> : null
+                        return cb ? <span style={{ marginLeft: 6, color: '#126B63' }}>{cb.banco}{cb.numero_cuenta ? ` ···${cb.numero_cuenta.slice(-4)}` : ''}</span> : null
                       })()}
                     </div>
                   </div>
@@ -1645,25 +1645,25 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
                     {/* Compat. con registros anteriores que tenían pdf/xml en el abono */}
                     {a.pdf_factura && (
                       <a href={a.pdf_factura} target="_blank" rel="noopener noreferrer"
-                        style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 6, textDecoration: 'none' }}>
+                        style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', background: '#C23B3B', color: '#fff', border: '1px solid #C23B3B', borderRadius: 6, textDecoration: 'none' }}>
                         <FileText size={10} /> PDF Factura
                       </a>
                     )}
                     {a.xml_factura && (
                       <a href={a.xml_factura} target="_blank" rel="noopener noreferrer"
-                        style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: 6, textDecoration: 'none' }}>
+                        style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', background: '#1F7A50', color: '#fff', border: '1px solid #1F7A50', borderRadius: 6, textDecoration: 'none' }}>
                         <FileText size={10} /> XML
                       </a>
                     )}
                     {a.comprobante && (
                       <a href={a.comprobante} target="_blank" rel="noopener noreferrer"
-                        style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', background: '#eff6ff', color: 'var(--blue)', border: '1px solid #bfdbfe', borderRadius: 6, textDecoration: 'none' }}>
+                        style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', background: '#F4F5F7', color: 'var(--blue)', border: '1px solid #C9CCD3', borderRadius: 6, textDecoration: 'none' }}>
                         <CheckCircle size={10} /> Comprobante
                       </a>
                     )}
                     {a.complemento_pago && (
                       <a href={a.complemento_pago} target="_blank" rel="noopener noreferrer"
-                        style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', background: '#fdf4ff', color: '#7c3aed', border: '1px solid #e9d5ff', borderRadius: 6, textDecoration: 'none' }}>
+                        style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', background: '#6B4E79', color: '#fff', border: '1px solid #6B4E79', borderRadius: 6, textDecoration: 'none' }}>
                         <FileText size={10} /> Complemento SAT
                       </a>
                     )}
@@ -1672,19 +1672,19 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
                 {a.notas && <div style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>{a.notas}</div>}
                 <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>Registrado por: {a.created_by ?? '—'}</div>
                 {a.editado_by && (
-                  <div style={{ fontSize: 10, color: '#d97706', marginTop: 2 }}>
+                  <div style={{ fontSize: 10, color: '#B5761A', marginTop: 2 }}>
                     Editado por {a.editado_by} el {fmtFecha(a.editado_at)} — {a.motivo_edicion}
                   </div>
                 )}
 
                 {fechaEdit?.id === a.id && (
-                  <div style={{ marginTop: 10, padding: 12, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#b45309', marginBottom: 4 }}>Cambiar fecha de pago</div>
+                  <div style={{ marginTop: 10, padding: 12, background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#96600F', marginBottom: 4 }}>Cambiar fecha de pago</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
                       Se actualiza la fecha del pago, del movimiento bancario y de la OP. Montos y saldos no cambian.
                       {a.id_remesa_fk && <strong> Este pago es parte de una remesa: la fecha cambia para todas sus OPs.</strong>}
                     </div>
-                    {errorFecha && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12, marginBottom: 10 }}>{errorFecha}</div>}
+                    {errorFecha && <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12, marginBottom: 10 }}>{errorFecha}</div>}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 10, marginBottom: 10 }}>
                       <div><label className="label">Fecha de pago *</label>
                         <input className="input" type="date" value={fechaEdit?.fecha ?? ''} onChange={e => setFechaEdit(f => f && ({ ...f, fecha: e.target.value }))} />
@@ -1703,9 +1703,9 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
                 )}
 
                 {editando?.id === a.id && (
-                  <div style={{ marginTop: 10, padding: 12, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#b45309', marginBottom: 10 }}>Editar pago ya aplicado</div>
-                    {errorEdit && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12, marginBottom: 10 }}>{errorEdit}</div>}
+                  <div style={{ marginTop: 10, padding: 12, background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#96600F', marginBottom: 10 }}>Editar pago ya aplicado</div>
+                    {errorEdit && <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12, marginBottom: 10 }}>{errorEdit}</div>}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
                       <div><label className="label">Fecha *</label>
                         <input className="input" type="date" value={formEdit.fecha_abono ?? ''} onChange={setFE('fecha_abono')} />
@@ -1725,7 +1725,7 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
                         </select>
                       </div>
                       <div><label className="label">No. Referencia / Transferencia</label>
-                        <input className="input" value={formEdit.referencia ?? ''} onChange={setFE('referencia')} style={{ fontFamily: 'monospace' }} />
+                        <input className="input" value={formEdit.referencia ?? ''} onChange={setFE('referencia')} style={{ fontVariantNumeric: 'tabular-nums' }} />
                       </div>
                     </div>
                     <div style={{ marginBottom: 10 }}>
@@ -1761,9 +1761,9 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
 
           {/* Formulario nuevo pago */}
           {showForm && (
-            <div style={{ padding: '16px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10 }}>
+            <div style={{ padding: '16px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#15803d' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#1F7A50' }}>
                   Registrar Pago · Saldo: {fmt(saldoActual)}
                 </div>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer', fontWeight: 600, color: 'var(--blue)' }}>
@@ -1775,7 +1775,7 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
                   Pago total
                 </label>
               </div>
-              {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12, marginBottom: 10 }}>{error}</div>}
+              {error && <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12, marginBottom: 10 }}>{error}</div>}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
                 <div><label className="label">Fecha *</label>
@@ -1785,7 +1785,7 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
                   <input className="input" type="number" step="0.01" value={form.monto}
                     disabled={pagoTotal}
                     onChange={e => { setPagoTotal(false); setForm(f => ({ ...f, monto: e.target.value })) }}
-                    style={{ textAlign: 'right', background: pagoTotal ? '#f8fafc' : undefined }} />
+                    style={{ textAlign: 'right', background: pagoTotal ? '#F8F9FA' : undefined }} />
                 </div>
               </div>
 
@@ -1801,7 +1801,7 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
                 </div>
                 <div><label className="label">No. Referencia / Transferencia</label>
                   <input className="input" value={form.referencia} onChange={setF('referencia')}
-                    style={{ fontFamily: 'monospace' }} placeholder="ej. 202503240001" />
+                    style={{ fontVariantNumeric: 'tabular-nums' }} placeholder="ej. 202503240001" />
                 </div>
               </div>
 
@@ -1820,10 +1820,10 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
                   {form.id_cuenta_bancaria_fk && (() => {
                     const cb = cuentasBanc.find(c => c.id === Number(form.id_cuenta_bancaria_fk))
                     return cb ? (
-                      <div style={{ marginTop: 6, padding: '6px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, fontSize: 12, display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: '#15803d' }}>Saldo disponible: <strong>{fmt(cb.saldo ?? 0)}</strong></span>
+                      <div style={{ marginTop: 6, padding: '6px 10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 6, fontSize: 12, display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#1F7A50' }}>Saldo disponible: <strong>{fmt(cb.saldo ?? 0)}</strong></span>
                         {Number(form.monto) > (cb.saldo ?? 0) && (
-                          <span style={{ color: '#dc2626', fontWeight: 600 }}>⚠ Saldo insuficiente</span>
+                          <span style={{ color: '#C23B3B', fontWeight: 600 }}>Saldo insuficiente</span>
                         )}
                       </div>
                     ) : null

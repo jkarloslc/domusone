@@ -16,12 +16,12 @@ import PageHeader from '@/components/layout/PageHeader'
 import Paginador from '@/components/ui/Paginador'
 // ── Documentos requeridos ─────────────────────────────────
 const DOCS = [
-  { key: 'csf_url',          label: 'CSF',                      desc: 'Constancia de Situación Fiscal',     color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
-  { key: 'opinion_sat_url',  label: 'Opinión SAT',               desc: 'Opinión de Cumplimiento del SAT',    color: '#059669', bg: '#f0fdf4', border: '#bbf7d0' },
-  { key: 'id_oficial_url',   label: 'ID Oficial',                desc: 'Identificación Oficial vigente',     color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
-  { key: 'edo_cuenta_url',   label: 'Carátula Edo. Cuenta',      desc: 'Carátula Estado de Cuenta Bancario', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-  { key: 'acta_const_url',   label: 'Acta Constitutiva',         desc: 'Acta Constitutiva de la empresa',    color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
-  { key: 'comp_dom_url',     label: 'Comprobante de Domicilio',  desc: 'Comprobante de domicilio fiscal',    color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
+  { key: 'csf_url',          label: 'CSF',                      desc: 'Constancia de Situación Fiscal',     color: '#1C1D21', bg: '#F4F5F7', border: '#C9CCD3' },
+  { key: 'opinion_sat_url',  label: 'Opinión SAT',               desc: 'Opinión de Cumplimiento del SAT',    color: '#267F56', bg: '#F4F5F7', border: '#E6E8EB' },
+  { key: 'id_oficial_url',   label: 'ID Oficial',                desc: 'Identificación Oficial vigente',     color: '#6B4E79', bg: '#F4F5F7', border: '#E6E8EB' },
+  { key: 'edo_cuenta_url',   label: 'Carátula Edo. Cuenta',      desc: 'Carátula Estado de Cuenta Bancario', color: '#B5761A', bg: '#F4F5F7', border: '#E6E8EB' },
+  { key: 'acta_const_url',   label: 'Acta Constitutiva',         desc: 'Acta Constitutiva de la empresa',    color: '#C23B3B', bg: '#F4F5F7', border: '#E6E8EB' },
+  { key: 'comp_dom_url',     label: 'Comprobante de Domicilio',  desc: 'Comprobante de domicilio fiscal',    color: '#32789A', bg: '#F4F5F7', border: '#C9CCD3' },
 ]
 
 export default function ProveedoresPage() {
@@ -93,14 +93,14 @@ export default function ProveedoresPage() {
               const ndocs = docsCount(r)
               return (
                 <tr key={r.id} style={{ opacity: r.activo ? 1 : 0.45 }}>
-                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600, whiteSpace: 'nowrap' }}>{r.clave}</td>
+                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600, whiteSpace: 'nowrap' }}>{r.clave}</td>
                   <td>
                     <div style={{ fontWeight: 500 }}>{r.nombre}</div>
                     {r.razon_social && r.razon_social !== r.nombre && (
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.razon_social}</div>
                     )}
                   </td>
-                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{r.rfc ?? '—'}</td>
+                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{r.rfc ?? '—'}</td>
                   <td>
                     {r.contacto && <div style={{ fontSize: 13 }}>{r.contacto}</div>}
                     {r.telefono && <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 3 }}><Phone size={10} />{r.telefono}</div>}
@@ -111,15 +111,15 @@ export default function ProveedoresPage() {
                       <span className={`badge ${r.activo ? 'badge-vendido' : 'badge-default'}`}>{r.activo ? 'Activo' : 'Inactivo'}</span>
                       {r.interno && (
                         <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 10,
-                          background: '#eff6ff', color: 'var(--blue)', border: '1px solid #bfdbfe' }}>
+                          background: '#F4F5F7', color: 'var(--blue)', border: '1px solid #C9CCD3' }}>
                           Interno
                         </span>
                       )}
                       {ndocs > 0 && (
                         <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 10,
-                          background: ndocs === DOCS.length ? '#f0fdf4' : '#fffbeb',
-                          color:      ndocs === DOCS.length ? '#15803d' : '#d97706',
-                          border:     `1px solid ${ndocs === DOCS.length ? '#bbf7d0' : '#fde68a'}` }}>
+                          background: ndocs === DOCS.length ? '#1F7A50' : '#B5761A',
+                          color:      '#fff',
+                          border:     `1px solid ${ndocs === DOCS.length ? '#1F7A50' : '#B5761A'}` }}>
                           {ndocs}/{DOCS.length} docs
                         </span>
                       )}
@@ -312,19 +312,19 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
     >
 
         {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', padding: '0 24px' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', padding: '0 24px' }}>
           {TABS.map(t => (
             <button key={t.key} onClick={() => setTab(t.key as any)}
               style={{ padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer',
                 fontSize: 13, fontFamily: 'var(--font-body)', fontWeight: tab === t.key ? 600 : 400,
                 color: tab === t.key ? 'var(--blue)' : 'var(--text-muted)',
-                borderBottom: tab === t.key ? '2px solid var(--blue)' : '2px solid transparent',
+                borderBottom: tab === t.key ? '2px solid #19D3C5' : '2px solid transparent',
                 marginBottom: -1 }}>
               {t.label}
               {t.key === 'documentos' && (
                 <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 10,
-                  background: DOCS.filter(d => form[d.key as keyof typeof form]).length === DOCS.length ? '#f0fdf4' : '#fffbeb',
-                  color:      DOCS.filter(d => form[d.key as keyof typeof form]).length === DOCS.length ? '#15803d' : '#d97706' }}>
+                  background: DOCS.filter(d => form[d.key as keyof typeof form]).length === DOCS.length ? '#1F7A50' : '#B5761A',
+                  color:      '#fff' }}>
                   {DOCS.filter(d => form[d.key as keyof typeof form]).length}/{DOCS.length}
                 </span>
               )}
@@ -333,7 +333,7 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
         </div>
 
         <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(88vh - 180px)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+          {error && <div style={{ padding: '10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
 
           {/* ── TAB: Datos Generales ── */}
           {tab === 'datos' && (
@@ -346,8 +346,8 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
                       value={isNew ? '' : form.clave}
                       onChange={set('clave')}
                       disabled={isNew || loadingClave}
-                      style={{ fontFamily: 'monospace', textTransform: 'uppercase',
-                        background: isNew ? '#f8fafc' : undefined,
+                      style={{ fontVariantNumeric: 'tabular-nums', textTransform: 'uppercase',
+                        background: isNew ? '#F8F9FA' : undefined,
                         color: isNew ? 'var(--text-muted)' : undefined }}
                       placeholder={isNew ? 'Se asigna al guardar' : ''}
                     />
@@ -371,16 +371,16 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
                       value={form.rfc}
                       onChange={set('rfc')}
                       style={{
-                        fontFamily: 'monospace',
+                        fontVariantNumeric: 'tabular-nums',
                         textTransform: 'uppercase',
-                        borderColor: rfcDuplicate ? '#dc2626' : undefined,
-                        boxShadow: rfcDuplicate ? '0 0 0 2px #fecaca' : undefined,
+                        borderColor: rfcDuplicate ? '#C23B3B' : undefined,
+                        boxShadow: rfcDuplicate ? '0 0 0 2px #E6E8EB' : undefined,
                       }}
                     />
                     {rfcDuplicate && (
-                      <div style={{ marginTop: 5, padding: '6px 10px', background: '#fef2f2',
-                        border: '1px solid #fecaca', borderRadius: 6, fontSize: 11,
-                        color: '#dc2626', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                      <div style={{ marginTop: 5, padding: '6px 10px', background: '#F4F5F7',
+                        border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, fontSize: 11,
+                        color: '#C23B3B', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
                         <AlertTriangle size={12} style={{ marginTop: 1, flexShrink: 0 }} />
                         <span>RFC duplicado: ya existe <strong>{rfcDuplicate.clave} – {rfcDuplicate.nombre}</strong></span>
                       </div>
@@ -416,9 +416,9 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: 2 }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
-                    padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: 6,
-                    background: form.interno ? '#eff6ff' : '#fafafa',
-                    borderColor: form.interno ? '#bfdbfe' : '#e2e8f0' }}>
+                    padding: '7px 10px', border: '1px solid #E6E8EB', borderRadius: 6,
+                    background: form.interno ? '#F4F5F7' : '#fafafa',
+                    borderColor: form.interno ? '#C9CCD3' : '#E6E8EB' }}>
                     <input type="checkbox" checked={form.interno}
                       onChange={e => setForm(f => ({ ...f, interno: e.target.checked }))}
                       style={{ width: 14, height: 14, accentColor: 'var(--blue)' }} />
@@ -446,7 +446,7 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
                 const hasFile = !!url
                 return (
                   <div key={doc.key}
-                    style={{ padding: '14px 16px', border: `1px solid ${hasFile ? doc.border : '#e2e8f0'}`,
+                    style={{ padding: '14px 16px', border: `1px solid ${hasFile ? doc.border : '#E6E8EB'}`,
                       borderRadius: 10, background: hasFile ? doc.bg : '#fafafa',
                       transition: 'all 0.2s' }}>
                     <input
@@ -459,11 +459,11 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{ width: 36, height: 36, borderRadius: 8,
-                          background: hasFile ? doc.color + '20' : '#f1f5f9',
+                          background: hasFile ? '#E6E8EB' : '#F4F5F7',
                           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                           {hasFile
                             ? <CheckCircle size={18} style={{ color: doc.color }} />
-                            : <FileText size={18} style={{ color: '#94a3b8' }} />}
+                            : <FileText size={18} style={{ color: '#7A7E87' }} />}
                         </div>
                         <div>
                           <div style={{ fontSize: 13, fontWeight: 600, color: hasFile ? doc.color : 'var(--text-primary)' }}>
@@ -478,16 +478,16 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
                           <>
                             <a href={url} target="_blank" rel="noopener noreferrer"
                               style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11,
-                                color: doc.color, padding: '4px 10px', borderRadius: 6,
-                                background: doc.color + '10', border: `1px solid ${doc.border}`,
+                                color: '#fff', padding: '4px 10px', borderRadius: 6,
+                                background: doc.color, border: `1px solid ${doc.border}`,
                                 textDecoration: 'none' }}>
                               <ExternalLink size={11} /> Ver
                             </a>
                             <button
                               onClick={() => removeDoc(doc.key)}
                               style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11,
-                                color: '#dc2626', padding: '4px 10px', borderRadius: 6,
-                                background: '#fef2f2', border: '1px solid #fecaca', cursor: 'pointer' }}>
+                                color: '#fff', padding: '4px 10px', borderRadius: 6,
+                                background: '#C23B3B', border: '1px solid #C23B3B', cursor: 'pointer' }}>
                               <Trash2 size={11} /> Quitar
                             </button>
                           </>
@@ -498,8 +498,8 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
                           style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11,
                             color: hasFile ? doc.color : 'var(--text-secondary)',
                             padding: '4px 10px', borderRadius: 6,
-                            background: hasFile ? doc.color + '10' : '#f1f5f9',
-                            border: `1px solid ${hasFile ? doc.border : '#e2e8f0'}`,
+                            background: hasFile ? '#E6E8EB' : '#F4F5F7',
+                            border: `1px solid ${hasFile ? doc.border : '#E6E8EB'}`,
                             cursor: 'pointer' }}>
                           {uploading === doc.key
                             ? <><Loader size={11} className="animate-spin" /> Subiendo…</>
@@ -512,7 +512,7 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
               })}
 
               {/* Resumen del estado documental */}
-              <div style={{ padding: '12px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, marginTop: 4 }}>
+              <div style={{ padding: '12px 16px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, marginTop: 4 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                   Completitud del expediente
                 </div>
@@ -521,12 +521,12 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
                     const ok = !!(form[d.key as keyof typeof form])
                     return (
                       <div key={d.key} style={{ flex: 1, textAlign: 'center', padding: '6px 4px',
-                        background: ok ? d.bg : '#f1f5f9', borderRadius: 6,
-                        border: `1px solid ${ok ? d.border : '#e2e8f0'}` }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: ok ? d.color : '#94a3b8' }}>
+                        background: ok ? d.bg : '#F4F5F7', borderRadius: 6,
+                        border: `1px solid ${ok ? d.border : '#E6E8EB'}` }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: ok ? d.color : '#7A7E87' }}>
                           {d.label}
                         </div>
-                        <div style={{ fontSize: 9, color: ok ? d.color : '#94a3b8', marginTop: 2 }}>
+                        <div style={{ fontSize: 9, color: ok ? d.color : '#7A7E87', marginTop: 2 }}>
                           {ok ? '✓ Cargado' : 'Pendiente'}
                         </div>
                       </div>
@@ -546,7 +546,7 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
 const Sec = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div>
     <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em',
-      textTransform: 'uppercase', marginBottom: 8, paddingBottom: 4, borderBottom: '1px solid #e2e8f0' }}>
+      textTransform: 'uppercase', marginBottom: 8, paddingBottom: 4, borderBottom: '1px solid #E6E8EB' }}>
       {label}
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{children}</div>

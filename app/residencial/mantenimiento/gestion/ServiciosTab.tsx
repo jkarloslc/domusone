@@ -19,9 +19,9 @@ type TipoServicio     = typeof TIPOS_SERVICIO[number]
 const TIPOS_CONEXION  = ['Medidor', 'Toma', 'Circuito', 'Interruptor', 'Tablero', 'Válvula', 'Hidrante', 'Otro'] as const
 
 const TIPO_STYLE: Record<TipoServicio, { color: string; bg: string; border: string; Icon: React.FC<any> }> = {
-  CFE:    { color: '#d97706', bg: '#fffbeb', border: '#fde68a', Icon: Zap      },
-  Agua:   { color: '#0369a1', bg: '#e0f2fe', border: '#bae6fd', Icon: Droplets },
-  'Gas LP': { color: '#ea580c', bg: '#fff7ed', border: '#fed7aa', Icon: Flame  },
+  CFE:    { color: '#B5761A', bg: '#F4F5F7', border: '#E6E8EB', Icon: Zap      },
+  Agua:   { color: '#2A6582', bg: '#E6E8EB', border: '#E6E8EB', Icon: Droplets },
+  'Gas LP': { color: '#C8642A', bg: '#F4F5F7', border: '#E6E8EB', Icon: Flame  },
 }
 
 const UNIDAD_CONSUMO: Record<TipoServicio, string> = { CFE: 'kWh', Agua: 'm³', 'Gas LP': 'L' }
@@ -229,32 +229,32 @@ export default function ServiciosTab() {
             {catalogo.length} servicios activos
           </div>
         </div>
-        <div className="card" style={{ padding: '10px 14px', background: '#fffbeb', border: '1px solid #fde68a' }}>
+        <div className="card" style={{ padding: '10px 14px', background: '#fff', border: '1px solid #E6E8EB' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
-            <Zap size={11} style={{ color: '#d97706' }} />
-            <span style={{ fontSize: 10, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>CFE — Último periodo</span>
+            <Zap size={11} style={{ color: '#62666E' }} />
+            <span style={{ fontSize: 10, color: '#7A4B0C', textTransform: 'uppercase', letterSpacing: '0.05em' }}>CFE — Último periodo</span>
           </div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: '#d97706',
+          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)',
             fontVariantNumeric: 'tabular-nums' }}>{fmt(totalCFE)}</div>
-          <div style={{ fontSize: 10, color: '#92400e' }}>{cntCFE} servicios</div>
+          <div style={{ fontSize: 10, color: '#7A4B0C' }}>{cntCFE} servicios</div>
         </div>
-        <div className="card" style={{ padding: '10px 14px', background: '#e0f2fe', border: '1px solid #bae6fd' }}>
+        <div className="card" style={{ padding: '10px 14px', background: '#fff', border: '1px solid #E6E8EB' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
-            <Droplets size={11} style={{ color: '#0369a1' }} />
-            <span style={{ fontSize: 10, color: '#075985', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Agua — Último periodo</span>
+            <Droplets size={11} style={{ color: '#62666E' }} />
+            <span style={{ fontSize: 10, color: '#1F4E66', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Agua — Último periodo</span>
           </div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: '#0369a1',
+          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)',
             fontVariantNumeric: 'tabular-nums' }}>{fmt(totalAgua)}</div>
-          <div style={{ fontSize: 10, color: '#075985' }}>{cntAgua} servicios</div>
+          <div style={{ fontSize: 10, color: '#1F4E66' }}>{cntAgua} servicios</div>
         </div>
-        <div className="card" style={{ padding: '10px 14px', background: '#fff7ed', border: '1px solid #fed7aa' }}>
+        <div className="card" style={{ padding: '10px 14px', background: '#fff', border: '1px solid #E6E8EB' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
-            <Flame size={11} style={{ color: '#ea580c' }} />
-            <span style={{ fontSize: 10, color: '#9a3412', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Gas LP — Último periodo</span>
+            <Flame size={11} style={{ color: '#62666E' }} />
+            <span style={{ fontSize: 10, color: '#8A4119', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Gas LP — Último periodo</span>
           </div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: '#ea580c',
+          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)',
             fontVariantNumeric: 'tabular-nums' }}>{fmt(totalGasLP)}</div>
-          <div style={{ fontSize: 10, color: '#9a3412' }}>{cntGasLP} servicios</div>
+          <div style={{ fontSize: 10, color: '#8A4119' }}>{cntGasLP} servicios</div>
         </div>
         <div className="card" style={{ padding: '10px 14px' }}>
           <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase',
@@ -268,13 +268,13 @@ export default function ServiciosTab() {
 
       {/* Filtros + acción */}
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 12,
-        padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0',
+        padding: '8px 12px', background: '#F8F9FA', border: '1px solid #E6E8EB',
         borderRadius: 8, flexWrap: 'wrap' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11,
           color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
           <Filter size={11} /> Filtros
         </span>
-        <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
+        <div style={{ width: 1, height: 18, background: '#E6E8EB', flexShrink: 0 }} />
 
         <select className="select"
           style={{ flex: '1 1 150px', maxWidth: 210, fontSize: 12, padding: '3px 8px', height: 28 }}
@@ -311,7 +311,7 @@ export default function ServiciosTab() {
 
         {(filterCC || filterTipo || filterUbic || filterNoServicio) && (
           <button className="btn-ghost"
-            style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626', whiteSpace: 'nowrap' }}
+            style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#C23B3B', whiteSpace: 'nowrap' }}
             onClick={() => { setFilterCC(''); setFilterTipo(''); setFilterUbic(''); setFilterNoServicio('') }}>
             <X size={11} /> Limpiar
           </button>
@@ -379,28 +379,28 @@ export default function ServiciosTab() {
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '10px 14px', cursor: 'pointer',
                     background: ts ? ts.bg : 'var(--blue-pale)',
-                    borderBottom: expanded ? `1px solid ${ts?.border ?? '#e2e8f0'}` : 'none' }}>
+                    borderBottom: expanded ? `1px solid ${ts?.border ?? '#E6E8EB'}` : 'none' }}>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     {expanded
                       ? <ChevronDown size={13} style={{ color: ts?.color ?? 'var(--blue)', flexShrink: 0 }} />
                       : <ChevronRight size={13} style={{ color: ts?.color ?? 'var(--blue)', flexShrink: 0 }} />}
                     {Icon && (
-                      <div style={{ width: 28, height: 28, borderRadius: 6,
-                        background: ts.color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Icon size={13} style={{ color: ts.color }} />
+                      <div className="icon-chip" style={{ width: 28, height: 28, borderRadius: 6,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Icon size={13} />
                       </div>
                     )}
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: ts?.color ?? 'var(--blue)',
-                          fontFamily: 'monospace', letterSpacing: '0.02em' }}>
+                          fontVariantNumeric: 'tabular-nums', letterSpacing: '0.02em' }}>
                           {servicio.no_servicio}
                         </div>
                         {servicio.ubicacion && (
                           <span style={{ fontSize: 11, fontWeight: 600, padding: '1px 7px',
-                            borderRadius: 20, background: (ts?.color ?? '#64748b') + '15',
-                            color: ts?.color ?? '#64748b', border: `1px solid ${ts?.color ?? '#64748b'}30` }}>
+                            borderRadius: 20, background: (ts?.color ?? '#62666E'),
+                            color: '#fff', border: `1px solid ${ts?.color ?? '#62666E'}` }}>
                             {servicio.ubicacion}
                           </span>
                         )}
@@ -444,7 +444,7 @@ export default function ServiciosTab() {
 
                     <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
                       <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10,
-                        background: '#f1f5f9', color: 'var(--text-muted)', display: 'flex',
+                        background: '#F4F5F7', color: 'var(--text-muted)', display: 'flex',
                         alignItems: 'center', gap: 3 }}>
                         <History size={10} /> {regs.length}
                       </span>
@@ -456,7 +456,7 @@ export default function ServiciosTab() {
                       )}
                       {canDelete() && (
                         <button className="btn-ghost"
-                          style={{ fontSize: 11, padding: '3px 6px', color: '#dc2626' }}
+                          style={{ fontSize: 11, padding: '3px 6px', color: '#C23B3B' }}
                           onClick={() => handleDeleteServicio(servicio.id)}>
                           <Trash2 size={11} />
                         </button>
@@ -471,11 +471,11 @@ export default function ServiciosTab() {
 
                     {/* Mini-form para nuevo registro */}
                     {canWrite('mantenimiento') && (
-                      <div style={{ marginBottom: 12, padding: '10px 12px', background: '#f0fdf4',
-                        border: '1px solid #bbf7d0', borderRadius: 8 }}>
+                      <div style={{ marginBottom: 12, padding: '10px 12px', background: '#F4F5F7',
+                        border: '1px solid #E6E8EB', borderRadius: 8 }}>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
                         <div style={{ flexShrink: 0 }}>
-                          <div style={{ fontSize: 10, color: '#15803d', fontWeight: 600,
+                          <div style={{ fontSize: 10, color: '#1F7A50', fontWeight: 600,
                             marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                             + Agregar Registro
                           </div>
@@ -532,7 +532,7 @@ export default function ServiciosTab() {
                       </div>
                       {servicio.tipo_servicio === 'CFE' && (
                         <details style={{ marginTop: 8 }}>
-                          <summary style={{ fontSize: 11, color: '#15803d', cursor: 'pointer', fontWeight: 600 }}>
+                          <summary style={{ fontSize: 11, color: '#1F7A50', cursor: 'pointer', fontWeight: 600 }}>
                             Detalle del recibo CFE (opcional)
                           </summary>
                           <div style={{ marginTop: 8 }}>
@@ -573,7 +573,7 @@ export default function ServiciosTab() {
                                 {fmtFecha(r.fecha_inicio)}
                                 {i === 0 && (
                                   <span style={{ marginLeft: 6, fontSize: 10, padding: '1px 5px',
-                                    borderRadius: 8, background: ts?.color + '20', color: ts?.color,
+                                    borderRadius: 8, background: ts?.color, color: '#fff',
                                     fontWeight: 600 }}>
                                     Último
                                   </span>
@@ -593,11 +593,11 @@ export default function ServiciosTab() {
                               </td>
                               <td style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
                                 {r.id_op_fk ? (
-                                  <span style={{ padding: '1px 7px', borderRadius: 8, background: '#dbeafe', color: '#1d4ed8', fontWeight: 600 }}>
+                                  <span style={{ padding: '1px 7px', borderRadius: 8, background: '#E6E8EB', color: '#26282D', fontWeight: 600 }}>
                                     OP {opFolios[r.id_op_fk] ?? `#${r.id_op_fk}`}
                                   </span>
                                 ) : (
-                                  <span style={{ padding: '1px 7px', borderRadius: 8, background: '#f1f5f9', color: '#475569' }}>
+                                  <span style={{ padding: '1px 7px', borderRadius: 8, background: '#F4F5F7', color: '#4A4D54' }}>
                                     Ingreso manual
                                   </span>
                                 )}
@@ -609,7 +609,7 @@ export default function ServiciosTab() {
                               {canDelete() && (
                                 <td>
                                   <button className="btn-ghost"
-                                    style={{ padding: '2px 5px', color: '#dc2626' }}
+                                    style={{ padding: '2px 5px', color: '#C23B3B' }}
                                     onClick={() => handleDeleteReg(r.id)}>
                                     <Trash2 size={11} />
                                   </button>
@@ -766,13 +766,13 @@ function ReporteServicios({
     <div>
       {/* Filtros reporte */}
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 12,
-        padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0',
+        padding: '8px 12px', background: '#F8F9FA', border: '1px solid #E6E8EB',
         borderRadius: 8, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600,
           display: 'flex', alignItems: 'center', gap: 4 }}>
           <Filter size={11} /> Reporte
         </span>
-        <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
+        <div style={{ width: 1, height: 18, background: '#E6E8EB', flexShrink: 0 }} />
         <select className="select"
           style={{ width: 88, fontSize: 12, padding: '3px 8px', height: 28 }}
           value={filterAnio} onChange={e => setFilterAnio(e.target.value)}>
@@ -790,36 +790,36 @@ function ReporteServicios({
             fontVariantNumeric: 'tabular-nums' }}>{fmt(totalGeneral)}</div>
           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{filtered.length} registros · {meses.length} meses</div>
         </div>
-        <div className="card" style={{ padding: '10px 14px', background: '#fffbeb', border: '1px solid #fde68a' }}>
-          <div style={{ fontSize: 10, color: '#92400e', textTransform: 'uppercase',
+        <div className="card" style={{ padding: '10px 14px', background: '#fff', border: '1px solid #E6E8EB' }}>
+          <div style={{ fontSize: 10, color: '#7A4B0C', textTransform: 'uppercase',
             letterSpacing: '.05em', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Zap size={10} style={{ color: '#d97706' }} /> CFE
+            <Zap size={10} style={{ color: '#62666E' }} /> CFE
           </div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#d97706',
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)',
             fontVariantNumeric: 'tabular-nums' }}>{fmt(totalCFE)}</div>
-          <div style={{ fontSize: 10, color: '#92400e' }}>
+          <div style={{ fontSize: 10, color: '#7A4B0C' }}>
             {totalConsuCFE > 0 ? `${totalConsuCFE.toLocaleString('es-MX')} kWh` : 'Sin consumo registrado'}
           </div>
         </div>
-        <div className="card" style={{ padding: '10px 14px', background: '#e0f2fe', border: '1px solid #bae6fd' }}>
-          <div style={{ fontSize: 10, color: '#075985', textTransform: 'uppercase',
+        <div className="card" style={{ padding: '10px 14px', background: '#fff', border: '1px solid #E6E8EB' }}>
+          <div style={{ fontSize: 10, color: '#1F4E66', textTransform: 'uppercase',
             letterSpacing: '.05em', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Droplets size={10} style={{ color: '#0369a1' }} /> Agua
+            <Droplets size={10} style={{ color: '#62666E' }} /> Agua
           </div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#0369a1',
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)',
             fontVariantNumeric: 'tabular-nums' }}>{fmt(totalAgua)}</div>
-          <div style={{ fontSize: 10, color: '#075985' }}>
+          <div style={{ fontSize: 10, color: '#1F4E66' }}>
             {totalConsuAgua > 0 ? `${totalConsuAgua.toLocaleString('es-MX')} m³` : 'Sin consumo registrado'}
           </div>
         </div>
-        <div className="card" style={{ padding: '10px 14px', background: '#fff7ed', border: '1px solid #fed7aa' }}>
-          <div style={{ fontSize: 10, color: '#9a3412', textTransform: 'uppercase',
+        <div className="card" style={{ padding: '10px 14px', background: '#fff', border: '1px solid #E6E8EB' }}>
+          <div style={{ fontSize: 10, color: '#8A4119', textTransform: 'uppercase',
             letterSpacing: '.05em', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Flame size={10} style={{ color: '#ea580c' }} /> Gas LP
+            <Flame size={10} style={{ color: '#62666E' }} /> Gas LP
           </div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#ea580c',
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)',
             fontVariantNumeric: 'tabular-nums' }}>{fmt(totalGasLP)}</div>
-          <div style={{ fontSize: 10, color: '#9a3412' }}>
+          <div style={{ fontSize: 10, color: '#8A4119' }}>
             {totalConsuGasLP > 0 ? `${totalConsuGasLP.toLocaleString('es-MX')} L` : 'Sin consumo registrado'}
           </div>
         </div>
@@ -850,19 +850,19 @@ function ReporteServicios({
             <div style={{ display: 'flex', gap: 14, fontSize: 11, color: 'var(--text-muted)' }}>
               {showCFE && (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 2, background: '#d97706', display: 'inline-block' }} />
+                  <span style={{ width: 10, height: 10, borderRadius: 2, background: '#B5761A', display: 'inline-block' }} />
                   CFE
                 </span>
               )}
               {showAgua && (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 2, background: '#0369a1', display: 'inline-block' }} />
+                  <span style={{ width: 10, height: 10, borderRadius: 2, background: '#2A6582', display: 'inline-block' }} />
                   Agua
                 </span>
               )}
               {showGasLP && (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 2, background: '#ea580c', display: 'inline-block' }} />
+                  <span style={{ width: 10, height: 10, borderRadius: 2, background: '#C8642A', display: 'inline-block' }} />
                   Gas LP
                 </span>
               )}
@@ -879,9 +879,9 @@ function ReporteServicios({
                 return (
                   <g key={i}>
                     <line x1={PAD.l} y1={y} x2={SVG_W - PAD.r} y2={y}
-                      stroke={i === 0 ? '#94a3b8' : '#e2e8f0'}
+                      stroke={i === 0 ? '#7A7E87' : '#E6E8EB'}
                       strokeWidth={i === 0 ? 1 : 0.5} />
-                    <text x={PAD.l - 6} y={y + 3.5} textAnchor="end" fontSize={9} fill="#94a3b8">
+                    <text x={PAD.l - 6} y={y + 3.5} textAnchor="end" fontSize={9} fill="#7A7E87">
                       {v >= 1000
                         ? `$${(v / 1000).toLocaleString('es-MX', { maximumFractionDigits: 1 })}k`
                         : `$${Math.round(v)}`}
@@ -895,9 +895,9 @@ function ReporteServicios({
                 const gx   = PAD.l + mi * groupW + groupOff
                 const data = byMes[mes]
                 const bars: { color: string; val: number }[] = []
-                if (showCFE)   bars.push({ color: '#d97706', val: data.CFE })
-                if (showAgua)  bars.push({ color: '#0369a1', val: data.Agua })
-                if (showGasLP) bars.push({ color: '#ea580c', val: data.GasLP })
+                if (showCFE)   bars.push({ color: '#B5761A', val: data.CFE })
+                if (showAgua)  bars.push({ color: '#2A6582', val: data.Agua })
+                if (showGasLP) bars.push({ color: '#C8642A', val: data.GasLP })
                 return (
                   <g key={mes}>
                     {bars.map((b, bi) => {
@@ -923,7 +923,7 @@ function ReporteServicios({
                     <text
                       x={PAD.l + mi * groupW + groupW / 2}
                       y={SVG_H - PAD.b + 14}
-                      textAnchor="middle" fontSize={9} fill="#64748b">
+                      textAnchor="middle" fontSize={9} fill="#62666E">
                       {fmtMes(mes)}
                     </text>
                   </g>
@@ -932,7 +932,7 @@ function ReporteServicios({
 
               {/* Y axis line */}
               <line x1={PAD.l} y1={PAD.t} x2={PAD.l} y2={PAD.t + plotH}
-                stroke="#94a3b8" strokeWidth={1} />
+                stroke="#7A7E87" strokeWidth={1} />
             </svg>
           </div>
         </div>
@@ -941,7 +941,7 @@ function ReporteServicios({
       {/* Tabla detalle por mes */}
       {meses.length > 0 && (
         <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
-          <div style={{ padding: '10px 14px', borderBottom: '1px solid #e2e8f0',
+          <div style={{ padding: '10px 14px', borderBottom: '1px solid #E6E8EB',
             fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
             Detalle por periodo
           </div>
@@ -972,7 +972,7 @@ function ReporteServicios({
                   <tr key={mes}>
                     <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{fmtMes(mes)}</td>
                     {showCFE && <>
-                      <td style={{ textAlign: 'right', color: '#d97706',
+                      <td style={{ textAlign: 'right', color: '#B5761A',
                         fontVariantNumeric: 'tabular-nums' }}>{fmt(d.CFE)}</td>
                       <td style={{ textAlign: 'right', color: 'var(--text-muted)',
                         fontVariantNumeric: 'tabular-nums' }}>
@@ -980,7 +980,7 @@ function ReporteServicios({
                       </td>
                     </>}
                     {showAgua && <>
-                      <td style={{ textAlign: 'right', color: '#0369a1',
+                      <td style={{ textAlign: 'right', color: '#2A6582',
                         fontVariantNumeric: 'tabular-nums' }}>{fmt(d.Agua)}</td>
                       <td style={{ textAlign: 'right', color: 'var(--text-muted)',
                         fontVariantNumeric: 'tabular-nums' }}>
@@ -988,7 +988,7 @@ function ReporteServicios({
                       </td>
                     </>}
                     {showGasLP && <>
-                      <td style={{ textAlign: 'right', color: '#ea580c',
+                      <td style={{ textAlign: 'right', color: '#C8642A',
                         fontVariantNumeric: 'tabular-nums' }}>{fmt(d.GasLP)}</td>
                       <td style={{ textAlign: 'right', color: 'var(--text-muted)',
                         fontVariantNumeric: 'tabular-nums' }}>
@@ -1002,24 +1002,24 @@ function ReporteServicios({
               })}
             </tbody>
             <tfoot>
-              <tr style={{ fontWeight: 700, background: '#f8fafc' }}>
+              <tr style={{ fontWeight: 700, background: '#F8F9FA' }}>
                 <td>Total</td>
                 {showCFE && <>
-                  <td style={{ textAlign: 'right', color: '#d97706',
+                  <td style={{ textAlign: 'right', color: '#B5761A',
                     fontVariantNumeric: 'tabular-nums' }}>{fmt(totalCFE)}</td>
                   <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                     {totalConsuCFE > 0 ? `${totalConsuCFE.toLocaleString('es-MX')} kWh` : '—'}
                   </td>
                 </>}
                 {showAgua && <>
-                  <td style={{ textAlign: 'right', color: '#0369a1',
+                  <td style={{ textAlign: 'right', color: '#2A6582',
                     fontVariantNumeric: 'tabular-nums' }}>{fmt(totalAgua)}</td>
                   <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                     {totalConsuAgua > 0 ? `${totalConsuAgua.toLocaleString('es-MX')} m³` : '—'}
                   </td>
                 </>}
                 {showGasLP && <>
-                  <td style={{ textAlign: 'right', color: '#ea580c',
+                  <td style={{ textAlign: 'right', color: '#C8642A',
                     fontVariantNumeric: 'tabular-nums' }}>{fmt(totalGasLP)}</td>
                   <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                     {totalConsuGasLP > 0 ? `${totalConsuGasLP.toLocaleString('es-MX')} L` : '—'}
@@ -1181,8 +1181,8 @@ function CatalogoModal({ row, onClose, onSaved }: {
 
       <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {error && (
-          <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca',
-            borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>
+          <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B',
+            borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>{error}</div>
         )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -1204,7 +1204,7 @@ function CatalogoModal({ row, onClose, onSaved }: {
 
         <div>
           <label className="label" style={{ fontSize: 11 }}>No. de Servicio *</label>
-          <input className="input" style={{ fontSize: 13, fontFamily: 'monospace' }}
+          <input className="input" style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}
             value={form.no_servicio} onChange={setF('no_servicio')}
             placeholder="ej. 123456789012" />
         </div>
@@ -1246,7 +1246,7 @@ function CatalogoModal({ row, onClose, onSaved }: {
           </div>
           <div>
             <label className="label" style={{ fontSize: 11 }}>Medidor</label>
-            <input className="input" style={{ fontSize: 13, fontFamily: 'monospace' }}
+            <input className="input" style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}
               value={form.medidor} onChange={setF('medidor')} />
           </div>
           <div>
@@ -1272,7 +1272,7 @@ function CatalogoModal({ row, onClose, onSaved }: {
             ))}
           </select>
           {internos.length === 0 && (
-            <div style={{ fontSize: 10, color: '#d97706', marginTop: 3 }}>
+            <div style={{ fontSize: 10, color: '#B5761A', marginTop: 3 }}>
               Sin empresas internas en el catálogo de proveedores. Marca proveedores como "Empresa interna" primero.
             </div>
           )}
@@ -1306,7 +1306,7 @@ function CatalogoModal({ row, onClose, onSaved }: {
 
           {!row ? (
             <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 10px',
-              background: '#f8fafc', borderRadius: 6, border: '1px dashed #e2e8f0' }}>
+              background: '#F8F9FA', borderRadius: 6, border: '1px dashed #E6E8EB' }}>
               Guarda el servicio primero para agregar puntos de conexión.
             </div>
           ) : puntosLoading ? (
@@ -1316,14 +1316,14 @@ function CatalogoModal({ row, onClose, onSaved }: {
             </div>
           ) : puntos.length === 0 && !newPuntoForm ? (
             <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 10px',
-              background: '#f8fafc', borderRadius: 6, border: '1px dashed #e2e8f0' }}>
+              background: '#F8F9FA', borderRadius: 6, border: '1px dashed #E6E8EB' }}>
               Sin puntos de conexión. Usa "+ Agregar" para añadir.
             </div>
           ) : (
-            <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
-                  <tr style={{ background: '#f8fafc' }}>
+                  <tr style={{ background: '#F8F9FA' }}>
                     {['Nombre', 'Tipo', 'Referencia', 'Ubicación'].map(h => (
                       <th key={h} style={{ padding: '5px 8px', textAlign: 'left', fontWeight: 600,
                         color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase',
@@ -1334,7 +1334,7 @@ function CatalogoModal({ row, onClose, onSaved }: {
                 </thead>
                 <tbody>
                   {puntos.map((p: any, idx: number) => editingPuntoId === p.id ? (
-                    <tr key={p.id} style={{ background: '#fffbeb', borderTop: idx > 0 ? '1px solid #f1f5f9' : undefined }}>
+                    <tr key={p.id} style={{ background: '#F4F5F7', borderTop: idx > 0 ? '1px solid #F4F5F7' : undefined }}>
                       <td style={{ padding: '4px 6px' }}>
                         <input className="input" autoFocus
                           style={{ padding: '3px 6px', fontSize: 11, height: 28 }}
@@ -1375,10 +1375,10 @@ function CatalogoModal({ row, onClose, onSaved }: {
                       </td>
                     </tr>
                   ) : (
-                    <tr key={p.id} style={{ borderTop: idx > 0 ? '1px solid #f1f5f9' : undefined }}>
+                    <tr key={p.id} style={{ borderTop: idx > 0 ? '1px solid #F4F5F7' : undefined }}>
                       <td style={{ padding: '6px 8px', fontWeight: 600 }}>{p.nombre}</td>
                       <td style={{ padding: '6px 8px', color: 'var(--text-muted)', fontSize: 11 }}>{p.tipo ?? '—'}</td>
-                      <td style={{ padding: '6px 8px', fontFamily: 'monospace', fontSize: 11, color: 'var(--text-secondary)' }}>
+                      <td style={{ padding: '6px 8px', fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--text-secondary)' }}>
                         {p.referencia ?? '—'}
                       </td>
                       <td style={{ padding: '6px 8px', fontSize: 11, color: 'var(--text-muted)',
@@ -1394,7 +1394,7 @@ function CatalogoModal({ row, onClose, onSaved }: {
                             }}>
                             <Edit2 size={10} />
                           </button>
-                          <button className="btn-ghost" style={{ padding: '3px 5px', color: '#dc2626' }}
+                          <button className="btn-ghost" style={{ padding: '3px 5px', color: '#C23B3B' }}
                             onClick={() => handleDeletePunto(p.id)}>
                             <Trash2 size={10} />
                           </button>
@@ -1405,7 +1405,7 @@ function CatalogoModal({ row, onClose, onSaved }: {
 
                   {/* Fila para nuevo punto */}
                   {newPuntoForm && (
-                    <tr style={{ background: '#f0fdf4', borderTop: puntos.length > 0 ? '1px solid #bbf7d0' : undefined }}>
+                    <tr style={{ background: '#F4F5F7', borderTop: puntos.length > 0 ? '1px solid #E6E8EB' : undefined }}>
                       <td style={{ padding: '4px 6px' }}>
                         <input className="input" autoFocus
                           style={{ padding: '3px 6px', fontSize: 11, height: 28 }}
@@ -1454,7 +1454,7 @@ function CatalogoModal({ row, onClose, onSaved }: {
       </div>
 
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end',
-        padding: '12px 20px', borderTop: '1px solid #e2e8f0' }}>
+        padding: '12px 20px', borderTop: '1px solid #E6E8EB' }}>
         <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
         <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleSave} disabled={saving}>
           {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11} />}

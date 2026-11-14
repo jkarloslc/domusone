@@ -153,10 +153,10 @@ export default function CXCGolfPage() {
       <PageHeader
         backHref="/golf/administracion"
         icon={CreditCard}
-        color="#059669"
+        color="#267F56"
         eyebrowLabel="Cobro"
         title="Cobro de Cuotas"
-        subtitle={<>Socios con saldo pendiente · <Link href="/golf/cuotas" style={{ color: '#7c3aed', textDecoration: 'none' }}>Administrar asignaciones →</Link></>}
+        subtitle={<>Socios con saldo pendiente · <Link href="/golf/cuotas" style={{ color: '#6B4E79', textDecoration: 'none' }}>Administrar asignaciones →</Link></>}
         actions={tab === 'cobro' ? (
           <button className="btn-ghost" onClick={fetchCuotas} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <RefreshCw size={13} /> Actualizar
@@ -165,7 +165,7 @@ export default function CXCGolfPage() {
       />
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 20 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', marginBottom: 20 }}>
         {([
           { key: 'cobro',   label: 'Cobro',                  icon: CreditCard  },
           { key: 'recibos', label: 'Recibos de Membresías',  icon: Receipt     },
@@ -178,8 +178,8 @@ export default function CXCGolfPage() {
               padding: '10px 20px', fontSize: 13, background: 'none', border: 'none',
               cursor: 'pointer', fontFamily: 'inherit',
               fontWeight: tab === t.key ? 600 : 400,
-              color: tab === t.key ? '#059669' : '#94a3b8',
-              borderBottom: tab === t.key ? '2px solid #059669' : '2px solid transparent',
+              color: tab === t.key ? '#1C1D21' : '#7A7E87',
+              borderBottom: tab === t.key ? '2px solid #19D3C5' : '2px solid transparent',
               marginBottom: -1,
             }}>
               <Icon size={14} /> {t.label}
@@ -199,14 +199,14 @@ export default function CXCGolfPage() {
       {/* KPIs */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
         {[
-          { label: 'Socios con saldo',  value: stats.socios,                   color: '#2563eb', bg: '#eff6ff' },
-          { label: 'Cuotas pendientes', value: stats.pendiente,                color: '#d97706', bg: '#fffbeb' },
-          { label: 'Por cobrar',        value: fmt$(stats.montoPendiente),     color: '#059669', bg: '#ecfdf5' },
-          { label: 'Cuotas vencidas',   value: stats.vencidas,                 color: '#dc2626', bg: '#fef2f2' },
+          { label: 'Socios con saldo',  value: stats.socios,                   color: '#1C1D21', bg: '#F4F5F7' },
+          { label: 'Cuotas pendientes', value: stats.pendiente,                color: '#B5761A', bg: '#F4F5F7' },
+          { label: 'Por cobrar',        value: fmt$(stats.montoPendiente),     color: '#267F56', bg: '#F4F5F7' },
+          { label: 'Cuotas vencidas',   value: stats.vencidas,                 color: '#C23B3B', bg: '#F4F5F7' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ flex: '1 1 130px', maxWidth: 200, padding: '12px 16px', background: k.bg, border: `1px solid ${k.color}22` }}>
-            <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>{k.label}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: k.color }}>{k.value}</div>
+          <div key={k.label} className="card" style={{ flex: '1 1 130px', maxWidth: 200, padding: '12px 16px', background: '#fff', border: '1px solid #E6E8EB' }}>
+            <div style={{ fontSize: 11, color: '#62666E', marginBottom: 4 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{k.value}</div>
           </div>
         ))}
       </div>
@@ -214,19 +214,19 @@ export default function CXCGolfPage() {
       {/* Barra de búsqueda + controles */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 340 }}>
-          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
           <input
-            style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }}
+            style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }}
             placeholder="Buscar socio…" value={busqueda} onChange={e => setBusqueda(e.target.value)}
           />
-          {busqueda && <button onClick={() => setBusqueda('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+          {busqueda && <button onClick={() => setBusqueda('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2 }}><X size={12} /></button>}
         </div>
-        <span style={{ fontSize: 12, color: '#94a3b8' }}>{gruposF.length} socio{gruposF.length !== 1 ? 's' : ''}</span>
+        <span style={{ fontSize: 12, color: '#7A7E87' }}>{gruposF.length} socio{gruposF.length !== 1 ? 's' : ''}</span>
         <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
-          <button onClick={expandAll} style={{ fontSize: 11, padding: '4px 10px', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', color: '#64748b', cursor: 'pointer' }}>
+          <button onClick={expandAll} style={{ fontSize: 11, padding: '4px 10px', border: '1px solid #E6E8EB', borderRadius: 6, background: '#fff', color: '#62666E', cursor: 'pointer' }}>
             Expandir todo
           </button>
-          <button onClick={collapseAll} style={{ fontSize: 11, padding: '4px 10px', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', color: '#64748b', cursor: 'pointer' }}>
+          <button onClick={collapseAll} style={{ fontSize: 11, padding: '4px 10px', border: '1px solid #E6E8EB', borderRadius: 6, background: '#fff', color: '#62666E', cursor: 'pointer' }}>
             Colapsar todo
           </button>
         </div>
@@ -234,9 +234,9 @@ export default function CXCGolfPage() {
 
       {/* Lista agrupada por socio */}
       {loading ? (
-        <div style={{ padding: '56px', textAlign: 'center', color: '#94a3b8' }}>Cargando…</div>
+        <div style={{ padding: '56px', textAlign: 'center', color: '#7A7E87' }}>Cargando…</div>
       ) : gruposF.length === 0 ? (
-        <div className="card" style={{ padding: '56px', textAlign: 'center', color: '#94a3b8' }}>
+        <div className="card" style={{ padding: '56px', textAlign: 'center', color: '#7A7E87' }}>
           <CreditCard size={32} style={{ marginBottom: 12, opacity: 0.3 }} />
           <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin cuotas pendientes</div>
           <div style={{ fontSize: 12 }}>Todos los socios están al corriente</div>
@@ -251,19 +251,19 @@ export default function CXCGolfPage() {
 
                 {/* Fila del socio — cabecera del grupo */}
                 <div
-                  style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', cursor: 'pointer', background: hasVenc ? '#fef2f2' : '#fff', transition: 'background 0.1s' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', cursor: 'pointer', background: hasVenc ? '#F4F5F7' : '#fff', transition: 'background 0.1s' }}
                   onClick={() => toggleExpand(g.id)}
-                  onMouseEnter={e => !hasVenc && ((e.currentTarget as HTMLElement).style.background = '#f8fafc')}
+                  onMouseEnter={e => !hasVenc && ((e.currentTarget as HTMLElement).style.background = '#F8F9FA')}
                   onMouseLeave={e => !hasVenc && ((e.currentTarget as HTMLElement).style.background = '#fff')}
                 >
                   {/* Chevron */}
-                  <div style={{ color: '#94a3b8', flexShrink: 0 }}>
+                  <div style={{ color: '#7A7E87', flexShrink: 0 }}>
                     {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                   </div>
 
                   {/* Avatar inicial */}
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: hasVenc ? '#fecaca' : '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: hasVenc ? '#dc2626' : '#0369a1' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#E6E8EB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: hasVenc ? '#C23B3B' : '#2A6582' }}>
                       {g.nombre.charAt(0).toUpperCase()}
                     </span>
                   </div>
@@ -271,34 +271,34 @@ export default function CXCGolfPage() {
                   {/* Nombre + conteo */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontWeight: 600, fontSize: 14, color: '#1e293b' }}>{g.nombre}</span>
+                      <span style={{ fontWeight: 600, fontSize: 14, color: '#26282D' }}>{g.nombre}</span>
                       {g.categoria && (
-                        <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: '#475569', flexShrink: 0 }}>
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#F4F5F7', color: '#4A4D54', flexShrink: 0 }}>
                           {g.categoria}
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 1 }}>
+                    <div style={{ fontSize: 12, color: '#62666E', marginTop: 1 }}>
                       {g.cuotas.length} cuota{g.cuotas.length !== 1 ? 's' : ''} pendiente{g.cuotas.length !== 1 ? 's' : ''}
-                      {hasVenc && <span style={{ marginLeft: 8, color: '#dc2626', fontWeight: 600 }}>· {fmt$(g.totalVencido)} vencido</span>}
+                      {hasVenc && <span style={{ marginLeft: 8, color: '#C23B3B', fontWeight: 600 }}>· {fmt$(g.totalVencido)} vencido</span>}
                     </div>
                   </div>
 
                   {/* Total + botón cobrar */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 11, color: '#94a3b8' }}>Total pendiente</div>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: hasVenc ? '#dc2626' : '#059669' }}>{fmt$(g.totalPendiente)}</div>
+                      <div style={{ fontSize: 11, color: '#7A7E87' }}>Total pendiente</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: hasVenc ? '#C23B3B' : '#267F56' }}>{fmt$(g.totalPendiente)}</div>
                     </div>
                     <button
                       onClick={e => { e.stopPropagation(); setShowBitacora({ idSocio: g.id, nombre: g.nombre }) }}
-                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', fontSize: 11, fontWeight: 600, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#64748b', cursor: 'pointer', flexShrink: 0 }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', fontSize: 11, fontWeight: 600, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#62666E', cursor: 'pointer', flexShrink: 0 }}>
                       <ClipboardList size={12} /> Seguimiento
                     </button>
                     {puedeEscribir && (
                       <button
                         onClick={e => { e.stopPropagation(); abrirCobro(g) }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', flexShrink: 0 }}>
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#267F56', color: '#fff', cursor: 'pointer', flexShrink: 0 }}>
                         <Receipt size={13} /> Cobrar
                       </button>
                     )}
@@ -307,38 +307,38 @@ export default function CXCGolfPage() {
 
                 {/* Cuotas expandidas */}
                 {open && (
-                  <div style={{ borderTop: '1px solid #f1f5f9' }}>
+                  <div style={{ borderTop: '1px solid #F4F5F7' }}>
                     {g.cuotas.map((c, i) => {
                       const venc = vencida(c.fecha_vencimiento)
                       const esParcial = c.status === 'PAGO_PARCIAL'
                       const saldo = c.saldo ?? c.monto_final
                       return (
-                        <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 18px 10px 68px', borderBottom: i < g.cuotas.length - 1 ? '1px solid #f8fafc' : 'none', background: venc ? '#fff5f5' : '#fafafa' }}>
+                        <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 18px 10px 68px', borderBottom: i < g.cuotas.length - 1 ? '1px solid #F8F9FA' : 'none', background: venc ? '#F4F5F7' : '#fafafa' }}>
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 13, color: '#1e293b', fontWeight: 500 }}>{c.concepto}</div>
-                            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            <div style={{ fontSize: 13, color: '#26282D', fontWeight: 500 }}>{c.concepto}</div>
+                            <div style={{ fontSize: 11, color: '#7A7E87', marginTop: 1, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                               {c.periodo && <span>{c.periodo}</span>}
                               {c.fecha_vencimiento && (
-                                <span style={{ color: venc ? '#dc2626' : '#94a3b8' }}>
-                                  {venc ? '⚠ Vencida' : 'Vence'} {new Date(c.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                <span style={{ color: venc ? '#C23B3B' : '#7A7E87' }}>
+                                  {venc ? 'Vencida' : 'Vence'} {new Date(c.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
                                 </span>
                               )}
                             </div>
                           </div>
-                          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: '#475569', flexShrink: 0 }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#F4F5F7', color: '#4A4D54', flexShrink: 0 }}>
                             {TIPOS_LABEL[c.tipo] ?? c.tipo}
                           </span>
                           {esParcial && (
-                            <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#fffbeb', color: '#d97706', flexShrink: 0 }}>
+                            <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#B5761A', color: '#fff', flexShrink: 0 }}>
                               Pago Parcial
                             </span>
                           )}
                           <div style={{ textAlign: 'right', flexShrink: 0 }}>
                             {esParcial && c.monto_final !== saldo && (
-                              <div style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through' }}>{fmt$(c.monto_final)}</div>
+                              <div style={{ fontSize: 10, color: '#7A7E87', textDecoration: 'line-through' }}>{fmt$(c.monto_final)}</div>
                             )}
-                            {!esParcial && c.descuento > 0 && <div style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through' }}>{fmt$(c.monto_original)}</div>}
-                            <div style={{ fontSize: 14, fontWeight: 700, color: venc ? '#dc2626' : (esParcial ? '#d97706' : '#1e293b') }}>{fmt$(saldo)}</div>
+                            {!esParcial && c.descuento > 0 && <div style={{ fontSize: 10, color: '#7A7E87', textDecoration: 'line-through' }}>{fmt$(c.monto_original)}</div>}
+                            <div style={{ fontSize: 14, fontWeight: 700, color: venc ? '#C23B3B' : (esParcial ? '#B5761A' : '#26282D') }}>{fmt$(saldo)}</div>
                           </div>
                         </div>
                       )

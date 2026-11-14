@@ -252,13 +252,13 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
 
   if (success) return (
     <ModalShell modulo="golf-pos" titulo="Corte registrado" icono={CheckCircle} size="sm" onClose={onClose}
-      footer={<button className="btn-primary" onClick={onClose} style={{ background: '#059669', border: 'none', width: '100%', justifyContent: 'center' }}>Cerrar</button>}
+      footer={<button className="btn-primary" onClick={onClose} style={{ background: '#267F56', border: 'none', width: '100%', justifyContent: 'center' }}>Cerrar</button>}
     >
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>
+        <div style={{ fontSize: 13, color: '#62666E', marginBottom: 6 }}>
           {numVentas} venta{numVentas !== 1 ? 's' : ''} cerradas · Total {fmt$(totalVentas)}
         </div>
-        <div style={{ fontSize: 12, color: '#059669' }}>Recibo de ingreso generado automáticamente</div>
+        <div style={{ fontSize: 12, color: '#267F56' }}>Recibo de ingreso generado automáticamente</div>
       </div>
     </ModalShell>
   )
@@ -269,7 +269,7 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
         <button className="btn-secondary" onClick={onClose}>Cancelar</button>
         <button className="btn-primary" onClick={handleCorte}
           disabled={saving || loading || numVentas === 0 || (exigirFacturacion && numSinFacturar > 0)}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#059669', border: 'none' }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#267F56', border: 'none' }}>
           {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
           Confirmar Corte
         </button>
@@ -280,35 +280,35 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
           {/* Período */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Fecha inicio</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>Fecha inicio</label>
               <input type="date" value={f1} onChange={e => setF1(e.target.value)}
-                style={{ width: '100%', padding: '8px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none' }} />
+                style={{ width: '100%', padding: '8px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, fontFamily: 'inherit', outline: 'none' }} />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Fecha fin</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>Fecha fin</label>
               <input type="date" value={f2} onChange={e => setF2(e.target.value)}
-                style={{ width: '100%', padding: '8px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none' }} />
+                style={{ width: '100%', padding: '8px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, fontFamily: 'inherit', outline: 'none' }} />
             </div>
           </div>
           <button onClick={cargarPreview} disabled={loading}
-            style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600, border: '1px solid #e2e8f0', borderRadius: 8, background: '#f8fafc', color: '#475569', cursor: 'pointer', alignSelf: 'flex-start' }}>
+            style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600, border: '1px solid #E6E8EB', borderRadius: 8, background: '#F8F9FA', color: '#4A4D54', cursor: 'pointer', alignSelf: 'flex-start' }}>
             {loading ? 'Calculando…' : 'Recalcular'}
           </button>
 
           {/* Resumen */}
           {!loading && (
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Resumen del período</div>
+            <div style={{ background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 12, padding: 16 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Resumen del período</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
                 {[
-                  { label: 'Ventas',      value: numVentas,           color: '#059669', bg: '#ecfdf5' },
-                  { label: 'Canceladas',  value: numCanceladas,       color: '#dc2626', bg: '#fef2f2' },
-                  { label: 'Total',       value: fmt$(totalVentas),   color: '#059669', bg: '#ecfdf5' },
-                  { label: 'Cancelado',   value: fmt$(totalCancelado),color: '#dc2626', bg: '#fef2f2' },
+                  { label: 'Ventas',      value: numVentas,           color: '#267F56', bg: '#F4F5F7' },
+                  { label: 'Canceladas',  value: numCanceladas,       color: '#C23B3B', bg: '#F4F5F7' },
+                  { label: 'Total',       value: fmt$(totalVentas),   color: '#267F56', bg: '#F4F5F7' },
+                  { label: 'Cancelado',   value: fmt$(totalCancelado),color: '#C23B3B', bg: '#F4F5F7' },
                 ].map(c => (
-                  <div key={c.label} style={{ padding: '10px 12px', background: c.bg, borderRadius: 8, border: `1px solid ${c.color}22` }}>
-                    <div style={{ fontSize: 11, color: '#64748b' }}>{c.label}</div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: c.color }}>{c.value}</div>
+                  <div key={c.label} style={{ padding: '10px 12px', background: '#fff', borderRadius: 8, border: '1px solid #E6E8EB' }}>
+                    <div style={{ fontSize: 11, color: '#62666E' }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: c.color, marginRight: 6, verticalAlign: 'middle' }} />{c.label}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{c.value}</div>
                   </div>
                 ))}
               </div>
@@ -316,21 +316,21 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
               {/* Desglose formas de pago */}
               {formasPago.length > 0 && (
                 <>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Por forma de pago</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Por forma de pago</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {formasPago.map(f => (
                       <div key={f.id_forma_fk} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                        <span style={{ color: '#475569' }}>{f.forma_nombre}</span>
-                        <span style={{ fontWeight: 600, color: '#1e293b' }}>{fmt$(f.monto)}</span>
+                        <span style={{ color: '#4A4D54' }}>{f.forma_nombre}</span>
+                        <span style={{ fontWeight: 600, color: '#26282D' }}>{fmt$(f.monto)}</span>
                       </div>
                     ))}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700, borderTop: '1px solid #e2e8f0', paddingTop: 6, marginTop: 2 }}>
-                      <span style={{ color: '#1e293b' }}>Total neto</span>
-                      <span style={{ color: '#059669' }}>{fmt$(totalVentas)}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700, borderTop: '1px solid #E6E8EB', paddingTop: 6, marginTop: 2 }}>
+                      <span style={{ color: '#26282D' }}>Total neto</span>
+                      <span style={{ color: '#267F56' }}>{fmt$(totalVentas)}</span>
                     </div>
                   </div>
                   {formasNoClasificadas.length > 0 && (
-                    <div style={{ marginTop: 8, padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+                    <div style={{ marginTop: 8, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 8, fontSize: 12, color: '#7A4B0C' }}>
                       <strong>{fmt$(montoNoClasificado)}</strong> en formas de pago que no son caja ni banco
                       ({formasNoClasificadas.map(f => f.forma).join(', ')}): entran al total de ventas y al
                       recibo de ingreso, pero <strong>no</strong> se suman a efectivo ni a transferencia, así que
@@ -342,35 +342,35 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
 
               {detalleProd.length > 0 && (
                 <>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, marginTop: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, marginTop: 12 }}>
                     Detalle de productos / servicios ({detalleProd.length})
                   </div>
-                  <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                  <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
                     <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                       <thead>
-                        <tr style={{ background: '#f1f5f9' }}>
-                          <th style={{ padding: '6px 10px', textAlign: 'left',  color: '#475569', fontWeight: 600 }}>Concepto</th>
-                          <th style={{ padding: '6px 8px',  textAlign: 'right', color: '#475569', fontWeight: 600, whiteSpace: 'nowrap' }}>Cant.</th>
-                          <th style={{ padding: '6px 10px', textAlign: 'right', color: '#475569', fontWeight: 600 }}>Total</th>
+                        <tr style={{ background: '#F4F5F7' }}>
+                          <th style={{ padding: '6px 10px', textAlign: 'left',  color: '#4A4D54', fontWeight: 600 }}>Concepto</th>
+                          <th style={{ padding: '6px 8px',  textAlign: 'right', color: '#4A4D54', fontWeight: 600, whiteSpace: 'nowrap' }}>Cant.</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'right', color: '#4A4D54', fontWeight: 600 }}>Total</th>
                         </tr>
                       </thead>
                       <tbody>
                         {detalleProd.map((d, i) => (
-                          <tr key={i} style={{ borderTop: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '5px 10px', color: '#1e293b' }}>{d.concepto || '(sin concepto)'}</td>
-                            <td style={{ padding: '5px 8px',  color: '#64748b', textAlign: 'right' }}>{d.cantidad}</td>
-                            <td style={{ padding: '5px 10px', color: '#1e293b', fontWeight: 600, textAlign: 'right' }}>{fmt$(d.monto)}</td>
+                          <tr key={i} style={{ borderTop: '1px solid #F4F5F7' }}>
+                            <td style={{ padding: '5px 10px', color: '#26282D' }}>{d.concepto || '(sin concepto)'}</td>
+                            <td style={{ padding: '5px 8px',  color: '#62666E', textAlign: 'right' }}>{d.cantidad}</td>
+                            <td style={{ padding: '5px 10px', color: '#26282D', fontWeight: 600, textAlign: 'right' }}>{fmt$(d.monto)}</td>
                           </tr>
                         ))}
                       </tbody>
                       <tfoot>
-                        <tr style={{ borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                          <td style={{ padding: '6px 10px', fontWeight: 700, color: '#1e293b' }}>Total</td>
-                          <td style={{ padding: '6px 8px',  fontWeight: 700, color: '#64748b', textAlign: 'right' }}>
+                        <tr style={{ borderTop: '1px solid #E6E8EB', background: '#F8F9FA' }}>
+                          <td style={{ padding: '6px 10px', fontWeight: 700, color: '#26282D' }}>Total</td>
+                          <td style={{ padding: '6px 8px',  fontWeight: 700, color: '#62666E', textAlign: 'right' }}>
                             {detalleProd.reduce((a, d) => a + d.cantidad, 0)}
                           </td>
-                          <td style={{ padding: '6px 10px', fontWeight: 700, color: '#059669', textAlign: 'right' }}>
+                          <td style={{ padding: '6px 10px', fontWeight: 700, color: '#267F56', textAlign: 'right' }}>
                             {fmt$(totalVentas)}
                           </td>
                         </tr>
@@ -383,42 +383,42 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
 
               {operacionesDia.length > 0 && (
                 <>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, marginTop: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, marginTop: 12 }}>
                     Detalle de operaciones del día ({operacionesDia.length})
                   </div>
-                  <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                  <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
                     <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                       <thead>
-                        <tr style={{ background: '#f1f5f9' }}>
-                          <th style={{ padding: '6px 10px', textAlign: 'left', color: '#475569', fontWeight: 600 }}>Folio</th>
-                          <th style={{ padding: '6px 10px', textAlign: 'left', color: '#475569', fontWeight: 600 }}>Hora</th>
-                          <th style={{ padding: '6px 10px', textAlign: 'left', color: '#475569', fontWeight: 600 }}>Cliente</th>
-                          <th style={{ padding: '6px 8px', textAlign: 'center', color: '#475569', fontWeight: 600 }}>Status</th>
-                          <th style={{ padding: '6px 10px', textAlign: 'right', color: '#475569', fontWeight: 600 }}>Total</th>
+                        <tr style={{ background: '#F4F5F7' }}>
+                          <th style={{ padding: '6px 10px', textAlign: 'left', color: '#4A4D54', fontWeight: 600 }}>Folio</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'left', color: '#4A4D54', fontWeight: 600 }}>Hora</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'left', color: '#4A4D54', fontWeight: 600 }}>Cliente</th>
+                          <th style={{ padding: '6px 8px', textAlign: 'center', color: '#4A4D54', fontWeight: 600 }}>Status</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'right', color: '#4A4D54', fontWeight: 600 }}>Total</th>
                         </tr>
                       </thead>
                       <tbody>
                         {operacionesDia.map((op) => (
-                          <tr key={op.id} style={{ borderTop: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '5px 10px', color: '#1e293b', fontWeight: 600 }}>#{String(op.folio_dia ?? op.id).padStart(4, '0')}</td>
-                            <td style={{ padding: '5px 10px', color: '#64748b' }}>
+                          <tr key={op.id} style={{ borderTop: '1px solid #F4F5F7' }}>
+                            <td style={{ padding: '5px 10px', color: '#26282D', fontWeight: 600 }}>#{String(op.folio_dia ?? op.id).padStart(4, '0')}</td>
+                            <td style={{ padding: '5px 10px', color: '#62666E' }}>
                               {new Date(op.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
                             </td>
-                            <td style={{ padding: '5px 10px', color: '#1e293b' }}>{op.nombre_cliente ?? 'Publico General'}</td>
+                            <td style={{ padding: '5px 10px', color: '#26282D' }}>{op.nombre_cliente ?? 'Publico General'}</td>
                             <td style={{ padding: '5px 8px', textAlign: 'center' }}>
                               <span style={{
                                 fontSize: 10,
                                 padding: '2px 7px',
                                 borderRadius: 20,
-                                background: op.status === 'PAGADA' ? '#dcfce7' : '#fef2f2',
-                                color: op.status === 'PAGADA' ? '#15803d' : '#dc2626',
+                                background: op.status === 'PAGADA' ? '#1F7A50' : '#C23B3B',
+                                color: '#fff',
                                 fontWeight: 700,
                               }}>
                                 {op.status}
                               </span>
                             </td>
-                            <td style={{ padding: '5px 10px', color: '#1e293b', fontWeight: 600, textAlign: 'right' }}>{fmt$(op.total ?? 0)}</td>
+                            <td style={{ padding: '5px 10px', color: '#26282D', fontWeight: 600, textAlign: 'right' }}>{fmt$(op.total ?? 0)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -429,7 +429,7 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
               )}
 
               {numVentas === 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#d97706', fontSize: 12, marginTop: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#B5761A', fontSize: 12, marginTop: 4 }}>
                   <AlertTriangle size={14} />
                   No hay ventas pendientes de corte en este período
                 </div>
@@ -441,9 +441,9 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
           {numSinFacturar > 0 && (
             <div style={{
               display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px', borderRadius: 8, fontSize: 12,
-              background: exigirFacturacion ? '#fef2f2' : '#fffbeb',
-              border:     exigirFacturacion ? '1px solid #fecaca' : '1px solid #fcd34d',
-              color:      exigirFacturacion ? '#dc2626' : '#92400e',
+              background: '#F4F5F7',
+              border:     exigirFacturacion ? '1px solid #E6E8EB' : '1px solid #C9CCD3',
+              color:      exigirFacturacion ? '#C23B3B' : '#7A4B0C',
             }}>
               <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
               <div>
@@ -456,20 +456,20 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
           )}
 
           {/* Integración Ingresos */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, fontSize: 12, color: '#1d4ed8' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8, fontSize: 12, color: '#26282D' }}>
             <CheckCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
             <span>Al confirmar, se generará automáticamente un <strong>recibo de ingreso</strong> en el módulo de Ingresos según el mapeo POS configurado.</span>
           </div>
 
           {/* Notas */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Observaciones</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>Observaciones</label>
             <textarea value={notas} onChange={e => setNotas(e.target.value)}
-              style={{ width: '100%', padding: '8px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', height: 56, resize: 'vertical', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '8px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, fontFamily: 'inherit', outline: 'none', height: 56, resize: 'vertical', boxSizing: 'border-box' }}
               placeholder="Notas del corte…" />
           </div>
 
-          {error && <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>{error}</div>}
+          {error && <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 13, color: '#C23B3B' }}>{error}</div>}
         </div>
     </ModalShell>
   )

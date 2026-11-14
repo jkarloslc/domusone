@@ -9,7 +9,7 @@ type TipoEvento = { id: number; nombre: string; color: string; activo: boolean }
 export default function CatalogosPage() {
   // ── Tipos de evento ───────────────────────────────────────
   const [tipos, setTipos] = useState<TipoEvento[]>([])
-  const [tipoForm, setTipoForm] = useState({ nombre: '', color: '#9333ea' })
+  const [tipoForm, setTipoForm] = useState({ nombre: '', color: '#6B4E79' })
   const [editTipo, setEditTipo] = useState<TipoEvento | null>(null)
   const [showTipo, setShowTipo] = useState(false)
   const [errT, setErrT] = useState('')
@@ -27,7 +27,7 @@ export default function CatalogosPage() {
       await dbCtrl.from('cat_tipos_evento').insert(payload)
     }
     setShowTipo(false); setEditTipo(null)
-    setTipoForm({ nombre: '', color: '#9333ea' })
+    setTipoForm({ nombre: '', color: '#6B4E79' })
     loadTipos()
   }
 
@@ -48,18 +48,18 @@ export default function CatalogosPage() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>Tipos de Evento</div>
-            <button className="btn-primary" onClick={() => { setEditTipo(null); setTipoForm({ nombre: '', color: '#9333ea' }); setErrT(''); setShowTipo(true) }}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, background: '#9333ea' }}>
+            <button className="btn-primary" onClick={() => { setEditTipo(null); setTipoForm({ nombre: '', color: '#6B4E79' }); setErrT(''); setShowTipo(true) }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, background: '#6B4E79' }}>
               <Plus size={14} /> Nuevo tipo
             </button>
           </div>
 
           {showTipo && (
-            <div className="card" style={{ background: '#faf5ff', border: '1px solid #e9d5ff', marginBottom: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#9333ea', marginBottom: 12 }}>
+            <div className="card" style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', marginBottom: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#6B4E79', marginBottom: 12 }}>
                 {editTipo ? 'Editar tipo' : 'Nuevo tipo'}
               </div>
-              {errT && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '6px 10px', color: '#dc2626', fontSize: 12, marginBottom: 10 }}>{errT}</div>}
+              {errT && <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, padding: '6px 10px', color: '#C23B3B', fontSize: 12, marginBottom: 10 }}>{errT}</div>}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px', gap: 10, marginBottom: 12 }}>
                 <div>
                   <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 3 }}>Nombre *</label>
@@ -73,7 +73,7 @@ export default function CatalogosPage() {
               </div>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button className="btn-ghost" onClick={() => { setShowTipo(false); setEditTipo(null) }} style={{ fontSize: 12 }}>Cancelar</button>
-                <button className="btn-primary" onClick={saveTipo} style={{ fontSize: 12, background: '#9333ea' }}>Guardar</button>
+                <button className="btn-primary" onClick={saveTipo} style={{ fontSize: 12, background: '#6B4E79' }}>Guardar</button>
               </div>
             </div>
           )}
@@ -94,7 +94,7 @@ export default function CatalogosPage() {
                 ) : tipos.map((t, i) => (
                   <tr key={t.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                     <td style={{ padding: '9px 12px' }}>
-                      <span style={{ fontSize: 12, padding: '3px 10px', borderRadius: 10, fontWeight: 700, background: t.color + '22', color: t.color }}>
+                      <span style={{ fontSize: 12, padding: '3px 10px', borderRadius: 10, fontWeight: 700, background: t.color, color: '#fff'}}>
                         {t.nombre}
                       </span>
                     </td>
@@ -104,7 +104,7 @@ export default function CatalogosPage() {
                     <td style={{ padding: '9px 12px' }}>
                       <button onClick={() => toggleActivoTipo(t)} style={{
                         fontSize: 10, padding: '2px 8px', borderRadius: 10, fontWeight: 600, border: 'none', cursor: 'pointer',
-                        background: t.activo ? '#f0fdf4' : '#fef2f2', color: t.activo ? '#16a34a' : '#dc2626',
+                        background: t.activo ? '#1F7A50' : '#C23B3B', color: '#fff',
                       }}>{t.activo ? 'Activo' : 'Inactivo'}</button>
                     </td>
                     <td style={{ padding: '9px 12px' }}>

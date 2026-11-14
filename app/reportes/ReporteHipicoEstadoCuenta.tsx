@@ -41,10 +41,10 @@ const fmtFecha = (d: string | null) =>
 const fmt$ = (v: number) => '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 })
 
 const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
-  'PENDIENTE':    { bg: '#fef9c3', color: '#ca8a04' },
-  'PAGO_PARCIAL': { bg: '#fffbeb', color: '#d97706' },
-  'PAGADO':       { bg: '#dcfce7', color: '#16a34a' },
-  'CANCELADO':    { bg: '#f8fafc', color: '#64748b' },
+  'PENDIENTE':    { bg: '#E6E8EB', color: '#A8821A' },
+  'PAGO_PARCIAL': { bg: '#F4F5F7', color: '#B5761A' },
+  'PAGADO':       { bg: '#E6E8EB', color: '#267F56' },
+  'CANCELADO':    { bg: '#F8F9FA', color: '#62666E' },
 }
 
 export default function ReporteHipicoEstadoCuenta() {
@@ -180,18 +180,18 @@ export default function ReporteHipicoEstadoCuenta() {
           {/* KPIs */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
             {[
-              { label: 'Total Cargos',     value: fmt$(totalCargos),          color: '#2563eb', bg: '#eff6ff', sub: null as string | null },
-              { label: 'Total Pagado',     value: fmt$(totalPagado),          color: '#16a34a', bg: '#f0fdf4', sub: null },
+              { label: 'Total Cargos',     value: fmt$(totalCargos),          color: '#1C1D21', bg: '#F4F5F7', sub: null as string | null },
+              { label: 'Total Pagado',     value: fmt$(totalPagado),          color: '#267F56', bg: '#F4F5F7', sub: null },
               {
-                label: 'Saldo Pendiente',  value: fmt$(saldoPendienteTotal),  color: saldoPendienteTotal > 0 ? '#dc2626' : '#16a34a', bg: saldoPendienteTotal > 0 ? '#fef2f2' : '#f0fdf4',
+                label: 'Saldo Pendiente',  value: fmt$(saldoPendienteTotal),  color: saldoPendienteTotal > 0 ? '#C23B3B' : '#267F56', bg: '#F4F5F7',
                 sub: adeudoAnterior > 0 ? `incluye ${fmt$(adeudoAnterior)} de antes de "Desde"` : null,
               },
-              { label: 'Cargos Vencidos',  value: cargosVencidos.length.toString(), color: '#dc2626', bg: '#fef2f2', sub: null },
+              { label: 'Cargos Vencidos',  value: cargosVencidos.length.toString(), color: '#C23B3B', bg: '#F4F5F7', sub: null },
             ].map(k => (
               <div key={k.label} className="card" style={{ flex: '1 1 140px', padding: '12px 16px' }}>
                 <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>{k.label}</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: k.color }}>{k.value}</div>
-                {k.sub && <div style={{ fontSize: 10, color: '#92400e', marginTop: 2 }}>{k.sub}</div>}
+                {k.sub && <div style={{ fontSize: 10, color: '#7A4B0C', marginTop: 2 }}>{k.sub}</div>}
               </div>
             ))}
           </div>
@@ -214,7 +214,7 @@ export default function ReporteHipicoEstadoCuenta() {
                 </thead>
                 <tbody>
                   {cargos.map((c, i) => {
-                    const sc = STATUS_COLOR[c.status] ?? { bg: '#f8fafc', color: '#64748b' }
+                    const sc = STATUS_COLOR[c.status] ?? { bg: '#F8F9FA', color: '#62666E' }
                     const saldo = saldoCargo(c)
                     const vencido = c.fecha_vencimiento && c.status === 'PENDIENTE' && c.fecha_vencimiento < hoyStr
                     return (
@@ -223,19 +223,19 @@ export default function ReporteHipicoEstadoCuenta() {
                         <td style={{ padding: '9px 12px', color: 'var(--text-muted)' }}>
                           {c.periodo ? new Date(c.periodo + '-01T12:00:00').toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }) : '—'}
                         </td>
-                        <td style={{ padding: '9px 12px', color: vencido ? '#dc2626' : 'var(--text-muted)', fontWeight: vencido ? 600 : 400 }}>{fmtFecha(c.fecha_vencimiento)}</td>
+                        <td style={{ padding: '9px 12px', color: vencido ? '#C23B3B' : 'var(--text-muted)', fontWeight: vencido ? 600 : 400 }}>{fmtFecha(c.fecha_vencimiento)}</td>
                         <td style={{ padding: '9px 12px', fontWeight: 600, color: 'var(--text-primary)' }}>{fmt$(c.monto_final)}</td>
-                        <td style={{ padding: '9px 12px', fontWeight: 600, color: saldo > 0 ? '#dc2626' : '#16a34a' }}>{fmt$(saldo)}</td>
+                        <td style={{ padding: '9px 12px', fontWeight: 600, color: saldo > 0 ? '#C23B3B' : '#267F56' }}>{fmt$(saldo)}</td>
                         <td style={{ padding: '9px 12px' }}>
-                          <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 600, background: sc.bg, color: sc.color }}>{c.status.replace('_', ' ')}</span>
+                          <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 600, background: sc.color, color: '#fff'}}>{c.status.replace('_', ' ')}</span>
                         </td>
                       </tr>
                     )
                   })}
                   <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
                     <td colSpan={3} style={{ padding: '9px 12px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>TOTAL</td>
-                    <td style={{ padding: '9px 12px', fontWeight: 700, color: '#2563eb' }}>{fmt$(totalCargos)}</td>
-                    <td style={{ padding: '9px 12px', fontWeight: 700, color: saldoPendientePeriodo > 0 ? '#dc2626' : '#16a34a' }}>{fmt$(saldoPendientePeriodo)}</td>
+                    <td style={{ padding: '9px 12px', fontWeight: 700, color: '#1C1D21' }}>{fmt$(totalCargos)}</td>
+                    <td style={{ padding: '9px 12px', fontWeight: 700, color: saldoPendientePeriodo > 0 ? '#C23B3B' : '#267F56' }}>{fmt$(saldoPendientePeriodo)}</td>
                     <td></td>
                   </tr>
                 </tbody>
@@ -262,7 +262,7 @@ export default function ReporteHipicoEstadoCuenta() {
                 <tbody>
                   {pagos.map((p, i) => (
                     <tr key={p.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
-                      <td style={{ padding: '9px 12px', fontWeight: 700, color: 'var(--gold-light)', fontFamily: 'monospace', fontSize: 11 }}>{p.folio}</td>
+                      <td style={{ padding: '9px 12px', fontWeight: 700, color: 'var(--gold-light)', fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>{p.folio}</td>
                       <td style={{ padding: '9px 12px', color: 'var(--text-muted)' }}>{fmtFecha(p.fecha_recibo)}</td>
                       <td style={{ padding: '9px 12px', color: 'var(--text-secondary)' }}>{p.forma_pago_nombre ?? '—'}</td>
                       <td style={{ padding: '9px 12px', color: 'var(--text-muted)' }}>{p.referencia_pago ?? '—'}</td>
@@ -271,12 +271,12 @@ export default function ReporteHipicoEstadoCuenta() {
                           <span key={j}>{d.concepto}{j < (p.recibos_hip_det?.length ?? 0) - 1 ? ', ' : ''}</span>
                         ))}
                       </td>
-                      <td style={{ padding: '9px 12px', fontWeight: 700, color: '#16a34a' }}>{fmt$(p.total)}</td>
+                      <td style={{ padding: '9px 12px', fontWeight: 700, color: '#267F56' }}>{fmt$(p.total)}</td>
                     </tr>
                   ))}
                   <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
                     <td colSpan={5} style={{ padding: '9px 12px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>TOTAL PAGADO</td>
-                    <td style={{ padding: '9px 12px', fontWeight: 700, color: '#16a34a' }}>{fmt$(totalPagado)}</td>
+                    <td style={{ padding: '9px 12px', fontWeight: 700, color: '#267F56' }}>{fmt$(totalPagado)}</td>
                   </tr>
                 </tbody>
               </table>

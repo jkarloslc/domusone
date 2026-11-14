@@ -18,24 +18,24 @@ const PRIORIDADES = ['Urgente','Alta','Media','Baja']
 const STATUSES    = ['Pendiente','En Proceso','En Pausa','Completada','Cancelada']
 
 const PRIORIDAD_STYLE: Record<string, { color: string; bg: string; border: string }> = {
-  'Urgente': { color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
-  'Alta':    { color: '#ea580c', bg: '#fff7ed', border: '#fed7aa' },
-  'Media':   { color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-  'Baja':    { color: '#64748b', bg: '#f8fafc', border: '#e2e8f0' },
+  'Urgente': { color: '#C23B3B', bg: '#F4F5F7', border: '#E6E8EB' },
+  'Alta':    { color: '#C8642A', bg: '#F4F5F7', border: '#E6E8EB' },
+  'Media':   { color: '#B5761A', bg: '#F4F5F7', border: '#E6E8EB' },
+  'Baja':    { color: '#62666E', bg: '#F8F9FA', border: '#E6E8EB' },
 }
 const STATUS_STYLE: Record<string, { color: string; bg: string; border: string }> = {
-  'Pendiente':  { color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-  'En Proceso': { color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
-  'En Pausa':   { color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
-  'Completada': { color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
-  'Cancelada':  { color: '#94a3b8', bg: '#f8fafc', border: '#e2e8f0' },
+  'Pendiente':  { color: '#B5761A', bg: '#F4F5F7', border: '#E6E8EB' },
+  'En Proceso': { color: '#1C1D21', bg: '#F4F5F7', border: '#C9CCD3' },
+  'En Pausa':   { color: '#6B4E79', bg: '#F4F5F7', border: '#E6E8EB' },
+  'Completada': { color: '#1F7A50', bg: '#F4F5F7', border: '#E6E8EB' },
+  'Cancelada':  { color: '#7A7E87', bg: '#F8F9FA', border: '#E6E8EB' },
 }
 
 const TIPO_INSUMO_STYLE: Record<string, { color: string; bg: string; label: string }> = {
-  mano_obra:         { color: '#7c3aed', bg: '#ede9fe', label: 'Mano de Obra' },
-  material:          { color: '#1d4ed8', bg: '#dbeafe', label: 'Material' },
-  equipo:            { color: '#15803d', bg: '#dcfce7', label: 'Equipo' },
-  herramienta_menor: { color: '#d97706', bg: '#fef3c7', label: 'Herramienta Menor' },
+  mano_obra:         { color: '#6B4E79', bg: '#E6E8EB', label: 'Mano de Obra' },
+  material:          { color: '#26282D', bg: '#E6E8EB', label: 'Material' },
+  equipo:            { color: '#1F7A50', bg: '#E6E8EB', label: 'Equipo' },
+  herramienta_menor: { color: '#B5761A', bg: '#E6E8EB', label: 'Herramienta Menor' },
 }
 
 // Explota los insumos (mano de obra, material, equipo, herramienta menor) de
@@ -66,10 +66,10 @@ async function explotarInsumos(conceptosOT: any[]): Promise<any[]> {
 }
 
 const Badge = ({ text, map }: { text: string; map: Record<string, any> }) => {
-  const s = map[text] ?? { color: '#64748b', bg: '#f8fafc', border: '#e2e8f0' }
+  const s = map[text] ?? { color: '#62666E', bg: '#F8F9FA', border: '#E6E8EB' }
   return (
     <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-      color: s.color, background: s.bg, border: `1px solid ${s.border}` }}>
+      color: '#fff', background: s.color, border: `1px solid ${s.color}` }}>
       {text}
     </span>
   )
@@ -215,20 +215,20 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 14 }}>
         {[
-          { label: 'Pendientes',  value: kpis.pendientes,  color: '#d97706', bg: '#fffbeb' },
-          { label: 'En Proceso',  value: kpis.enProceso,   color: '#2563eb', bg: '#eff6ff' },
-          { label: 'Completadas', value: kpis.completadas, color: '#15803d', bg: '#f0fdf4' },
-          { label: 'Urgentes',    value: kpis.urgentes,    color: '#dc2626', bg: '#fef2f2' },
+          { label: 'Pendientes',  value: kpis.pendientes,  color: '#B5761A', bg: '#F4F5F7' },
+          { label: 'En Proceso',  value: kpis.enProceso,   color: '#1C1D21', bg: '#F4F5F7' },
+          { label: 'Completadas', value: kpis.completadas, color: '#1F7A50', bg: '#F4F5F7' },
+          { label: 'Urgentes',    value: kpis.urgentes,    color: '#C23B3B', bg: '#F4F5F7' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '10px 12px', background: k.bg }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: k.color }}>{k.value}</div>
-            <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{k.label}</div>
+          <div key={k.label} className="card" style={{ padding: '10px 12px', background: '#fff' }}>
+            <div style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{k.value}</div>
+            <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
           </div>
         ))}
       </div>
 
       {/* Filtros + Nueva OT */}
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 12, padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 12, padding: '8px 12px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, flexWrap: 'wrap' }}>
         {/* Búsqueda */}
         <div style={{ position: 'relative', flex: '1 1 160px', maxWidth: 220 }}>
           <Search size={11} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
@@ -236,7 +236,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
             placeholder="Folio, título, asignado…"
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
+        <div style={{ width: 1, height: 18, background: '#E6E8EB', flexShrink: 0 }} />
         {/* Filtros tipo / status */}
         <select className="select" style={{ flex: '1 1 90px', maxWidth: 130, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1) }}>
           <option value="">Status</option>
@@ -246,7 +246,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
           <option value="">Tipo</option>
           {TIPOS.map(t => <option key={t}>{t}</option>)}
         </select>
-        <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
+        <div style={{ width: 1, height: 18, background: '#E6E8EB', flexShrink: 0 }} />
         {/* Filtros ubicación */}
         {usaCcFrente ? (
           <>
@@ -288,7 +288,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
           </>
         )}
         {(search || filterStatus || filterTipo || filterCuad || filterArea || filterAC || filterCC || filterFrente) && (
-          <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626', whiteSpace: 'nowrap' }}
+          <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#C23B3B', whiteSpace: 'nowrap' }}
             onClick={() => { setSearch(''); setFilterStatus(''); setFilterTipo(''); setFilterCuad(''); setFilterArea(''); setFilterAC(''); setFilterCC(''); setFilterFrente(''); setPage(1) }}>
             <X size={11} /> Limpiar
           </button>
@@ -335,7 +335,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
               </td></tr>
             ) : rows.map(r => (
               <tr key={r.id} style={{ opacity: r.status === 'Cancelada' ? 0.5 : 1 }}>
-                <td style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)', fontWeight: 600, padding: '8px 10px' }}>{r.folio}</td>
+                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--blue)', fontWeight: 600, padding: '8px 10px' }}>{r.folio}</td>
                 <td style={{ padding: '8px 10px' }}>
                   <div style={{ fontSize: 12, fontWeight: 500 }}>{r.titulo}</div>
                   {r.ubicacion_detalle && <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{r.ubicacion_detalle}</div>}
@@ -360,7 +360,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
                 </td>
                 <td style={{ fontSize: 11, color: 'var(--text-secondary)', padding: '8px 10px' }}>{r.asignado_a ?? '—'}</td>
                 <td style={{ fontSize: 11, padding: '8px 10px',
-                  color: r.fecha_limite && new Date(r.fecha_limite) < new Date() && r.status !== 'Completada' ? '#dc2626' : 'var(--text-secondary)',
+                  color: r.fecha_limite && new Date(r.fecha_limite) < new Date() && r.status !== 'Completada' ? '#C23B3B' : 'var(--text-secondary)',
                   fontWeight: r.fecha_limite && new Date(r.fecha_limite) < new Date() && r.status !== 'Completada' ? 600 : 400 }}>
                   {fmtFecha(r.fecha_limite)}
                 </td>
@@ -655,7 +655,7 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
       </>}
     >
         <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+          {error && <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>{error}</div>}
           <div><label className="label" style={{ fontSize: 11 }}>Título *</label>
             <input className="input" style={{ fontSize: 13 }} value={form.titulo} onChange={setF('titulo')} /></div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
@@ -739,7 +739,7 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
             <div><label className="label" style={{ fontSize: 11 }}>F. Inicio</label><input className="input" style={{ fontSize: 13 }} type="date" value={form.fecha_inicio} onChange={setF('fecha_inicio')} /></div>
             <div><label className="label" style={{ fontSize: 11 }}>F. Límite</label><input className="input" style={{ fontSize: 13 }} type="date" value={form.fecha_limite} onChange={setF('fecha_limite')} /></div>
             <div><label className="label" style={{ fontSize: 11 }}>Semana</label>
-              <div className="input" style={{ fontSize: 13, color: 'var(--text-muted)', background: 'var(--bg-subtle, #f8fafc)' }}>
+              <div className="input" style={{ fontSize: 13, color: 'var(--text-muted)', background: 'var(--bg-subtle, #F8F9FA)' }}>
                 {form.status === 'Completada' ? semanaActual() : '—'}
               </div>
             </div>
@@ -750,10 +750,10 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
           {/* Toggle Por Conceptos */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
             padding: '10px 12px', borderRadius: 8,
-            background: form.por_conceptos ? '#ecfdf5' : '#f8fafc',
-            border: `1px solid ${form.por_conceptos ? '#6ee7b7' : '#e2e8f0'}` }}>
+            background: form.por_conceptos ? '#F4F5F7' : '#F8F9FA',
+            border: `1px solid ${form.por_conceptos ? '#C9CCD3' : '#E6E8EB'}` }}>
             <div>
-              <div style={{ fontSize: 12.5, fontWeight: 700, color: form.por_conceptos ? '#047857' : 'var(--text-secondary)' }}>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: form.por_conceptos ? '#1F7A50' : 'var(--text-secondary)' }}>
                 Costeo por Conceptos
               </div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
@@ -762,7 +762,7 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
             </div>
             <button type="button" onClick={() => setForm(f => ({ ...f, por_conceptos: !f.por_conceptos }))}
               style={{ width: 42, height: 24, borderRadius: 20, border: 'none', cursor: 'pointer', position: 'relative',
-                background: form.por_conceptos ? '#10b981' : '#cbd5e1', flexShrink: 0, transition: 'background .15s' }}>
+                background: form.por_conceptos ? '#2E9E6B' : '#C9CCD3', flexShrink: 0, transition: 'background .15s' }}>
               <span style={{ position: 'absolute', top: 2, left: form.por_conceptos ? 20 : 2, width: 20, height: 20,
                 borderRadius: '50%', background: '#fff', transition: 'left .15s', boxShadow: '0 1px 2px rgba(0,0,0,.3)' }} />
             </button>
@@ -781,15 +781,15 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
           {/* Mano de Obra real — trabajadores de cfg.colaboradores + jornales.
               Siempre visible: es asistencia real, independiente del método
               de costeo (Recursos o Conceptos) usado para el precio de la OT. */}
-          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: '#b45309', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 2 }}>Mano de Obra</div>
+          <div style={{ borderTop: '1px solid #F4F5F7', paddingTop: 10 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: '#96600F', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 2 }}>Mano de Obra</div>
             <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginBottom: 6 }}>Trabajadores reales que participaron, para reportes de mano de obra</div>
             {manoObra.map((r, i) => {
               if (r.tipo === 'legacy') {
                 const cat = catManoObra.find(c => c.id === Number(r.id_categoria_fk))
                 const costo = Number(r.trabajadores || 1) * Number(r.horas || 0) * Number(cat?.costo_hora_referencia || 0)
                 return (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, padding: '5px 8px', background: '#f8fafc', borderRadius: 5 }}>
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, padding: '5px 8px', background: '#F8F9FA', borderRadius: 5 }}>
                     <div style={{ flex: 1, fontSize: 11, color: 'var(--text-muted)' }}>
                       {cat?.categoria ?? 'Categoría eliminada'} — {r.trabajadores} trab. × {r.horas}h <em>(captura anterior)</em>
                     </div>
@@ -829,13 +829,13 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
                   }
                   return acc + Number(r.jornales||0) * Number(r.sueldo_diario||0)
                 }, 0)
-                return total > 0 ? <div style={{ fontSize: 12, fontWeight: 700, color: '#b45309' }}>${total.toLocaleString('es-MX',{minimumFractionDigits:2})}</div> : null
+                return total > 0 ? <div style={{ fontSize: 12, fontWeight: 700, color: '#96600F' }}>${total.toLocaleString('es-MX',{minimumFractionDigits:2})}</div> : null
               })()}
             </div>
           </div>
           {/* Recursos */}
           {!form.por_conceptos && (
-          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
+          <div style={{ borderTop: '1px solid #F4F5F7', paddingTop: 10 }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Recursos</div>
             {recursos.map((r, i) => (
               <div key={i} style={{ display: 'grid', gridTemplateColumns: '70px 1fr 90px 80px 24px', gap: 6, marginBottom: 6 }}>
@@ -884,16 +884,16 @@ function ConceptosPanel({ conceptosOT, formConcepto, setFormConcepto, conceptoRe
 }) {
   const byTipo = (t: string) => explosion.filter(e => e.tipo === t)
   return (
-    <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{ borderTop: '1px solid #F4F5F7', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Conceptos elegidos */}
       <div>
-        <div style={{ fontSize: 9, fontWeight: 700, color: '#0f766e', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+        <div style={{ fontSize: 9, fontWeight: 700, color: '#126B63', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
           <ClipboardList size={11} /> Conceptos
         </div>
         {conceptosOT.length > 0 && (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 8 }}>
             <thead>
-              <tr style={{ background: '#f8fafc' }}>
+              <tr style={{ background: '#F8F9FA' }}>
                 <th style={thOT}>Código</th>
                 <th style={{ ...thOT, textAlign: 'left' }}>Concepto</th>
                 <th style={thOT}>Unidad</th>
@@ -905,7 +905,7 @@ function ConceptosPanel({ conceptosOT, formConcepto, setFormConcepto, conceptoRe
             </thead>
             <tbody>
               {conceptosOT.map((c, i) => (
-                <tr key={c.id ?? `n${i}`} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <tr key={c.id ?? `n${i}`} style={{ borderBottom: '1px solid #F4F5F7' }}>
                   <td style={tdOT}>{c.codigo ?? '—'}</td>
                   <td style={tdOT}>{c.descripcion}</td>
                   <td style={{ ...tdOT, textAlign: 'center', color: 'var(--text-muted)' }}>{c.unidad ?? '—'}</td>
@@ -919,12 +919,12 @@ function ConceptosPanel({ conceptosOT, formConcepto, setFormConcepto, conceptoRe
           </table>
         )}
         {costoConceptosTotal > 0 && (
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#0f766e', textAlign: 'right', marginBottom: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#126B63', textAlign: 'right', marginBottom: 8 }}>
             Total: ${costoConceptosTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
           </div>
         )}
         {/* Buscar y agregar concepto */}
-        <div style={{ background: '#fafafa', border: '1px solid #e2e8f0', borderRadius: 6, padding: 10 }}>
+        <div style={{ background: '#fafafa', border: '1px solid #E6E8EB', borderRadius: 6, padding: 10 }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
               <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>Buscar concepto (código o descripción)</div>
@@ -936,9 +936,9 @@ function ConceptosPanel({ conceptosOT, formConcepto, setFormConcepto, conceptoRe
                   {conceptoResults.map(c => (
                     <button key={c.id} onClick={() => selectConcepto(c)}
                       style={{ display: 'flex', width: '100%', textAlign: 'left', gap: 8, padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 11 }}
-                      onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                      <span style={{ color: '#0f766e', fontWeight: 600, minWidth: 60 }}>{c.codigo}</span>
+                      <span style={{ color: '#126B63', fontWeight: 600, minWidth: 60 }}>{c.codigo}</span>
                       <span style={{ flex: 1 }}>{c.descripcion}</span>
                       <span style={{ color: 'var(--text-muted)' }}>${Number(c.pu_venta ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}/{c.unidad}</span>
                     </button>
@@ -968,7 +968,7 @@ function ConceptosPanel({ conceptosOT, formConcepto, setFormConcepto, conceptoRe
       {/* Explosión de insumos */}
       {conceptosOT.length > 0 && (
         <div>
-          <div style={{ fontSize: 9, fontWeight: 700, color: '#64748b', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <div style={{ fontSize: 9, fontWeight: 700, color: '#62666E', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
             <Boxes size={11} /> Explosión de Insumos
             {explosionLoading && <Loader size={10} className="animate-spin" />}
           </div>
@@ -985,12 +985,12 @@ function ConceptosPanel({ conceptosOT, formConcepto, setFormConcepto, conceptoRe
               return (
                 <div key={tipo} style={{ marginBottom: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                    <span style={{ padding: '1px 7px', borderRadius: 99, fontSize: 10, fontWeight: 700, background: tc.bg, color: tc.color }}>{tc.label}</span>
+                    <span style={{ padding: '1px 7px', borderRadius: 99, fontSize: 10, fontWeight: 700, background: tc.color, color: '#fff'}}>{tc.label}</span>
                     <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Subtotal: <strong>${subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong></span>
                   </div>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                     <thead>
-                      <tr style={{ background: '#f8fafc' }}>
+                      <tr style={{ background: '#F8F9FA' }}>
                         <th style={{ ...thOT, textAlign: 'left' }}>Insumo</th>
                         <th style={thOT}>Unidad</th>
                         <th style={{ ...thOT, textAlign: 'right' }}>Cantidad</th>
@@ -1000,7 +1000,7 @@ function ConceptosPanel({ conceptosOT, formConcepto, setFormConcepto, conceptoRe
                     </thead>
                     <tbody>
                       {list.map((e, i) => (
-                        <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <tr key={i} style={{ borderBottom: '1px solid #F4F5F7' }}>
                           <td style={tdOT}>{e.descripcion}</td>
                           <td style={{ ...tdOT, textAlign: 'center', color: 'var(--text-muted)' }}>{e.unidad ?? '—'}</td>
                           <td style={{ ...tdOT, textAlign: 'right' }}>{e.cantidad.toLocaleString('es-MX', { maximumFractionDigits: 4 })}</td>
@@ -1020,7 +1020,7 @@ function ConceptosPanel({ conceptosOT, formConcepto, setFormConcepto, conceptoRe
   )
 }
 
-const thOT: React.CSSProperties = { padding: '5px 8px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: '#94a3b8', whiteSpace: 'nowrap', textAlign: 'center' }
+const thOT: React.CSSProperties = { padding: '5px 8px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: '#7A7E87', whiteSpace: 'nowrap', textAlign: 'center' }
 const tdOT: React.CSSProperties = { padding: '5px 8px', verticalAlign: 'middle' }
 
 // ── OTDetail ───────────────────────────────────────────────────
@@ -1130,16 +1130,16 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
 
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;">🔧</div>`
+      : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;"></div>`
 
     const seccion = ot.id_area_fk ? areaMap[ot.id_area_fk] ?? '—' : '—'
 
     const priCol: Record<string, string> = {
-      'Urgente': '#dc2626', 'Alta': '#ea580c', 'Media': '#d97706', 'Baja': '#64748b'
+      'Urgente': '#C23B3B', 'Alta': '#C8642A', 'Media': '#B5761A', 'Baja': '#62666E'
     }
     const staCol: Record<string, string> = {
-      'Pendiente': '#d97706', 'En Proceso': '#2563eb', 'En Pausa': '#7c3aed',
-      'Completada': '#15803d', 'Cancelada': '#94a3b8'
+      'Pendiente': '#B5761A', 'En Proceso': '#1C1D21', 'En Pausa': '#6B4E79',
+      'Completada': '#1F7A50', 'Cancelada': '#7A7E87'
     }
 
     const moRows = manoObra.map(r => {
@@ -1155,9 +1155,9 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
     }).join('')
     const costoMOTotal = manoObra.reduce((a, r) => a + Number(r.costo_total || 0), 0)
     const moTotalHtml  = costoMOTotal > 0
-      ? `<tr style="background:#fef3c7;font-weight:700">
-          <td colspan="2" style="color:#b45309">TOTAL MANO DE OBRA</td>
-          <td style="text-align:right;color:#b45309">$${costoMOTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+      ? `<tr style="background:#E6E8EB;font-weight:700">
+          <td colspan="2" style="color:#96600F">TOTAL MANO DE OBRA</td>
+          <td style="text-align:right;color:#96600F">$${costoMOTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
         </tr>`
       : ''
 
@@ -1171,9 +1171,9 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
     ).join('')
     const costoRecTotal = costoRecursos
     const costoHtml = costoRecTotal > 0
-      ? `<tr style="background:#eff6ff;font-weight:700">
-          <td colspan="3" style="color:#0D4F80">TOTAL RECURSOS</td>
-          <td style="text-align:right;color:#0D4F80">$${costoRecTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+      ? `<tr style="background:#F4F5F7;font-weight:700">
+          <td colspan="3" style="color:#1C1D21">TOTAL RECURSOS</td>
+          <td style="text-align:right;color:#1C1D21">$${costoRecTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
         </tr>`
       : ''
 
@@ -1189,9 +1189,9 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
         <td style="text-align:right">$${(Number(c.cantidad) * Number(c.costo_unitario)).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
       </tr>`).join('')
     const costoConceptosHtml = costoConceptos > 0
-      ? `<tr style="background:#f0fdfa;font-weight:700">
-          <td colspan="5" style="color:#0f766e">TOTAL CONCEPTOS</td>
-          <td style="text-align:right;color:#0f766e">$${costoConceptos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+      ? `<tr style="background:#F4F5F7;font-weight:700">
+          <td colspan="5" style="color:#126B63">TOTAL CONCEPTOS</td>
+          <td style="text-align:right;color:#126B63">$${costoConceptos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
         </tr>`
       : ''
 
@@ -1205,7 +1205,7 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
       </tr>`).join('')
     const explosionTotal = explosion.reduce((a, e) => a + e.importe, 0)
     const explosionTotalHtml = explosionTotal > 0
-      ? `<tr style="background:#f1f5f9;font-weight:700">
+      ? `<tr style="background:#F4F5F7;font-weight:700">
           <td colspan="5">TOTAL INSUMOS (COSTO DIRECTO)</td>
           <td style="text-align:right">$${explosionTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
         </tr>`
@@ -1213,7 +1213,7 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
 
     const costoGranTotal = ot.por_conceptos ? costoConceptos : (costoMOTotal + costoRecTotal)
     const granTotalHtml = costoGranTotal > 0
-      ? `<tr style="background:#0D4F80;color:#fff;font-weight:700;font-size:13px;">
+      ? `<tr style="background:#1C1D21;color:#fff;font-weight:700;font-size:13px;">
           <td colspan="3">COSTO TOTAL DE LA OT</td>
           <td style="text-align:right">$${costoGranTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
         </tr>`
@@ -1225,25 +1225,25 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
 
     const html = `<!DOCTYPE html><html><head><title>OT ${ot.folio}</title>
       <style>
-        body { font-family: Arial, sans-serif; padding: 36px; font-size: 13px; color: #1e293b; }
-        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 20px; }
-        .org-nombre { font-size: 17px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
-        .org-sub { font-size: 11px; color: #64748b; }
-        .doc-title { font-size: 14px; font-weight: 700; color: #0D4F80; margin-bottom: 2px; }
-        h2 { font-size: 15px; font-weight: 700; color: #0D4F80; margin: 20px 0 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+        body { font-family: Arial, sans-serif; padding: 36px; font-size: 13px; color: #26282D; }
+        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #1C1D21; margin-bottom: 20px; }
+        .org-nombre { font-size: 17px; font-weight: 700; color: #1C1D21; margin: 0 0 2px; }
+        .org-sub { font-size: 11px; color: #62666E; }
+        .doc-title { font-size: 14px; font-weight: 700; color: #1C1D21; margin-bottom: 2px; }
+        h2 { font-size: 15px; font-weight: 700; color: #1C1D21; margin: 20px 0 10px; border-bottom: 1px solid #E6E8EB; padding-bottom: 4px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 30px; margin-bottom: 14px; }
-        .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: #94a3b8; margin-bottom: 2px; }
-        .val { font-size: 13px; color: #1e293b; }
+        .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: #7A7E87; margin-bottom: 2px; }
+        .val { font-size: 13px; color: #26282D; }
         .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
         table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-        td, th { border: 1px solid #e2e8f0; padding: 7px 11px; }
-        th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; text-align: left; }
-        .desc { background: #f8fafc; border-left: 3px solid #0D4F80; padding: 10px 14px; border-radius: 4px; font-size: 13px; line-height: 1.6; margin-bottom: 10px; }
-        .notas { background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 10px 14px; font-size: 12px; margin-bottom: 10px; }
+        td, th { border: 1px solid #E6E8EB; padding: 7px 11px; }
+        th { background: #F4F5F7; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; text-align: left; }
+        .desc { background: #F8F9FA; border-left: 3px solid #1C1D21; padding: 10px 14px; border-radius: 4px; font-size: 13px; line-height: 1.6; margin-bottom: 10px; }
+        .notas { background: #F4F5F7; border: 1px solid #E6E8EB; border-radius: 6px; padding: 10px 14px; font-size: 12px; margin-bottom: 10px; }
         .firmas { display: flex; gap: 50px; margin-top: 50px; }
-        .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 160px; font-size: 11px; color: #64748b; }
+        .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 160px; font-size: 11px; color: #62666E; }
         .fotos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0; }
-        .foto { aspect-ratio: 4/3; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; }
+        .foto { aspect-ratio: 4/3; border: 1px solid #E6E8EB; border-radius: 6px; overflow: hidden; }
         .foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
         @page { margin: 1.2cm; }
       </style></head><body>
@@ -1252,18 +1252,18 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
         <div>
           <div class="org-nombre">${orgNombre}</div>
           ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
-          <div style="font-size:12px;font-weight:600;color:#0D4F80;margin-top:3px;">Orden de Trabajo</div>
+          <div style="font-size:12px;font-weight:600;color:#1C1D21;margin-top:3px;">Orden de Trabajo</div>
         </div>
-        <div style="margin-left:auto;text-align:right;font-size:11px;color:#94a3b8;">
-          Folio: <strong style="color:#0D4F80;font-size:16px;">${ot.folio}</strong><br/>
+        <div style="margin-left:auto;text-align:right;font-size:11px;color:#7A7E87;">
+          Folio: <strong style="color:#1C1D21;font-size:16px;">${ot.folio}</strong><br/>
           ${new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })}
         </div>
       </div>
 
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
         <span style="font-size:18px;font-weight:700;">${ot.titulo}</span>
-        <span class="badge" style="color:${priCol[ot.prioridad ?? 'Media'] ?? '#64748b'};background:${priCol[ot.prioridad ?? 'Media'] ? priCol[ot.prioridad ?? 'Media'] + '18' : '#f8fafc'};border:1px solid ${priCol[ot.prioridad ?? 'Media'] ?? '#e2e8f0'}44;">${ot.prioridad ?? 'Media'}</span>
-        <span class="badge" style="color:${staCol[currentStatus] ?? '#64748b'};background:${staCol[currentStatus] ? staCol[currentStatus] + '18' : '#f8fafc'};border:1px solid ${staCol[currentStatus] ?? '#e2e8f0'}44;">${currentStatus}</span>
+        <span class="badge" style="color:#fff;background:${priCol[ot.prioridad ?? 'Media'] ?? '#62666E'};border:1px solid ${priCol[ot.prioridad ?? 'Media'] ?? '#62666E'};">${ot.prioridad ?? 'Media'}</span>
+        <span class="badge" style="color:#fff;background:${staCol[currentStatus] ?? '#62666E'};border:1px solid ${staCol[currentStatus] ?? '#62666E'};">${currentStatus}</span>
       </div>
 
       <div class="grid">
@@ -1286,7 +1286,7 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
       ${ot.notas ? `<h2>Notas</h2><div class="notas">${ot.notas}</div>` : ''}
 
       ${manoObra.length > 0 ? `
-      <h2 style="color:#b45309;border-bottom-color:#fde68a;">Mano de Obra</h2>
+      <h2 style="color:#96600F;border-bottom-color:#E6E8EB;">Mano de Obra</h2>
       <table>
         <thead><tr><th>Trabajador</th><th style="text-align:right">Jornales/Horas</th><th style="text-align:right">Costo</th></tr></thead>
         <tbody>
@@ -1306,7 +1306,7 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
       </table>` : ''}
 
       ${ot.por_conceptos && conceptos.length > 0 ? `
-      <h2 style="color:#0f766e;border-bottom-color:#99f6e4;">Conceptos</h2>
+      <h2 style="color:#126B63;border-bottom-color:#E6E8EB;">Conceptos</h2>
       <table>
         <thead><tr><th>Código</th><th>Concepto</th><th>Unidad</th><th style="text-align:right">Cantidad</th><th style="text-align:right">PU</th><th style="text-align:right">Importe</th></tr></thead>
         <tbody>
@@ -1365,16 +1365,16 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
           {/* Cabecera de status y título */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
             <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>{ot.titulo}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#1C1D21', marginBottom: 4 }}>{ot.titulo}</div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <span style={{ ...PRIORIDAD_STYLE[ot.prioridad ?? 'Media'],
                   fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                  border: `1px solid ${PRIORIDAD_STYLE[ot.prioridad ?? 'Media']?.border ?? '#e2e8f0'}` }}>
+                  border: `1px solid ${PRIORIDAD_STYLE[ot.prioridad ?? 'Media']?.border ?? '#E6E8EB'}` }}>
                   {ot.prioridad ?? 'Media'}
                 </span>
                 <span style={{ ...STATUS_STYLE[currentStatus],
                   fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                  border: `1px solid ${STATUS_STYLE[currentStatus]?.border ?? '#e2e8f0'}` }}>
+                  border: `1px solid ${STATUS_STYLE[currentStatus]?.border ?? '#E6E8EB'}` }}>
                   {currentStatus}
                 </span>
               </div>
@@ -1403,15 +1403,15 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
           )}
 
           {ot.notas && (
-            <div style={{ padding: '10px 14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#d97706', marginBottom: 4 }}>Notas</div>
+            <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#B5761A', marginBottom: 4 }}>Notas</div>
               <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{ot.notas}</p>
             </div>
           )}
 
           {!loading && manoObra.length > 0 && (
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#b45309', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Mano de Obra</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#96600F', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Mano de Obra</div>
               <div className="card" style={{ overflow: 'hidden' }}>
                 <table>
                   <thead><tr><th>Trabajador</th><th style={{ textAlign: 'right' }}>Jornales/Horas</th><th style={{ textAlign: 'right' }}>Costo</th></tr></thead>
@@ -1432,9 +1432,9 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
                       )
                     })}
                     {costoManoObra > 0 && (
-                      <tr style={{ background: '#fef3c7', fontWeight: 700 }}>
-                        <td colSpan={2} style={{ color: '#b45309' }}>TOTAL</td>
-                        <td style={{ textAlign: 'right', color: '#b45309' }}>${costoManoObra.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                      <tr style={{ background: '#E6E8EB', fontWeight: 700 }}>
+                        <td colSpan={2} style={{ color: '#96600F' }}>TOTAL</td>
+                        <td style={{ textAlign: 'right', color: '#96600F' }}>${costoManoObra.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
                       </tr>
                     )}
                   </tbody>
@@ -1472,14 +1472,14 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
           )}
 
           {!loading && ot.por_conceptos && conceptos.length === 0 && (
-            <div style={{ padding: '10px 14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+            <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 8, fontSize: 12, color: '#7A4B0C' }}>
               Esta OT está marcada como "Costeo por Conceptos" pero no tiene conceptos capturados. Edítala y agrega al menos uno.
             </div>
           )}
 
           {!loading && ot.por_conceptos && conceptos.length > 0 && (
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#0f766e', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#126B63', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
                 <ClipboardList size={11} /> Conceptos
               </div>
               <div className="card" style={{ overflow: 'hidden' }}>
@@ -1496,9 +1496,9 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
                       </tr>
                     ))}
                     {costoConceptos > 0 && (
-                      <tr style={{ background: '#f0fdfa', fontWeight: 700 }}>
-                        <td colSpan={4} style={{ color: '#0f766e' }}>TOTAL</td>
-                        <td style={{ textAlign: 'right', color: '#0f766e' }}>${costoConceptos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                      <tr style={{ background: '#F4F5F7', fontWeight: 700 }}>
+                        <td colSpan={4} style={{ color: '#126B63' }}>TOTAL</td>
+                        <td style={{ textAlign: 'right', color: '#126B63' }}>${costoConceptos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
                       </tr>
                     )}
                   </tbody>
@@ -1507,7 +1507,7 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
 
               {explosion.length > 0 && (
                 <div style={{ marginTop: 12 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#64748b', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#62666E', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
                     <Boxes size={11} /> Explosión de Insumos
                   </div>
                   {(['mano_obra', 'material', 'equipo', 'herramienta_menor'] as const).map(tipo => {
@@ -1518,7 +1518,7 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
                     return (
                       <div key={tipo} style={{ marginBottom: 10 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                          <span style={{ padding: '1px 7px', borderRadius: 99, fontSize: 10, fontWeight: 700, background: tc.bg, color: tc.color }}>{tc.label}</span>
+                          <span style={{ padding: '1px 7px', borderRadius: 99, fontSize: 10, fontWeight: 700, background: tc.color, color: '#fff'}}>{tc.label}</span>
                           <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Subtotal: <strong>${subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong></span>
                         </div>
                         <div className="card" style={{ overflow: 'hidden' }}>
@@ -1548,12 +1548,12 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
           {currentStatus !== 'Cancelada' && currentStatus !== 'Completada' && (
             <div style={{
               padding: '14px 16px',
-              background: STATUS_STYLE[currentStatus]?.bg ?? '#f8fafc',
-              border: `1.5px solid ${STATUS_STYLE[currentStatus]?.border ?? '#e2e8f0'}`,
+              background: STATUS_STYLE[currentStatus]?.bg ?? '#F8F9FA',
+              border: `1.5px solid ${STATUS_STYLE[currentStatus]?.border ?? '#E6E8EB'}`,
               borderRadius: 10,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: STATUS_STYLE[currentStatus]?.color ?? '#64748b',
+                <span style={{ fontSize: 11, fontWeight: 700, color: STATUS_STYLE[currentStatus]?.color ?? '#62666E',
                   textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                   {currentStatus}
                 </span>
@@ -1565,16 +1565,16 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {(currentStatus === 'Pendiente' || currentStatus === 'En Proceso') && (
                   <button disabled={updatingStatus} onClick={() => cambiarStatus('Completada')}
-                    style={{ flex: 1, padding: '8px', borderRadius: 8, border: '1px solid #bbf7d0',
-                      background: '#f0fdf4', color: '#15803d', fontWeight: 700, cursor: 'pointer',
+                    style={{ flex: 1, padding: '8px', borderRadius: 8, border: '1px solid #E6E8EB',
+                      background: '#F4F5F7', color: '#1F7A50', fontWeight: 700, cursor: 'pointer',
                       fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                     {updatingStatus ? <Loader size={12} className="animate-spin" /> : <CheckCircle size={13} />}
                     Marcar Completada
                   </button>
                 )}
                 <button disabled={updatingStatus} onClick={() => cambiarStatus('Cancelada')}
-                  style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #fecaca',
-                    background: '#fef2f2', color: '#dc2626', fontWeight: 600, cursor: 'pointer',
+                  style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #E6E8EB',
+                    background: '#F4F5F7', color: '#C23B3B', fontWeight: 600, cursor: 'pointer',
                     fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
                   Cancelar OT
                 </button>
@@ -1583,19 +1583,19 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
           )}
 
           {currentStatus === 'Completada' && (
-            <div style={{ padding: '14px 16px', background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: 10 }}>
+            <div style={{ padding: '14px 16px', background: '#F4F5F7', border: '1.5px solid #E6E8EB', borderRadius: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <CheckCircle size={15} style={{ color: '#15803d', flexShrink: 0 }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#14532d' }}>OT Completada</span>
+                <CheckCircle size={15} style={{ color: '#1F7A50', flexShrink: 0 }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#17603F' }}>OT Completada</span>
                 {ot.fecha_cierre && (
-                  <span style={{ fontSize: 11, color: '#166534', marginLeft: 'auto' }}>
+                  <span style={{ fontSize: 11, color: '#17603F', marginLeft: 'auto' }}>
                     {fmtFecha(ot.fecha_cierre)}
                   </span>
                 )}
               </div>
               <button disabled={updatingStatus} onClick={() => cambiarStatus('En Proceso')}
-                style={{ padding: '7px 16px', borderRadius: 8, border: '1px solid #fde68a',
-                  background: '#fffbeb', color: '#92400e', fontWeight: 600, cursor: 'pointer',
+                style={{ padding: '7px 16px', borderRadius: 8, border: '1px solid #E6E8EB',
+                  background: '#F4F5F7', color: '#7A4B0C', fontWeight: 600, cursor: 'pointer',
                   fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
                 {updatingStatus ? <Loader size={12} className="animate-spin" /> : null}
                 Reabrir OT
@@ -1604,14 +1604,14 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
           )}
 
           {currentStatus === 'Cancelada' && (
-            <div style={{ padding: '14px 16px', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 10 }}>
+            <div style={{ padding: '14px 16px', background: '#F8F9FA', border: '1.5px solid #E6E8EB', borderRadius: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <X size={15} style={{ color: '#94a3b8', flexShrink: 0 }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#475569' }}>OT Cancelada</span>
+                <X size={15} style={{ color: '#7A7E87', flexShrink: 0 }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#4A4D54' }}>OT Cancelada</span>
               </div>
               <button disabled={updatingStatus} onClick={() => cambiarStatus('Pendiente')}
-                style={{ padding: '7px 16px', borderRadius: 8, border: '1px solid #fde68a',
-                  background: '#fffbeb', color: '#92400e', fontWeight: 600, cursor: 'pointer',
+                style={{ padding: '7px 16px', borderRadius: 8, border: '1px solid #E6E8EB',
+                  background: '#F4F5F7', color: '#7A4B0C', fontWeight: 600, cursor: 'pointer',
                   fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
                 {updatingStatus ? <Loader size={12} className="animate-spin" /> : null}
                 Reactivar OT
@@ -1640,7 +1640,7 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
           />
         </div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end',
-          padding: '10px 24px', borderTop: '1px solid #e2e8f0' }}>
+          padding: '10px 24px', borderTop: '1px solid #E6E8EB' }}>
           <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimirOT}>
             <Printer size={12} /> Imprimir OT
           </button>
@@ -1687,7 +1687,7 @@ function FotosSection({ titulo, fotos, loading, uploading, fileRef, onPick, onDe
         </div>
       ) : fotos.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '16px 0', color: 'var(--text-muted)', fontSize: 13,
-          border: '2px dashed #e2e8f0', borderRadius: 10, cursor: 'pointer' }}
+          border: '2px dashed #E6E8EB', borderRadius: 10, cursor: 'pointer' }}
           onClick={() => fileRef.current?.click()}>
           <Camera size={20} style={{ margin: '0 auto 6px', display: 'block', opacity: 0.4 }} />
           Sin fotos
@@ -1696,7 +1696,7 @@ function FotosSection({ titulo, fotos, loading, uploading, fileRef, onPick, onDe
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
           {fotos.map(e => (
             <div key={e.id} style={{ position: 'relative', aspectRatio: '4/3', borderRadius: 8,
-              overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+              overflow: 'hidden', border: '1px solid #E6E8EB' }}>
               <img src={e.url} alt={e.nombre ?? titulo}
                 style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
               <div style={{ position: 'absolute', top: 4, right: 4, display: 'flex', gap: 4 }}>
@@ -1798,7 +1798,7 @@ function ReporteSemanal({ empresa, modulo, areas, areaMap, onClose }: {
     } catch {}
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+      : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
 
     const fechaReporte = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })
     const seccionNombre = filterArea ? (areaMap[Number(filterArea)] ?? 'Todas') : 'Mantenimiento Fraccionamiento'
@@ -1816,8 +1816,8 @@ function ReporteSemanal({ empresa, modulo, areas, areaMap, onClose }: {
     const costoTotal = todosRecursos.reduce((a, r) => a + Number(r.costo || 0), 0)
 
     const STATUS_COLOR: Record<string, string> = {
-      'Pendiente':  '#d97706', 'En Proceso': '#2563eb',
-      'En Pausa':   '#7c3aed', 'Completada': '#15803d', 'Cancelada': '#94a3b8',
+      'Pendiente':  '#B5761A', 'En Proceso': '#1C1D21',
+      'En Pausa':   '#6B4E79', 'Completada': '#1F7A50', 'Cancelada': '#7A7E87',
     }
 
     const html = `<!DOCTYPE html>
@@ -1825,37 +1825,37 @@ function ReporteSemanal({ empresa, modulo, areas, areaMap, onClose }: {
 <title>Reporte de Mantenimiento — Semana ${semana}/${anio}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; font-size: 12px; color: #1e293b; padding: 32px; }
-  .org-header { display: flex; align-items: center; gap: 16px; border-bottom: 2px solid #0D4F80; padding-bottom: 14px; margin-bottom: 20px; }
-  .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
-  .org-sub  { font-size: 11px; color: #64748b; }
-  .doc-title { font-size: 14px; font-weight: 600; color: #0D4F80; margin-bottom: 2px; }
-  .meta { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #26282D; padding: 32px; }
+  .org-header { display: flex; align-items: center; gap: 16px; border-bottom: 2px solid #1C1D21; padding-bottom: 14px; margin-bottom: 20px; }
+  .org-nombre { font-size: 18px; font-weight: 700; color: #1C1D21; margin: 0 0 2px; }
+  .org-sub  { font-size: 11px; color: #62666E; }
+  .doc-title { font-size: 14px; font-weight: 600; color: #1C1D21; margin-bottom: 2px; }
+  .meta { background: #F8F9FA; border: 1px solid #E6E8EB; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .meta-row { display: flex; gap: 8px; }
-  .meta-label { font-weight: 700; color: #475569; min-width: 140px; }
-  .meta-value { color: #1e293b; }
-  .section-title { font-size: 14px; font-weight: 700; color: #0D4F80; margin: 20px 0 10px;
-    padding-bottom: 6px; border-bottom: 2px solid #bfdbfe; }
-  .ot-card { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
-  .ot-header { background: #f1f5f9; padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; }
-  .ot-folio { font-family: monospace; font-size: 12px; font-weight: 700; color: #0D4F80; }
+  .meta-label { font-weight: 700; color: #4A4D54; min-width: 140px; }
+  .meta-value { color: #26282D; }
+  .section-title { font-size: 14px; font-weight: 700; color: #1C1D21; margin: 20px 0 10px;
+    padding-bottom: 6px; border-bottom: 2px solid #C9CCD3; }
+  .ot-card { border: 1px solid #E6E8EB; border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+  .ot-header { background: #F4F5F7; padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; }
+  .ot-folio { font-variant-numeric:tabular-nums; font-size: 12px; font-weight: 700; color: #1C1D21; }
   .ot-titulo { font-size: 13px; font-weight: 600; flex: 1; margin: 0 12px; }
   .ot-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
   .ot-body { padding: 10px 14px; }
-  .ot-desc { color: #475569; line-height: 1.6; margin-bottom: 8px; }
-  .ot-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 11px; color: #64748b; }
-  .ot-notas { margin-top: 8px; padding: 8px; background: #fffbeb; border-left: 3px solid #fbbf24; font-size: 11px; color: #92400e; }
+  .ot-desc { color: #4A4D54; line-height: 1.6; margin-bottom: 8px; }
+  .ot-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 11px; color: #62666E; }
+  .ot-notas { margin-top: 8px; padding: 8px; background: #F4F5F7; border-left: 3px solid #C9CCD3; font-size: 11px; color: #7A4B0C; }
   .evidencias { margin-top: 10px; }
-  .evidencias-title { font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .evidencias-title { font-size: 10px; font-weight: 700; color: #4A4D54; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
   .evidencias-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-  .evidencia-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0; display: block; }
-  .evidencia-cap { font-size: 9px; color: #64748b; text-align: center; margin-top: 2px; }
-  .recursos-title { font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin: 16px 0 8px; }
+  .evidencia-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 6px; border: 1px solid #E6E8EB; display: block; }
+  .evidencia-cap { font-size: 9px; color: #62666E; text-align: center; margin-top: 2px; }
+  .recursos-title { font-size: 11px; font-weight: 700; color: #4A4D54; text-transform: uppercase; letter-spacing: 0.05em; margin: 16px 0 8px; }
   table { width: 100%; border-collapse: collapse; }
-  th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 10px; text-align: left; border: 1px solid #e2e8f0; }
-  td { padding: 6px 10px; border: 1px solid #e2e8f0; font-size: 11px; }
-  .total-row { background: #eff6ff; font-weight: 700; color: #0D4F80; }
-  .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 10px; color: #94a3b8; display: flex; justify-content: space-between; }
+  th { background: #F4F5F7; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 10px; text-align: left; border: 1px solid #E6E8EB; }
+  td { padding: 6px 10px; border: 1px solid #E6E8EB; font-size: 11px; }
+  .total-row { background: #F4F5F7; font-weight: 700; color: #1C1D21; }
+  .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #E6E8EB; font-size: 10px; color: #7A7E87; display: flex; justify-content: space-between; }
   @page { margin: 1.5cm; size: letter; }
   @media print { .no-print { display: none; } }
 </style></head><body>
@@ -1869,7 +1869,7 @@ function ReporteSemanal({ empresa, modulo, areas, areaMap, onClose }: {
   </div>
   <div style="margin-left:auto;text-align:right">
     <div class="doc-title">Reporte de Mantenimiento</div>
-    <div style="font-size:13px;color:#64748b">Semana No. ${semana} — ${anio}</div>
+    <div style="font-size:13px;color:#62666E">Semana No. ${semana} — ${anio}</div>
   </div>
 </div>
 
@@ -1887,23 +1887,23 @@ function ReporteSemanal({ empresa, modulo, areas, areaMap, onClose }: {
 ${Object.entries(porSeccion).map(([secNombre, otsSeccion]) => `
   <div class="section-title">${secNombre} (${otsSeccion.length} OTs)</div>
   ${otsSeccion.map(o => {
-    const statusColor = STATUS_COLOR[o.status] ?? '#64748b'
+    const statusColor = STATUS_COLOR[o.status] ?? '#62666E'
     return `
     <div class="ot-card">
       <div class="ot-header">
         <span class="ot-folio">${o.folio}</span>
         <span class="ot-titulo">${o.titulo}</span>
-        <span class="ot-badge" style="background:${statusColor}20;color:${statusColor};border:1px solid ${statusColor}40">${o.status}</span>
+        <span class="ot-badge" style="background:${statusColor};color:#fff;border:1px solid ${statusColor}">${o.status}</span>
         ${o.prioridad === 'Urgente' || o.prioridad === 'Alta'
-          ? `<span class="ot-badge" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;margin-left:6px">${o.prioridad}</span>`
+          ? `<span class="ot-badge" style="background:#F4F5F7;color:#C23B3B;border:1px solid #E6E8EB;margin-left:6px">${o.prioridad}</span>`
           : ''}
       </div>
       <div class="ot-body">
         ${o.descripcion ? `<p class="ot-desc">${o.descripcion}</p>` : ''}
         <div class="ot-meta">
-          ${o.tipo_trabajo ? `<span>📋 ${o.tipo_trabajo}</span>` : ''}
-          ${o.asignado_a   ? `<span>👤 ${o.asignado_a}</span>` : ''}
-          ${o.ubicacion_detalle ? `<span>📍 ${o.ubicacion_detalle}</span>` : ''}
+          ${o.tipo_trabajo ? `<span>${o.tipo_trabajo}</span>` : ''}
+          ${o.asignado_a   ? `<span>${o.asignado_a}</span>` : ''}
+          ${o.ubicacion_detalle ? `<span>${o.ubicacion_detalle}</span>` : ''}
         </div>
         ${o.notas ? `<div class="ot-notas"><strong>Nota:</strong> ${o.notas}</div>` : ''}
         ${(o.evidencias ?? []).length > 0 ? `
@@ -1934,7 +1934,7 @@ ${todosRecursos.length > 0 ? `
     ${todosRecursos.map(r => {
       const ot = ots.find(o => o.id === r.id_ot_fk)
       return `<tr>
-        <td style="font-family:monospace;font-size:10px;color:#0D4F80">${ot?.folio ?? '—'}</td>
+        <td style="font-variant-numeric:tabular-nums;font-size:10px;color:#1C1D21">${ot?.folio ?? '—'}</td>
         <td>${r.cantidad ?? '—'}</td>
         <td>${r.descripcion}</td>
         <td style="text-align:right">${Number(r.costo) > 0 ? '$' + Number(r.costo).toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'}</td>
@@ -2009,12 +2009,12 @@ ${todosRecursos.length > 0 ? `
 
           {/* Preview count */}
           {loaded && (
-            <div style={{ padding: '10px 14px', background: ots.length > 0 ? '#eff6ff' : '#f8fafc',
-              border: `1px solid ${ots.length > 0 ? '#bfdbfe' : '#e2e8f0'}`, borderRadius: 8,
+            <div style={{ padding: '10px 14px', background: ots.length > 0 ? '#F4F5F7' : '#F8F9FA',
+              border: `1px solid ${ots.length > 0 ? '#C9CCD3' : '#E6E8EB'}`, borderRadius: 8,
               fontSize: 13, color: ots.length > 0 ? 'var(--blue)' : 'var(--text-muted)' }}>
               {ots.length > 0
                 ? `✓ ${ots.length} OT${ots.length > 1 ? 's' : ''} encontrada${ots.length > 1 ? 's' : ''} — ${ots.filter(o => o.status === 'Completada').length} completadas`
-                : '⚠ Sin órdenes de trabajo para esta semana / sección'}
+                : 'Sin órdenes de trabajo para esta semana / sección'}
             </div>
           )}
         </div>

@@ -179,16 +179,16 @@ export default function ReporteValesCombustible() {
         reportTitle="Vales de Combustible por Centro de Costo" hideCSV
         extra={<button className="btn-ghost" onClick={exportarExcel} disabled={!filtrados.length}><Download size={13} /> Exportar Excel</button>} />
 
-      {error && <div className="card" style={{ padding: 12, marginBottom: 12, color: '#dc2626' }}>Error: {error}</div>}
+      {error && <div className="card" style={{ padding: 12, marginBottom: 12, color: '#C23B3B' }}>Error: {error}</div>}
 
       {/* KPIs */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
         {[
           { label: 'Monto autorizado',    value: fmt(total.monto),    color: 'var(--blue)' },
-          { label: 'Litros autorizados',  value: fmtL(total.litros),  color: '#059669' },
-          { label: 'Precio promedio / L', value: fmt(precioProm),     color: '#d97706' },
-          { label: 'Vales',               value: String(total.vales), color: '#7c3aed' },
-          { label: 'Órdenes de Pago',     value: String(numOPs),      color: '#64748b' },
+          { label: 'Litros autorizados',  value: fmtL(total.litros),  color: '#267F56' },
+          { label: 'Precio promedio / L', value: fmt(precioProm),     color: '#B5761A' },
+          { label: 'Vales',               value: String(total.vales), color: '#6B4E79' },
+          { label: 'Órdenes de Pago',     value: String(numOPs),      color: '#62666E' },
         ].map(k => (
           <div key={k.label} className="card" style={{ padding: '12px 16px', flex: '1 1 180px', maxWidth: 260 }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
@@ -228,7 +228,7 @@ export default function ReporteValesCombustible() {
             <tbody>
               {grupos.map(g => (
                 <Fragment key={g.key}>
-                  <tr onClick={() => toggle(g.key)} style={{ background: '#eff6ff', cursor: 'pointer' }}>
+                  <tr onClick={() => toggle(g.key)} style={{ background: '#F4F5F7', cursor: 'pointer' }}>
                     <td colSpan={6} style={{ fontWeight: 700, color: 'var(--blue)' }}>
                       {expCC.has(g.key) ? '▾' : '▸'} {g.nombre}
                       <span style={{ fontWeight: 400, fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>
@@ -239,12 +239,12 @@ export default function ReporteValesCombustible() {
                   </tr>
                   {expCC.has(g.key) && g.vales.map(v => (
                     <tr key={v.id} style={{ fontSize: 12 }}>
-                      <td style={{ paddingLeft: 28, fontFamily: 'monospace', color: 'var(--blue)', fontWeight: 600 }}>{v.folio ?? `#${v.id}`}</td>
+                      <td style={{ paddingLeft: 28, fontVariantNumeric: 'tabular-nums', color: 'var(--blue)', fontWeight: 600 }}>{v.folio ?? `#${v.id}`}</td>
                       <td style={{ whiteSpace: 'nowrap' }}>{fmtF(v.created_at)}</td>
                       <td>{v.solicitante ?? '—'}</td>
                       <td>{v.tipo_combustible ?? '—'}</td>
                       <td>{v.status ?? '—'}</td>
-                      <td style={{ fontFamily: 'monospace' }}>{v.op_folio ?? '—'}{v.op_status ? <span style={{ color: 'var(--text-muted)' }}> · {v.op_status}</span> : null}</td>
+                      <td style={{ fontVariantNumeric: 'tabular-nums' }}>{v.op_folio ?? '—'}{v.op_status ? <span style={{ color: 'var(--text-muted)' }}> · {v.op_status}</span> : null}</td>
                       <td style={num}></td>
                       <td style={num}>{fmtL(v.litros_autorizados)}</td>
                       <td style={{ ...num, color: 'var(--text-muted)' }}>{fmtL(v.litros_usados)}</td>

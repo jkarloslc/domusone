@@ -36,11 +36,11 @@ type EventoRow = Evento & {
 }
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
-  'Cotización': { bg: '#fef9c3', color: '#ca8a04' },
-  'Confirmado': { bg: '#eff6ff', color: '#2563eb' },
-  'En curso':   { bg: '#fff7ed', color: '#ea580c' },
-  'Realizado':  { bg: '#f0fdf4', color: '#15803d' },
-  'Cancelado':  { bg: '#fef2f2', color: '#dc2626' },
+  'Cotización': { bg: '#E6E8EB', color: '#A8821A' },
+  'Confirmado': { bg: '#F4F5F7', color: '#1C1D21' },
+  'En curso':   { bg: '#F4F5F7', color: '#C8642A' },
+  'Realizado':  { bg: '#F4F5F7', color: '#1F7A50' },
+  'Cancelado':  { bg: '#F4F5F7', color: '#C23B3B' },
 }
 
 const STATUSES = ['Cotización', 'Confirmado', 'En curso', 'Realizado', 'Cancelado']
@@ -230,16 +230,16 @@ export default function ReporteHospitalityEventos() {
           {/* ── KPIs — grid fijo de 6 columnas, nunca se parten ── */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12, marginBottom: 20 }}>
             {[
-              { label: 'Eventos',        value: rows.length.toString(), color: '#9333ea', bg: '#faf5ff' },
-              { label: 'Realizados',     value: realizados.toString(),  color: '#15803d', bg: '#f0fdf4' },
-              { label: 'Confirmados',    value: confirmados.toString(), color: '#2563eb', bg: '#eff6ff' },
-              { label: 'Total ingresos', value: fmt$(totalIngresos),    color: '#16a34a', bg: '#f0fdf4' },
-              { label: 'Total gastos',   value: fmt$(totalGastos),      color: '#dc2626', bg: '#fef2f2' },
+              { label: 'Eventos',        value: rows.length.toString(), color: '#6B4E79', bg: '#F4F5F7' },
+              { label: 'Realizados',     value: realizados.toString(),  color: '#1F7A50', bg: '#F4F5F7' },
+              { label: 'Confirmados',    value: confirmados.toString(), color: '#1C1D21', bg: '#F4F5F7' },
+              { label: 'Total ingresos', value: fmt$(totalIngresos),    color: '#267F56', bg: '#F4F5F7' },
+              { label: 'Total gastos',   value: fmt$(totalGastos),      color: '#C23B3B', bg: '#F4F5F7' },
               {
                 label: 'Balance',
                 value: fmt$(balanceTotal),
-                color: balanceTotal >= 0 ? '#15803d' : '#dc2626',
-                bg:    balanceTotal >= 0 ? '#f0fdf4' : '#fef2f2',
+                color: balanceTotal >= 0 ? '#1F7A50' : '#C23B3B',
+                bg:    '#F4F5F7',
               },
             ].map(k => (
               <div key={k.label} className="card" style={{ padding: '12px 14px', minWidth: 0 }}>
@@ -275,14 +275,14 @@ export default function ReporteHospitalityEventos() {
                 </thead>
                 <tbody>
                   {rows.map((r, i) => {
-                    const sc   = STATUS_COLORS[r.status] ?? { bg: '#f8fafc', color: '#64748b' }
+                    const sc   = STATUS_COLORS[r.status] ?? { bg: '#F8F9FA', color: '#62666E' }
                     const tipo = r.cat_tipos_evento
                     const bal  = r.balance
                     return (
                       <tr key={r.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
 
                         {/* Folio — nowrap para que no se parta */}
-                        <td style={{ ...tdSt, fontWeight: 700, color: '#9333ea', fontFamily: 'monospace', fontSize: 11, whiteSpace: 'nowrap' }}>
+                        <td style={{ ...tdSt, fontWeight: 700, color: '#6B4E79', fontVariantNumeric: 'tabular-nums', fontSize: 11, whiteSpace: 'nowrap' }}>
                           {r.folio}
                         </td>
 
@@ -294,7 +294,7 @@ export default function ReporteHospitalityEventos() {
                         {/* Tipo */}
                         <td style={tdSt}>
                           {tipo ? (
-                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 600, background: tipo.color + '22', color: tipo.color, whiteSpace: 'nowrap' }}>
+                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 600, background: tipo.color, color: '#fff', whiteSpace: 'nowrap' }}>
                               {tipo.nombre}
                             </span>
                           ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
@@ -316,26 +316,26 @@ export default function ReporteHospitalityEventos() {
                         </td>
 
                         {/* Precio Pactado */}
-                        <td style={{ ...tdSt, color: '#1d4ed8', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <td style={{ ...tdSt, color: '#26282D', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>
                           {r.precio_pactado != null ? fmt$(r.precio_pactado) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                         </td>
 
                         {/* Status */}
                         <td style={tdSt}>
-                          <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 600, background: sc.bg, color: sc.color, whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 600, background: sc.color, color: '#fff', whiteSpace: 'nowrap' }}>
                             {r.status}
                           </span>
                         </td>
 
                         {/* Ingresos */}
-                        <td style={{ ...tdSt, fontWeight: 600, color: '#16a34a', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <td style={{ ...tdSt, fontWeight: 600, color: '#267F56', textAlign: 'right', whiteSpace: 'nowrap' }}>
                           {r.total_ingresos > 0
                             ? <>{fmt$(r.total_ingresos)}{r.num_ingresos > 0 && <div style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 400 }}>{r.num_ingresos} recibo{r.num_ingresos !== 1 ? 's' : ''}</div>}</>
                             : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                         </td>
 
                         {/* Gastos (OPs + manuales) */}
-                        <td style={{ ...tdSt, fontWeight: 600, color: '#dc2626', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <td style={{ ...tdSt, fontWeight: 600, color: '#C23B3B', textAlign: 'right', whiteSpace: 'nowrap' }}>
                           {r.total_gastos > 0 ? (
                             <>
                               {fmt$(r.total_gastos)}
@@ -350,7 +350,7 @@ export default function ReporteHospitalityEventos() {
                         </td>
 
                         {/* Balance */}
-                        <td style={{ ...tdSt, fontWeight: 700, color: bal >= 0 ? '#15803d' : '#dc2626', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <td style={{ ...tdSt, fontWeight: 700, color: bal >= 0 ? '#1F7A50' : '#C23B3B', textAlign: 'right', whiteSpace: 'nowrap' }}>
                           {(r.total_ingresos > 0 || r.total_gastos > 0) ? fmt$(bal) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                         </td>
                       </tr>
@@ -362,17 +362,17 @@ export default function ReporteHospitalityEventos() {
                     <td colSpan={6} style={{ ...tdSt, fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>
                       TOTAL — {rows.length} evento{rows.length !== 1 ? 's' : ''}
                     </td>
-                    <td style={{ ...tdSt, fontWeight: 700, color: '#1d4ed8', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <td style={{ ...tdSt, fontWeight: 700, color: '#26282D', textAlign: 'right', whiteSpace: 'nowrap' }}>
                       {fmt$(totalPrecioPactado)}
                     </td>
                     <td style={tdSt} />
-                    <td style={{ ...tdSt, fontWeight: 700, color: '#16a34a', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <td style={{ ...tdSt, fontWeight: 700, color: '#267F56', textAlign: 'right', whiteSpace: 'nowrap' }}>
                       {fmt$(totalIngresos)}
                     </td>
-                    <td style={{ ...tdSt, fontWeight: 700, color: '#dc2626', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <td style={{ ...tdSt, fontWeight: 700, color: '#C23B3B', textAlign: 'right', whiteSpace: 'nowrap' }}>
                       {fmt$(totalGastos)}
                     </td>
-                    <td style={{ ...tdSt, fontWeight: 700, color: balanceTotal >= 0 ? '#15803d' : '#dc2626', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <td style={{ ...tdSt, fontWeight: 700, color: balanceTotal >= 0 ? '#1F7A50' : '#C23B3B', textAlign: 'right', whiteSpace: 'nowrap' }}>
                       {fmt$(balanceTotal)}
                     </td>
                   </tr>

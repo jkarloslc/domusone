@@ -12,13 +12,12 @@ import { useZonas, SelectZona } from '@/lib/zonas'
 const STATUS_OP = ['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente', 'Pagada', 'Rechazada', 'Sustituida', 'Cancelada'] as const
 
 const statusColor = (s: string) =>
-  s === 'Pagada'         ? '#15803d' :
-  s === 'Pendiente'      ? '#d97706' :
-  s === 'Pendiente Auth' ? '#7c3aed' :
-  s === 'Pendiente Auth Finanzas' ? '#6d28d9' :
-  s === 'Rechazada'      ? '#dc2626' :
-  s === 'Sustituida'     ? '#64748b' :
-  s === 'Cancelada'      ? '#64748b' : '#64748b'
+  s === 'Pagada'         ? '#1F7A50' :
+  s === 'Pendiente'      ? '#B5761A' :
+  s === 'Pendiente Auth' ? '#6B4E79' :
+  s === 'Pendiente Auth Finanzas' ? '#5C4268' :
+  s === 'Rechazada'      ? '#C23B3B' :
+  '#62666E'
 
 type OP = {
   id: number
@@ -377,14 +376,14 @@ export default function ReporteOPsPorTipoGasto() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 12, borderBottom: '1px solid #e2e8f0' }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 12, borderBottom: '1px solid #E6E8EB' }}>
         <button
           onClick={() => setTab('jerarquico')}
           style={{
             background: 'none', border: 'none', cursor: 'pointer', padding: '8px 14px', fontSize: 13,
             fontWeight: tab === 'jerarquico' ? 700 : 500,
             color: tab === 'jerarquico' ? 'var(--blue)' : 'var(--text-secondary)',
-            borderBottom: tab === 'jerarquico' ? '2px solid var(--blue)' : '2px solid transparent',
+            borderBottom: tab === 'jerarquico' ? '2px solid #19D3C5' : '2px solid transparent',
             marginBottom: -1, display: 'flex', alignItems: 'center', gap: 6,
           }}
         >
@@ -395,8 +394,8 @@ export default function ReporteOPsPorTipoGasto() {
           style={{
             background: 'none', border: 'none', cursor: 'pointer', padding: '8px 14px', fontSize: 13,
             fontWeight: tab === 'matriz' ? 700 : 500,
-            color: tab === 'matriz' ? '#7c3aed' : 'var(--text-secondary)',
-            borderBottom: tab === 'matriz' ? '2px solid #7c3aed' : '2px solid transparent',
+            color: tab === 'matriz' ? '#1C1D21' : 'var(--text-secondary)',
+            borderBottom: tab === 'matriz' ? '2px solid #19D3C5' : '2px solid transparent',
             marginBottom: -1, display: 'flex', alignItems: 'center', gap: 6,
           }}
         >
@@ -425,9 +424,9 @@ export default function ReporteOPsPorTipoGasto() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
         {[
           { label: 'Total del rango', value: fmt(totalGeneral),  color: 'var(--blue)' },
-          { label: 'Pagado',          value: fmt(pagadoGeneral), color: '#15803d' },
-          { label: 'Por pagar',       value: fmt(saldoGeneral),  color: saldoGeneral > 0 ? '#dc2626' : '#15803d' },
-          { label: 'Total Órdenes',   value: String(docsTotal),  color: '#7c3aed' },
+          { label: 'Pagado',          value: fmt(pagadoGeneral), color: '#1F7A50' },
+          { label: 'Por pagar',       value: fmt(saldoGeneral),  color: saldoGeneral > 0 ? '#C23B3B' : '#1F7A50' },
+          { label: 'Total Órdenes',   value: String(docsTotal),  color: '#6B4E79' },
         ].map(k => (
           <div key={k.label} className="card" style={{ padding: '12px 16px' }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
@@ -467,19 +466,19 @@ export default function ReporteOPsPorTipoGasto() {
                 const open = expandedTipo.has(g.nombre)
                 return (
                   <Fragment key={`tipo-frag-${g.nombre}`}>
-                    <tr style={{ background: '#eff6ff', cursor: 'pointer' }} onClick={() => toggleTipo(g.nombre)}>
+                    <tr style={{ background: '#F4F5F7', cursor: 'pointer' }} onClick={() => toggleTipo(g.nombre)}>
                       <td colSpan={6} style={{ padding: '10px 12px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           {open ? <ChevronDown size={14} style={{ color: 'var(--blue)' }}/> : <ChevronRight size={14} style={{ color: 'var(--blue)' }}/>}
                           <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--blue)' }}>{g.nombre}</span>
-                          <span style={{ fontSize: 11, color: 'var(--text-muted)', background: '#dbeafe', padding: '1px 8px', borderRadius: 20 }}>
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)', background: '#E6E8EB', padding: '1px 8px', borderRadius: 20 }}>
                             {g.docs} OP{g.docs !== 1 ? 's' : ''}
                           </span>
                         </div>
                       </td>
                       <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: 'var(--blue)' }}>{fmt(g.total)}</td>
-                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#15803d' }}>{fmt(g.pagado)}</td>
-                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: g.saldo > 0 ? '#dc2626' : '#15803d' }}>{fmt(g.saldo)}</td>
+                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#1F7A50' }}>{fmt(g.pagado)}</td>
+                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: g.saldo > 0 ? '#C23B3B' : '#1F7A50' }}>{fmt(g.saldo)}</td>
                       <td></td>
                       {esSuperadmin && <td></td>}
                     </tr>
@@ -492,19 +491,19 @@ export default function ReporteOPsPorTipoGasto() {
                       const ccNom = op.id_centro_costo_fk != null ? (ccMap[op.id_centro_costo_fk] ?? `Centro #${op.id_centro_costo_fk}`) : '—'
                       return (
                         <tr key={`op-${op.id}`}>
-                          <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600, paddingLeft: 32 }}>{op.folio}</td>
+                          <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600, paddingLeft: 32 }}>{op.folio}</td>
                           <td style={{ fontSize: 12 }}>{ccNom}</td>
                           <td style={{ fontSize: 12 }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? `#${op.id_proveedor_fk}`) : '—'}</td>
                           <td style={{ fontSize: 12, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
                           <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{fmtF(op.fecha_op)}</td>
-                          <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: vencido ? '#dc2626' : 'var(--text-secondary)', fontWeight: vencido ? 600 : 400 }}>{fmtF(op.fecha_vencimiento)}</td>
+                          <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: vencido ? '#C23B3B' : 'var(--text-secondary)', fontWeight: vencido ? 600 : 400 }}>{fmtF(op.fecha_vencimiento)}</td>
                           <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{fmt(monto)}</td>
-                          <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#15803d' }}>{fmt(pagado)}</td>
-                          <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: saldo > 0 ? '#dc2626' : '#15803d' }}>{fmt(saldo)}</td>
+                          <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#1F7A50' }}>{fmt(pagado)}</td>
+                          <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: saldo > 0 ? '#C23B3B' : '#1F7A50' }}>{fmt(saldo)}</td>
                           <td>
                             <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                              color: statusColor(op.status), background: statusColor(op.status) + '15',
-                              border: `1px solid ${statusColor(op.status)}40` }}>
+                              color: '#fff', background: statusColor(op.status),
+                              border: `1px solid ${statusColor(op.status)}` }}>
                               {op.status}
                             </span>
                           </td>
@@ -526,8 +525,8 @@ export default function ReporteOPsPorTipoGasto() {
               <tr style={{ background: 'var(--blue-pale)', fontWeight: 700 }}>
                 <td colSpan={6} style={{ color: 'var(--blue)', padding: '10px 12px' }}>TOTAL GENERAL ({docsTotal} OP{docsTotal !== 1 ? 's' : ''})</td>
                 <td style={{ textAlign: 'right', color: 'var(--blue)', fontVariantNumeric: 'tabular-nums', fontSize: 14 }}>{fmt(totalGeneral)}</td>
-                <td style={{ textAlign: 'right', color: '#15803d', fontVariantNumeric: 'tabular-nums', fontSize: 14 }}>{fmt(pagadoGeneral)}</td>
-                <td style={{ textAlign: 'right', color: saldoGeneral > 0 ? '#dc2626' : '#15803d', fontVariantNumeric: 'tabular-nums', fontSize: 14 }}>{fmt(saldoGeneral)}</td>
+                <td style={{ textAlign: 'right', color: '#1F7A50', fontVariantNumeric: 'tabular-nums', fontSize: 14 }}>{fmt(pagadoGeneral)}</td>
+                <td style={{ textAlign: 'right', color: saldoGeneral > 0 ? '#C23B3B' : '#1F7A50', fontVariantNumeric: 'tabular-nums', fontSize: 14 }}>{fmt(saldoGeneral)}</td>
                 <td></td>
                 {esSuperadmin && <td></td>}
               </tr>
@@ -538,11 +537,11 @@ export default function ReporteOPsPorTipoGasto() {
             <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
               <thead>
                 <tr>
-                  <th style={{ textAlign: 'left', position: 'sticky', left: 0, background: '#f1f5f9', zIndex: 2 }}>Tipo de Gasto</th>
+                  <th style={{ textAlign: 'left', position: 'sticky', left: 0, background: '#F4F5F7', zIndex: 2 }}>Tipo de Gasto</th>
                   {matriz.columnas.map(([key, v]) => (
-                    <th key={key} style={{ textAlign: 'right', minWidth: 110, color: '#7c3aed' }}>{v.nombre}</th>
+                    <th key={key} style={{ textAlign: 'right', minWidth: 110, color: '#6B4E79' }}>{v.nombre}</th>
                   ))}
-                  <th style={{ textAlign: 'right', background: '#eff6ff', color: 'var(--blue)' }}>TOTAL</th>
+                  <th style={{ textAlign: 'right', background: '#F4F5F7', color: 'var(--blue)' }}>TOTAL</th>
                 </tr>
               </thead>
               <tbody>
@@ -557,13 +556,13 @@ export default function ReporteOPsPorTipoGasto() {
                         </td>
                       )
                     })}
-                    <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums', background: '#eff6ff' }}>{fmt(f.total)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums', background: '#F4F5F7' }}>{fmt(f.total)}</td>
                   </tr>
                 ))}
                 <tr style={{ background: 'var(--blue-pale)', fontWeight: 700 }}>
                   <td style={{ color: 'var(--blue)', position: 'sticky', left: 0, background: 'var(--blue-pale)', zIndex: 1 }}>TOTAL CC</td>
                   {matriz.columnas.map(([key]) => (
-                    <td key={key} style={{ textAlign: 'right', color: '#7c3aed', fontVariantNumeric: 'tabular-nums' }}>
+                    <td key={key} style={{ textAlign: 'right', color: '#6B4E79', fontVariantNumeric: 'tabular-nums' }}>
                       {fmt(matriz.totalesCol[key] ?? 0)}
                     </td>
                   ))}
@@ -617,7 +616,7 @@ export default function ReporteOPsPorTipoGasto() {
               </select>
             </div>
           </div>
-          {reclasError && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 0 }}>{reclasError}</p>}
+          {reclasError && <p style={{ fontSize: 12, color: '#C23B3B', marginBottom: 0 }}>{reclasError}</p>}
           {reclasOp.reclasificado_por && (
             <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 12, marginBottom: 0 }}>
               Última reclasificación: {reclasOp.reclasificado_por} — {reclasOp.fecha_reclasificacion ? new Date(reclasOp.fecha_reclasificacion).toLocaleString('es-MX') : ''}

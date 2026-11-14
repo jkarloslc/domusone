@@ -10,12 +10,12 @@ const PRIORIDADES = ['Urgente','Alta','Media','Baja']
 const TIPOS = ['Jardinería','Plomería','Electricidad','Limpieza','Obra Civil','Pintura','Fumigación','Otro']
 
 const statusColor = (s: string) =>
-  s === 'Completada' ? '#15803d' : s === 'En Proceso' ? '#2563eb' :
-  s === 'En Pausa' ? '#7c3aed' : s === 'Cancelada' ? '#94a3b8' : '#d97706'
+  s === 'Completada' ? '#1F7A50' : s === 'En Proceso' ? '#1C1D21' :
+  s === 'En Pausa' ? '#6B4E79' : s === 'Cancelada' ? '#7A7E87' : '#B5761A'
 
 const prioColor = (p: string) =>
-  p === 'Urgente' ? '#dc2626' : p === 'Alta' ? '#ea580c' :
-  p === 'Media' ? '#d97706' : '#64748b'
+  p === 'Urgente' ? '#C23B3B' : p === 'Alta' ? '#C8642A' :
+  p === 'Media' ? '#B5761A' : '#62666E'
 
 export default function ReporteOrdenesTrabajo() {
   const [rows,         setRows]    = useState<any[]>([])
@@ -177,7 +177,7 @@ export default function ReporteOrdenesTrabajo() {
                 <tr><td colSpan={12} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin registros</td></tr>
               ) : rows.map((r, i) => (
                 <tr key={i}>
-                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600, whiteSpace: 'nowrap' }}>{r.folio}</td>
+                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600, whiteSpace: 'nowrap' }}>{r.folio}</td>
                   <td style={{ fontSize: 13, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.titulo}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.id_centro_costo_fk ? (ccMap[r.id_centro_costo_fk] ?? `#${r.id_centro_costo_fk}`) : '—'}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.id_area_fk ? (areaMap[r.id_area_fk] ?? `#${r.id_area_fk}`) : '—'}</td>
@@ -186,22 +186,22 @@ export default function ReporteOrdenesTrabajo() {
                   <td>
                     {r.prioridad && (
                       <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                        color: prioColor(r.prioridad), background: prioColor(r.prioridad) + '15',
-                        border: `1px solid ${prioColor(r.prioridad)}40` }}>
+                        color: '#fff', background: prioColor(r.prioridad),
+                        border: `1px solid ${prioColor(r.prioridad)}` }}>
                         {r.prioridad}
                       </span>
                     )}
                   </td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.asignado_a ?? '—'}</td>
                   <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{fmtF(r.fecha_inicio)}</td>
-                  <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: r.fecha_limite && new Date(r.fecha_limite) < new Date() && r.status !== 'Completada' ? '#dc2626' : 'var(--text-secondary)' }}>
+                  <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: r.fecha_limite && new Date(r.fecha_limite) < new Date() && r.status !== 'Completada' ? '#C23B3B' : 'var(--text-secondary)' }}>
                     {fmtF(r.fecha_limite)}
                   </td>
-                  <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: '#15803d' }}>{fmtF(r.fecha_cierre)}</td>
+                  <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: '#1F7A50' }}>{fmtF(r.fecha_cierre)}</td>
                   <td>
                     <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                      color: statusColor(r.status), background: statusColor(r.status) + '15',
-                      border: `1px solid ${statusColor(r.status)}40` }}>
+                      color: '#fff', background: statusColor(r.status),
+                      border: `1px solid ${statusColor(r.status)}` }}>
                       {r.status}
                     </span>
                   </td>

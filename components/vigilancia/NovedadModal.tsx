@@ -179,9 +179,9 @@ export default function NovedadModal({ novedad, idParte, fechaParte, tipos, ubic
         )}
       </>}>
       <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto', maxHeight: 'calc(90vh - 130px)' }}>
-        {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 13 }}>{error}</div>}
+        {error && <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
         {idIncidencia && (
-          <div style={{ padding: '8px 12px', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 6, fontSize: 12, color: '#c2410c' }}>
+          <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #A8501F', borderRadius: 6, fontSize: 12, color: '#A8501F' }}>
             Escalada a la Incidencia #{idIncidencia}
           </div>
         )}
@@ -260,8 +260,8 @@ export default function NovedadModal({ novedad, idParte, fechaParte, tipos, ubic
                 return (
                   <button key={u.id} type="button" onClick={() => toggleUbic(u.id)}
                     style={{ fontSize: 12, padding: '3px 10px', borderRadius: 20, cursor: 'pointer',
-                      border: `1px solid ${on ? '#334155' : 'var(--border)'}`,
-                      background: on ? '#334155' : 'transparent', color: on ? '#fff' : 'var(--text-secondary)' }}>
+                      border: `1px solid ${on ? '#33363C' : 'var(--border)'}`,
+                      background: on ? '#33363C' : 'transparent', color: on ? '#fff' : 'var(--text-secondary)' }}>
                     {u.nombre}
                   </button>
                 )

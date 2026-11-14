@@ -95,8 +95,8 @@ export const fmt = (v: number | null | undefined) =>
   v != null ? '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'
 
 export const STATUS_CARGO_COLOR: Record<string, { bg: string; color: string; border: string }> = {
-  'Pendiente': { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
-  'Parcial':   { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
-  'Pagado':    { bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
-  'Cancelado': { bg: '#f8fafc', color: '#94a3b8', border: '#e2e8f0' },
+  'Pendiente': { bg: '#F4F5F7', color: '#C23B3B', border: '#E6E8EB' },
+  'Parcial':   { bg: '#F4F5F7', color: '#B5761A', border: '#E6E8EB' },
+  'Pagado':    { bg: '#F4F5F7', color: '#1F7A50', border: '#E6E8EB' },
+  'Cancelado': { bg: '#F8F9FA', color: '#7A7E87', border: '#E6E8EB' },
 }

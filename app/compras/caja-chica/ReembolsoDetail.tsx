@@ -14,11 +14,11 @@ type Props = {
 }
 
 const CAT_COLORS: Record<string, string> = {
-  'Producto':    '#2563eb',
-  'Servicio':    '#7c3aed',
-  'Viáticos':   '#d97706',
-  'Combustible': '#dc2626',
-  'Otro':        '#475569',
+  'Producto':    '#1C1D21',
+  'Servicio':    '#6B4E79',
+  'Viáticos':   '#B5761A',
+  'Combustible': '#C23B3B',
+  'Otro':        '#4A4D54',
 }
 
 export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpdated }: Props) {
@@ -222,24 +222,24 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
 
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:48px;height:48px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;">🏢</div>`
+      : `<div style="width:48px;height:48px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;"></div>`
 
     const statusLabel: Record<string, string> = {
       'Borrador': 'BORRADOR', 'Pendiente Auth': 'PENDIENTE AUTORIZACIÓN',
       'Autorizado': 'AUTORIZADO', 'Pagado': 'PAGADO', 'Rechazado': 'RECHAZADO', 'Cancelado': 'CANCELADO',
     }
     const statusColor: Record<string, string> = {
-      'Borrador': '#64748b', 'Pendiente Auth': '#d97706',
-      'Autorizado': '#059669', 'Pagado': '#2563eb', 'Rechazado': '#dc2626', 'Cancelado': '#64748b',
+      'Borrador': '#62666E', 'Pendiente Auth': '#B5761A',
+      'Autorizado': '#267F56', 'Pagado': '#1C1D21', 'Rechazado': '#C23B3B', 'Cancelado': '#62666E',
     }
 
     const filasDetalle = detalles.map((d, i) => `
       <tr>
-        <td style="text-align:center;color:#64748b">${i + 1}</td>
+        <td style="text-align:center;color:#62666E">${i + 1}</td>
         <td><strong>${d.concepto}</strong></td>
         <td style="text-align:center">${d.categoria}</td>
-        <td style="text-align:center">${d.tipo_comprobante}${d.num_comprobante ? `<br/><span style="font-family:monospace;font-size:10px;color:#64748b">${d.num_comprobante}</span>` : ''}</td>
-        <td style="font-size:11px;color:#475569">
+        <td style="text-align:center">${d.tipo_comprobante}${d.num_comprobante ? `<br/><span style="font-variant-numeric:tabular-nums;font-size:10px;color:#62666E">${d.num_comprobante}</span>` : ''}</td>
+        <td style="font-size:11px;color:#4A4D54">
           ${d.id_centro_costo_fk ? `<span class="chip">${ccMap[d.id_centro_costo_fk] ?? '—'}</span>` : ''}
           ${d.id_area_fk         ? `<span class="chip">${areaMap[d.id_area_fk] ?? '—'}</span>`         : ''}
           ${d.id_frente_fk       ? `<span class="chip">${frtMap[d.id_frente_fk] ?? '—'}</span>`       : ''}
@@ -253,37 +253,37 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
   <title>Reembolso ${r.folio ?? '#' + r.id}</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; font-size: 12px; color: #1e293b; padding: 36px 40px; }
-    .header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 20px; }
-    .org-nombre { font-size: 17px; font-weight: 700; color: #0D4F80; }
-    .org-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #26282D; padding: 36px 40px; }
+    .header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #1C1D21; margin-bottom: 20px; }
+    .org-nombre { font-size: 17px; font-weight: 700; color: #1C1D21; }
+    .org-sub { font-size: 11px; color: #62666E; margin-top: 2px; }
     .doc-block { margin-left: auto; text-align: right; }
-    .doc-title { font-size: 15px; font-weight: 700; color: #0D4F80; }
-    .doc-folio { font-size: 12px; color: #64748b; margin-top: 3px; }
-    .meta { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; margin-bottom: 20px; }
-    .meta-item { padding: 10px 14px; border-right: 1px solid #e2e8f0; }
+    .doc-title { font-size: 15px; font-weight: 700; color: #1C1D21; }
+    .doc-folio { font-size: 12px; color: #62666E; margin-top: 3px; }
+    .meta { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; border: 1px solid #E6E8EB; border-radius: 6px; overflow: hidden; margin-bottom: 20px; }
+    .meta-item { padding: 10px 14px; border-right: 1px solid #E6E8EB; }
     .meta-item:last-child { border-right: none; }
-    .meta-label { font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 3px; }
-    .meta-value { font-size: 13px; font-weight: 600; color: #1e293b; }
+    .meta-label { font-size: 9px; font-weight: 700; color: #7A7E87; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 3px; }
+    .meta-value { font-size: 13px; font-weight: 600; color: #26282D; }
     .status-badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
-      color: ${statusColor[r.status] ?? '#64748b'}; background: ${(statusColor[r.status] ?? '#64748b') + '18'};
-      border: 1px solid ${(statusColor[r.status] ?? '#64748b') + '40'}; }
+      color: ${statusColor[r.status] ?? '#62666E'}; background: ${(statusColor[r.status] ?? '#62666E') + '18'};
+      border: 1px solid ${(statusColor[r.status] ?? '#62666E') + '40'}; }
     table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
-    thead th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; letter-spacing: .05em;
-      padding: 8px 10px; border: 1px solid #e2e8f0; text-align: left; color: #475569; }
-    tbody td { border: 1px solid #e2e8f0; padding: 9px 10px; vertical-align: top; font-size: 12px; }
-    tbody tr:nth-child(even) td { background: #f8fafc; }
-    .chip { display: inline-block; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;
+    thead th { background: #F4F5F7; font-size: 10px; text-transform: uppercase; letter-spacing: .05em;
+      padding: 8px 10px; border: 1px solid #E6E8EB; text-align: left; color: #4A4D54; }
+    tbody td { border: 1px solid #E6E8EB; padding: 9px 10px; vertical-align: top; font-size: 12px; }
+    tbody tr:nth-child(even) td { background: #F8F9FA; }
+    .chip { display: inline-block; background: #F4F5F7; color: #26282D; border: 1px solid #C9CCD3;
       border-radius: 10px; padding: 1px 7px; font-size: 10px; margin: 1px 2px 1px 0; }
-    .total-row td { border: 1px solid #e2e8f0; padding: 10px 12px; }
-    .total-label { background: #eff6ff; font-size: 11px; font-weight: 700; color: #0D4F80; text-transform: uppercase; letter-spacing: .06em; text-align: right; }
-    .total-value { background: #eff6ff; font-size: 18px; font-weight: 700; color: #0D4F80; text-align: right; }
-    .obs { margin: 14px 0; padding: 10px 14px; background: #f8fafc; border-left: 3px solid #cbd5e1; font-size: 12px; color: #475569; border-radius: 0 4px 4px 0; }
-    .notas-auth { margin: 10px 0; padding: 10px 14px; background: #fefce8; border-left: 3px solid #fbbf24; font-size: 12px; color: #78350f; border-radius: 0 4px 4px 0; }
+    .total-row td { border: 1px solid #E6E8EB; padding: 10px 12px; }
+    .total-label { background: #F4F5F7; font-size: 11px; font-weight: 700; color: #1C1D21; text-transform: uppercase; letter-spacing: .06em; text-align: right; }
+    .total-value { background: #F4F5F7; font-size: 18px; font-weight: 700; color: #1C1D21; text-align: right; }
+    .obs { margin: 14px 0; padding: 10px 14px; background: #F8F9FA; border-left: 3px solid #C9CCD3; font-size: 12px; color: #4A4D54; border-radius: 0 4px 4px 0; }
+    .notas-auth { margin: 10px 0; padding: 10px 14px; background: #F4F5F7; border-left: 3px solid #C9CCD3; font-size: 12px; color: #7A4B0C; border-radius: 0 4px 4px 0; }
     .firmas { display: flex; gap: 50px; margin-top: 56px; justify-content: center; }
     .firma { text-align: center; width: 160px; }
-    .firma-nombre { font-size: 11px; font-weight: 600; color: #1e293b; margin-bottom: 28px; min-height: 16px; }
-    .firma-linea { border-top: 1px solid #1e293b; padding-top: 8px; font-size: 10px; color: #64748b; }
+    .firma-nombre { font-size: 11px; font-weight: 600; color: #26282D; margin-bottom: 28px; min-height: 16px; }
+    .firma-linea { border-top: 1px solid #26282D; padding-top: 8px; font-size: 10px; color: #62666E; }
     @page { margin: 1.2cm; }
     @media print { body { padding: 0; } }
   </style>
@@ -298,7 +298,7 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
     </div>
     <div class="doc-block">
       <div class="doc-title">Comprobante de Reembolso</div>
-      <div class="doc-title" style="font-size:12px;color:#475569;font-weight:400;">Caja Chica</div>
+      <div class="doc-title" style="font-size:12px;color:#4A4D54;font-weight:400;">Caja Chica</div>
       <div class="doc-folio">Folio: <strong>${r.folio ?? '#' + r.id}</strong></div>
     </div>
   </div>
@@ -345,7 +345,7 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
   </table>
 
   ${r.notas_auth ? `<div class="notas-auth"><strong>Notas del autorizador:</strong> ${r.notas_auth}</div>` : ''}
-  ${r.id_op_fk   ? `<p style="font-size:11px;color:#059669;margin-top:8px;">✓ Orden de Pago generada: #${r.id_op_fk}</p>` : ''}
+  ${r.id_op_fk   ? `<p style="font-size:11px;color:#267F56;margin-top:8px;">✓ Orden de Pago generada: #${r.id_op_fk}</p>` : ''}
 
   <!-- Firmas -->
   <div class="firmas">
@@ -423,17 +423,17 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600, fontSize: 13 }}>{d.concepto}</div>
                       <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, background: (CAT_COLORS[d.categoria] ?? '#475569') + '20', color: CAT_COLORS[d.categoria] ?? '#475569', fontWeight: 600 }}>
+                        <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, background: (CAT_COLORS[d.categoria] ?? '#4A4D54'), color: '#fff', fontWeight: 600 }}>
                           {d.categoria}
                         </span>
                         <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{d.tipo_comprobante}</span>
-                        {d.num_comprobante && <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{d.num_comprobante}</span>}
+                        {d.num_comprobante && <span style={{ fontSize: 10, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{d.num_comprobante}</span>}
                       </div>
                       {/* CC-Sección-Frente */}
                       <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
-                        {d.id_centro_costo_fk && <span style={{ fontSize: 10, background: '#1e3a5f', color: '#93c5fd', padding: '2px 7px', borderRadius: 10 }}>{ccMap[d.id_centro_costo_fk]}</span>}
-                        {d.id_area_fk         && <span style={{ fontSize: 10, background: '#1e3a5f', color: '#93c5fd', padding: '2px 7px', borderRadius: 10 }}>{areaMap[d.id_area_fk]}</span>}
-                        {d.id_frente_fk       && <span style={{ fontSize: 10, background: '#1e3a5f', color: '#93c5fd', padding: '2px 7px', borderRadius: 10 }}>{frtMap[d.id_frente_fk]}</span>}
+                        {d.id_centro_costo_fk && <span style={{ fontSize: 10, background: '#26282D', color: '#C9CCD3', padding: '2px 7px', borderRadius: 10 }}>{ccMap[d.id_centro_costo_fk]}</span>}
+                        {d.id_area_fk         && <span style={{ fontSize: 10, background: '#26282D', color: '#C9CCD3', padding: '2px 7px', borderRadius: 10 }}>{areaMap[d.id_area_fk]}</span>}
+                        {d.id_frente_fk       && <span style={{ fontSize: 10, background: '#26282D', color: '#C9CCD3', padding: '2px 7px', borderRadius: 10 }}>{frtMap[d.id_frente_fk]}</span>}
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
@@ -453,7 +453,7 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
                           ) : (
                             <a href={d.url_comprobante} target="_blank" rel="noreferrer"
                               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface-800)', fontSize: 12, color: 'var(--text-secondary)', textDecoration: 'none' }}>
-                              <FileText size={13} style={{ color: '#dc2626' }} />
+                              <FileText size={13} style={{ color: '#62666E' }} />
                               {decodeURIComponent(d.url_comprobante.split('/').pop() ?? 'Comprobante')}
                               <Download size={11} style={{ color: 'var(--text-muted)', marginLeft: 2 }} />
                             </a>
@@ -480,9 +480,9 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
 
           {/* OP generada */}
           {r.id_op_fk && (
-            <div style={{ padding: '10px 14px', background: '#0f2a1a', border: '1px solid #166534', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <DollarSign size={14} style={{ color: '#4ade80' }} />
-              <span style={{ fontSize: 13, color: '#4ade80' }}>OP generada: #{r.id_op_fk}</span>
+            <div style={{ padding: '10px 14px', background: '#17603F', border: '1px solid #17603F', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <DollarSign size={14} style={{ color: '#FFFFFF' }} />
+              <span style={{ fontSize: 13, color: '#FFFFFF' }}>OP generada: #{r.id_op_fk}</span>
             </div>
           )}
 
@@ -496,7 +496,7 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
 
           {/* Sección de autorización */}
           {canAuthorize && (
-            <div style={{ padding: '14px', background: '#1a1a2e', border: '1px solid var(--border)', borderRadius: 8 }}>
+            <div style={{ padding: '14px', background: '#1C1D21', border: '1px solid var(--border)', borderRadius: 8 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>
                 Autorización
               </div>
@@ -504,7 +504,7 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
                 placeholder="Comentario opcional (rechazo o aprobación)…"
                 style={{ resize: 'vertical', marginBottom: 10 }} />
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn-secondary" style={{ color: '#dc2626', borderColor: '#dc2626' }}
+                <button className="btn-secondary" style={{ color: '#C23B3B', borderColor: '#C23B3B' }}
                   onClick={() => handleAuth(false)} disabled={loading}>
                   <XCircle size={13} /> Rechazar
                 </button>
@@ -517,14 +517,14 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
 
           {/* Cancelar reembolso ya autorizado (solo admin/superadmin) */}
           {canCancelarAutorizado && (
-            <div style={{ padding: '14px', background: '#1a1a2e', border: '1px solid var(--border)', borderRadius: 8 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#dc2626', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>
+            <div style={{ padding: '14px', background: '#1C1D21', border: '1px solid var(--border)', borderRadius: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#C23B3B', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>
                 Cancelar reembolso autorizado
               </div>
               <textarea className="input" rows={2} value={notasCancel} onChange={e => setNotasCancel(e.target.value)}
                 placeholder="Motivo de la cancelación (opcional)…"
                 style={{ resize: 'vertical', marginBottom: 10 }} />
-              <button className="btn-secondary" style={{ color: '#dc2626', borderColor: '#dc2626' }}
+              <button className="btn-secondary" style={{ color: '#C23B3B', borderColor: '#C23B3B' }}
                 onClick={handleCancelar} disabled={cancelando}>
                 <XCircle size={13} /> {cancelando ? 'Cancelando…' : 'Cancelar Reembolso'}
               </button>

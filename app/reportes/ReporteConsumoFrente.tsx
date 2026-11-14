@@ -137,8 +137,8 @@ export default function ReporteConsumoFrente() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
         {[
           { label: 'Total Consumo', value: fmt(totalGeneral), color: 'var(--blue)' },
-          { label: 'Frentes con consumo', value: String(rows.length), color: '#7c3aed' },
-          { label: 'Órdenes de Pago', value: String(docsTotal), color: '#059669' },
+          { label: 'Frentes con consumo', value: String(rows.length), color: '#6B4E79' },
+          { label: 'Órdenes de Pago', value: String(docsTotal), color: '#267F56' },
         ].map(k => (
           <div key={k.label} className="card" style={{ padding: '12px 16px' }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
@@ -163,26 +163,26 @@ export default function ReporteConsumoFrente() {
           <div
             onClick={() => toggle(fre.id_frente_fk)}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '12px 16px', background: '#f5f3ff', cursor: 'pointer',
-              borderBottom: expanded.has(fre.id_frente_fk) ? '1px solid #ddd6fe' : 'none' }}
+              padding: '12px 16px', background: '#F4F5F7', cursor: 'pointer',
+              borderBottom: expanded.has(fre.id_frente_fk) ? '1px solid #E6E8EB' : 'none' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#7c3aed' }}>{fre.nombre}</span>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)', background: '#f1f5f9',
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#6B4E79' }}>{fre.nombre}</span>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', background: '#F4F5F7',
                 padding: '2px 8px', borderRadius: 20 }}>{fre.docs} OP{fre.docs !== 1 ? 's' : ''}</span>
             </div>
             <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Total</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#7c3aed', fontVariantNumeric: 'tabular-nums' }}>{fmt(fre.total)}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#6B4E79', fontVariantNumeric: 'tabular-nums' }}>{fmt(fre.total)}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Pagado</div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(fre.pagado)}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#1F7A50', fontVariantNumeric: 'tabular-nums' }}>{fmt(fre.pagado)}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Por pagar</div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: fre.saldo > 0 ? '#dc2626' : '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(fre.saldo)}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: fre.saldo > 0 ? '#C23B3B' : '#1F7A50', fontVariantNumeric: 'tabular-nums' }}>{fmt(fre.saldo)}</div>
               </div>
               <span style={{ fontSize: 16, color: 'var(--text-muted)' }}>{expanded.has(fre.id_frente_fk) ? '▲' : '▼'}</span>
             </div>
@@ -211,23 +211,23 @@ export default function ReporteConsumoFrente() {
                   const pagado = monto - saldo
                   return (
                     <tr key={i}>
-                      <td style={{ fontFamily: 'monospace', fontSize: 12, color: '#7c3aed', fontWeight: 600 }}>{op.folio}</td>
+                      <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: '#6B4E79', fontWeight: 600 }}>{op.folio}</td>
                       <td style={{ fontSize: 12 }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? '—') : '—'}</td>
                       <td style={{ fontSize: 12, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
                       <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{catTG.nombre(op.id_tipo_gasto_fk) ?? '—'}</td>
                       <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{fmtF(op.fecha_op)}</td>
                       <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{fmt(monto)}</td>
-                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#15803d' }}>{fmt(pagado)}</td>
-                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: saldo > 0 ? '#dc2626' : '#15803d' }}>{fmt(saldo)}</td>
+                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#1F7A50' }}>{fmt(pagado)}</td>
+                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: saldo > 0 ? '#C23B3B' : '#1F7A50' }}>{fmt(saldo)}</td>
                       <td style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{op.status}</td>
                     </tr>
                   )
                 })}
-                <tr style={{ background: '#f5f3ff', fontWeight: 700 }}>
-                  <td colSpan={5} style={{ color: '#7c3aed', fontSize: 12 }}>Subtotal {fre.nombre}</td>
-                  <td style={{ textAlign: 'right', color: '#7c3aed', fontVariantNumeric: 'tabular-nums' }}>{fmt(fre.total)}</td>
-                  <td style={{ textAlign: 'right', color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(fre.pagado)}</td>
-                  <td style={{ textAlign: 'right', color: fre.saldo > 0 ? '#dc2626' : '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(fre.saldo)}</td>
+                <tr style={{ background: '#F4F5F7', fontWeight: 700 }}>
+                  <td colSpan={5} style={{ color: '#6B4E79', fontSize: 12 }}>Subtotal {fre.nombre}</td>
+                  <td style={{ textAlign: 'right', color: '#6B4E79', fontVariantNumeric: 'tabular-nums' }}>{fmt(fre.total)}</td>
+                  <td style={{ textAlign: 'right', color: '#1F7A50', fontVariantNumeric: 'tabular-nums' }}>{fmt(fre.pagado)}</td>
+                  <td style={{ textAlign: 'right', color: fre.saldo > 0 ? '#C23B3B' : '#1F7A50', fontVariantNumeric: 'tabular-nums' }}>{fmt(fre.saldo)}</td>
                   <td></td>
                 </tr>
               </tbody>
@@ -239,10 +239,10 @@ export default function ReporteConsumoFrente() {
       {/* Total general */}
       {rows.length > 0 && (
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-          <div className="card" style={{ padding: '12px 20px', display: 'flex', gap: 32, background: '#f5f3ff', border: '1px solid #ddd6fe' }}>
+          <div className="card" style={{ padding: '12px 20px', display: 'flex', gap: 32, background: '#fff', border: '1px solid #E6E8EB' }}>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>TOTAL GENERAL</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: '#7c3aed', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalGeneral)}</div>
+              <div style={{ fontSize: 18, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)',  }}>{fmt(totalGeneral)}</div>
             </div>
           </div>
         </div>

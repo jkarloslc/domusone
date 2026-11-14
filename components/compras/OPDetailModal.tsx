@@ -14,19 +14,19 @@ import {
 
 // Compartido con app/compras/ordenes-pago/page.tsx (OPModal) — única fuente.
 export const URGENCIA_COLOR: Record<string, string> = {
-  'Crítica': '#dc2626',
-  'Alta':    '#d97706',
-  'Media':   '#2563eb',
-  'Baja':    '#64748b',
+  'Crítica': '#C23B3B',
+  'Alta':    '#B5761A',
+  'Media':   '#1C1D21',
+  'Baja':    '#62666E',
 }
 
 // Mismos colores que app/equipo-flota/CombustibleTab.tsx (VALE_STATUS_STYLE)
 const VALE_STATUS_COLOR: Record<string, { color: string; bg: string; border: string }> = {
-  'Solicitado': { color: '#64748b', bg: '#f8fafc', border: '#e2e8f0' },
-  'Emitido':    { color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
-  'Parcial':    { color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-  'Completado': { color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
-  'Cancelado':  { color: '#94a3b8', bg: '#f8fafc', border: '#e2e8f0' },
+  'Solicitado': { color: '#62666E', bg: '#F8F9FA', border: '#E6E8EB' },
+  'Emitido':    { color: '#1C1D21', bg: '#F4F5F7', border: '#C9CCD3' },
+  'Parcial':    { color: '#B5761A', bg: '#F4F5F7', border: '#E6E8EB' },
+  'Completado': { color: '#1F7A50', bg: '#F4F5F7', border: '#E6E8EB' },
+  'Cancelado':  { color: '#7A7E87', bg: '#F8F9FA', border: '#E6E8EB' },
 }
 
 // OP en proceso (aún sin pagar): se pueden cancelar incluso durante autorizaciones
@@ -527,21 +527,21 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
     } catch {}
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+      : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
     const html = `<!DOCTYPE html><html><head><title>Orden de Pago ${opData.folio}</title>
       <style>
-        body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
-        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
-        .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
-        .org-sub { font-size: 11px; color: #64748b; }
-        .doc-title { font-size: 14px; font-weight: 600; color: #0D4F80; margin-bottom: 2px; }
-        .sub { color: #64748b; font-size: 12px; margin-bottom: 24px; }
+        body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #26282D; }
+        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #1C1D21; margin-bottom: 18px; }
+        .org-nombre { font-size: 18px; font-weight: 700; color: #1C1D21; margin: 0 0 2px; }
+        .org-sub { font-size: 11px; color: #62666E; }
+        .doc-title { font-size: 14px; font-weight: 600; color: #1C1D21; margin-bottom: 2px; }
+        .sub { color: #62666E; font-size: 12px; margin-bottom: 24px; }
         table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-        td, th { border: 1px solid #e2e8f0; padding: 8px 12px; }
-        th { background: #f1f5f9; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; text-align: left; }
-        .total { background: #eff6ff; font-size: 16px; font-weight: 700; color: #0D4F80; }
+        td, th { border: 1px solid #E6E8EB; padding: 8px 12px; }
+        th { background: #F4F5F7; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; text-align: left; }
+        .total { background: #F4F5F7; font-size: 16px; font-weight: 700; color: #1C1D21; }
         .firmas { display: flex; gap: 30px; margin-top: 60px; }
-        .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 150px; font-size: 11px; color: #64748b; }
+        .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 150px; font-size: 11px; color: #62666E; }
         @page { margin: 1.2cm; }
       </style></head><body>
       <div class="org-header">
@@ -557,7 +557,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
       </div>
       <table>
         <tr><th>Beneficiario</th><td>${opData._provNombre ?? '—'}</td><th>Banco</th><td>${opData.banco_destino ?? '—'}</td></tr>
-        <tr><th>CLABE / Cuenta</th><td style="font-family:monospace">${opData.cuenta_clabe ?? '—'}</td><th>Forma de Pago</th><td>${opData.forma_pago}</td></tr>
+        <tr><th>CLABE / Cuenta</th><td style="font-variant-numeric:tabular-nums">${opData.cuenta_clabe ?? '—'}</td><th>Forma de Pago</th><td>${opData.forma_pago}</td></tr>
         <tr><th>Concepto</th><td colspan="3">${opData.concepto ?? '—'}</td></tr>
         <tr><th>Almacén</th><td>${opData._almNombre ?? '—'}</td><th>Vencimiento</th><td>${fmtFecha(opData.fecha_vencimiento)}</td></tr>
         ${opData.id_tipo_gasto_fk ? `<tr><th>Tipo de Gasto</th><td colspan="3">${catTG.nombre(opData.id_tipo_gasto_fk) ?? ''}</td></tr>` : ''}
@@ -570,7 +570,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
         <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(opData.monto)}</td></tr>
       </table>
       ${detLinesView.length > 0 ? `
-      <h3 style="font-size:13px;font-weight:700;color:#0D4F80;margin:18px 0 8px">Distribución por Área</h3>
+      <h3 style="font-size:13px;font-weight:700;color:#1C1D21;margin:18px 0 8px">Distribución por Área</h3>
       <table>
         <thead><tr>${detCCsDistintos.length > 1 ? '<th>CC</th>' : ''}<th>Descripción</th><th>Área</th><th>Frente</th><th style="text-align:right">Monto</th></tr></thead>
         <tbody>
@@ -585,12 +585,12 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
         <tfoot><tr><th colspan="${detCCsDistintos.length > 1 ? 4 : 3}">Total distribución</th><th style="text-align:right">${fmt(detLinesView.reduce((a: number, l: any) => a + (l.monto ?? 0), 0))}</th></tr></tfoot>
       </table>` : ''}
       ${valesComb.length > 0 ? `
-      <h3 style="font-size:13px;font-weight:700;color:#0D4F80;margin:18px 0 8px">Vales de Combustible Asociados</h3>
+      <h3 style="font-size:13px;font-weight:700;color:#1C1D21;margin:18px 0 8px">Vales de Combustible Asociados</h3>
       <table>
         <thead><tr><th>Folio</th><th>Suministro</th><th>Combustible</th><th>Equipo / Área</th><th style="text-align:right">Litros Aut.</th><th style="text-align:right">Litros Cons.</th><th style="text-align:right">Monto Aut.</th><th>Status</th></tr></thead>
         <tbody>
           ${valesComb.map((v: any) => `<tr>
-            <td style="font-family:monospace">${v.folio ?? `#${v.id}`}</td>
+            <td style="font-variant-numeric:tabular-nums">${v.folio ?? `#${v.id}`}</td>
             <td>${v.tipo_suministro ?? '—'}</td>
             <td>${v.tipo_combustible ?? '—'}</td>
             <td>${v.id_equipo_fk ? (equiposMap[v.id_equipo_fk] ?? `#${v.id_equipo_fk}`) : (v.id_area_fk ? (areaMap[v.id_area_fk] ?? `#${v.id_area_fk}`) : '—')}</td>
@@ -606,34 +606,34 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
       ${vigilanciaRel.length > 0 ? `<p style="font-size:12px;margin:6px 0 0"><strong>Lote(s) Vigilancia Extras:</strong> ${vigilanciaRel.map((r: any) => r.folio ?? `#${r.id}`).join(', ')}</p>` : ''}
       ${reembolsoRel ? `<p style="font-size:12px;margin:6px 0 0"><strong>Reembolso Caja Chica de origen:</strong> ${reembolsoRel.folio ?? `#${reembolsoRel.id}`}</p>` : ''}
       ${servicioCat ? `<p style="font-size:12px;margin:6px 0 0"><strong>Servicio de Suministro:</strong> ${servicioCat.no_servicio} — ${servicioCat.tipo_servicio}${servicioCat.ubicacion ? ` · ${servicioCat.ubicacion}` : ''}</p>` : ''}
-      ${opData.notas ? `<p style="font-size:12px;color:#64748b"><em>Notas: ${opData.notas}</em></p>` : ''}
-      <div style="margin-top:18px;border:1px solid #bfdbfe;border-radius:8px;overflow:hidden">
-        <div style="background:#eff6ff;padding:8px 14px;font-size:11px;font-weight:700;color:#1e40af;letter-spacing:.06em;text-transform:uppercase">
+      ${opData.notas ? `<p style="font-size:12px;color:#62666E"><em>Notas: ${opData.notas}</em></p>` : ''}
+      <div style="margin-top:18px;border:1px solid #C9CCD3;border-radius:8px;overflow:hidden">
+        <div style="background:#F4F5F7;padding:8px 14px;font-size:11px;font-weight:700;color:#1C1D21;letter-spacing:.06em;text-transform:uppercase">
           Autorización y Control de Pago
         </div>
         <table style="margin:0">
           <tr><th>Estatus</th><td>${estadoAut}</td></tr>
           ${opData.autorizado_por     ? `<tr><th>1ra Autorización</th><td>${opData.autorizado_por}${opData.fecha_autorizacion ? ' · ' + new Date(opData.fecha_autorizacion).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'}) : ''}</td></tr>` : ''}
           ${opData.autorizado_finanzas_por ? `<tr><th>2da Autorización (Finanzas)</th><td>${opData.autorizado_finanzas_por}${opData.fecha_autorizacion_finanzas ? ' · ' + new Date(opData.fecha_autorizacion_finanzas).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'}) : ''}</td></tr>` : ''}
-          ${opData.referencia_pago    ? `<tr><th>Ref. de Pago</th><td style="font-family:monospace">${opData.referencia_pago}</td></tr>` : ''}
-          ${opData.instrucciones_pago ? `<tr><th>Instrucciones</th><td style="white-space:pre-wrap;color:#92400e;background:#fffbeb">${opData.instrucciones_pago}</td></tr>` : ''}
+          ${opData.referencia_pago    ? `<tr><th>Ref. de Pago</th><td style="font-variant-numeric:tabular-nums">${opData.referencia_pago}</td></tr>` : ''}
+          ${opData.instrucciones_pago ? `<tr><th>Instrucciones</th><td style="white-space:pre-wrap;color:#7A4B0C;background:#F4F5F7">${opData.instrucciones_pago}</td></tr>` : ''}
           ${!opData.autorizado_por && !opData.autorizado_finanzas_por && !opData.referencia_pago && !opData.instrucciones_pago ? `<tr><th>Detalle</th><td>Sin datos adicionales de autorización/pago.</td></tr>` : ''}
         </table>
       </div>
       <div class="firmas">
         <div class="firma">
-          <div style="margin-bottom:2px;font-weight:600;color:#1e293b">${nombreElaboro}</div>
+          <div style="margin-bottom:2px;font-weight:600;color:#26282D">${nombreElaboro}</div>
           Elaboró
         </div>
         <div class="firma">
-          <div style="margin-bottom:2px;font-weight:600;color:#1e293b">${nombreAutorizo1}</div>
+          <div style="margin-bottom:2px;font-weight:600;color:#26282D">${nombreAutorizo1}</div>
           Autorizó
-          ${opData.fecha_autorizacion ? `<div style="font-size:10px;color:#64748b;margin-top:2px">${new Date(opData.fecha_autorizacion).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
+          ${opData.fecha_autorizacion ? `<div style="font-size:10px;color:#62666E;margin-top:2px">${new Date(opData.fecha_autorizacion).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
         </div>
         <div class="firma">
-          <div style="margin-bottom:2px;font-weight:600;color:#1e293b">${nombreAutorizo2}</div>
+          <div style="margin-bottom:2px;font-weight:600;color:#26282D">${nombreAutorizo2}</div>
           Autorizó Finanzas
-          ${opData.fecha_autorizacion_finanzas ? `<div style="font-size:10px;color:#64748b;margin-top:2px">${new Date(opData.fecha_autorizacion_finanzas).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
+          ${opData.fecha_autorizacion_finanzas ? `<div style="font-size:10px;color:#62666E;margin-top:2px">${new Date(opData.fecha_autorizacion_finanzas).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
         </div>
         <div class="firma">Recibió</div>
       </div>
@@ -672,7 +672,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
           <div>
             {puedeCancelar && (
               <button onClick={cancelar} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 7,
-                background: 'none', border: '1px solid #fecaca', color: '#dc2626', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+                background: 'none', border: '1px solid #E6E8EB', color: '#C23B3B', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
                 Cancelar OP
               </button>
             )}
@@ -773,7 +773,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr style={{ borderTop: '2px solid #e2e8f0', background: '#f8fafc' }}>
+                      <tr style={{ borderTop: '2px solid #E6E8EB', background: '#F8F9FA' }}>
                         <td colSpan={detCCsDistintos.length > 1 ? 4 : 3} style={{ fontSize: 11, color: 'var(--text-muted)', padding: '6px 12px' }}>Total distribución</td>
                         <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums', padding: '6px 12px' }}>
                           {fmt(detLinesView.reduce((a: number, l: any) => a + (l.monto ?? 0), 0))}
@@ -791,7 +791,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
               Conversación asociada a esta orden de pago (p. ej. pago anticipado, aclaraciones). Queda registrada por usuario y fecha.
             </p>
             {instrErr && (
-              <div style={{ padding: '8px 10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>
+              <div style={{ padding: '8px 10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>
                 {instrErr}
               </div>
             )}
@@ -799,7 +799,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
               {loadingInstr ? (
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: 8 }}><Loader size={14} className="animate-spin" style={{ display: 'inline', marginRight: 6 }} /> Cargando…</div>
               ) : instrMsgs.length === 0 ? (
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '10px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '10px 12px', background: '#F8F9FA', borderRadius: 8, border: '1px solid #E6E8EB' }}>
                   {puedePublicarInstruccion ? 'Aún no hay mensajes. Escribe una instrucción o respuesta.' : 'Sin mensajes registrados.'}
                 </div>
               ) : (
@@ -810,9 +810,9 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
                       style={{
                         padding: '10px 12px',
                         borderRadius: 8,
-                        border: '1px solid #e2e8f0',
-                        borderLeft: `3px solid ${esTeso ? '#0891b2' : '#2563eb'}`,
-                        background: esTeso ? '#f0fdfa' : '#f8fafc',
+                        border: '1px solid #E6E8EB',
+                        borderLeft: `3px solid ${esTeso ? '#32789A' : '#1C1D21'}`,
+                        background: esTeso ? '#F4F5F7' : '#F8F9FA',
                       }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{m.autor_nombre ?? '—'}</span>
@@ -822,7 +822,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
                             : ''}
                         </span>
                       </div>
-                      <div style={{ fontSize: 10, color: '#64748b', marginBottom: 6, textTransform: 'capitalize' }}>{m.autor_rol ?? ''}</div>
+                      <div style={{ fontSize: 10, color: '#62666E', marginBottom: 6, textTransform: 'capitalize' }}>{m.autor_rol ?? ''}</div>
                       <div style={{ fontSize: 13, color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>{m.cuerpo}</div>
                     </div>
                   )
@@ -873,10 +873,10 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                       <a href={localOp.pdf_factura} target="_blank" rel="noopener noreferrer"
                         style={{ fontSize: 12, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4,
-                          padding: '5px 10px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, textDecoration: 'none', flex: 1, justifyContent: 'center' }}>
+                          padding: '5px 10px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 6, textDecoration: 'none', flex: 1, justifyContent: 'center' }}>
                         <ExternalLink size={11} /> Ver PDF
                       </a>
-                      <button type="button" className="btn-ghost" style={{ padding: '5px 8px', color: '#dc2626' }}
+                      <button type="button" className="btn-ghost" style={{ padding: '5px 8px', color: '#C23B3B' }}
                         onClick={() => clearFacturaPagada('pdf_factura')} disabled={!!uploadingDoc}>
                         <Trash2 size={12} />
                       </button>
@@ -897,10 +897,10 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                       <a href={localOp.xml_factura} target="_blank" rel="noopener noreferrer"
                         style={{ fontSize: 12, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4,
-                          padding: '5px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, textDecoration: 'none', flex: 1, justifyContent: 'center' }}>
+                          padding: '5px 10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 6, textDecoration: 'none', flex: 1, justifyContent: 'center' }}>
                         <ExternalLink size={11} /> Ver XML
                       </a>
-                      <button type="button" className="btn-ghost" style={{ padding: '5px 8px', color: '#dc2626' }}
+                      <button type="button" className="btn-ghost" style={{ padding: '5px 8px', color: '#C23B3B' }}
                         onClick={() => clearFacturaPagada('xml_factura')} disabled={!!uploadingDoc}>
                         <Trash2 size={12} />
                       </button>
@@ -922,11 +922,11 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
                 {localOp.soporte_url ? (
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                     <a href={localOp.soporte_url} target="_blank" rel="noopener noreferrer"
-                      style={{ fontSize: 12, color: '#7c3aed', display: 'flex', alignItems: 'center', gap: 4,
-                        padding: '5px 10px', background: '#fdf4ff', border: '1px solid #e9d5ff', borderRadius: 6, textDecoration: 'none', flex: 1, justifyContent: 'center' }}>
+                      style={{ fontSize: 12, color: '#fff', display: 'flex', alignItems: 'center', gap: 4,
+                        padding: '5px 10px', background: '#6B4E79', border: '1px solid #6B4E79', borderRadius: 6, textDecoration: 'none', flex: 1, justifyContent: 'center' }}>
                       <ExternalLink size={11} /> Ver Soporte
                     </a>
-                    <button type="button" className="btn-ghost" style={{ padding: '5px 8px', color: '#dc2626' }}
+                    <button type="button" className="btn-ghost" style={{ padding: '5px 8px', color: '#C23B3B' }}
                       onClick={() => clearFacturaPagada('soporte_url')} disabled={!!uploadingDoc}>
                       <Trash2 size={12} />
                     </button>
@@ -946,14 +946,14 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
                 {op.pdf_factura && (
                   <a href={op.pdf_factura} target="_blank" rel="noopener noreferrer"
                     style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px',
-                      background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 7, textDecoration: 'none' }}>
+                      background: '#F4F5F7', color: '#C23B3B', border: '1px solid #E6E8EB', borderRadius: 7, textDecoration: 'none' }}>
                     <FileText size={13} /> PDF Factura
                   </a>
                 )}
                 {op.xml_factura && (
                   <a href={op.xml_factura} target="_blank" rel="noopener noreferrer"
                     style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px',
-                      background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: 7, textDecoration: 'none' }}>
+                      background: '#F4F5F7', color: '#1F7A50', border: '1px solid #E6E8EB', borderRadius: 7, textDecoration: 'none' }}>
                     <FileText size={13} /> XML Factura
                   </a>
                 )}
@@ -966,12 +966,12 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
                 {localOp.soporte_url ? (
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                     <a href={localOp.soporte_url} target="_blank" rel="noopener noreferrer"
-                      style={{ fontSize: 12, color: '#7c3aed', display: 'flex', alignItems: 'center', gap: 4,
-                        padding: '5px 10px', background: '#fdf4ff', border: '1px solid #e9d5ff', borderRadius: 6, textDecoration: 'none', flex: 1, justifyContent: 'center' }}>
+                      style={{ fontSize: 12, color: '#fff', display: 'flex', alignItems: 'center', gap: 4,
+                        padding: '5px 10px', background: '#6B4E79', border: '1px solid #6B4E79', borderRadius: 6, textDecoration: 'none', flex: 1, justifyContent: 'center' }}>
                       <ExternalLink size={11} /> Ver Soporte
                     </a>
                     {canWrite('ordenes-pago') && (
-                      <button type="button" className="btn-ghost" style={{ padding: '5px 8px', color: '#dc2626' }}
+                      <button type="button" className="btn-ghost" style={{ padding: '5px 8px', color: '#C23B3B' }}
                         onClick={() => clearFacturaPagada('soporte_url')} disabled={!!uploadingDoc}>
                         <Trash2 size={12} />
                       </button>
@@ -984,7 +984,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
                     {uploadingDoc === 'soporte_url' ? 'Subiendo…' : 'Adjuntar Soporte'}
                   </button>
                 ) : (
-                  <div style={{ padding: '8px 10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 12, color: 'var(--text-muted)' }}>
+                  <div style={{ padding: '8px 10px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 6, fontSize: 12, color: 'var(--text-muted)' }}>
                     Sin soporte registrado.
                   </div>
                 )}
@@ -1003,7 +1003,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
                         <td style={{ fontSize: 12 }}>
                           <button type="button" onClick={() => abrirOC(r.id_oc_fk)}
                             style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-                              fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600, textDecoration: 'underline' }}>
+                              fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600, textDecoration: 'underline' }}>
                             {r.ordenes_compra?.folio ?? `#${r.id_oc_fk}`}
                           </button>
                         </td>
@@ -1035,7 +1035,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
                       const s = VALE_STATUS_COLOR[v.status] ?? VALE_STATUS_COLOR['Solicitado']
                       return (
                         <tr key={v.id}>
-                          <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{v.folio ?? `#${v.id}`}</td>
+                          <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{v.folio ?? `#${v.id}`}</td>
                           <td style={{ fontSize: 12 }}>{v.tipo_suministro ?? '—'}</td>
                           <td style={{ fontSize: 12 }}>{v.tipo_combustible ?? '—'}</td>
                           <td style={{ fontSize: 12 }}>{v.id_equipo_fk ? (equiposMap[v.id_equipo_fk] ?? `#${v.id_equipo_fk}`) : (v.id_area_fk ? (areaMap[v.id_area_fk] ?? `#${v.id_area_fk}`) : '—')}</td>
@@ -1044,7 +1044,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
                           <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(v.monto_autorizado)}</td>
                           <td>
                             <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                              color: s.color, background: s.bg, border: `1px solid ${s.border}`, whiteSpace: 'nowrap' }}>
+                              color: '#fff', background: s.color, border: `1px solid ${s.color}`, whiteSpace: 'nowrap' }}>
                               {v.status}
                             </span>
                           </td>
@@ -1061,9 +1061,9 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
             <Sec label="Eventos Relacionados">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {eventosRel.map((e: any) => (
-                  <div key={e.id} style={{ padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                  <div key={e.id} style={{ padding: '8px 12px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                     <div>
-                      <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{e.folio}</span>
+                      <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{e.folio}</span>
                       <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 8 }}>{e.nombre}</span>
                     </div>
                     <span style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'capitalize' }}>{e.modulo}</span>
@@ -1077,9 +1077,9 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
             <Sec label="Bitácora de Equipo & Flota Relacionada">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {bitacorasRel.map((r: any, i: number) => (
-                  <div key={i} style={{ padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                  <div key={i} style={{ padding: '8px 12px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                     <div>
-                      <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.bitacora?.folio ?? `#${r.id_bitacora_fk}`}</span>
+                      <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.bitacora?.folio ?? `#${r.id_bitacora_fk}`}</span>
                       <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 8 }}>
                         {r.bitacora?.tipo ?? '—'} · {r.bitacora?.id_equipo_fk ? (equiposMap[r.bitacora.id_equipo_fk] ?? `#${r.bitacora.id_equipo_fk}`) : '—'}
                       </span>
@@ -1095,9 +1095,9 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
             <Sec label="Vigilancia Extras (Perimetrales) Relacionada">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {vigilanciaRel.map((r: any) => (
-                  <div key={r.id} style={{ padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                  <div key={r.id} style={{ padding: '8px 12px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                     <div>
-                      <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio ?? `#${r.id}`}</span>
+                      <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio ?? `#${r.id}`}</span>
                       <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 8 }}>{fmtFecha(r.fecha_desde)} – {fmtFecha(r.fecha_hasta)}</span>
                     </div>
                     <span style={{ fontSize: 12, fontWeight: 600 }}>{fmt(r.total)}</span>
@@ -1109,9 +1109,9 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
 
           {reembolsoRel && (
             <Sec label="Reembolso de Caja Chica de Origen">
-              <div style={{ padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+              <div style={{ padding: '8px 12px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                 <div>
-                  <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{reembolsoRel.folio ?? `#${reembolsoRel.id}`}</span>
+                  <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{reembolsoRel.folio ?? `#${reembolsoRel.id}`}</span>
                   <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 8 }}>{reembolsoRel.usuario_nombre ?? '—'} · {fmtFecha(reembolsoRel.fecha)}</span>
                 </div>
                 <span style={{ fontSize: 12, fontWeight: 600 }}>{fmt(reembolsoRel.total)}</span>
@@ -1151,15 +1151,15 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
                 {loadingAbonos ? (
                   <div style={{ padding: 10, fontSize: 12, color: 'var(--text-muted)' }}>Cargando pagos...</div>
                 ) : abonos.map(a => (
-                  <div key={a.id} style={{ padding: '10px 14px', background: a.status === 'Cancelada' ? '#f8fafc' : '#f0fdf4', border: `1px solid ${a.status === 'Cancelada' ? '#e2e8f0' : '#bbf7d0'}`, opacity: a.status === 'Cancelada' ? 0.65 : 1, borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div key={a.id} style={{ padding: '10px 14px', background: a.status === 'Cancelada' ? '#F8F9FA' : '#F4F5F7', border: '1px solid #E6E8EB', opacity: a.status === 'Cancelada' ? 0.65 : 1, borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#15803d', fontVariantNumeric: 'tabular-nums', marginBottom: 2 }}>
-                        <span style={a.status === 'Cancelada' ? { textDecoration: 'line-through', color: '#64748b' } : undefined}>{fmt(a.monto)}</span>
-                        {a.status === 'Cancelada' && <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Cancelado</span>}
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#1F7A50', fontVariantNumeric: 'tabular-nums', marginBottom: 2 }}>
+                        <span style={a.status === 'Cancelada' ? { textDecoration: 'line-through', color: '#62666E' } : undefined}>{fmt(a.monto)}</span>
+                        {a.status === 'Cancelada' && <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, color: '#62666E', textTransform: 'uppercase' }}>Cancelado</span>}
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                         {fmtFecha(a.fecha_abono)} · {a.forma_pago}
-                        {a.referencia && <span style={{ marginLeft: 6, fontFamily: 'monospace' }}>Ref: {a.referencia}</span>}
+                        {a.referencia && <span style={{ marginLeft: 6, fontVariantNumeric: 'tabular-nums' }}>Ref: {a.referencia}</span>}
                       </div>
                       {a.notas && <div style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 4 }}>{a.notas}</div>}
                     </div>
@@ -1167,13 +1167,13 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                       {a.comprobante && (
                         <a href={a.comprobante} target="_blank" rel="noopener noreferrer"
-                          style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, padding: '4px 8px', background: '#eff6ff', color: 'var(--blue)', border: '1px solid #bfdbfe', borderRadius: 6, textDecoration: 'none' }}>
+                          style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, padding: '4px 8px', background: '#F4F5F7', color: 'var(--blue)', border: '1px solid #C9CCD3', borderRadius: 6, textDecoration: 'none' }}>
                           <CheckCircle size={11} /> Comprobante de Pago
                         </a>
                       )}
                       {a.complemento_pago && (
                         <a href={a.complemento_pago} target="_blank" rel="noopener noreferrer"
-                          style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, padding: '4px 8px', background: '#fdf4ff', color: '#7c3aed', border: '1px solid #e9d5ff', borderRadius: 6, textDecoration: 'none' }}>
+                          style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, padding: '4px 8px', background: '#6B4E79', color: '#fff', border: '1px solid #6B4E79', borderRadius: 6, textDecoration: 'none' }}>
                           <FileText size={11} /> Complemento SAT
                         </a>
                       )}
@@ -1184,7 +1184,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
             </Sec>
           )}
 
-          <div style={{ padding: '14px 18px', background: 'var(--blue-pale)', border: '1px solid #bfdbfe', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ padding: '14px 18px', background: 'var(--blue-pale)', border: '1px solid #C9CCD3', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>TOTAL A PAGAR</span>
             <span style={{ fontSize: 24, fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>{fmt(op.monto)}</span>
           </div>
@@ -1193,13 +1193,13 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
 
           {/* ── Bloque de Autorización ── solo cuando status = Pendiente Auth ── */}
           {op.status === 'Pendiente Auth' && (
-            <div style={{ padding: '16px 18px', background: '#fffbeb', border: '2px solid #fde68a', borderRadius: 10 }}>
+            <div style={{ padding: '16px 18px', background: '#F4F5F7', border: '2px solid #E6E8EB', borderRadius: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <AlertTriangle size={15} style={{ color: '#d97706', flexShrink: 0 }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#92400e' }}>
+                <AlertTriangle size={15} style={{ color: '#B5761A', flexShrink: 0 }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#7A4B0C' }}>
                   Pendiente de Autorización
                 </span>
-                <span style={{ fontSize: 11, color: '#a16207', marginLeft: 'auto' }}>
+                <span style={{ fontSize: 11, color: '#8A6A12', marginLeft: 'auto' }}>
                   {(op.id_oc_fk != null || ocsRel.length > 0) ? 'Con OC vinculada — requiere aprobación' : 'Gasto directo sin OC — requiere aprobación'}
                 </span>
               </div>
@@ -1214,23 +1214,23 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button
                       onClick={() => handleAuth(true)} disabled={authLoading}
-                      style={{ flex: 1, padding: '9px', borderRadius: 8, border: '1px solid #bbf7d0',
-                        background: '#f0fdf4', color: '#15803d', fontWeight: 700, cursor: 'pointer',
+                      style={{ flex: 1, padding: '9px', borderRadius: 8, border: '1px solid #E6E8EB',
+                        background: '#F4F5F7', color: '#1F7A50', fontWeight: 700, cursor: 'pointer',
                         fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                       {authLoading ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={14} />}
                       Autorizar — Operaciones
                     </button>
                     <button
                       onClick={() => handleAuth(false)} disabled={authLoading}
-                      style={{ flex: 1, padding: '9px', borderRadius: 8, border: '1px solid #fecaca',
-                        background: '#fef2f2', color: '#dc2626', fontWeight: 700, cursor: 'pointer',
+                      style={{ flex: 1, padding: '9px', borderRadius: 8, border: '1px solid #E6E8EB',
+                        background: '#F4F5F7', color: '#C23B3B', fontWeight: 700, cursor: 'pointer',
                         fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                       <Trash2 size={14} /> Rechazar
                     </button>
                   </div>
                 </>
               ) : (
-                <p style={{ fontSize: 12, color: '#a16207', margin: 0 }}>
+                <p style={{ fontSize: 12, color: '#8A6A12', margin: 0 }}>
                   En espera de aprobación por Administración, Administrador (Organismo), Supervisor de Compras, Tesorería o Fraccionamiento.
                 </p>
               )}
@@ -1239,13 +1239,13 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
 
           {/* ── Bloque de 2da Autorización (Finanzas) ── solo cuando status = Pendiente Auth Finanzas ── */}
           {op.status === 'Pendiente Auth Finanzas' && (
-            <div style={{ padding: '16px 18px', background: '#f5f3ff', border: '2px solid #ddd6fe', borderRadius: 10 }}>
+            <div style={{ padding: '16px 18px', background: '#F4F5F7', border: '2px solid #E6E8EB', borderRadius: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <AlertTriangle size={15} style={{ color: '#7c3aed', flexShrink: 0 }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#5b21b6' }}>
+                <AlertTriangle size={15} style={{ color: '#6B4E79', flexShrink: 0 }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#4E3758' }}>
                   Segunda Autorización (Finanzas)
                 </span>
-                <span style={{ fontSize: 11, color: '#7c3aed', marginLeft: 'auto' }}>
+                <span style={{ fontSize: 11, color: '#6B4E79', marginLeft: 'auto' }}>
                   Ya autorizada{op.autorizado_por ? ` por ${op.autorizado_por}` : ''} — falta envío a CXP
                 </span>
               </div>
@@ -1260,23 +1260,23 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button
                       onClick={() => handleAuthFinanzas(true)} disabled={authLoading}
-                      style={{ flex: 1, padding: '9px', borderRadius: 8, border: '1px solid #bbf7d0',
-                        background: '#f0fdf4', color: '#15803d', fontWeight: 700, cursor: 'pointer',
+                      style={{ flex: 1, padding: '9px', borderRadius: 8, border: '1px solid #E6E8EB',
+                        background: '#F4F5F7', color: '#1F7A50', fontWeight: 700, cursor: 'pointer',
                         fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                       {authLoading ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={14} />}
                       Autorizar — enviar a CXP
                     </button>
                     <button
                       onClick={() => handleAuthFinanzas(false)} disabled={authLoading}
-                      style={{ flex: 1, padding: '9px', borderRadius: 8, border: '1px solid #fecaca',
-                        background: '#fef2f2', color: '#dc2626', fontWeight: 700, cursor: 'pointer',
+                      style={{ flex: 1, padding: '9px', borderRadius: 8, border: '1px solid #E6E8EB',
+                        background: '#F4F5F7', color: '#C23B3B', fontWeight: 700, cursor: 'pointer',
                         fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                       <Trash2 size={14} /> Rechazar
                     </button>
                   </div>
                 </>
               ) : (
-                <p style={{ fontSize: 12, color: '#5b21b6', margin: 0 }}>
+                <p style={{ fontSize: 12, color: '#4E3758', margin: 0 }}>
                   En espera de la segunda autorización por Administrador de Finanzas.
                 </p>
               )}
@@ -1285,8 +1285,8 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
 
           {/* Confirmación de rechazo */}
           {op.status === 'Rechazada' && (
-            <div style={{ padding: '12px 16px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8,
-              fontSize: 12, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ padding: '12px 16px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8,
+              fontSize: 12, color: '#C23B3B', display: 'flex', alignItems: 'center', gap: 8 }}>
               <AlertTriangle size={14} style={{ flexShrink: 0 }} />
               Esta Orden de Pago fue rechazada y no ingresará a Cuentas por Pagar.
             </div>
@@ -1294,15 +1294,15 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
 
           {/* Confirmación de sustitución */}
           {op.status === 'Sustituida' && (
-            <div style={{ padding: '12px 16px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: 8,
-              fontSize: 12, color: '#475569', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ padding: '12px 16px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8,
+              fontSize: 12, color: '#4A4D54', display: 'flex', alignItems: 'center', gap: 8 }}>
               <AlertTriangle size={14} style={{ flexShrink: 0 }} />
               Esta Orden de Pago fue sustituida{folioSustituta ? ` por ${folioSustituta}` : ''} y no ingresará a Cuentas por Pagar.
             </div>
           )}
           {op.id_op_original_fk && folioOriginal && (
-            <div style={{ padding: '12px 16px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8,
-              fontSize: 12, color: '#1d4ed8', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ padding: '12px 16px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8,
+              fontSize: 12, color: '#26282D', display: 'flex', alignItems: 'center', gap: 8 }}>
               <AlertTriangle size={14} style={{ flexShrink: 0 }} />
               Esta Orden de Pago sustituye a {folioOriginal} (rechazada).
             </div>
@@ -1311,22 +1311,22 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
           {/* Reabrir OP pagada (solo superadmin) — para corregir montos.
               OCULTO por decisión del usuario (2026-11-04); poner MOSTRAR_REABRIR_PAGADA=true para reactivar. */}
           {MOSTRAR_REABRIR_PAGADA && authUser?.rol === 'superadmin' && (op.status === 'Pagada' || op.status === 'Abonada') && (
-            <div style={{ padding: '14px 16px', background: '#fffbeb', border: '1px dashed #fcd34d', borderRadius: 10 }}>
+            <div style={{ padding: '14px 16px', background: '#F4F5F7', border: '1px dashed #C9CCD3', borderRadius: 10 }}>
               {!reabrirPagadaOpen ? (
                 <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setReabrirPagadaOpen(true)}>
                   <RotateCcw size={13} /> Reabrir OP pagada para corregir montos
                 </button>
               ) : (
                 <>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e', marginBottom: 6 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#7A4B0C', marginBottom: 6 }}>
                     Reabrir {op.folio}
                   </div>
-                  <p style={{ fontSize: 12, color: '#78350f', marginBottom: 10, lineHeight: 1.5 }}>
+                  <p style={{ fontSize: 12, color: '#7A4B0C', marginBottom: 10, lineHeight: 1.5 }}>
                     Se anularán los pagos registrados, se devolverá el dinero a la cuenta bancaria con un movimiento de reverso
                     y la OP quedará en <b>Pendiente</b>. Después usa <b>Editar</b> para corregir los montos y vuelve a pagarla
                     en Tesorería &gt; CXP para generar el movimiento bancario correcto.
                   </p>
-                  {reabrirPagadaError && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 10 }}>{reabrirPagadaError}</p>}
+                  {reabrirPagadaError && <p style={{ fontSize: 12, color: '#C23B3B', marginBottom: 10 }}>{reabrirPagadaError}</p>}
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleReabrirPagada} disabled={reabrirPagadaLoading}>
                       {reabrirPagadaLoading ? <Loader size={13} className="animate-spin" /> : <RotateCcw size={13} />} Reabrir y revertir pagos
@@ -1342,11 +1342,11 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
 
           {/* Reabrir / Duplicar (solo superadmin, solo Rechazada) */}
           {authUser?.rol === 'superadmin' && op.status === 'Rechazada' && (
-            <div style={{ padding: '14px 16px', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 10 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 10 }}>
+            <div style={{ padding: '14px 16px', background: '#F8F9FA', border: '1px dashed #C9CCD3', borderRadius: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#4A4D54', marginBottom: 10 }}>
                 Esta OP fue rechazada — puedes reabrirla para corregirla, o duplicarla con folio nuevo
               </div>
-              {reabrirDuplicarError && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 10 }}>{reabrirDuplicarError}</p>}
+              {reabrirDuplicarError && <p style={{ fontSize: 12, color: '#C23B3B', marginBottom: 10 }}>{reabrirDuplicarError}</p>}
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleReabrir} disabled={reabrirLoading || duplicarLoading}>
                   {reabrirLoading ? <Loader size={13} className="animate-spin" /> : <RotateCcw size={13} />} Reabrir esta OP
@@ -1364,8 +1364,8 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
               huérfanos ligados a esta OP; en Sustituida ya no se puede ni
               editar para desligarlos a mano. */}
           {authUser?.rol === 'superadmin' && (op.status === 'Rechazada' || op.status === 'Sustituida') && (valesComb.length > 0 || vigilanciaRel.length > 0 || bitacorasRel.length > 0) && (
-            <div style={{ padding: '14px 16px', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 10 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 10 }}>
+            <div style={{ padding: '14px 16px', background: '#F8F9FA', border: '1px dashed #C9CCD3', borderRadius: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#4A4D54', marginBottom: 10 }}>
                 Esta OP tiene {[
                   valesComb.length > 0 ? `${valesComb.length} vale(s) de combustible` : null,
                   vigilanciaRel.length > 0 ? `${vigilanciaRel.length} lote(s) de perimetrales` : null,
@@ -1381,14 +1381,14 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
           {/* Reclasificar (solo superadmin) — corrige CC/Área/Frente/Tipo de
               Gasto sin importar status, nunca monto/saldo/pagos. */}
           {authUser?.rol === 'superadmin' && (
-            <div style={{ padding: '14px 16px', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 10 }}>
+            <div style={{ padding: '14px 16px', background: '#F8F9FA', border: '1px dashed #C9CCD3', borderRadius: 10 }}>
               {!reclasOpen ? (
                 <button className="btn-ghost" style={{ fontSize: 12 }} onClick={abrirReclasificar}>
                   <Tag size={13} /> Reclasificar CC/Área/Frente/Tipo de Gasto
                 </button>
               ) : (
                 <>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#4A4D54', marginBottom: 10 }}>
                     Reclasificar — solo corrige clasificación, no toca monto ni pagos
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
@@ -1420,7 +1420,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
                       </select>
                     </div>
                   </div>
-                  {reclasError && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 10 }}>{reclasError}</p>}
+                  {reclasError && <p style={{ fontSize: 12, color: '#C23B3B', marginBottom: 10 }}>{reclasError}</p>}
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleReclasificar} disabled={reclasSaving}>
                       {reclasSaving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar reclasificación
@@ -1448,7 +1448,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
 // ── Helpers UI ─────────────────────────────────────────────
 export const Sec = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div>
-    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, paddingBottom: 4, borderBottom: '1px solid #e2e8f0' }}>{label}</div>
+    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, paddingBottom: 4, borderBottom: '1px solid #E6E8EB' }}>{label}</div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{children}</div>
   </div>
 )

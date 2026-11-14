@@ -11,8 +11,8 @@ const fmtF = (s: string | null | undefined) =>
   s ? new Date(s + 'T00:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
 const STATUS_CLR: Record<string, string> = {
-  'Pendiente Auth': '#7c3aed', 'Pendiente Auth Finanzas': '#6d28d9', Pendiente: '#d97706',
-  Pagada: '#15803d', Rechazada: '#dc2626', Sustituida: '#64748b', Cancelada: '#64748b',
+  'Pendiente Auth': '#6B4E79', 'Pendiente Auth Finanzas': '#5C4268', Pendiente: '#B5761A',
+  Pagada: '#1F7A50', Rechazada: '#C23B3B', Sustituida: '#62666E', Cancelada: '#62666E',
 }
 
 type Prov = {
@@ -133,7 +133,7 @@ export default function ReporteEstadoCuentaProveedor() {
       </div>
 
       {!provSel && (
-        <div style={{ padding: '60px 0', textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
+        <div style={{ padding: '60px 0', textAlign: 'center', color: '#7A7E87', fontSize: 14 }}>
           Selecciona un proveedor para generar su estado de cuenta.
         </div>
       )}
@@ -143,42 +143,42 @@ export default function ReporteEstadoCuentaProveedor() {
           {/* Encabezado del proveedor */}
           <div className="card" style={{ padding: '16px 20px', marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
             <div style={{ flex: '1 1 260px' }}>
-              <div style={{ fontSize: 11, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Proveedor</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: '#1e293b' }}>{proveedor.nombre}</div>
+              <div style={{ fontSize: 11, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Proveedor</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#26282D' }}>{proveedor.nombre}</div>
               {proveedor.razon_social && proveedor.razon_social !== proveedor.nombre && (
-                <div style={{ fontSize: 12, color: '#64748b', marginTop: 1 }}>{proveedor.razon_social}</div>
+                <div style={{ fontSize: 12, color: '#62666E', marginTop: 1 }}>{proveedor.razon_social}</div>
               )}
               {proveedor.rfc && (
-                <div style={{ fontSize: 12, fontFamily: 'monospace', color: '#475569', marginTop: 4 }}>
+                <div style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums', color: '#4A4D54', marginTop: 4 }}>
                   RFC: <strong>{proveedor.rfc}</strong>
                 </div>
               )}
             </div>
             <div style={{ flex: '1 1 200px' }}>
               {proveedor.contacto && (
-                <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <div style={{ fontSize: 12, color: '#62666E', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
                   <Building2 size={11} /> {proveedor.contacto}
                 </div>
               )}
               {proveedor.telefono && (
-                <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <div style={{ fontSize: 12, color: '#62666E', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
                   <Phone size={11} /> {proveedor.telefono}
                 </div>
               )}
               {proveedor.condiciones_pago && (
-                <div style={{ fontSize: 11, padding: '2px 8px', borderRadius: 8, background: '#eff6ff', color: '#1d4ed8', display: 'inline-block', marginTop: 2 }}>
+                <div style={{ fontSize: 11, padding: '2px 8px', borderRadius: 8, background: '#F4F5F7', color: '#26282D', display: 'inline-block', marginTop: 2 }}>
                   {proveedor.condiciones_pago}
                 </div>
               )}
             </div>
             {(proveedor.banco || proveedor.cuenta_clabe) && (
               <div style={{ flex: '1 1 200px' }}>
-                <div style={{ fontSize: 11, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ fontSize: 11, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                   <CreditCard size={11} /> Datos bancarios
                 </div>
-                {proveedor.banco && <div style={{ fontSize: 12, fontWeight: 600, color: '#1e293b' }}>{proveedor.banco}</div>}
+                {proveedor.banco && <div style={{ fontSize: 12, fontWeight: 600, color: '#26282D' }}>{proveedor.banco}</div>}
                 {proveedor.cuenta_clabe && (
-                  <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#475569', marginTop: 2 }}>CLABE: {proveedor.cuenta_clabe}</div>
+                  <div style={{ fontSize: 11, fontVariantNumeric: 'tabular-nums', color: '#4A4D54', marginTop: 2 }}>CLABE: {proveedor.cuenta_clabe}</div>
                 )}
               </div>
             )}
@@ -187,33 +187,33 @@ export default function ReporteEstadoCuentaProveedor() {
           {/* KPIs resumen */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
             {[
-              { label: 'Total Cargos',     value: fmt(totalCargo),         color: '#1e293b', bg: '#f8fafc' },
-              { label: 'Total Abonos',     value: fmt(totalAbono),         color: '#15803d', bg: '#f0fdf4' },
-              { label: 'Saldo Actual',     value: fmt(saldoFinal),         color: saldoFinal > 0 ? '#d97706' : '#15803d', bg: saldoFinal > 0 ? '#fffbeb' : '#f0fdf4' },
-              { label: 'OPs Pendientes',   value: pendientes.length,       color: '#7c3aed', bg: '#f5f3ff' },
-              { label: 'OPs Vencidas',     value: vencidas.length,         color: vencidas.length > 0 ? '#dc2626' : '#15803d', bg: vencidas.length > 0 ? '#fef2f2' : '#f0fdf4' },
+              { label: 'Total Cargos',     value: fmt(totalCargo),         color: '#26282D', bg: '#F8F9FA' },
+              { label: 'Total Abonos',     value: fmt(totalAbono),         color: '#1F7A50', bg: '#F4F5F7' },
+              { label: 'Saldo Actual',     value: fmt(saldoFinal),         color: saldoFinal > 0 ? '#B5761A' : '#1F7A50', bg: '#F4F5F7' },
+              { label: 'OPs Pendientes',   value: pendientes.length,       color: '#6B4E79', bg: '#F4F5F7' },
+              { label: 'OPs Vencidas',     value: vencidas.length,         color: vencidas.length > 0 ? '#C23B3B' : '#1F7A50', bg: '#F4F5F7' },
             ].map(k => (
-              <div key={k.label} className="card" style={{ flex: '1 1 130px', maxWidth: 200, padding: '10px 14px', background: k.bg, border: `1px solid ${k.color}22` }}>
-                <div style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 3 }}>{k.label}</div>
-                <div style={{ fontSize: 17, fontWeight: 700, color: k.color }}>{k.value}</div>
+              <div key={k.label} className="card" style={{ flex: '1 1 130px', maxWidth: 200, padding: '10px 14px', background: '#fff', border: '1px solid #E6E8EB' }}>
+                <div style={{ fontSize: 10, color: '#62666E', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 3 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
+                <div style={{ fontSize: 17, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{k.value}</div>
               </div>
             ))}
           </div>
 
           {/* Movimientos vencidos — alerta */}
           {vencidas.length > 0 && (
-            <div style={{ marginBottom: 14, padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
-              ⚠ {vencidas.length} OP{vencidas.length > 1 ? 's' : ''} vencida{vencidas.length > 1 ? 's' : ''} · Saldo vencido: <strong>{fmt(vencidas.reduce((s, o) => s + (o.saldo ?? o.monto ?? 0), 0))}</strong>
+            <div style={{ marginBottom: 14, padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>
+              {vencidas.length} OP{vencidas.length > 1 ? 's' : ''} vencida{vencidas.length > 1 ? 's' : ''} · Saldo vencido: <strong>{fmt(vencidas.reduce((s, o) => s + (o.saldo ?? o.monto ?? 0), 0))}</strong>
             </div>
           )}
 
           {/* Tabla de movimientos */}
           {loading ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Cargando…</div>
+            <div style={{ padding: 40, textAlign: 'center', color: '#7A7E87' }}>Cargando…</div>
           ) : (
             <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
-                <tr style={{ background: '#1e293b' }}>
+                <tr style={{ background: '#26282D' }}>
                   {['Folio', 'Fecha OP', 'Vencimiento', 'Concepto / Tipo', 'CC / Área', 'Cargo', 'Abono', 'Status', 'Saldo Acum.'].map(h => (
                     <th key={h} style={{
                       padding: '9px 10px', color: '#fff', fontSize: 10, fontWeight: 700,
@@ -227,34 +227,34 @@ export default function ReporteEstadoCuentaProveedor() {
                 {lineas.map(({ op, cargo, abono, saldoAcum }, idx) => {
                   const vencida = op.fecha_vencimiento && op.fecha_vencimiento < hoy && !['Pagada','Cancelada','Rechazada','Sustituida'].includes(op.status)
                   return (
-                    <tr key={op.id} style={{ background: idx % 2 === 0 ? '#fff' : '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '8px 10px', fontWeight: 600, color: '#2563eb', fontFamily: 'monospace' }}>{op.folio}</td>
-                      <td style={{ padding: '8px 10px', color: '#475569', whiteSpace: 'nowrap' }}>{fmtF(op.fecha_op)}</td>
-                      <td style={{ padding: '8px 10px', color: vencida ? '#dc2626' : '#64748b', fontWeight: vencida ? 700 : 400, whiteSpace: 'nowrap' }}>
-                        {fmtF(op.fecha_vencimiento)}{vencida ? ' ⚠' : ''}
+                    <tr key={op.id} style={{ background: idx % 2 === 0 ? '#fff' : '#F8F9FA', borderBottom: '1px solid #F4F5F7' }}>
+                      <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1C1D21', fontVariantNumeric: 'tabular-nums' }}>{op.folio}</td>
+                      <td style={{ padding: '8px 10px', color: '#4A4D54', whiteSpace: 'nowrap' }}>{fmtF(op.fecha_op)}</td>
+                      <td style={{ padding: '8px 10px', color: vencida ? '#C23B3B' : '#62666E', fontWeight: vencida ? 700 : 400, whiteSpace: 'nowrap' }}>
+                        {fmtF(op.fecha_vencimiento)}{vencida ? ' ' : ''}
                       </td>
                       <td style={{ padding: '8px 10px', maxWidth: 220 }}>
-                        <div style={{ color: '#1e293b' }}>{op.concepto ?? '—'}</div>
+                        <div style={{ color: '#26282D' }}>{op.concepto ?? '—'}</div>
                         {op.id_tipo_gasto_fk && (
-                          <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: '#f1f5f9', color: '#475569' }}>{catTG.nombre(op.id_tipo_gasto_fk)}</span>
+                          <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: '#F4F5F7', color: '#4A4D54' }}>{catTG.nombre(op.id_tipo_gasto_fk)}</span>
                         )}
                       </td>
-                      <td style={{ padding: '8px 10px', fontSize: 11, color: '#64748b' }}>
+                      <td style={{ padding: '8px 10px', fontSize: 11, color: '#62666E' }}>
                         {op.id_centro_costo_fk ? ccMap[op.id_centro_costo_fk] ?? '—' : '—'}
                         {op.id_area_fk ? <><br />{areaMap[op.id_area_fk] ?? ''}</> : null}
                       </td>
-                      <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: cargo > 0 ? '#1e293b' : '#94a3b8' }}>
+                      <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: cargo > 0 ? '#26282D' : '#7A7E87' }}>
                         {cargo > 0 ? fmt(cargo) : '—'}
                       </td>
-                      <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: abono > 0 ? '#15803d' : '#94a3b8' }}>
+                      <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: abono > 0 ? '#1F7A50' : '#7A7E87' }}>
                         {abono > 0 ? fmt(abono) : '—'}
                       </td>
                       <td style={{ padding: '8px 10px' }}>
-                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: `${STATUS_CLR[op.status]}20`, color: STATUS_CLR[op.status] }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: STATUS_CLR[op.status], color: '#fff'}}>
                           {op.status}
                         </span>
                       </td>
-                      <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: saldoAcum > 0 ? '#d97706' : '#15803d' }}>
+                      <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: saldoAcum > 0 ? '#B5761A' : '#1F7A50' }}>
                         {fmt(saldoAcum)}
                       </td>
                     </tr>
@@ -262,21 +262,21 @@ export default function ReporteEstadoCuentaProveedor() {
                 })}
               </tbody>
               <tfoot>
-                <tr style={{ background: '#1e293b', borderTop: '2px solid #1e293b' }}>
+                <tr style={{ background: '#26282D', borderTop: '2px solid #26282D' }}>
                   <td colSpan={5} style={{ padding: '10px 10px', color: '#fff', fontWeight: 700, fontSize: 12 }}>
                     Total — {lineas.length} movimiento{lineas.length !== 1 ? 's' : ''}
                   </td>
                   <td style={{ padding: '10px 10px', textAlign: 'right', color: '#fff', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(totalCargo)}</td>
-                  <td style={{ padding: '10px 10px', textAlign: 'right', color: '#86efac', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(totalAbono)}</td>
+                  <td style={{ padding: '10px 10px', textAlign: 'right', color: '#7CC9A3', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(totalAbono)}</td>
                   <td />
-                  <td style={{ padding: '10px 10px', textAlign: 'right', color: saldoFinal > 0 ? '#fde68a' : '#86efac', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(saldoFinal)}</td>
+                  <td style={{ padding: '10px 10px', textAlign: 'right', color: saldoFinal > 0 ? '#F0D9A8' : '#7CC9A3', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(saldoFinal)}</td>
                 </tr>
               </tfoot>
             </table>
           )}
 
           {!loading && lineas.length === 0 && provSel && (
-            <div style={{ padding: '40px 0', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+            <div style={{ padding: '40px 0', textAlign: 'center', color: '#7A7E87', fontSize: 13 }}>
               No se encontraron órdenes de pago para este proveedor con los filtros seleccionados.
             </div>
           )}

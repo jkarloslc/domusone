@@ -15,7 +15,7 @@ const MODULO_LABEL: Record<string, string> = {
   golf: 'Golf', hipico: 'Hípico', locales: 'Locales', residencial: 'Fraccionamiento',
 }
 const MODULO_COLOR: Record<string, string> = {
-  golf: '#b8952a', hipico: '#7c3aed', locales: '#0f766e', residencial: 'var(--blue)',
+  golf: '#A8821A', hipico: '#6B4E79', locales: '#126B63', residencial: 'var(--blue)',
 }
 
 type Cancelacion = {
@@ -81,13 +81,13 @@ export default function ReporteCancelaciones() {
   }
 
   const selStyle: React.CSSProperties = {
-    height: 32, padding: '0 10px', border: '1px solid #e2e8f0',
+    height: 32, padding: '0 10px', border: '1px solid #E6E8EB',
     borderRadius: 6, fontSize: 13, background: '#fff',
     fontFamily: 'var(--font-body)', color: 'var(--text-primary)',
   }
 
   if (error) return (
-    <div className="card" style={{ padding: 32, textAlign: 'center', color: '#dc2626' }}>
+    <div className="card" style={{ padding: 32, textAlign: 'center', color: '#C23B3B' }}>
       No se pudo cargar la bitácora de cancelaciones: {error}
       <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>
         Si la tabla ctrl.cancelaciones no existe aún, hace falta ejecutar la migración correspondiente.
@@ -129,13 +129,13 @@ export default function ReporteCancelaciones() {
       {/* KPIs */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
         {[
-          { label: 'Cancelaciones',      value: filtered.length.toString(),  color: '#dc2626', bg: '#fef2f2' },
-          { label: 'Monto Cancelado',    value: fmt(totalMonto),             color: '#dc2626', bg: '#fef2f2' },
-          { label: 'Cuotas Liberadas',   value: totalCuotas.toString(),      color: '#0f766e', bg: '#f0fdfa' },
+          { label: 'Cancelaciones',      value: filtered.length.toString(),  color: '#C23B3B', bg: '#F4F5F7' },
+          { label: 'Monto Cancelado',    value: fmt(totalMonto),             color: '#C23B3B', bg: '#F4F5F7' },
+          { label: 'Cuotas Liberadas',   value: totalCuotas.toString(),      color: '#126B63', bg: '#F4F5F7' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '14px 20px', background: k.bg, flex: '1 1 160px', maxWidth: 240 }}>
-            <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{k.label}</div>
+          <div key={k.label} className="card" style={{ padding: '14px 20px', background: '#fff', flex: '1 1 160px', maxWidth: 240 }}>
+            <div style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)',  }}>{k.value}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
           </div>
         ))}
       </div>
@@ -159,7 +159,7 @@ export default function ReporteCancelaciones() {
           <div style={{ overflowX: 'auto' }}>
             <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <tr style={{ background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
                   {['Fecha', 'Módulo', 'Folio', 'Status', 'Cuotas', 'Ticket POS', 'Motivo', 'Cancelado por', 'Monto'].map(h => (
                     <th key={h} style={{ padding: '9px 12px', textAlign: h === 'Monto' || h === 'Cuotas' ? 'right' : 'left',
                       fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)',
@@ -171,21 +171,21 @@ export default function ReporteCancelaciones() {
               </thead>
               <tbody>
                 {filtered.map((r, i) => (
-                  <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                  <tr key={r.id} style={{ borderBottom: '1px solid #F4F5F7', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                     <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontSize: 12 }}>{fmtF(r.fecha_cancelacion)}</td>
                     <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: (MODULO_COLOR[r.modulo] ?? '#64748b') + '18', color: MODULO_COLOR[r.modulo] ?? '#64748b' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: (MODULO_COLOR[r.modulo] ?? '#62666E'), color: '#fff'}}>
                         {MODULO_LABEL[r.modulo] ?? r.modulo}
                       </span>
                     </td>
                     <td style={{ padding: '8px 12px', fontWeight: 600, whiteSpace: 'nowrap' }}>{r.folio ?? `#${r.id_origen}`}</td>
                     <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>
                       {r.revertida ? (
-                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#f0fdf4', color: '#15803d' }} title={r.revertida_por ? `Reabierto por ${r.revertida_por}` : undefined}>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#1F7A50', color: '#fff' }} title={r.revertida_por ? `Reabierto por ${r.revertida_por}` : undefined}>
                           Revertida
                         </span>
                       ) : (
-                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#fef2f2', color: '#dc2626' }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#C23B3B', color: '#fff' }}>
                           Cancelada
                         </span>
                       )}
@@ -194,16 +194,16 @@ export default function ReporteCancelaciones() {
                     <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontSize: 12 }}>{r.id_venta_pos_fk ? `#${String(r.id_venta_pos_fk).padStart(6, '0')}` : '—'}</td>
                     <td style={{ padding: '8px 12px', color: 'var(--text-secondary)', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.motivo ?? ''}>{r.motivo ?? '—'}</td>
                     <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: 12 }}>{r.usuario ?? '—'}</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#dc2626', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#C23B3B', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
                       {fmt(r.monto ?? 0)}
                     </td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr style={{ background: '#fef2f2', borderTop: '2px solid #fecaca' }}>
-                  <td colSpan={8} style={{ padding: '9px 12px', fontWeight: 700, fontSize: 13, color: '#dc2626' }}>Total</td>
-                  <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, fontSize: 14, color: '#dc2626', fontVariantNumeric: 'tabular-nums' }}>
+                <tr style={{ background: '#F4F5F7', borderTop: '2px solid #E6E8EB' }}>
+                  <td colSpan={8} style={{ padding: '9px 12px', fontWeight: 700, fontSize: 13, color: '#C23B3B' }}>Total</td>
+                  <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, fontSize: 14, color: '#C23B3B', fontVariantNumeric: 'tabular-nums' }}>
                     {fmt(totalMonto)}
                   </td>
                 </tr>

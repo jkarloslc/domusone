@@ -145,8 +145,8 @@ const desglosarIva = (montoConIva: number) => {
   return { subtotal, iva }
 }
 const STATUS_COLOR: Record<string, { bg: string; color: string; label: string }> = {
-  VIGENTE:   { bg: '#dcfce7', color: '#15803d', label: 'Vigente' },
-  CANCELADO: { bg: '#fee2e2', color: '#dc2626', label: 'Cancelado' },
+  VIGENTE:   { bg: '#E6E8EB', color: '#1F7A50', label: 'Vigente' },
+  CANCELADO: { bg: '#E6E8EB', color: '#C23B3B', label: 'Cancelado' },
 }
 const normR = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 const ncR = (s: ReciboCarrito['cat_socios']) =>
@@ -502,7 +502,7 @@ export default function CarritosPage() {
     } catch {}
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+      : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
     const win = window.open('', '_blank', 'width=750,height=900')
     if (!win) return
     const rows = r.recibos_golf_det.map(d => `
@@ -517,27 +517,27 @@ export default function CarritosPage() {
       <meta charset="utf-8"/><title>Recibo ${r.folio}</title>
       <style>
         *{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:Arial,sans-serif;font-size:12px;color:#1e293b;padding:32px}
-        .org-header{display:flex;align-items:center;gap:16px;padding-bottom:14px;border-bottom:2px solid #0D4F80;margin-bottom:18px}
-        .org-nombre{font-size:18px;font-weight:700;color:#0D4F80;margin:0 0 2px}
-        .org-sub{font-size:11px;color:#64748b}
-        .doc-title{font-size:14px;font-weight:600;color:#0D4F80;margin-bottom:2px}
+        body{font-family:Arial,sans-serif;font-size:12px;color:#26282D;padding:32px}
+        .org-header{display:flex;align-items:center;gap:16px;padding-bottom:14px;border-bottom:2px solid #1C1D21;margin-bottom:18px}
+        .org-nombre{font-size:18px;font-weight:700;color:#1C1D21;margin:0 0 2px}
+        .org-sub{font-size:11px;color:#62666E}
+        .doc-title{font-size:14px;font-weight:600;color:#1C1D21;margin-bottom:2px}
         .section{margin-bottom:18px}
-        .section-title{font-size:10px;font-weight:700;color:#0D4F80;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;border-bottom:1px solid #bfdbfe;padding-bottom:4px}
+        .section-title{font-size:10px;font-weight:700;color:#1C1D21;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;border-bottom:1px solid #C9CCD3;padding-bottom:4px}
         table{width:100%;border-collapse:collapse;margin-bottom:16px}
-        th{padding:7px 10px;background:#f1f5f9;color:#0D4F80;font-size:10px;text-align:left;text-transform:uppercase;letter-spacing:.05em;border:1px solid #e2e8f0}
-        td{padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px}
+        th{padding:7px 10px;background:#F4F5F7;color:#1C1D21;font-size:10px;text-align:left;text-transform:uppercase;letter-spacing:.05em;border:1px solid #E6E8EB}
+        td{padding:8px 10px;border-bottom:1px solid #E6E8EB;font-size:12px}
         tr:last-child td{border-bottom:none}
         .right{text-align:right}
         .totales{margin-left:auto;width:260px}
         .totales-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px}
-        .totales-row.total{font-weight:700;font-size:15px;border-top:2px solid #0D4F80;padding-top:8px;margin-top:4px;color:#0D4F80}
-        .pago-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:12px}
-        .pago-label{font-size:10px;color:#0D4F80;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
-        .pago-val{font-size:14px;font-weight:700;color:#0D4F80}
+        .totales-row.total{font-weight:700;font-size:15px;border-top:2px solid #1C1D21;padding-top:8px;margin-top:4px;color:#1C1D21}
+        .pago-box{background:#F4F5F7;border:1px solid #C9CCD3;border-radius:8px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:12px}
+        .pago-label{font-size:10px;color:#1C1D21;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+        .pago-val{font-size:14px;font-weight:700;color:#1C1D21}
         .firma-area{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:48px}
-        .firma-line{border-top:1px solid #1e293b;padding-top:4px;font-size:10px;color:#64748b;text-align:center}
-        .footer{margin-top:32px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:12px}
+        .firma-line{border-top:1px solid #26282D;padding-top:4px;font-size:10px;color:#62666E;text-align:center}
+        .footer{margin-top:32px;font-size:10px;color:#7A7E87;text-align:center;border-top:1px solid #E6E8EB;padding-top:12px}
         @page{margin:1.2cm}
       </style></head><body>
       <div class="org-header">
@@ -548,9 +548,9 @@ export default function CarritosPage() {
         </div>
         <div style="margin-left:auto;text-align:right">
           <div class="doc-title">Recibo Pensión Carrito</div>
-          <div style="font-size:11px;color:#64748b">Folio: <strong>${r.folio}</strong></div>
-          <div style="font-size:11px;color:#64748b">${fechaFmtR(r.fecha_recibo)}</div>
-          ${r.status === 'CANCELADO' ? '<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:#fee2e2;color:#dc2626;margin-top:4px">CANCELADO</span>' : ''}
+          <div style="font-size:11px;color:#62666E">Folio: <strong>${r.folio}</strong></div>
+          <div style="font-size:11px;color:#62666E">${fechaFmtR(r.fecha_recibo)}</div>
+          ${r.status === 'CANCELADO' ? '<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:#E6E8EB;color:#C23B3B;margin-top:4px">CANCELADO</span>' : ''}
         </div>
       </div>
       <div class="section">
@@ -568,16 +568,16 @@ export default function CarritosPage() {
         </table>
         <div class="totales">
           <div class="totales-row"><span>Subtotal</span><span>${fmt$(r.subtotal)}</span></div>
-          ${r.descuento > 0 ? `<div class="totales-row"><span>Descuento</span><span style="color:#dc2626">– ${fmt$(r.descuento)}</span></div>` : ''}
+          ${r.descuento > 0 ? `<div class="totales-row"><span>Descuento</span><span style="color:#C23B3B">– ${fmt$(r.descuento)}</span></div>` : ''}
           <div class="totales-row total"><span>TOTAL</span><span>${fmt$(r.total)}</span></div>
         </div>
       </div>
       <div class="pago-box">
         <div><div class="pago-label">Forma de pago</div><div class="pago-val">${r.forma_pago_nombre ?? '—'}</div></div>
         ${r.referencia_pago ? `<div style="margin-left:32px"><div class="pago-label">Referencia</div><div class="pago-val" style="font-size:12px">${r.referencia_pago}</div></div>` : ''}
-        <div style="margin-left:auto;text-align:right"><div class="pago-label">Emitido por</div><div style="font-size:12px;font-weight:600;color:#15803d">${r.usuario_cobra ?? '—'}</div></div>
+        <div style="margin-left:auto;text-align:right"><div class="pago-label">Emitido por</div><div style="font-size:12px;font-weight:600;color:#1F7A50">${r.usuario_cobra ?? '—'}</div></div>
       </div>
-      ${r.observaciones ? `<div style="font-size:11px;color:#64748b;padding:8px 12px;background:#f8fafc;border-radius:6px;margin-bottom:16px"><strong>Observaciones:</strong> ${r.observaciones}</div>` : ''}
+      ${r.observaciones ? `<div style="font-size:11px;color:#62666E;padding:8px 12px;background:#F8F9FA;border-radius:6px;margin-bottom:16px"><strong>Observaciones:</strong> ${r.observaciones}</div>` : ''}
       <div class="firma-area">
         <div class="firma-line">Firma del Socio</div>
         <div class="firma-line">Cajero / Recibí</div>
@@ -718,7 +718,7 @@ export default function CarritosPage() {
             <RefreshCw size={13} /> Actualizar
           </button>
           {puedeEscribir && tab === 'pensiones' && (
-            <button className="btn-primary" onClick={() => setShowCarrito(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#059669' }}>
+            <button className="btn-primary" onClick={() => setShowCarrito(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#267F56' }}>
               <Plus size={14} /> Nuevo Carrito
             </button>
           )}
@@ -728,19 +728,19 @@ export default function CarritosPage() {
       {/* Stats */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { label: 'Pensiones Activas',  value: stats.pensionesActivas,  color: '#059669', bg: '#ecfdf5' },
-          { label: 'Cuotas Pendientes',  value: stats.cuotasPendientes,  color: '#d97706', bg: '#fffbeb' },
-          { label: 'Monto por Cobrar',   value: fmt$(stats.montoPendiente), color: '#dc2626', bg: '#fef2f2' },
+          { label: 'Pensiones Activas',  value: stats.pensionesActivas,  color: '#267F56', bg: '#F4F5F7' },
+          { label: 'Cuotas Pendientes',  value: stats.cuotasPendientes,  color: '#B5761A', bg: '#F4F5F7' },
+          { label: 'Monto por Cobrar',   value: fmt$(stats.montoPendiente), color: '#C23B3B', bg: '#F4F5F7' },
         ].map(c => (
-          <div key={c.label} className="card" style={{ flex: '1 1 140px', maxWidth: 220, padding: '12px 16px', background: c.bg, border: `1px solid ${c.color}22` }}>
-            <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>{c.label}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+          <div key={c.label} className="card" style={{ flex: '1 1 140px', maxWidth: 220, padding: '12px 16px', background: '#fff', border: '1px solid #E6E8EB' }}>
+            <div style={{ fontSize: 11, color: '#62666E', marginBottom: 4 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: c.color, marginRight: 6, verticalAlign: 'middle' }} />{c.label}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{c.value}</div>
           </div>
         ))}
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 20 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', marginBottom: 20 }}>
         {TABS.map(t => {
           const Icon = t.icon
           return (
@@ -749,8 +749,8 @@ export default function CarritosPage() {
               padding: '10px 20px', fontSize: 13, background: 'none', border: 'none',
               cursor: 'pointer', fontFamily: 'inherit',
               fontWeight: tab === t.key ? 600 : 400,
-              color: tab === t.key ? '#059669' : '#94a3b8',
-              borderBottom: tab === t.key ? '2px solid #059669' : '2px solid transparent',
+              color: tab === t.key ? '#1C1D21' : '#7A7E87',
+              borderBottom: tab === t.key ? '2px solid #19D3C5' : '2px solid transparent',
               marginBottom: -1,
             }}>
               <Icon size={14} /> {t.label}
@@ -764,28 +764,28 @@ export default function CarritosPage() {
         <>
           <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 320 }}>
-              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
+              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
                 placeholder="Buscar socio o placa…" value={busquedaP} onChange={e => setBusquedaP(e.target.value)} />
-              {busquedaP && <button onClick={() => setBusquedaP('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+              {busquedaP && <button onClick={() => setBusquedaP('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2 }}><X size={12} /></button>}
             </div>
-            <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', gap: 0, border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
               {([
-                { key: 'todas',     label: 'Todas',        color: '#059669' },
-                { key: 'adeudo',    label: 'Con Adeudo',   color: '#dc2626' },
-                { key: 'corriente', label: 'Al corriente', color: '#2563eb' },
+                { key: 'todas',     label: 'Todas',        color: '#267F56' },
+                { key: 'adeudo',    label: 'Con Adeudo',   color: '#C23B3B' },
+                { key: 'corriente', label: 'Al corriente', color: '#1C1D21' },
               ] as const).map(f => (
                 <button key={f.key} onClick={() => setFiltroSituacion(f.key)} style={{
                   padding: '7px 14px', fontSize: 12, fontWeight: filtroSituacion === f.key ? 600 : 400,
                   background: filtroSituacion === f.key ? f.color : '#fff',
-                  color: filtroSituacion === f.key ? '#fff' : '#94a3b8',
+                  color: filtroSituacion === f.key ? '#fff' : '#7A7E87',
                   border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', whiteSpace: 'nowrap',
                 }}>
                   {f.label}
                 </button>
               ))}
             </div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#475569', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#4A4D54', cursor: 'pointer' }}>
               <input type="checkbox" checked={soloActivas} onChange={e => setSoloActivas(e.target.checked)} />
               Solo activas
             </label>
@@ -818,18 +818,18 @@ export default function CarritosPage() {
                           onClick={() => {
                             setExpandido(abierto ? null : p.id)
                           }}
-                          style={{ borderBottom: abierto ? 'none' : '1px solid var(--border)', cursor: 'pointer', opacity: p.activo ? 1 : 0.55, transition: 'background 0.1s', background: abierto ? '#f0fdf4' : '' }}
+                          style={{ borderBottom: abierto ? 'none' : '1px solid var(--border)', cursor: 'pointer', opacity: p.activo ? 1 : 0.55, transition: 'background 0.1s', background: abierto ? '#F4F5F7' : '' }}
                           onMouseEnter={e => { if (!abierto) (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)' }}
                           onMouseLeave={e => { if (!abierto) (e.currentTarget as HTMLElement).style.background = '' }}>
-                          <td style={{ padding: '10px 10px 10px 14px', width: 28, color: '#94a3b8' }}>
+                          <td style={{ padding: '10px 10px 10px 14px', width: 28, color: '#7A7E87' }}>
                             {abierto ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                           </td>
                           <td style={{ padding: '10px 14px' }}>
                             <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{nc(p.cat_socios)}</div>
                             {p.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>#{p.cat_socios.numero_socio}</div>}
                             {p.cat_familiares && (
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, padding: '1px 6px', borderRadius: 20, background: '#f3e8ff', color: '#7c3aed', fontWeight: 600, marginTop: 2 }}>
-                                👤 {nc(p.cat_familiares)}{p.cat_familiares.parentesco ? ` · ${p.cat_familiares.parentesco}` : ''}
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, padding: '1px 6px', borderRadius: 20, background: '#6B4E79', color: '#fff', fontWeight: 600, marginTop: 2 }}>
+                                {nc(p.cat_familiares)}{p.cat_familiares.parentesco ? ` · ${p.cat_familiares.parentesco}` : ''}
                               </span>
                             )}
                           </td>
@@ -837,13 +837,13 @@ export default function CarritosPage() {
                             <div style={{ color: 'var(--text-secondary)' }}>{carDesc}</div>
                             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 2 }}>
                               {p.cat_carritos?.tipo && (
-                                <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, background: p.cat_carritos.tipo === 'ELECTRICO' ? '#eff6ff' : '#fffbeb', color: p.cat_carritos.tipo === 'ELECTRICO' ? '#1d4ed8' : '#92400e', fontWeight: 600 }}>
-                                  {p.cat_carritos.tipo === 'ELECTRICO' ? '⚡ Eléctrico' : '⛽ Combustión'}
+                                <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, background: p.cat_carritos.tipo === 'ELECTRICO' ? '#F4F5F7' : '#B5761A', color: p.cat_carritos.tipo === 'ELECTRICO' ? '#26282D' : '#fff', fontWeight: 600 }}>
+                                  {p.cat_carritos.tipo === 'ELECTRICO' ? 'Eléctrico' : 'Combustión'}
                                 </span>
                               )}
                               {p.cat_carritos?.con_cargador && (
-                                <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, background: '#f0fdf4', color: '#15803d', fontWeight: 600 }}>
-                                  🔌 Cargador
+                                <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, background: '#1F7A50', color: '#fff', fontWeight: 600 }}>
+                                  Cargador
                                 </span>
                               )}
                             </div>
@@ -851,21 +851,21 @@ export default function CarritosPage() {
                           <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12 }}>
                             {p.cat_slots ? `Cajón ${p.cat_slots.numero}` : '—'}
                           </td>
-                          <td style={{ padding: '10px 14px', fontWeight: 600, color: '#059669', whiteSpace: 'nowrap' }}>
+                          <td style={{ padding: '10px 14px', fontWeight: 600, color: '#267F56', whiteSpace: 'nowrap' }}>
                             {fmt$(p.monto_mensual)}
                           </td>
                           <td style={{ padding: '10px 14px' }}>
                             {p.pendientes > 0
-                              ? <span style={{ fontSize: 12, fontWeight: 700, color: '#dc2626' }}>{p.pendientes} · {fmt$(p.monto_pendiente)}</span>
-                              : <span style={{ color: '#cbd5e1', fontSize: 12 }}>—</span>}
+                              ? <span style={{ fontSize: 12, fontWeight: 700, color: '#C23B3B' }}>{p.pendientes} · {fmt$(p.monto_pendiente)}</span>
+                              : <span style={{ color: '#C9CCD3', fontSize: 12 }}>—</span>}
                           </td>
                           <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: p.con_adeudo ? '#fef2f2' : '#eff6ff', color: p.con_adeudo ? '#dc2626' : '#2563eb' }}>
+                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: p.con_adeudo ? '#C23B3B' : '#F4F5F7', color: p.con_adeudo ? '#fff' : '#1C1D21' }}>
                               {p.con_adeudo ? 'Con Adeudo' : 'Al corriente'}
                             </span>
                           </td>
                           <td style={{ padding: '10px 14px' }}>
-                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: p.activo ? '#dcfce7' : '#f1f5f9', color: p.activo ? '#15803d' : '#64748b' }}>
+                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: p.activo ? '#1F7A50' : '#F4F5F7', color: p.activo ? '#fff' : '#62666E' }}>
                               {p.activo ? 'Activa' : 'Inactiva'}
                             </span>
                           </td>
@@ -874,7 +874,7 @@ export default function CarritosPage() {
                               {puedeEscribir && (
                                 <button onClick={e => { e.stopPropagation(); abrirEditCarrito(p.id_carrito_fk) }}
                                   disabled={loadingEdit}
-                                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: '#475569', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: '#4A4D54', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                   {loadingEdit ? <Loader size={12} /> : <Settings size={12} />} Editar
                                 </button>
                               )}
@@ -889,19 +889,19 @@ export default function CarritosPage() {
                           return (
                             <tr key={`${p.id}-det`}>
                               <td colSpan={9} style={{ padding: 0, borderBottom: '1px solid var(--border)' }}>
-                                <div style={{ background: '#f8fafc', padding: '16px 20px 20px 48px' }}>
+                                <div style={{ background: '#F8F9FA', padding: '16px 20px 20px 48px' }}>
 
                                   {/* Info de pensión + acciones */}
                                   <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
-                                    <div style={{ fontSize: 12, color: '#64748b' }}>
-                                      <span style={{ fontWeight: 600, color: '#475569' }}>Inicio de pensión: </span>
+                                    <div style={{ fontSize: 12, color: '#62666E' }}>
+                                      <span style={{ fontWeight: 600, color: '#4A4D54' }}>Inicio de pensión: </span>
                                       {new Date(p.fecha_inicio + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}
                                       {p.observaciones && <span style={{ marginLeft: 8, fontStyle: 'italic' }}>{p.observaciones}</span>}
                                     </div>
                                     <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
                                       {esAdmin && p.activo && (
                                         <button onClick={e => { e.stopPropagation(); abrirCambioSlot(p) }}
-                                          style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
+                                          style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#1C1D21', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
                                           <MapPin size={12} /> {p.id_slot_fk ? 'Cambiar / liberar cajón' : 'Asignar cajón'}
                                         </button>
                                       )}
@@ -917,7 +917,7 @@ export default function CarritosPage() {
                                             descCarrito: carDesc2,
                                           })
                                         }}
-                                          style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
+                                          style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#6B4E79', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
                                           <ArrowRightLeft size={12} /> Cambiar titular
                                         </button>
                                       )}
@@ -936,7 +936,7 @@ export default function CarritosPage() {
                                             montoMensualExistente: p.monto_mensual,
                                           })
                                         }}
-                                          style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#475569', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
+                                          style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#4A4D54', background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
                                           <Plus size={12} /> Agregar cuotas
                                         </button>
                                       )}
@@ -980,10 +980,10 @@ export default function CarritosPage() {
         const fSaldo   = cuotasF.reduce((a, c) => a + saldoCuota(c), 0)
 
         const situacion = (c: CuotaCobranza) => {
-          if (saldoCuota(c) === 0)        return { label: 'Pagada',     bg: '#dcfce7', color: '#15803d' }
-          if (c.status === 'PAGO_PARCIAL') return { label: 'Parcial',    bg: '#fffbeb', color: '#d97706' }
-          if (mesExigible)                 return { label: 'Vencida',    bg: '#fef2f2', color: '#dc2626' }
-          return                                  { label: 'Por vencer', bg: '#eff6ff', color: '#2563eb' }
+          if (saldoCuota(c) === 0)        return { label: 'Pagada',     bg: '#E6E8EB', color: '#1F7A50' }
+          if (c.status === 'PAGO_PARCIAL') return { label: 'Parcial',    bg: '#F4F5F7', color: '#B5761A' }
+          if (mesExigible)                 return { label: 'Vencida',    bg: '#F4F5F7', color: '#C23B3B' }
+          return                                  { label: 'Por vencer', bg: '#F4F5F7', color: '#1C1D21' }
         }
 
         return (
@@ -991,21 +991,21 @@ export default function CarritosPage() {
             {/* KPIs del mes */}
             <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
               {[
-                { label: `Emitido — ${mesLabel}`, value: fmt$(emitido), sub: `${cuotasMes.length} cuota${cuotasMes.length !== 1 ? 's' : ''}`, color: '#2563eb', bg: '#eff6ff' },
-                { label: 'Cobrado del mes', value: fmt$(cobrado), sub: `${pagadas} pagada${pagadas !== 1 ? 's' : ''} · ${avance}% de avance`, color: '#059669', bg: '#ecfdf5' },
+                { label: `Emitido — ${mesLabel}`, value: fmt$(emitido), sub: `${cuotasMes.length} cuota${cuotasMes.length !== 1 ? 's' : ''}`, color: '#1C1D21', bg: '#F4F5F7' },
+                { label: 'Cobrado del mes', value: fmt$(cobrado), sub: `${pagadas} pagada${pagadas !== 1 ? 's' : ''} · ${avance}% de avance`, color: '#267F56', bg: '#F4F5F7' },
                 {
                   label: mesExigible ? 'Cartera vencida del mes' : 'Por cobrar del mes',
                   value: fmt$(porCobrar),
                   sub: mesExigible ? 'Exigible — regla del día 10' : 'Por vencer — exigible a partir del día 11',
-                  color: porCobrar > 0 ? (mesExigible ? '#dc2626' : '#d97706') : '#64748b',
-                  bg:    porCobrar > 0 ? (mesExigible ? '#fef2f2' : '#fffbeb') : '#f8fafc',
+                  color: porCobrar > 0 ? (mesExigible ? '#C23B3B' : '#B5761A') : '#62666E',
+                  bg:    porCobrar > 0 ? '#F4F5F7' : '#F8F9FA',
                 },
-                { label: 'Cartera vencida total', value: fmt$(carteraVencida.monto), sub: `${carteraVencida.count} cuota${carteraVencida.count !== 1 ? 's' : ''} de todos los meses`, color: carteraVencida.monto > 0 ? '#dc2626' : '#64748b', bg: carteraVencida.monto > 0 ? '#fef2f2' : '#f8fafc' },
+                { label: 'Cartera vencida total', value: fmt$(carteraVencida.monto), sub: `${carteraVencida.count} cuota${carteraVencida.count !== 1 ? 's' : ''} de todos los meses`, color: carteraVencida.monto > 0 ? '#C23B3B' : '#62666E', bg: carteraVencida.monto > 0 ? '#F4F5F7' : '#F8F9FA' },
               ].map(c => (
-                <div key={c.label} className="card" style={{ flex: '1 1 200px', maxWidth: 280, padding: '14px 18px', background: c.bg, border: `1px solid ${c.color}22` }}>
-                  <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4, textTransform: 'capitalize' }}>{c.label}</div>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{loadingC ? '—' : c.value}</div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{loadingC ? '' : c.sub}</div>
+                <div key={c.label} className="card" style={{ flex: '1 1 200px', maxWidth: 280, padding: '14px 18px', background: '#fff', border: '1px solid #E6E8EB' }}>
+                  <div style={{ fontSize: 11, color: '#62666E', marginBottom: 4, textTransform: 'capitalize' }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: c.color, marginRight: 6, verticalAlign: 'middle' }} />{c.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{loadingC ? '—' : c.value}</div>
+                  <div style={{ fontSize: 11, color: '#7A7E87', marginTop: 2 }}>{loadingC ? '' : c.sub}</div>
                 </div>
               ))}
             </div>
@@ -1013,17 +1013,17 @@ export default function CarritosPage() {
             {/* Filtros */}
             <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
               <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 320 }}>
-                <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
+                <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
                   placeholder="Buscar socio o placa…" value={busquedaC} onChange={e => setBusquedaC(e.target.value)} />
-                {busquedaC && <button onClick={() => setBusquedaC('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+                {busquedaC && <button onClick={() => setBusquedaC('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2 }}><X size={12} /></button>}
               </div>
               {(() => {
                 const [anioSel, mesSel] = mesCobranza.split('-')
                 const anioActual = new Date().getFullYear()
                 const anios = Array.from({ length: anioActual + 1 - 2024 + 1 }, (_, i) => 2024 + i)
                 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
-                const selStyle: React.CSSProperties = { padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none' }
+                const selStyle: React.CSSProperties = { padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none' }
                 return (
                   <>
                     <select value={anioSel} onChange={e => setMesCobranza(`${e.target.value}-${mesSel}`)} style={selStyle}>
@@ -1035,16 +1035,16 @@ export default function CarritosPage() {
                   </>
                 )
               })()}
-              <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+              <div style={{ display: 'flex', gap: 0, border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
                 {([
-                  { key: 'todas',      label: 'Todas',      color: '#059669' },
-                  { key: 'por_cobrar', label: 'Por cobrar', color: '#dc2626' },
-                  { key: 'pagadas',    label: 'Pagadas',    color: '#2563eb' },
+                  { key: 'todas',      label: 'Todas',      color: '#267F56' },
+                  { key: 'por_cobrar', label: 'Por cobrar', color: '#C23B3B' },
+                  { key: 'pagadas',    label: 'Pagadas',    color: '#1C1D21' },
                 ] as const).map(f => (
                   <button key={f.key} onClick={() => setFiltroStatusC(f.key)} style={{
                     padding: '7px 14px', fontSize: 12, fontWeight: filtroStatusC === f.key ? 600 : 400,
                     background: filtroStatusC === f.key ? f.color : '#fff',
-                    color: filtroStatusC === f.key ? '#fff' : '#94a3b8',
+                    color: filtroStatusC === f.key ? '#fff' : '#7A7E87',
                     border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', whiteSpace: 'nowrap',
                   }}>
                     {f.label}
@@ -1083,8 +1083,8 @@ export default function CarritosPage() {
                             <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{nc(c.cat_socios)}</div>
                             {c.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>#{c.cat_socios.numero_socio}</div>}
                             {c.ctrl_pensiones?.cat_familiares && (
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, padding: '1px 6px', borderRadius: 20, background: '#f3e8ff', color: '#7c3aed', fontWeight: 600, marginTop: 2 }}>
-                                👤 {nc(c.ctrl_pensiones.cat_familiares)}{c.ctrl_pensiones.cat_familiares.parentesco ? ` · ${c.ctrl_pensiones.cat_familiares.parentesco}` : ''}
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, padding: '1px 6px', borderRadius: 20, background: '#6B4E79', color: '#fff', fontWeight: 600, marginTop: 2 }}>
+                                {nc(c.ctrl_pensiones.cat_familiares)}{c.ctrl_pensiones.cat_familiares.parentesco ? ` · ${c.ctrl_pensiones.cat_familiares.parentesco}` : ''}
                               </span>
                             )}
                           </td>
@@ -1093,14 +1093,14 @@ export default function CarritosPage() {
                           </td>
                           <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12 }}>{c.concepto}</td>
                           <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>{fmt$(c.monto_final)}</td>
-                          <td style={{ padding: '10px 14px', fontWeight: 600, color: '#059669', whiteSpace: 'nowrap' }}>
-                            {c.monto_final - saldo > 0 ? fmt$(c.monto_final - saldo) : <span style={{ color: '#cbd5e1', fontWeight: 400 }}>—</span>}
+                          <td style={{ padding: '10px 14px', fontWeight: 600, color: '#267F56', whiteSpace: 'nowrap' }}>
+                            {c.monto_final - saldo > 0 ? fmt$(c.monto_final - saldo) : <span style={{ color: '#C9CCD3', fontWeight: 400 }}>—</span>}
                           </td>
-                          <td style={{ padding: '10px 14px', fontWeight: 700, color: saldo > 0 ? '#dc2626' : '#cbd5e1', whiteSpace: 'nowrap' }}>
+                          <td style={{ padding: '10px 14px', fontWeight: 700, color: saldo > 0 ? '#C23B3B' : '#C9CCD3', whiteSpace: 'nowrap' }}>
                             {saldo > 0 ? fmt$(saldo) : '—'}
                           </td>
                           <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: sit.bg, color: sit.color }}>{sit.label}</span>
+                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: sit.color, color: '#fff'}}>{sit.label}</span>
                           </td>
                           <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                             {c.fecha_pago ? fechaFmtR(c.fecha_pago) : '—'}
@@ -1108,7 +1108,7 @@ export default function CarritosPage() {
                           <td style={{ padding: '10px 14px' }}>
                             {puedeEscribir && saldo > 0 && (
                               <button onClick={() => abrirCobroPension(c)}
-                                style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#059669', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#fff', background: '#1F7A50', border: '1px solid #1F7A50', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                 <CreditCard size={12} /> Cobrar
                               </button>
                             )}
@@ -1124,8 +1124,8 @@ export default function CarritosPage() {
                           Total ({cuotasF.length} cuota{cuotasF.length !== 1 ? 's' : ''})
                         </td>
                         <td style={{ padding: '10px 14px', fontWeight: 700, whiteSpace: 'nowrap' }}>{fmt$(fMonto)}</td>
-                        <td style={{ padding: '10px 14px', fontWeight: 700, color: '#059669', whiteSpace: 'nowrap' }}>{fmt$(fMonto - fSaldo)}</td>
-                        <td style={{ padding: '10px 14px', fontWeight: 700, color: fSaldo > 0 ? '#dc2626' : '#cbd5e1', whiteSpace: 'nowrap' }}>{fSaldo > 0 ? fmt$(fSaldo) : '—'}</td>
+                        <td style={{ padding: '10px 14px', fontWeight: 700, color: '#267F56', whiteSpace: 'nowrap' }}>{fmt$(fMonto - fSaldo)}</td>
+                        <td style={{ padding: '10px 14px', fontWeight: 700, color: fSaldo > 0 ? '#C23B3B' : '#C9CCD3', whiteSpace: 'nowrap' }}>{fSaldo > 0 ? fmt$(fSaldo) : '—'}</td>
                         <td colSpan={3} />
                       </tr>
                     </tfoot>
@@ -1145,19 +1145,19 @@ export default function CarritosPage() {
         <>
           <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 340 }}>
-              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
+              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
                 placeholder="Buscar por socio o folio…" value={busquedaR} onChange={e => setBusquedaR(e.target.value)} />
-              {busquedaR && <button onClick={() => setBusquedaR('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+              {busquedaR && <button onClick={() => setBusquedaR('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2 }}><X size={12} /></button>}
             </div>
             <select
-              style={{ padding: '7px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', outline: 'none', fontFamily: 'inherit' }}
+              style={{ padding: '7px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', outline: 'none', fontFamily: 'inherit' }}
               value={filtroStatusR} onChange={e => setFiltroStatusR(e.target.value)}>
               <option value="VIGENTE">Vigentes</option>
               <option value="CANCELADO">Cancelados</option>
               <option value="todos">Todos</option>
             </select>
-            <button onClick={fetchRecibosCarritos} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#64748b', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '7px 12px', cursor: 'pointer' }}>
+            <button onClick={fetchRecibosCarritos} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#62666E', background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8, padding: '7px 12px', cursor: 'pointer' }}>
               <RefreshCw size={12} /> Actualizar
             </button>
           </div>
@@ -1174,7 +1174,7 @@ export default function CarritosPage() {
                 </thead>
                 <tbody>
                   {loadingR ? (
-                    <tr><td colSpan={9} style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>
+                    <tr><td colSpan={9} style={{ padding: 40, textAlign: 'center', color: '#7A7E87' }}>
                       <Loader size={20} className="animate-spin" style={{ margin: '0 auto' }} />
                     </td></tr>
                   ) : (() => {
@@ -1184,7 +1184,7 @@ export default function CarritosPage() {
                       return ncR(r.cat_socios).toLowerCase().includes(q) || r.folio.toLowerCase().includes(q)
                     })
                     return recibosF.length === 0 ? (
-                      <tr><td colSpan={9} style={{ padding: 48, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+                      <tr><td colSpan={9} style={{ padding: 48, textAlign: 'center', color: '#7A7E87', fontSize: 13 }}>
                         Sin recibos de pensión con los filtros actuales
                       </td></tr>
                     ) : recibosF.map((r, i) => {
@@ -1193,43 +1193,43 @@ export default function CarritosPage() {
                         <tr key={r.id} style={{ borderBottom: i < recibosF.length - 1 ? '1px solid var(--border)' : 'none', opacity: r.status === 'CANCELADO' ? 0.65 : 1 }}>
                           <td style={{ padding: '11px 14px' }}>
                             <button onClick={() => { setDetalleRecibo(r); setTicketErrR('') }}
-                              style={{ fontSize: 13, fontWeight: 700, color: '#0891b2', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                              style={{ fontSize: 13, fontWeight: 700, color: '#32789A', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
                               {r.folio}
                             </button>
                           </td>
                           <td style={{ padding: '11px 14px' }}>
                             <div style={{ fontWeight: 500 }}>{ncR(r.cat_socios)}</div>
-                            {r.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: '#94a3b8' }}>#{r.cat_socios.numero_socio}</div>}
+                            {r.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: '#7A7E87' }}>#{r.cat_socios.numero_socio}</div>}
                           </td>
-                          <td style={{ padding: '11px 14px', fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>
+                          <td style={{ padding: '11px 14px', fontSize: 12, color: '#62666E', whiteSpace: 'nowrap' }}>
                             {fechaFmtR(r.fecha_recibo)}
                           </td>
-                          <td style={{ padding: '11px 14px', fontSize: 13, color: '#475569', textAlign: 'center' }}>
+                          <td style={{ padding: '11px 14px', fontSize: 13, color: '#4A4D54', textAlign: 'center' }}>
                             {r.recibos_golf_det.length}
                           </td>
-                          <td style={{ padding: '11px 14px', fontSize: 14, fontWeight: 700, color: r.status === 'CANCELADO' ? '#94a3b8' : '#059669', whiteSpace: 'nowrap' }}>
+                          <td style={{ padding: '11px 14px', fontSize: 14, fontWeight: 700, color: r.status === 'CANCELADO' ? '#7A7E87' : '#267F56', whiteSpace: 'nowrap' }}>
                             {fmt$(r.total)}
                           </td>
-                          <td style={{ padding: '11px 14px', fontSize: 12, color: '#64748b' }}>
+                          <td style={{ padding: '11px 14px', fontSize: 12, color: '#62666E' }}>
                             {r.forma_pago_nombre ?? '—'}
                           </td>
                           <td style={{ padding: '11px 14px' }}>
-                            <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: sc.bg, color: sc.color }}>{sc.label}</span>
+                            <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: sc.color, color: '#fff'}}>{sc.label}</span>
                           </td>
                           <td style={{ padding: '11px 14px' }}>
                             {r.id_venta_pos_fk
-                              ? <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#ecfdf5', color: '#15803d', fontWeight: 600 }}>#{String(r.id_venta_pos_fk).padStart(6, '0')}</span>
-                              : <span style={{ color: '#cbd5e1', fontSize: 11 }}>—</span>}
+                              ? <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#1F7A50', color: '#fff', fontWeight: 600 }}>#{String(r.id_venta_pos_fk).padStart(6, '0')}</span>
+                              : <span style={{ color: '#C9CCD3', fontSize: 11 }}>—</span>}
                           </td>
                           <td style={{ padding: '11px 14px' }}>
                             <div style={{ display: 'flex', gap: 6 }}>
                               <button onClick={() => handlePrintRecibo(r)} title="Imprimir recibo"
-                                style={{ padding: '5px 8px', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer', color: '#475569', display: 'flex', alignItems: 'center' }}>
+                                style={{ padding: '5px 8px', border: '1px solid #E6E8EB', borderRadius: 6, background: '#fff', cursor: 'pointer', color: '#4A4D54', display: 'flex', alignItems: 'center' }}>
                                 <Printer size={13} />
                               </button>
                               {r.status === 'VIGENTE' && (
                                 <button onClick={() => { setDetalleRecibo(r); setTicketErrR('') }} title="Generar/Reimprimir Ticket POS"
-                                  style={{ padding: '5px 8px', border: '1px solid #a7f3d0', borderRadius: 6, background: '#ecfdf5', cursor: 'pointer', color: '#047857', display: 'flex', alignItems: 'center' }}>
+                                  style={{ padding: '5px 8px', border: '1px solid #1F7A50', borderRadius: 6, background: '#1F7A50', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center' }}>
                                   <Receipt size={13} />
                                 </button>
                               )}
@@ -1254,13 +1254,13 @@ export default function CarritosPage() {
                 <button className="btn-secondary" onClick={() => { setDetalleRecibo(null); setTicketErrR('') }}>Cerrar</button>
                 {detalleRecibo.status === 'VIGENTE' && (
                   <button onClick={() => generarTicketCarritoDesdeRecibo(detalleRecibo)} disabled={generandoTicketR}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #a7f3d0', borderRadius: 8, background: '#ecfdf5', color: '#047857', cursor: 'pointer', opacity: generandoTicketR ? 0.6 : 1 }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #E6E8EB', borderRadius: 8, background: '#F4F5F7', color: '#1F7A50', cursor: 'pointer', opacity: generandoTicketR ? 0.6 : 1 }}>
                     {generandoTicketR ? <Loader size={14} className="animate-spin" /> : <Receipt size={14} />}
                     {detalleRecibo.id_venta_pos_fk ? 'Reimprimir Ticket POS' : 'Generar Ticket POS'}
                   </button>
                 )}
                 <button className="btn-primary" onClick={() => handlePrintRecibo(detalleRecibo)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#065f46', border: 'none' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#17603F', border: 'none' }}>
                   <Printer size={14} /> Imprimir Recibo
                 </button>
               </>}
@@ -1272,39 +1272,39 @@ export default function CarritosPage() {
                       {STATUS_COLOR[detalleRecibo.status]?.label}
                     </span>
                     {detalleRecibo.id_venta_pos_fk && (
-                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#ecfdf5', color: '#15803d', fontWeight: 600 }}>
+                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#1F7A50', color: '#fff', fontWeight: 600 }}>
                         Ticket #{String(detalleRecibo.id_venta_pos_fk).padStart(6, '0')}
                       </span>
                     )}
                   </div>
 
                   {ticketErrR && (
-                    <div style={{ marginBottom: 16, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+                    <div style={{ marginBottom: 16, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>
                       {ticketErrR}
                     </div>
                   )}
 
                   {/* Socio */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px', marginBottom: 20, padding: '12px 16px', background: '#f8fafc', borderRadius: 10 }}>
-                    <div><div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Socio</div><div style={{ fontSize: 13, fontWeight: 600 }}>{ncR(detalleRecibo.cat_socios)}</div></div>
-                    {detalleRecibo.cat_socios?.numero_socio && <div><div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>No. Socio</div><div style={{ fontSize: 13, fontWeight: 600 }}>#{detalleRecibo.cat_socios.numero_socio}</div></div>}
-                    <div><div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Cajero</div><div style={{ fontSize: 13, fontWeight: 600 }}>{detalleRecibo.usuario_cobra ?? '—'}</div></div>
-                    <div><div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Forma de pago</div><div style={{ fontSize: 13, fontWeight: 600 }}>{detalleRecibo.forma_pago_nombre ?? '—'}</div></div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px', marginBottom: 20, padding: '12px 16px', background: '#F8F9FA', borderRadius: 10 }}>
+                    <div><div style={{ fontSize: 10, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Socio</div><div style={{ fontSize: 13, fontWeight: 600 }}>{ncR(detalleRecibo.cat_socios)}</div></div>
+                    {detalleRecibo.cat_socios?.numero_socio && <div><div style={{ fontSize: 10, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>No. Socio</div><div style={{ fontSize: 13, fontWeight: 600 }}>#{detalleRecibo.cat_socios.numero_socio}</div></div>}
+                    <div><div style={{ fontSize: 10, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Cajero</div><div style={{ fontSize: 13, fontWeight: 600 }}>{detalleRecibo.usuario_cobra ?? '—'}</div></div>
+                    <div><div style={{ fontSize: 10, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Forma de pago</div><div style={{ fontSize: 13, fontWeight: 600 }}>{detalleRecibo.forma_pago_nombre ?? '—'}</div></div>
                   </div>
 
                   {/* Cuotas */}
                   <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Pensiones cobradas</div>
-                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Pensiones cobradas</div>
+                    <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
                       {detalleRecibo.recibos_golf_det.map((d, i) => (
-                        <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: i < detalleRecibo.recibos_golf_det.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                        <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: i < detalleRecibo.recibos_golf_det.length - 1 ? '1px solid #F4F5F7' : 'none' }}>
                           <div>
-                            <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>{d.concepto}</div>
-                            {d.periodo && <div style={{ fontSize: 11, color: '#94a3b8' }}>{d.periodo}</div>}
+                            <div style={{ fontSize: 13, fontWeight: 500, color: '#26282D' }}>{d.concepto}</div>
+                            {d.periodo && <div style={{ fontSize: 11, color: '#7A7E87' }}>{d.periodo}</div>}
                           </div>
                           <div style={{ textAlign: 'right' }}>
-                            {d.descuento > 0 && <div style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through' }}>{fmt$(d.monto_original)}</div>}
-                            <div style={{ fontSize: 14, fontWeight: 700, color: '#059669' }}>{fmt$(d.monto_final)}</div>
+                            {d.descuento > 0 && <div style={{ fontSize: 10, color: '#7A7E87', textDecoration: 'line-through' }}>{fmt$(d.monto_original)}</div>}
+                            <div style={{ fontSize: 14, fontWeight: 700, color: '#267F56' }}>{fmt$(d.monto_final)}</div>
                           </div>
                         </div>
                       ))}
@@ -1314,19 +1314,19 @@ export default function CarritosPage() {
                   {/* Totales */}
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
                     <div style={{ width: 220 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b', padding: '3px 0' }}><span>Subtotal</span><span>{fmt$(detalleRecibo.subtotal)}</span></div>
-                      {detalleRecibo.descuento > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#dc2626', padding: '3px 0' }}><span>Descuento</span><span>– {fmt$(detalleRecibo.descuento)}</span></div>}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 700, color: '#059669', borderTop: '2px solid #e2e8f0', paddingTop: 6, marginTop: 4 }}><span>Total</span><span>{fmt$(detalleRecibo.total)}</span></div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#62666E', padding: '3px 0' }}><span>Subtotal</span><span>{fmt$(detalleRecibo.subtotal)}</span></div>
+                      {detalleRecibo.descuento > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#C23B3B', padding: '3px 0' }}><span>Descuento</span><span>– {fmt$(detalleRecibo.descuento)}</span></div>}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 700, color: '#267F56', borderTop: '2px solid #E6E8EB', paddingTop: 6, marginTop: 4 }}><span>Total</span><span>{fmt$(detalleRecibo.total)}</span></div>
                     </div>
                   </div>
 
                   {detalleRecibo.referencia_pago && (
-                    <div style={{ padding: '8px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, fontSize: 12, color: '#15803d', marginBottom: 12 }}>
+                    <div style={{ padding: '8px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #1F7A50', borderRadius: 8, fontSize: 12, color: '#1F7A50', marginBottom: 12 }}>
                       <strong>Referencia:</strong> {detalleRecibo.referencia_pago}
                     </div>
                   )}
                   {detalleRecibo.observaciones && (
-                    <div style={{ padding: '8px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#64748b' }}>
+                    <div style={{ padding: '8px 14px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, fontSize: 12, color: '#62666E' }}>
                       <strong>Observaciones:</strong> {detalleRecibo.observaciones}
                     </div>
                   )}
@@ -1342,31 +1342,31 @@ export default function CarritosPage() {
 
           {/* Tarifa mensual */}
           <div className="card" style={{ padding: 20, maxWidth: 560 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>Tarifa de Pensión Mensual</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#26282D', marginBottom: 12 }}>Tarifa de Pensión Mensual</div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Monto mensual ($)</label>
-                <input style={{ width: '100%', padding: '8px 12px', fontSize: 16, fontWeight: 700, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>Monto mensual ($)</label>
+                <input style={{ width: '100%', padding: '8px 12px', fontSize: 16, fontWeight: 700, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
                   type="number" min={0} step={0.01} value={tarifaEdit} onChange={e => setTarifaEdit(parseFloat(e.target.value) || 0)} />
               </div>
               <button onClick={guardarTarifa} disabled={savingConfig || tarifaEdit === tarifa}
-                style={{ padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: (savingConfig || tarifaEdit === tarifa) ? 0.6 : 1, whiteSpace: 'nowrap' }}>
+                style={{ padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#267F56', color: '#fff', cursor: 'pointer', opacity: (savingConfig || tarifaEdit === tarifa) ? 0.6 : 1, whiteSpace: 'nowrap' }}>
                 {savingConfig ? 'Guardando…' : 'Guardar'}
               </button>
             </div>
-            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 8 }}>
+            <div style={{ fontSize: 12, color: '#7A7E87', marginTop: 8 }}>
               Esta tarifa se usa como valor predeterminado al crear nuevas pensiones. Las pensiones existentes mantienen su tarifa original.
             </div>
           </div>
 
           {/* Centros de venta POS */}
           <div className="card" style={{ padding: 20, maxWidth: 560 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>Centros de venta POS</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#26282D', marginBottom: 12 }}>Centros de venta POS</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Cuotas de membresía / inscripción</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>Cuotas de membresía / inscripción</label>
                 <select
-                  style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
+                  style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
                   value={idCentroMembresias ?? ''}
                   onChange={e => setIdCentroMembresias(e.target.value ? Number(e.target.value) : null)}>
                   <option value="">— Sin configurar (usa heurística por nombre) —</option>
@@ -1374,9 +1374,9 @@ export default function CarritosPage() {
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Pensión de carrito</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>Pensión de carrito</label>
                 <select
-                  style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
+                  style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
                   value={idCentroPension ?? ''}
                   onChange={e => setIdCentroPension(e.target.value ? Number(e.target.value) : null)}>
                   <option value="">— Sin configurar (usa heurística por nombre) —</option>
@@ -1384,14 +1384,14 @@ export default function CarritosPage() {
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Producto POS (Pensión de carrito) — fuente real de facturación</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>Producto POS (Pensión de carrito) — fuente real de facturación</label>
                 <ProductoPosSelect idCentroFk={idCentroPension} value={idProductoPension} onChange={setIdProductoPension}
                   style={{ width: '100%', padding: '8px 12px', fontSize: 13, borderRadius: 8 }} />
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Concepto de ingreso (Pensión de carrito) — respaldo si no hay producto</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>Concepto de ingreso (Pensión de carrito) — respaldo si no hay producto</label>
                 <select
-                  style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
+                  style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
                   value={idConceptoPension ?? ''}
                   onChange={e => setIdConceptoPension(e.target.value ? Number(e.target.value) : null)}>
                   <option value="">— Sin asignar (cae en &quot;Otros&quot; al distribuir el corte) —</option>
@@ -1399,11 +1399,11 @@ export default function CarritosPage() {
                 </select>
               </div>
               <button onClick={guardarCentros} disabled={savingCentros}
-                style={{ alignSelf: 'flex-start', padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: savingCentros ? 0.6 : 1 }}>
+                style={{ alignSelf: 'flex-start', padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#267F56', color: '#fff', cursor: 'pointer', opacity: savingCentros ? 0.6 : 1 }}>
                 {savingCentros ? 'Guardando…' : 'Guardar'}
               </button>
             </div>
-            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 8 }}>
+            <div style={{ fontSize: 12, color: '#7A7E87', marginTop: 8 }}>
               Define a qué centro de venta se postean los tickets POS generados al cobrar cuotas. Si no se configura, se intenta adivinar por nombre del centro (menos confiable).
             </div>
           </div>
@@ -1411,20 +1411,20 @@ export default function CarritosPage() {
           {/* Slots */}
           <div className="card" style={{ padding: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b' }}>Slots / Cajones ({slots.length})</div>
-              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: '#fef2f2', color: '#dc2626' }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#26282D' }}>Slots / Cajones ({slots.length})</div>
+              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: '#C23B3B', color: '#fff' }}>
                 {slots.filter(s => slotsOcupados.has(s.id)).length} ocupados
               </span>
-              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: '#f0fdf4', color: '#15803d' }}>
+              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: '#1F7A50', color: '#fff' }}>
                 {slots.filter(s => !slotsOcupados.has(s.id)).length} disponibles
               </span>
             </div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 16, maxWidth: 520 }}>
-              <input style={{ flex: 1, padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none' }}
+              <input style={{ flex: 1, padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none' }}
                 placeholder="Número de cajón (ej. 42, A-12)…" value={nuevoSlot} onChange={e => setNuevoSlot(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && agregarSlot()} />
               <button onClick={agregarSlot} disabled={savingSlot || !nuevoSlot.trim()}
-                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: (!nuevoSlot.trim() || savingSlot) ? 0.6 : 1 }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#267F56', color: '#fff', cursor: 'pointer', opacity: (!nuevoSlot.trim() || savingSlot) ? 0.6 : 1 }}>
                 <Plus size={13} /> Agregar
               </button>
             </div>
@@ -1434,24 +1434,24 @@ export default function CarritosPage() {
                 return (
                   <div key={s.id} style={{
                     padding: '10px 12px', borderRadius: 10,
-                    background: ocupado ? '#fef2f2' : '#f0fdf4',
-                    border: `1px solid ${ocupado ? '#fecaca' : '#a7f3d0'}`,
+                    background: '#F4F5F7',
+                    border: '1px solid #E6E8EB',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: ocupado ? '#991b1b' : '#065f46' }}>Cajón {s.numero}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: ocupado ? '#8C2A2A' : '#17603F' }}>Cajón {s.numero}</span>
                       <button onClick={() => desactivarSlot(s.id)} disabled={ocupado}
                         title={ocupado ? 'No se puede desactivar un cajón ocupado' : 'Desactivar cajón'}
-                        style={{ background: 'none', border: 'none', cursor: ocupado ? 'default' : 'pointer', color: ocupado ? '#e2e8f0' : '#94a3b8', padding: 1, lineHeight: 1 }}>
+                        style={{ background: 'none', border: 'none', cursor: ocupado ? 'default' : 'pointer', color: ocupado ? '#E6E8EB' : '#7A7E87', padding: 1, lineHeight: 1 }}>
                         <X size={12} />
                       </button>
                     </div>
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.04em', background: ocupado ? '#fee2e2' : '#dcfce7', color: ocupado ? '#dc2626' : '#15803d' }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.04em', background: ocupado ? '#C23B3B' : '#1F7A50', color: '#fff' }}>
                       {ocupado ? 'Ocupado' : 'Disponible'}
                     </span>
                   </div>
                 )
               })}
-              {slots.length === 0 && <div style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>No hay slots configurados</div>}
+              {slots.length === 0 && <div style={{ fontSize: 12, color: '#7A7E87', fontStyle: 'italic' }}>No hay slots configurados</div>}
             </div>
           </div>
         </div>
@@ -1496,12 +1496,12 @@ export default function CarritosPage() {
                   nombreFamiliar: nombreF,
                 })
               }}
-              style={{ background: '#059669', border: 'none' }}>
+              style={{ background: '#267F56', border: 'none' }}>
               Asignar Pensión
             </button>
           </>}
         >
-          <div style={{ fontSize: 13, color: '#64748b', textAlign: 'center' }}>¿Deseas asignar un slot y generar cuotas de pensión ahora?</div>
+          <div style={{ fontSize: 13, color: '#62666E', textAlign: 'center' }}>¿Deseas asignar un slot y generar cuotas de pensión ahora?</div>
         </ModalShell>
       )}
 
@@ -1530,21 +1530,21 @@ export default function CarritosPage() {
           footer={<>
             <button className="btn-secondary" onClick={() => setShowSlot(null)}>Cancelar</button>
             <button className="btn-primary" onClick={guardarCambioSlot} disabled={savingSlotSel || slotSel === (showSlot.idSlotActual ?? '')}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#2563eb', border: 'none' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#1C1D21', border: 'none' }}>
               {savingSlotSel ? <Loader size={14} className="animate-spin" /> : <MapPin size={14} />}
               {slotSel === '' ? 'Liberar cajón' : 'Guardar cambio'}
             </button>
           </>}
         >
-            <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 14px', lineHeight: 1.5 }}>
+            <p style={{ fontSize: 12, color: '#62666E', margin: '0 0 14px', lineHeight: 1.5 }}>
               La pensión y sus cuotas no se modifican — solo la asignación del cajón.
               {showSlot.idSlotActual ? ' Si lo liberas, el cajón queda disponible para otro carrito.' : ''}
             </p>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Cajón</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>Cajón</label>
             <select
               value={slotSel}
               onChange={e => setSlotSel(e.target.value ? Number(e.target.value) : '')}
-              style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}>
+              style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}>
               <option value="">— Sin cajón (liberar) —</option>
               {slotsDisp.map(s => (
                 <option key={s.id} value={s.id}>
@@ -1553,7 +1553,7 @@ export default function CarritosPage() {
               ))}
             </select>
             {errorSlot && (
-              <div style={{ marginTop: 12, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+              <div style={{ marginTop: 12, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>
                 {errorSlot}
               </div>
             )}

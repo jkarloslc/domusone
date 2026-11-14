@@ -125,7 +125,7 @@ export default function PropietariosPage() {
                 </td></tr>
               ) : propietarios.map(p => (
                 <tr key={p.id}>
-                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)' }}>
+                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--text-secondary)' }}>
                     {p.clave ?? '—'}
                   </td>
                   <td>
@@ -141,7 +141,7 @@ export default function PropietariosPage() {
                       {(p as any).tipo_persona ?? 'Física'}
                     </span>
                   </td>
-                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)' }}>
+                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--text-secondary)' }}>
                     {p.rfc ?? '—'}
                   </td>
                   <td><ContactoCell id={p.id} /></td>

@@ -10,9 +10,9 @@ const fmtPeso = (n: number | null | undefined) =>
   n != null ? '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 0 }) : '—'
 
 const STATUS_COLOR: Record<string, string> = {
-  Vendido:   '#15803d',
-  Libre:     '#1d4ed8',
-  Bloqueado: '#dc2626',
+  Vendido:   '#1F7A50',
+  Libre:     '#26282D',
+  Bloqueado: '#C23B3B',
 }
 
 export default function ReporteLotesPorSeccionClasif() {
@@ -140,11 +140,11 @@ export default function ReporteLotesPorSeccionClasif() {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
         {[
           { label: 'Total Lotes',    value: totalLotes,      color: 'var(--blue)' },
-          { label: 'Vendidos',       value: totalVendidos,   color: '#15803d' },
-          { label: 'Libres',         value: totalLibres,     color: '#1d4ed8' },
-          { label: 'Bloqueados',     value: totalBloqueados, color: '#dc2626' },
+          { label: 'Vendidos',       value: totalVendidos,   color: '#1F7A50' },
+          { label: 'Libres',         value: totalLibres,     color: '#26282D' },
+          { label: 'Bloqueados',     value: totalBloqueados, color: '#C23B3B' },
           { label: 'Superficie m²',  value: fmt(totalSuperficie),  color: 'var(--text-primary)', raw: true },
-          { label: 'Valor Operación', value: fmtPeso(totalValor),  color: '#0f766e', raw: true },
+          { label: 'Valor Operación', value: fmtPeso(totalValor),  color: '#126B63', raw: true },
         ].map(k => (
           <div key={k.label} className="card" style={{ padding: '10px 16px', flex: '1 1 140px', maxWidth: 200, borderTop: `3px solid ${k.color}` }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>
@@ -179,7 +179,7 @@ export default function ReporteLotesPorSeccionClasif() {
                   onClick={() => toggleSec(sec)}
                   style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '12px 16px', background: 'var(--blue-pale)', border: 'none', cursor: 'pointer',
-                    borderBottom: expanded ? '1px solid #e2e8f0' : 'none' }}>
+                    borderBottom: expanded ? '1px solid #E6E8EB' : 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     {expanded
                       ? <ChevronDown  size={14} style={{ color: 'var(--blue)' }} />
@@ -189,11 +189,11 @@ export default function ReporteLotesPorSeccionClasif() {
                   </div>
                   <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
                     {vendidosSec > 0 && (
-                      <span style={{ color: '#15803d', fontWeight: 600 }}>{vendidosSec} vendido{vendidosSec !== 1 ? 's' : ''}</span>
+                      <span style={{ color: '#1F7A50', fontWeight: 600 }}>{vendidosSec} vendido{vendidosSec !== 1 ? 's' : ''}</span>
                     )}
                     <span style={{ color: 'var(--text-secondary)' }}>{fmt(superficieSec)} m²</span>
                     {valorSec > 0 && (
-                      <span style={{ color: '#0f766e', fontWeight: 600 }}>{fmtPeso(valorSec)}</span>
+                      <span style={{ color: '#126B63', fontWeight: 600 }}>{fmtPeso(valorSec)}</span>
                     )}
                   </div>
                 </button>
@@ -210,25 +210,25 @@ export default function ReporteLotesPorSeccionClasif() {
                       const libresClasif  = lotesClasif.filter(l => l.status_lote === 'Libre').length
 
                       return (
-                        <div key={key} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <div key={key} style={{ borderBottom: '1px solid #F4F5F7' }}>
                           {/* Sub-header clasificación */}
                           <button
                             onClick={() => toggleClasif(key)}
                             style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                              padding: '9px 16px 9px 32px', background: '#f8fafc', border: 'none', cursor: 'pointer',
-                              borderBottom: expClasif ? '1px solid #e2e8f0' : 'none' }}>
+                              padding: '9px 16px 9px 32px', background: '#F8F9FA', border: 'none', cursor: 'pointer',
+                              borderBottom: expClasif ? '1px solid #E6E8EB' : 'none' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               {expClasif
-                                ? <ChevronDown  size={12} style={{ color: '#64748b' }} />
-                                : <ChevronRight size={12} style={{ color: '#64748b' }} />}
-                              <span style={{ fontSize: 13, fontWeight: 600, color: '#475569' }}>{clasif}</span>
+                                ? <ChevronDown  size={12} style={{ color: '#62666E' }} />
+                                : <ChevronRight size={12} style={{ color: '#62666E' }} />}
+                              <span style={{ fontSize: 13, fontWeight: 600, color: '#4A4D54' }}>{clasif}</span>
                               <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>· {lotesClasif.length} lote{lotesClasif.length !== 1 ? 's' : ''}</span>
                             </div>
                             <div style={{ display: 'flex', gap: 14, fontSize: 11, color: 'var(--text-secondary)' }}>
-                              {vendClasif > 0  && <span style={{ color: '#15803d', fontWeight: 600 }}>{vendClasif} vendido{vendClasif !== 1 ? 's' : ''}</span>}
-                              {libresClasif > 0 && <span style={{ color: '#1d4ed8' }}>{libresClasif} libre{libresClasif !== 1 ? 's' : ''}</span>}
+                              {vendClasif > 0  && <span style={{ color: '#1F7A50', fontWeight: 600 }}>{vendClasif} vendido{vendClasif !== 1 ? 's' : ''}</span>}
+                              {libresClasif > 0 && <span style={{ color: '#26282D' }}>{libresClasif} libre{libresClasif !== 1 ? 's' : ''}</span>}
                               <span>{fmt(supClasif)} m²</span>
-                              {valClasif > 0 && <span style={{ color: '#0f766e' }}>{fmtPeso(valClasif)}</span>}
+                              {valClasif > 0 && <span style={{ color: '#126B63' }}>{fmtPeso(valClasif)}</span>}
                             </div>
                           </button>
 
@@ -262,7 +262,7 @@ export default function ReporteLotesPorSeccionClasif() {
                                       <td>
                                         <span style={{ fontSize: 11, fontWeight: 600,
                                           padding: '2px 8px', borderRadius: 20,
-                                          color: stColor, background: stColor + '15', border: `1px solid ${stColor}40` }}>
+                                          color: '#fff', background: stColor, border: `1px solid ${stColor}` }}>
                                           {l.status_lote ?? '—'}
                                         </span>
                                       </td>
@@ -279,7 +279,7 @@ export default function ReporteLotesPorSeccionClasif() {
                                   )
                                 })}
                                 {/* Subtotal clasificación */}
-                                <tr style={{ background: '#f8fafc', fontWeight: 600 }}>
+                                <tr style={{ background: '#F8F9FA', fontWeight: 600 }}>
                                   <td colSpan={2} style={{ fontSize: 11, color: 'var(--text-muted)', paddingLeft: 16 }}>
                                     Subtotal — {lotesClasif.length} lote{lotesClasif.length !== 1 ? 's' : ''}
                                   </td>
@@ -287,7 +287,7 @@ export default function ReporteLotesPorSeccionClasif() {
                                     {fmt(supClasif)}
                                   </td>
                                   <td colSpan={3} />
-                                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 12, color: '#0f766e' }}>
+                                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 12, color: '#126B63' }}>
                                     {valClasif > 0 ? fmtPeso(valClasif) : '—'}
                                   </td>
                                 </tr>
@@ -300,11 +300,11 @@ export default function ReporteLotesPorSeccionClasif() {
 
                     {/* Total sección */}
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 24, padding: '8px 16px',
-                      background: '#eff6ff', fontSize: 12, fontWeight: 600, borderTop: '1px solid #bfdbfe' }}>
+                      background: '#F4F5F7', fontSize: 12, fontWeight: 600, borderTop: '1px solid #C9CCD3' }}>
                       <span style={{ color: 'var(--text-secondary)' }}>Total sección: {totalSec} lotes</span>
                       <span style={{ color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>{fmt(superficieSec)} m²</span>
                       {valorSec > 0 && (
-                        <span style={{ color: '#0f766e', fontVariantNumeric: 'tabular-nums' }}>{fmtPeso(valorSec)}</span>
+                        <span style={{ color: '#126B63', fontVariantNumeric: 'tabular-nums' }}>{fmtPeso(valorSec)}</span>
                       )}
                     </div>
                   </div>

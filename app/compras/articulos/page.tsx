@@ -88,10 +88,10 @@ export default function ArticulosPage() {
             className="card"
             onClick={() => setFilterAlerta(f => !f)}
             style={{ padding: '10px 18px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
-              background: filterAlerta ? '#fef2f2' : undefined,
-              border: filterAlerta ? '1px solid #fecaca' : undefined }}>
-            <AlertTriangle size={14} style={{ color: '#dc2626' }} />
-            <span style={{ fontSize: 13, color: '#dc2626', fontWeight: 600 }}>
+              background: filterAlerta ? '#F4F5F7' : undefined,
+              border: filterAlerta ? '1px solid #E6E8EB' : undefined }}>
+            <AlertTriangle size={14} style={{ color: '#C23B3B' }} />
+            <span style={{ fontSize: 13, color: '#C23B3B', fontWeight: 600 }}>
               {alertas} bajo stock mínimo
             </span>
           </button>
@@ -148,7 +148,7 @@ export default function ArticulosPage() {
               const sinStock  = saldo === 0
               return (
                 <tr key={r.id} style={{ opacity: r.activo ? 1 : 0.4 }}>
-                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600, whiteSpace: 'nowrap' }}>
                     {r.clave}
                   </td>
                   <td>
@@ -162,7 +162,7 @@ export default function ArticulosPage() {
                   <td>
                     {r.id_tipo_gasto_fk ? (
                       <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20,
-                        background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0' }}>
+                        background: '#F4F5F7', color: '#4A4D54', border: '1px solid #E6E8EB' }}>
                         {catTG.nombre(r.id_tipo_gasto_fk)}
                       </span>
                     ) : <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>}
@@ -176,11 +176,11 @@ export default function ArticulosPage() {
                   <td style={{ textAlign: 'right' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
                       {bajoMin && r.activo && (
-                        <AlertTriangle size={12} style={{ color: sinStock ? '#dc2626' : '#d97706', flexShrink: 0 }} />
+                        <AlertTriangle size={12} style={{ color: sinStock ? '#C23B3B' : '#B5761A', flexShrink: 0 }} />
                       )}
                       <span style={{
                         fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 14,
-                        color: sinStock && r.activo ? '#dc2626' : bajoMin && r.activo ? '#d97706' : '#15803d'
+                        color: sinStock && r.activo ? '#C23B3B' : bajoMin && r.activo ? '#B5761A' : '#1F7A50'
                       }}>
                         {Number(saldo).toLocaleString('es-MX', { maximumFractionDigits: 3 })}
                       </span>
@@ -317,7 +317,7 @@ function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClos
 
         {/* Tabs (solo en edición) */}
         {!isNew && (
-          <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', padding: '0 24px' }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', padding: '0 24px' }}>
             {[
               { key: 'datos',      label: 'Datos' },
               { key: 'inventario', label: `Inventario ${invPorAlmacen.length ? `(${saldoTotal.toLocaleString('es-MX', { maximumFractionDigits: 3 })})` : ''}` },
@@ -326,7 +326,7 @@ function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClos
                 style={{ padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer',
                   fontSize: 13, fontFamily: 'var(--font-body)', fontWeight: tab === t.key ? 600 : 400,
                   color: tab === t.key ? 'var(--blue)' : 'var(--text-muted)',
-                  borderBottom: tab === t.key ? '2px solid var(--blue)' : '2px solid transparent', marginBottom: -1 }}>
+                  borderBottom: tab === t.key ? '2px solid #19D3C5' : '2px solid transparent', marginBottom: -1 }}>
                 {t.label}
               </button>
             ))}
@@ -334,7 +334,7 @@ function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClos
         )}
 
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+          {error && <div style={{ padding: '10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
 
           {/* Tab Datos */}
           {(tab === 'datos' || isNew) && (
@@ -347,7 +347,7 @@ function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClos
                     value={form.clave}
                     onChange={set('clave')}
                     disabled={isNew || loadingClave}
-                    style={{ textTransform: 'uppercase', fontFamily: 'monospace', background: isNew ? '#f8fafc' : undefined }}
+                    style={{ textTransform: 'uppercase', fontVariantNumeric: 'tabular-nums', background: isNew ? '#F8F9FA' : undefined }}
                     placeholder={isNew ? 'Se asigna al guardar' : ''}
                   />
                   {isNew && (
@@ -380,7 +380,7 @@ function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClos
                   </select>
                 </div>
               </div>
-              <div style={{ height: 1, background: '#f1f5f9', margin: '4px 0' }} />
+              <div style={{ height: 1, background: '#F4F5F7', margin: '4px 0' }} />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
                 <div>
                   <label className="label">Stock Mínimo</label>
@@ -414,7 +414,7 @@ function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClos
           {/* Tab Inventario */}
           {tab === 'inventario' && !isNew && (
             <div>
-              <div style={{ padding: '12px 16px', background: 'var(--blue-pale)', border: '1px solid #bfdbfe', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <div style={{ padding: '12px 16px', background: 'var(--blue-pale)', border: '1px solid #C9CCD3', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                 <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Existencia total</span>
                 <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>
                   {saldoTotal.toLocaleString('es-MX', { maximumFractionDigits: 3 })} {row.unidad}
@@ -444,7 +444,7 @@ function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClos
                               {(i.almacenes as any)?.nombre ?? `Almacén #${i.id_almacen_fk}`}
                             </td>
                             <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums',
-                              color: Number(i.cantidad) === 0 ? '#dc2626' : bajoMin ? '#d97706' : '#15803d', fontSize: 14 }}>
+                              color: Number(i.cantidad) === 0 ? '#C23B3B' : bajoMin ? '#B5761A' : '#1F7A50', fontSize: 14 }}>
                               {Number(i.cantidad).toLocaleString('es-MX', { maximumFractionDigits: 3 })}
                             </td>
                             <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{row.unidad}</td>

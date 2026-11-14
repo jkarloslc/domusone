@@ -23,8 +23,8 @@ type Props = {
   onSaved: () => void
 }
 
-const inputStyle = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none' }
-const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }
+const inputStyle = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none' }
+const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }
 
 export default function EditarCuotaModal({ cuota, onClose, onSaved }: Props) {
   const bloqueada = cuota.status === 'PAGADO' || cuota.status === 'CANCELADO'
@@ -89,7 +89,7 @@ export default function EditarCuotaModal({ cuota, onClose, onSaved }: Props) {
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn-ghost" onClick={onClose}>Cancelar</button>
           <button className="btn-primary" onClick={handleSave} disabled={saving}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#b45309' }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#96600F' }}>
             {saving ? <Loader size={13} /> : <Save size={13} />}
             {saving ? 'Guardando…' : 'Guardar Cambios'}
           </button>
@@ -98,7 +98,7 @@ export default function EditarCuotaModal({ cuota, onClose, onSaved }: Props) {
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {bloqueada && (
-          <div style={{ fontSize: 12, color: '#b45309', background: '#fff7ed', border: '1px solid #fde68a', padding: '8px 12px', borderRadius: 8 }}>
+          <div style={{ fontSize: 12, color: '#96600F', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #96600F', padding: '8px 12px', borderRadius: 8 }}>
             Esta cuota está {cuota.status === 'PAGADO' ? 'pagada' : 'cancelada'}. Solo puedes editar el concepto, periodo y fecha de vencimiento.
           </div>
         )}
@@ -136,15 +136,15 @@ export default function EditarCuotaModal({ cuota, onClose, onSaved }: Props) {
               </div>
             </div>
 
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-              <span style={{ color: '#64748b' }}>Monto final</span>
-              <span style={{ fontWeight: 700, color: '#b45309' }}>${montoFinalNuevo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+            <div style={{ background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+              <span style={{ color: '#62666E' }}>Monto final</span>
+              <span style={{ fontWeight: 700, color: '#96600F' }}>${montoFinalNuevo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
             </div>
           </>
         )}
 
         {err && (
-          <div style={{ fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>
+          <div style={{ fontSize: 12, color: '#C23B3B', background: '#F4F5F7', padding: '8px 12px', borderRadius: 6 }}>
             {err}
           </div>
         )}

@@ -202,8 +202,8 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
           )}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: '#b4530918', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Users size={15} style={{ color: '#b45309' }} />
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: '#96600F18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Users size={15} style={{ color: '#62666E' }} />
               </div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Colaboradores</h2>
             </div>
@@ -227,14 +227,14 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
       {/* Stats */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
         <div className="card" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <CheckCircle size={13} style={{ color: '#15803d' }} />
-          <span style={{ fontSize: 12 }}><strong style={{ color: '#15803d' }}>{activos}</strong> activos</span>
+          <CheckCircle size={13} style={{ color: '#1F7A50' }} />
+          <span style={{ fontSize: 12 }}><strong style={{ color: '#1F7A50' }}>{activos}</strong> activos</span>
         </div>
         <div className="card" style={{ padding: '8px 16px' }}>
-          <span style={{ fontSize: 12 }}><strong style={{ color: '#0369a1' }}>{asignados}</strong> asignables</span>
+          <span style={{ fontSize: 12 }}><strong style={{ color: '#2A6582' }}>{asignados}</strong> asignables</span>
         </div>
         <div className="card" style={{ padding: '8px 16px' }}>
-          <span style={{ fontSize: 12 }}><strong style={{ color: '#7c3aed' }}>{supervisores}</strong> supervisores</span>
+          <span style={{ fontSize: 12 }}><strong style={{ color: '#6B4E79' }}>{supervisores}</strong> supervisores</span>
         </div>
       </div>
 
@@ -425,7 +425,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
                 </label>
               </div>
             </div>
-            {error && <div style={{ marginTop: 12, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, fontSize: 13, color: '#dc2626' }}>{error}</div>}
+            {error && <div style={{ marginTop: 12, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 7, fontSize: 13, color: '#C23B3B' }}>{error}</div>}
         </ModalShell>
       )}
 
@@ -441,7 +441,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
           footer={
             <>
               {puedeEscribir && (
-                <button className="btn-ghost" style={{ fontSize: 12, color: viewing.activo ? '#dc2626' : '#15803d', marginRight: 'auto' }}
+                <button className="btn-ghost" style={{ fontSize: 12, color: viewing.activo ? '#C23B3B' : '#1F7A50', marginRight: 'auto' }}
                   onClick={() => toggleActivo(viewing)}>
                   {viewing.activo ? 'Dar de baja' : 'Reactivar'}
                 </button>
@@ -457,20 +457,20 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
         >
             <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20,
-                background: viewing.tipo === 'Externo' ? '#fff7ed' : '#eff6ff', color: viewing.tipo === 'Externo' ? '#c2410c' : '#0369a1' }}>
+                background: '#F4F5F7', color: viewing.tipo === 'Externo' ? '#A8501F' : '#2A6582' }}>
                 {viewing.tipo ?? 'Interno'}
               </span>
               {viewing.es_asignado && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#eff6ff', color: '#0369a1' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#F4F5F7', color: '#2A6582' }}>
                   <CheckCircle size={11} /> Asignado a OT
                 </span>
               )}
               {viewing.es_supervisor && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#f5f3ff', color: '#7c3aed' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#6B4E79', color: '#fff' }}>
                   <CheckCircle size={11} /> Supervisor OT
                 </span>
               )}
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: viewing.activo ? '#f0fdf4' : '#f8fafc', color: viewing.activo ? '#15803d' : '#94a3b8' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: viewing.activo ? '#1F7A50' : '#F8F9FA', color: viewing.activo ? '#fff' : '#7A7E87' }}>
                 {viewing.activo ? 'Activo' : 'Inactivo'}
               </span>
             </div>
@@ -490,9 +490,9 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
                 ...(viewing.id_cuadrante_fk ? [{ label: 'Zona', value: cuadrantes.find(c => c.id === viewing.id_cuadrante_fk)?.nombre ?? '—' }] : []),
                 ...(viewing.id_area_fk ? [{ label: 'Área Asignada', value: areas.find(a => a.id === viewing.id_area_fk)?.nombre ?? '—' }] : []),
               ].map(({ label, value }) => (
-                <div key={label} style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: 8 }}>
+                <div key={label} style={{ borderBottom: '1px solid #F4F5F7', paddingBottom: 8 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</div>
-                  <div style={{ color: '#1e293b', fontWeight: 500 }}>{value}</div>
+                  <div style={{ color: '#26282D', fontWeight: 500 }}>{value}</div>
                 </div>
               ))}
             </div>
@@ -538,7 +538,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
                 <td style={{ fontWeight: 500, whiteSpace: 'nowrap' }}>{nombreCompletoColaborador(c)}</td>
                 <td>
                   <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                    background: c.tipo === 'Externo' ? '#fff7ed' : '#eff6ff', color: c.tipo === 'Externo' ? '#c2410c' : '#0369a1' }}>
+                    background: '#F4F5F7', color: c.tipo === 'Externo' ? '#A8501F' : '#2A6582' }}>
                     {c.tipo ?? 'Interno'}
                   </span>
                 </td>
@@ -552,10 +552,10 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
                 <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{fmt$(c.sueldo_neto_mensual)}</td>
                 <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{fmt$(c.sueldo_diario)}</td>
                 <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{fmt$(c.costo_mensual)}</td>
-                <td style={{ textAlign: 'center' }}>{c.es_asignado ? <CheckCircle size={15} style={{ color: '#0369a1' }} /> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
-                <td style={{ textAlign: 'center' }}>{c.es_supervisor ? <CheckCircle size={15} style={{ color: '#7c3aed' }} /> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                <td style={{ textAlign: 'center' }}>{c.es_asignado ? <CheckCircle size={15} style={{ color: '#2A6582' }} /> : <span style={{ color: '#C9CCD3' }}>—</span>}</td>
+                <td style={{ textAlign: 'center' }}>{c.es_supervisor ? <CheckCircle size={15} style={{ color: '#6B4E79' }} /> : <span style={{ color: '#C9CCD3' }}>—</span>}</td>
                 <td style={{ textAlign: 'center' }}>
-                  {c.activo ? <ToggleRight size={20} style={{ color: '#15803d' }} /> : <ToggleLeft size={20} style={{ color: '#cbd5e1' }} />}
+                  {c.activo ? <ToggleRight size={20} style={{ color: '#1F7A50' }} /> : <ToggleLeft size={20} style={{ color: '#C9CCD3' }} />}
                 </td>
                 <td>
                   <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
@@ -568,7 +568,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
                       </button>
                     )}
                     {puedeEscribir && canDelete() && (
-                      <button className="btn-ghost" style={{ padding: '4px 8px', color: '#dc2626' }} title="Eliminar" onClick={() => handleDelete(c)}>
+                      <button className="btn-ghost" style={{ padding: '4px 8px', color: '#C23B3B' }} title="Eliminar" onClick={() => handleDelete(c)}>
                         <Trash2 size={13} />
                       </button>
                     )}

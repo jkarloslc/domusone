@@ -9,5 +9,5 @@ const ITEMS = [
 ]
 
 export default function CapexHubPage() {
-  return <HubGrid icon={Building2} title="Capex" subtitle="Proyectos de inversión, catálogo de conceptos y mano de obra" color="#059669" items={ITEMS} />
+  return <HubGrid icon={Building2} title="Capex" subtitle="Proyectos de inversión, catálogo de conceptos y mano de obra" color="#267F56" items={ITEMS} />
 }

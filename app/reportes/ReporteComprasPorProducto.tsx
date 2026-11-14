@@ -205,7 +205,7 @@ export default function ReporteComprasPorProducto() {
       </div>
 
       {error ? (
-        <div style={{ padding: 24, color: '#dc2626' }}>{error}</div>
+        <div style={{ padding: 24, color: '#C23B3B' }}>{error}</div>
       ) : loading ? (
         <div style={{ textAlign: 'center', padding: 48 }}><RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto' }} /></div>
       ) : grupos.length === 0 ? (
@@ -214,7 +214,7 @@ export default function ReporteComprasPorProducto() {
         <div id="reporte-print-area" className="card" style={{ overflow: 'auto' }}>
           <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+              <tr style={{ background: '#F8F9FA', borderBottom: '2px solid #E6E8EB' }}>
                 <th style={{ ...th, textAlign: 'left' }}>Producto / Proveedor / OC</th>
                 <th style={{ ...th, textAlign: 'right' }}># OC</th>
                 <th style={{ ...th, textAlign: 'right' }}>Cantidad</th>
@@ -231,12 +231,12 @@ export default function ReporteComprasPorProducto() {
                 const abierto = openProd.has(g.key)
                 return (
                   <Fragment key={g.key}>
-                    <tr onClick={() => toggle(openProd, g.key, setOpenProd)} style={{ background: '#f1f5f9', cursor: 'pointer', fontWeight: 700, borderTop: '1px solid #e2e8f0' }}>
+                    <tr onClick={() => toggle(openProd, g.key, setOpenProd)} style={{ background: '#F4F5F7', cursor: 'pointer', fontWeight: 700, borderTop: '1px solid #E6E8EB' }}>
                       <td style={{ padding: '9px 14px' }}>
                         {abierto ? <ChevronDown size={13} style={{ verticalAlign: -2 }} /> : <ChevronRight size={13} style={{ verticalAlign: -2 }} />}{' '}
-                        {g.clave && <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)', marginRight: 6 }}>{g.clave}</span>}
+                        {g.clave && <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--blue)', marginRight: 6 }}>{g.clave}</span>}
                         {g.producto} <span style={{ fontWeight: 400, fontSize: 11, color: 'var(--text-muted)' }}>{g.unidad}</span>
-                        {!g.clave && <span style={{ fontWeight: 400, fontSize: 10, color: '#d97706', marginLeft: 6 }}>(texto libre)</span>}
+                        {!g.clave && <span style={{ fontWeight: 400, fontSize: 10, color: '#B5761A', marginLeft: 6 }}>(texto libre)</span>}
                       </td>
                       <td style={num}>{g.provs.reduce((a, p) => a + p.ocs, 0)}</td>
                       <td style={num}>{fmtQ(g.cantidad)}</td>
@@ -252,7 +252,7 @@ export default function ReporteComprasPorProducto() {
                       const pAbierto = openProv.has(pk)
                       return (
                         <Fragment key={pk}>
-                          <tr onClick={() => toggle(openProv, pk, setOpenProv)} style={{ cursor: 'pointer', borderTop: '1px solid #f1f5f9' }}>
+                          <tr onClick={() => toggle(openProv, pk, setOpenProv)} style={{ cursor: 'pointer', borderTop: '1px solid #F4F5F7' }}>
                             <td style={{ padding: '8px 14px 8px 36px', fontWeight: 600 }}>
                               {pAbierto ? <ChevronDown size={12} style={{ verticalAlign: -2 }} /> : <ChevronRight size={12} style={{ verticalAlign: -2 }} />} {p.nombre}
                             </td>
@@ -268,7 +268,7 @@ export default function ReporteComprasPorProducto() {
                           {pAbierto && p.lineas.map((l, i) => (
                             <tr key={i} style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                               <td style={{ padding: '6px 14px 6px 60px' }}>
-                                <span style={{ fontFamily: 'monospace', color: 'var(--blue)' }}>{l.oc}</span> · {fmtF(l.fecha)} · {l.ocStatus}
+                                <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--blue)' }}>{l.oc}</span> · {fmtF(l.fecha)} · {l.ocStatus}
                               </td>
                               <td style={num}></td>
                               <td style={num}>{fmtQ(l.cantidad)}</td>
@@ -284,7 +284,7 @@ export default function ReporteComprasPorProducto() {
                   </Fragment>
                 )
               })}
-              <tr style={{ borderTop: '2px solid #e2e8f0', fontWeight: 700, background: '#f8fafc' }}>
+              <tr style={{ borderTop: '2px solid #E6E8EB', fontWeight: 700, background: '#F8F9FA' }}>
                 <td style={{ padding: '10px 14px' }}>Total general</td>
                 <td colSpan={6}></td>
                 <td style={num}>{fmt(totalGeneral)}</td>

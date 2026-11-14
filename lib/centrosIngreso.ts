@@ -23,7 +23,7 @@ export type CentroIngresoAgr = {
  */
 export const esCentroCuotas = (c: { agr_cuotas?: boolean }) => !!c.agr_cuotas
 
-const PALETA = ['#059669', '#2563eb', '#7c3aed', '#d97706', '#0d9488', '#db2777', '#64748b']
+const PALETA = ['#267F56', '#1C1D21', '#6B4E79', '#B5761A', '#178A80', '#B34D72', '#62666E']
 /** Color estable por agrupador (gris si no tiene) */
 export const colorAgrupador = (id: number | null | undefined) =>
   id ? PALETA[id % (PALETA.length - 1)] : PALETA[PALETA.length - 1]

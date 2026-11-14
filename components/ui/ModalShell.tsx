@@ -1,5 +1,5 @@
 'use client'
-import { X } from 'lucide-react'
+import { X, Lock } from 'lucide-react'
 import React from 'react'
 
 // ── Paletas por módulo ────────────────────────────────────────
@@ -20,60 +20,60 @@ type Palette = { from: string; to: string; accent: string }
 
 export const MODAL_PALETTES: Record<ModalModulo, Palette> = {
   // Residencial — azul
-  residencial:  { from: '#1e3a5f', to: '#2563eb', accent: '#2563eb' },
-  lotes:        { from: '#1e3a5f', to: '#2563eb', accent: '#2563eb' },
-  propietarios: { from: '#1e3a5f', to: '#2563eb', accent: '#2563eb' },
-  contratos:    { from: '#1e3a5f', to: '#2563eb', accent: '#2563eb' },
-  escrituras:   { from: '#1e3a5f', to: '#2563eb', accent: '#2563eb' },
-  comunicados:  { from: '#1e3a5f', to: '#3b82f6', accent: '#3b82f6' },
+  residencial:  { from: '#26282D', to: '#1C1D21', accent: '#1C1D21' },
+  lotes:        { from: '#26282D', to: '#1C1D21', accent: '#1C1D21' },
+  propietarios: { from: '#26282D', to: '#1C1D21', accent: '#1C1D21' },
+  contratos:    { from: '#26282D', to: '#1C1D21', accent: '#1C1D21' },
+  escrituras:   { from: '#26282D', to: '#1C1D21', accent: '#1C1D21' },
+  comunicados:  { from: '#26282D', to: '#33363C', accent: '#33363C' },
 
   // Accesos / Seguridad — azul pizarra
-  accesos:      { from: '#1e293b', to: '#334155', accent: '#475569' },
-  incidencias:  { from: '#7c2d12', to: '#ea580c', accent: '#ea580c' },
+  accesos:      { from: '#26282D', to: '#33363C', accent: '#4A4D54' },
+  incidencias:  { from: '#6F3314', to: '#C8642A', accent: '#C8642A' },
 
   // Cobranza / Facturas — índigo
-  cobranza:     { from: '#312e81', to: '#4f46e5', accent: '#4f46e5' },
-  facturas:     { from: '#312e81', to: '#6366f1', accent: '#6366f1' },
-  facturacion:  { from: '#312e81', to: '#7c3aed', accent: '#7c3aed' },
+  cobranza:     { from: '#1C1D21', to: '#1C1D21', accent: '#1C1D21' },
+  facturas:     { from: '#1C1D21', to: '#33363C', accent: '#33363C' },
+  facturacion:  { from: '#1C1D21', to: '#6B4E79', accent: '#6B4E79' },
 
   // Mantenimiento / Proyectos — violeta
-  mantenimiento: { from: '#4c1d95', to: '#7c3aed', accent: '#7c3aed' },
-  afectaciones:  { from: '#0c4a6e', to: '#0284c7', accent: '#0284c7' },
-  construcciones:{ from: '#78350f', to: '#d97706', accent: '#d97706' },
-  capex:         { from: '#1e3a5f', to: '#1d4ed8', accent: '#3b82f6' },
+  mantenimiento: { from: '#3D2A45', to: '#6B4E79', accent: '#6B4E79' },
+  afectaciones:  { from: '#1F4E66', to: '#32789A', accent: '#32789A' },
+  construcciones:{ from: '#7A4B0C', to: '#B5761A', accent: '#B5761A' },
+  capex:         { from: '#26282D', to: '#26282D', accent: '#33363C' },
 
   // HR — ámbar/café (mano de obra)
-  hr:            { from: '#78350f', to: '#b45309', accent: '#b45309' },
+  hr:            { from: '#7A4B0C', to: '#96600F', accent: '#96600F' },
 
   // Compras — verde esmeralda
-  compras:      { from: '#064e3b', to: '#059669', accent: '#059669' },
-  proveedores:  { from: '#064e3b', to: '#10b981', accent: '#10b981' },
-  articulos:    { from: '#064e3b', to: '#059669', accent: '#059669' },
-  almacenes:    { from: '#065f46', to: '#10b981', accent: '#10b981' },
+  compras:      { from: '#17603F', to: '#267F56', accent: '#267F56' },
+  proveedores:  { from: '#17603F', to: '#2E9E6B', accent: '#2E9E6B' },
+  articulos:    { from: '#17603F', to: '#267F56', accent: '#267F56' },
+  almacenes:    { from: '#17603F', to: '#2E9E6B', accent: '#2E9E6B' },
 
   // Tesorería — teal
-  tesoreria:    { from: '#134e4a', to: '#0f766e', accent: '#0f766e' },
-  ingresos:     { from: '#134e4a', to: '#14b8a6', accent: '#14b8a6' },
-  presupuestos: { from: '#1e3a5f', to: '#1d4ed8', accent: '#3b82f6' },
+  tesoreria:    { from: '#0E4F4A', to: '#126B63', accent: '#126B63' },
+  ingresos:     { from: '#0E4F4A', to: '#2AA89C', accent: '#2AA89C' },
+  presupuestos: { from: '#26282D', to: '#26282D', accent: '#33363C' },
 
   // Hípico — café cuero / marrón cálido
-  hipico:        { from: '#44200d', to: '#92400e', accent: '#b45309' },
+  hipico:        { from: '#7A4B0C', to: '#7A4B0C', accent: '#96600F' },
 
   // Locales y Propiedades — pizarra / teal (inmobiliario comercial)
-  locales:       { from: '#134e4a', to: '#0f766e', accent: '#0d9488' },
+  locales:       { from: '#0E4F4A', to: '#126B63', accent: '#178A80' },
 
   // Golf — dorado / verde campo
-  golf:          { from: '#713f12', to: '#b8952a', accent: '#b8952a' },
-  'golf-miembros': { from: '#713f12', to: '#b8952a', accent: '#b8952a' },
-  'golf-accesos':  { from: '#14532d', to: '#16a34a', accent: '#16a34a' },
-  'golf-pos':      { from: '#1e3a5f', to: '#2563eb', accent: '#2563eb' },
-  'golf-carritos': { from: '#713f12', to: '#d97706', accent: '#d97706' },
-  'golf-tee-practica': { from: '#065f46', to: '#059669', accent: '#059669' },
+  golf:          { from: '#6B4A10', to: '#A8821A', accent: '#A8821A' },
+  'golf-miembros': { from: '#6B4A10', to: '#A8821A', accent: '#A8821A' },
+  'golf-accesos':  { from: '#17603F', to: '#267F56', accent: '#267F56' },
+  'golf-pos':      { from: '#26282D', to: '#1C1D21', accent: '#1C1D21' },
+  'golf-carritos': { from: '#6B4A10', to: '#B5761A', accent: '#B5761A' },
+  'golf-tee-practica': { from: '#17603F', to: '#267F56', accent: '#267F56' },
 
   // Sistema
-  usuarios:      { from: '#1e293b', to: '#475569', accent: '#475569' },
-  configuracion: { from: '#1e293b', to: '#334155', accent: '#334155' },
-  default:       { from: '#1e3a5f', to: '#2563eb', accent: '#2563eb' },
+  usuarios:      { from: '#26282D', to: '#4A4D54', accent: '#4A4D54' },
+  configuracion: { from: '#26282D', to: '#33363C', accent: '#33363C' },
+  default:       { from: '#26282D', to: '#1C1D21', accent: '#1C1D21' },
 }
 
 // ── Props ─────────────────────────────────────────────────────
@@ -116,12 +116,15 @@ export default function ModalShell({
   size, maxWidth, onClose,
   children, tabs, activeTab, onTabChange, footer,
 }: Props) {
-  const pal = MODAL_PALETTES[modulo] ?? MODAL_PALETTES.default
+  // Marca Carbón/Turquesa: un solo encabezado carbón para todos los módulos.
+  // MODAL_PALETTES se conserva por si se quiere volver al color por módulo.
+  void MODAL_PALETTES
+  const pal = { from: '#26282D', to: '#1C1D21', accent: '#1C1D21' }
   const resolvedMaxWidth = maxWidth ?? MODAL_SIZES[size ?? 'lg']
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)',
+      position: 'fixed', inset: 0, background: 'rgba(28,29,33,0.55)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 1000, padding: 20,
     }}
@@ -135,7 +138,7 @@ export default function ModalShell({
       }}>
         {/* ── Header ── */}
         <div style={{
-          background: `linear-gradient(135deg, ${pal.from} 0%, ${pal.to} 100%)`,
+          background: pal.to,
           borderRadius: tabs ? '20px 20px 0 0' : '20px 20px 0 0',
           padding: tabs ? '20px 24px 0' : '20px 24px',
           flexShrink: 0,
@@ -191,6 +194,7 @@ export default function ModalShell({
                       borderRadius: '8px 8px 0 0',
                       cursor: t.disabled ? 'not-allowed' : 'pointer',
                       background: active ? '#fff' : 'transparent',
+                      boxShadow: active ? 'inset 0 2px 0 #19D3C5' : 'none',
                       color: t.disabled
                         ? 'rgba(255,255,255,0.25)'
                         : active ? pal.accent : 'rgba(255,255,255,0.75)',
@@ -209,7 +213,7 @@ export default function ModalShell({
                       </span>
                     )}
                     {t.disabled && t.disabledHint && (
-                      <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)' }}>🔒</span>
+                      <Lock size={10} style={{ opacity: 0.45 }} />
                     )}
                   </button>
                 )
@@ -226,8 +230,8 @@ export default function ModalShell({
         {/* ── Footer ── */}
         {footer && (
           <div style={{
-            padding: '14px 28px', borderTop: '1px solid #e2e8f0',
-            background: '#f8fafc', borderRadius: '0 0 20px 20px',
+            padding: '14px 28px', borderTop: '1px solid #E6E8EB',
+            background: '#F8F9FA', borderRadius: '0 0 20px 20px',
             display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap',
             flexShrink: 0,
           }}>

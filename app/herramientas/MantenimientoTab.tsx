@@ -14,22 +14,22 @@ const TIPOS_SERVICIO = ['Preventivo', 'Correctivo', 'Reparación']
 const STATUS_SERVICIO = ['Abierto', 'En Proceso', 'Cerrado']
 
 const STATUS_STYLE: Record<string, { color: string; bg: string; border: string }> = {
-  'Abierto':    { color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-  'En Proceso': { color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
-  'Cerrado':    { color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
+  'Abierto':    { color: '#B5761A', bg: '#F4F5F7', border: '#E6E8EB' },
+  'En Proceso': { color: '#1C1D21', bg: '#F4F5F7', border: '#C9CCD3' },
+  'Cerrado':    { color: '#1F7A50', bg: '#F4F5F7', border: '#E6E8EB' },
 }
 
 const TIPO_STYLE: Record<string, { color: string; bg: string; border: string }> = {
-  'Preventivo': { color: '#0f766e', bg: '#f0fdfa', border: '#99f6e4' },
-  'Correctivo': { color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
-  'Reparación': { color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
+  'Preventivo': { color: '#126B63', bg: '#F4F5F7', border: '#E6E8EB' },
+  'Correctivo': { color: '#6B4E79', bg: '#F4F5F7', border: '#E6E8EB' },
+  'Reparación': { color: '#C23B3B', bg: '#F4F5F7', border: '#E6E8EB' },
 }
 
 const Badge = ({ text, map }: { text: string; map: Record<string, { color: string; bg: string; border: string }> }) => {
   const s = map[text] ?? map[Object.keys(map)[0]]
   return (
     <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-      color: s.color, background: s.bg, border: `1px solid ${s.border}`, whiteSpace: 'nowrap' }}>
+      color: '#fff', background: s.color, border: `1px solid ${s.color}`, whiteSpace: 'nowrap' }}>
       {text}
     </span>
   )
@@ -94,25 +94,25 @@ export default function MantenimientoTab({ herramientas, herrMap, onChanged }: {
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 14 }}>
         {[
-          { label: 'Servicios abiertos', value: abiertos.length,        color: '#d97706', bg: '#fffbeb' },
-          { label: 'Cerrados',           value: cerrados.length,        color: '#15803d', bg: '#f0fdf4' },
-          { label: 'Costo total',        value: fmt$(costoTotal),       color: '#2563eb', bg: '#eff6ff' },
-          { label: 'Total registros',    value: registros.length,       color: '#64748b', bg: '#f8fafc' },
+          { label: 'Servicios abiertos', value: abiertos.length,        color: '#B5761A', bg: '#F4F5F7' },
+          { label: 'Cerrados',           value: cerrados.length,        color: '#1F7A50', bg: '#F4F5F7' },
+          { label: 'Costo total',        value: fmt$(costoTotal),       color: '#1C1D21', bg: '#F4F5F7' },
+          { label: 'Total registros',    value: registros.length,       color: '#62666E', bg: '#F8F9FA' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '10px 12px', background: k.bg }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: k.color }}>{k.value}</div>
-            <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{k.label}</div>
+          <div key={k.label} className="card" style={{ padding: '10px 12px', background: '#fff' }}>
+            <div style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{k.value}</div>
+            <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
           </div>
         ))}
       </div>
 
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 12,
-        padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, flexWrap: 'wrap' }}>
+        padding: '8px 12px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, flexWrap: 'wrap' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
           <Filter size={11} /> Filtros
         </span>
-        <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
+        <div style={{ width: 1, height: 18, background: '#E6E8EB', flexShrink: 0 }} />
         <select className="select" style={{ flex: '1 1 160px', maxWidth: 220, fontSize: 12, padding: '3px 8px', height: 28 }}
           value={filterHerr} onChange={e => setFilterHerr(e.target.value)}>
           <option value="">Todas las herramientas</option>
@@ -129,7 +129,7 @@ export default function MantenimientoTab({ herramientas, herrMap, onChanged }: {
           {STATUS_SERVICIO.map(s => <option key={s}>{s}</option>)}
         </select>
         {(filterHerr || filterTipo || filterStatus) && (
-          <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626', whiteSpace: 'nowrap' }}
+          <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#C23B3B', whiteSpace: 'nowrap' }}
             onClick={() => { setFilterHerr(''); setFilterTipo(''); setFilterStatus('') }}>
             <X size={11} /> Limpiar
           </button>
@@ -168,7 +168,7 @@ export default function MantenimientoTab({ herramientas, herrMap, onChanged }: {
               const h = herrMap[m.id_herramienta_fk]
               return (
                 <tr key={m.id}>
-                  <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#7c3aed', fontWeight: 600, padding: '8px 10px' }}>{m.folio}</td>
+                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: '#6B4E79', fontWeight: 600, padding: '8px 10px' }}>{m.folio}</td>
                   <td style={{ padding: '8px 10px' }}>
                     <div style={{ fontSize: 12, fontWeight: 500 }}>{h?.descripcion ?? `#${m.id_herramienta_fk}`}</div>
                     <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{h?.no_serie ?? ''}</div>
@@ -189,7 +189,7 @@ export default function MantenimientoTab({ herramientas, herrMap, onChanged }: {
                       </button>
                     )}
                     {canDelete() && (
-                      <button className="btn-ghost" style={{ padding: '3px 5px', color: '#dc2626' }} onClick={() => handleDelete(m.id)}>
+                      <button className="btn-ghost" style={{ padding: '3px 5px', color: '#C23B3B' }} onClick={() => handleDelete(m.id)}>
                         <Trash2 size={12} />
                       </button>
                     )}
@@ -287,7 +287,7 @@ function ServicioModal({ m, herramientas, onClose, onSaved }: {
       </>}
     >
       <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+        {error && <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>{error}</div>}
 
         <div>
           <label className="label" style={{ fontSize: 11 }}>Herramienta *</label>
@@ -347,17 +347,17 @@ function ServicioModal({ m, herramientas, onClose, onSaved }: {
         </div>
 
         {form.status !== 'Cerrado' && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
-            <Wrench size={14} style={{ color: '#d97706', flexShrink: 0, marginTop: 1 }} />
-            <span style={{ fontSize: 11, color: '#92400e' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
+            <Wrench size={14} style={{ color: '#62666E', flexShrink: 0, marginTop: 1 }} />
+            <span style={{ fontSize: 11, color: '#7A4B0C' }}>
               Mientras este servicio esté <strong>{form.status}</strong>, la herramienta se mostrará como <strong>En Mantenimiento</strong> en el catálogo.
             </span>
           </div>
         )}
         {form.status === 'Cerrado' && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '8px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8 }}>
-            <CheckCircle size={14} style={{ color: '#15803d', flexShrink: 0, marginTop: 1 }} />
-            <span style={{ fontSize: 11, color: '#166534' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
+            <CheckCircle size={14} style={{ color: '#1F7A50', flexShrink: 0, marginTop: 1 }} />
+            <span style={{ fontSize: 11, color: '#17603F' }}>
               Al cerrar el servicio, la herramienta volverá a status <strong>Disponible</strong>.
             </span>
           </div>

@@ -34,14 +34,14 @@ export function PrintBar({ title, count, reportTitle, extra, hideCSV }: {
       ? `<img src="${cfg.org_logo_url}" style="height:52px;max-width:160px;object-fit:contain;" />`
       : ''
     const headerHtml = `
-      <div id="print-header" style="display:flex;align-items:center;gap:16px;padding-bottom:12px;margin-bottom:12px;border-bottom:2px solid #2563eb;">
+      <div id="print-header" style="display:flex;align-items:center;gap:16px;padding-bottom:12px;margin-bottom:12px;border-bottom:2px solid #1C1D21;">
         ${logoHtml}
         <div>
-          <div style="font-size:16px;font-weight:700;color:#0f172a;">${cfg.org_nombre ?? ''}</div>
-          ${cfg.org_subtitulo ? `<div style="font-size:11px;color:#64748b;">${cfg.org_subtitulo}</div>` : ''}
-          ${reportTitle ? `<div style="font-size:13px;font-weight:600;color:#2563eb;margin-top:2px;">${reportTitle}</div>` : ''}
+          <div style="font-size:16px;font-weight:700;color:#1C1D21;">${cfg.org_nombre ?? ''}</div>
+          ${cfg.org_subtitulo ? `<div style="font-size:11px;color:#62666E;">${cfg.org_subtitulo}</div>` : ''}
+          ${reportTitle ? `<div style="font-size:13px;font-weight:600;color:#1C1D21;margin-top:2px;">${reportTitle}</div>` : ''}
         </div>
-        <div style="margin-left:auto;text-align:right;font-size:10px;color:#94a3b8;">
+        <div style="margin-left:auto;text-align:right;font-size:10px;color:#7A7E87;">
           ${new Date().toLocaleDateString('es-MX', { day:'2-digit', month:'long', year:'numeric' })}<br/>
           ${count} registros
         </div>
@@ -124,8 +124,8 @@ export function PrintBar({ title, count, reportTitle, extra, hideCSV }: {
         #reporte-print-area th,
         #reporte-print-area td {
           padding: 4px 5px !important;
-          border: 1px solid #cbd5e1 !important;
-          color: #0f172a !important;
+          border: 1px solid #C9CCD3 !important;
+          color: #1C1D21 !important;
           background: white !important;
           white-space: normal !important;
         }
@@ -133,7 +133,7 @@ export function PrintBar({ title, count, reportTitle, extra, hideCSV }: {
           display: table-header-group !important;
         }
         #reporte-print-area thead th {
-          background: #f1f5f9 !important;
+          background: #F4F5F7 !important;
           font-weight: 700 !important;
           font-size: 8px !important;
           text-transform: uppercase !important;

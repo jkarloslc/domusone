@@ -262,15 +262,15 @@ export default function NominaPage() {
     setBusy(false); fetchMes(); cargarMeses()
   }
 
-  const th: React.CSSProperties = { padding: '8px 10px', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'right', whiteSpace: 'nowrap', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }
-  const td: React.CSSProperties = { padding: '8px 10px', fontSize: 13, textAlign: 'right', whiteSpace: 'nowrap', borderBottom: '1px solid #f1f5f9', fontVariantNumeric: 'tabular-nums' }
+  const th: React.CSSProperties = { padding: '8px 10px', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'right', whiteSpace: 'nowrap', borderBottom: '1px solid #E6E8EB', background: '#F8F9FA' }
+  const td: React.CSSProperties = { padding: '8px 10px', fontSize: 13, textAlign: 'right', whiteSpace: 'nowrap', borderBottom: '1px solid #F4F5F7', fontVariantNumeric: 'tabular-nums' }
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
       <PageHeader
         backHref="/hr"
         icon={Receipt}
-        color="#b45309"
+        color="#96600F"
         eyebrowLabel="HR"
         title="Nómina"
         subtitle="Carga del Excel de nómina y OPs del mes por Área, con fecha del periodo"
@@ -303,8 +303,8 @@ export default function NominaPage() {
         </div>
       </div>
 
-      {error && <div style={{ padding: '10px 14px', marginBottom: 12, borderRadius: 8, background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: 13, display: 'flex', gap: 8 }}><AlertTriangle size={15} /> {error}</div>}
-      {aviso && <div style={{ padding: '10px 14px', marginBottom: 12, borderRadius: 8, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d', fontSize: 13, display: 'flex', gap: 8 }}><CheckCircle size={15} /> {aviso}</div>}
+      {error && <div style={{ padding: '10px 14px', marginBottom: 12, borderRadius: 8, background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #A83232', color: '#A83232', fontSize: 13, display: 'flex', gap: 8 }}><AlertTriangle size={15} /> {error}</div>}
+      {aviso && <div style={{ padding: '10px 14px', marginBottom: 12, borderRadius: 8, background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #1F7A50', color: '#1F7A50', fontSize: 13, display: 'flex', gap: 8 }}><CheckCircle size={15} /> {aviso}</div>}
 
       {loading ? (
         <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}><Loader size={18} className="animate-spin" /></div>
@@ -354,7 +354,7 @@ export default function NominaPage() {
                   {resumen.map(r => (
                     <tr key={String(r.id_area)}>
                       <td style={{ ...td, textAlign: 'left' }}>
-                        {r.area ? (<><div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{ccNom[r.area.id_centro_costo_fk ?? -1] ?? '—'}</div>{r.area.nombre}</>) : <span style={{ color: '#dc2626', fontWeight: 600 }}>Sin Área</span>}
+                        {r.area ? (<><div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{ccNom[r.area.id_centro_costo_fk ?? -1] ?? '—'}</div>{r.area.nombre}</>) : <span style={{ color: '#C23B3B', fontWeight: 600 }}>Sin Área</span>}
                       </td>
                       {cargas.map(c => <td key={c.id} style={td}>{r.porCarga[c.id] ? fmt(r.porCarga[c.id]) : '—'}</td>)}
                       <td style={{ ...td, fontWeight: 600 }}>{fmt(r.neto)}</td>
@@ -362,17 +362,17 @@ export default function NominaPage() {
                       <td style={{ ...td, textAlign: 'left' }}>
                         {r.opsArea.map(o => (
                           <div key={o.id} style={{ fontSize: 12 }}>
-                            <a href="/compras/ordenes-pago" style={{ color: '#2563eb', fontWeight: 600 }}>{o.folio}</a> · {o.status} · {fmt(o.monto)}
+                            <a href="/compras/ordenes-pago" style={{ color: '#1C1D21', fontWeight: 600 }}>{o.folio}</a> · {o.status} · {fmt(o.monto)}
                           </div>
                         ))}
                         {r.opsArea.length === 0 && r.manuales.length > 0 && (
-                          <div style={{ fontSize: 12, color: '#b45309' }}>
+                          <div style={{ fontSize: 12, color: '#96600F' }}>
                             Capturada a mano: {r.manuales.map(o => `${o.folio} (${fmt(o.monto)})`).join(', ')}
                           </div>
                         )}
                         {r.opsArea.length === 0 && r.manuales.length === 0 && r.id_area != null && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Pendiente</span>}
                         {r.opsArea.length > 0 && Math.abs(r.diferencia) >= TOLERANCIA && (
-                          <div style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>Diferencia {fmt(r.diferencia)}</div>
+                          <div style={{ fontSize: 12, color: '#C23B3B', fontWeight: 600 }}>Diferencia {fmt(r.diferencia)}</div>
                         )}
                       </td>
                       <td style={td}>
@@ -609,7 +609,7 @@ function CargaModal({ leida, archivo, areas, ccNom, authUser, onClose, onSaved }
       {areas.map(a => <option key={a.id} value={a.id}>{(ccNom[a.id_centro_costo_fk ?? -1] ?? '') + ' · ' + a.nombre}</option>)}
     </select>
   )
-  const tdm: React.CSSProperties = { padding: '6px 8px', fontSize: 12, borderBottom: '1px solid #f1f5f9', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
+  const tdm: React.CSSProperties = { padding: '6px 8px', fontSize: 12, borderBottom: '1px solid #F4F5F7', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
   const totAj = ajustes.reduce((a, x) => a + (Number(x.neto) || 0), 0)
 
   return (
@@ -641,8 +641,8 @@ function CargaModal({ leida, archivo, areas, ccNom, authUser, onClose, onSaved }
           <div><div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Neto a pagar</div><b>{fmt(leida.total_neto)}</b></div>
         </div>
 
-        {yaExiste && <div style={{ padding: '8px 12px', borderRadius: 8, background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: 12 }}>Este periodo ya está cargado. Elimina la carga existente para reemplazarla.</div>}
-        {leida.avisos.map(a => <div key={a} style={{ padding: '8px 12px', borderRadius: 8, background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e', fontSize: 12 }}>{a}</div>)}
+        {yaExiste && <div style={{ padding: '8px 12px', borderRadius: 8, background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #A83232', color: '#A83232', fontSize: 12 }}>Este periodo ya está cargado. Elimina la carga existente para reemplazarla.</div>}
+        {leida.avisos.map(a => <div key={a} style={{ padding: '8px 12px', borderRadius: 8, background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', color: '#7A4B0C', fontSize: 12 }}>{a}</div>)}
 
         {!colabs ? <Loader size={16} className="animate-spin" /> : sinArea.length > 0 && (
           <div>
@@ -653,8 +653,8 @@ function CargaModal({ leida, archivo, areas, ccNom, authUser, onClose, onSaved }
                   <tr key={r.no_empleado}>
                     <td style={{ ...tdm, textAlign: 'left' }}>{r.no_empleado}</td>
                     <td style={{ ...tdm, textAlign: 'left' }}>{r.nombre}{!colabPorNo.get(r.no_empleado) && (sinNumero.get(normNombre(r.nombre))
-                      ? <span style={{ marginLeft: 6, fontSize: 10, color: '#2563eb' }}>EMPATE POR NOMBRE</span>
-                      : <span style={{ marginLeft: 6, fontSize: 10, color: '#b45309' }}>ALTA</span>)}</td>
+                      ? <span style={{ marginLeft: 6, fontSize: 10, color: '#1C1D21' }}>EMPATE POR NOMBRE</span>
+                      : <span style={{ marginLeft: 6, fontSize: 10, color: '#96600F' }}>ALTA</span>)}</td>
                     <td style={{ ...tdm, textAlign: 'left', color: 'var(--text-muted)' }}>{r.cc_archivo}</td>
                     <td style={tdm}>{fmt(r.neto)}</td>
                     <td style={tdm}>{selArea(asignar[r.no_empleado] ?? '', v => setAsignar(p => ({ ...p, [r.no_empleado]: v })))}</td>
@@ -696,7 +696,7 @@ function CargaModal({ leida, archivo, areas, ccNom, authUser, onClose, onSaved }
             <tbody>
               {resumen.map(([k, v]) => (
                 <tr key={String(k)}>
-                  <td style={{ ...tdm, textAlign: 'left' }}>{k != null ? `${ccNom[areaById[k]?.id_centro_costo_fk ?? -1] ?? ''} · ${areaById[k]?.nombre ?? k}` : <span style={{ color: '#dc2626' }}>Sin Área</span>}</td>
+                  <td style={{ ...tdm, textAlign: 'left' }}>{k != null ? `${ccNom[areaById[k]?.id_centro_costo_fk ?? -1] ?? ''} · ${areaById[k]?.nombre ?? k}` : <span style={{ color: '#C23B3B' }}>Sin Área</span>}</td>
                   <td style={tdm}>{v.hc}</td>
                   <td style={tdm}>{fmt(v.perc)}</td>
                   <td style={{ ...tdm, fontWeight: 600 }}>{fmt(v.neto)}</td>
@@ -706,7 +706,7 @@ function CargaModal({ leida, archivo, areas, ccNom, authUser, onClose, onSaved }
           </table>
         </div>
 
-        {error && <div style={{ padding: '8px 12px', borderRadius: 8, background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: 12 }}>{error}</div>}
+        {error && <div style={{ padding: '8px 12px', borderRadius: 8, background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #A83232', color: '#A83232', fontSize: 12 }}>{error}</div>}
       </div>
     </ModalShell>
   )

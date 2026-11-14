@@ -8,10 +8,10 @@ const fmtFecha = (d: string | null) =>
   d ? new Date(d.includes('T') ? d : d + 'T12:00:00').toLocaleDateString('es-MX') : '—'
 
 const STATUS_COLOR: Record<string, string> = {
-  'Abierta':    '#d97706',
-  'En Proceso': '#2563eb',
-  'Resuelta':   '#15803d',
-  'Cerrada':    '#64748b',
+  'Abierta':    '#B5761A',
+  'En Proceso': '#1C1D21',
+  'Resuelta':   '#1F7A50',
+  'Cerrada':    '#62666E',
 }
 
 export default function ReporteIncidenciasSeccion() {
@@ -124,7 +124,7 @@ export default function ReporteIncidenciasSeccion() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 16 }}>
         {STATUSES.map(s => {
           const n = rows.filter(r => r.status === s).length
-          const color = STATUS_COLOR[s] ?? '#64748b'
+          const color = STATUS_COLOR[s] ?? '#62666E'
           return (
             <div key={s} className="card" style={{ padding: '10px 14px', borderTop: `3px solid ${color}` }}>
               <div style={{ fontSize: 18, fontWeight: 700, color, fontVariantNumeric: 'tabular-nums' }}>{n}</div>
@@ -157,7 +157,7 @@ export default function ReporteIncidenciasSeccion() {
                   onClick={() => toggleSeccion(sec)}
                   style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '12px 16px', background: 'var(--blue-pale)', border: 'none', cursor: 'pointer',
-                    borderBottom: expanded ? '1px solid #e2e8f0' : 'none' }}>
+                    borderBottom: expanded ? '1px solid #E6E8EB' : 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     {expanded
                       ? <ChevronDown size={14} style={{ color: 'var(--blue)' }} />
@@ -167,10 +167,10 @@ export default function ReporteIncidenciasSeccion() {
                   </div>
                   <div style={{ display: 'flex', gap: 12, fontSize: 12 }}>
                     {abiertas > 0 && (
-                      <span style={{ color: '#d97706', fontWeight: 600 }}>{abiertas} activa{abiertas !== 1 ? 's' : ''}</span>
+                      <span style={{ color: '#B5761A', fontWeight: 600 }}>{abiertas} activa{abiertas !== 1 ? 's' : ''}</span>
                     )}
                     {resueltas > 0 && (
-                      <span style={{ color: '#15803d' }}>{resueltas} resuelta{resueltas !== 1 ? 's' : ''}</span>
+                      <span style={{ color: '#1F7A50' }}>{resueltas} resuelta{resueltas !== 1 ? 's' : ''}</span>
                     )}
                   </div>
                 </button>
@@ -190,7 +190,7 @@ export default function ReporteIncidenciasSeccion() {
                     </thead>
                     <tbody>
                       {incs.map(inc => {
-                        const color = STATUS_COLOR[inc.status] ?? '#64748b'
+                        const color = STATUS_COLOR[inc.status] ?? '#62666E'
                         return (
                           <tr key={inc.id}>
                             <td style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--gold-light)', whiteSpace: 'nowrap' }}>
@@ -204,7 +204,7 @@ export default function ReporteIncidenciasSeccion() {
                             <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{inc.responsable ?? '—'}</td>
                             <td>
                               <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                                color, background: color + '15', border: `1px solid ${color}40` }}>
+                                color: '#fff', background: color, border: `1px solid ${color}` }}>
                                 {inc.status}
                               </span>
                             </td>

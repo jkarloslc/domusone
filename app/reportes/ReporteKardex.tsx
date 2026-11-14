@@ -55,9 +55,9 @@ export default function ReporteKardex() {
   const fmtDT = (s: string) => new Date(s).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })
 
   const tipoColor = (t: string) =>
-    t === 'ENTRADA'          ? '#15803d' :
-    t === 'TRANSFERENCIA_IN' ? '#2563eb' :
-    t === 'TRANSFERENCIA_OUT'? '#d97706' : '#64748b'
+    t === 'ENTRADA'          ? '#1F7A50' :
+    t === 'TRANSFERENCIA_IN' ? '#1C1D21' :
+    t === 'TRANSFERENCIA_OUT'? '#B5761A' : '#62666E'
 
   const tipoLabel = (t: string) =>
     t === 'ENTRADA'          ? 'Entrada' :
@@ -99,17 +99,17 @@ export default function ReporteKardex() {
           />
           {artOptions.length > 0 && (
             <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
-              background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+              background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8,
               boxShadow: '0 4px 20px rgba(0,0,0,0.12)', maxHeight: 200, overflowY: 'auto' }}>
               {artOptions.map(a => (
                 <button key={a.id}
                   onMouseDown={e => { e.preventDefault(); seleccionarArt(a) }}
                   style={{ display: 'block', width: '100%', textAlign: 'left',
                     padding: '8px 12px', background: 'none', border: 'none',
-                    cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                    cursor: 'pointer', borderBottom: '1px solid #F4F5F7' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                  <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)' }}>{a.clave}</span>
+                  <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--blue)' }}>{a.clave}</span>
                   <span style={{ fontSize: 13, marginLeft: 8 }}>{a.nombre}</span>
                 </button>
               ))}
@@ -158,21 +158,21 @@ export default function ReporteKardex() {
                 <tr key={i}>
                   <td style={{ fontSize: 11, whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{fmtDT(r.created_at)}</td>
                   <td>
-                    <div style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--blue)' }}>{art?.clave ?? '—'}</div>
+                    <div style={{ fontSize: 11, fontVariantNumeric: 'tabular-nums', color: 'var(--blue)' }}>{art?.clave ?? '—'}</div>
                     <div style={{ fontSize: 12 }}>{art?.nombre ?? `#${r.id_articulo_fk}`}</div>
                   </td>
                   <td style={{ fontSize: 12 }}>{almMap[r.id_almacen_fk] ?? `#${r.id_almacen_fk}`}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>
                     <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                      color: tipoColor(r.tipo_mov), background: tipoColor(r.tipo_mov) + '15',
-                      border: `1px solid ${tipoColor(r.tipo_mov)}40`, whiteSpace: 'nowrap' }}>
+                      color: '#fff', background: tipoColor(r.tipo_mov),
+                      border: `1px solid ${tipoColor(r.tipo_mov)}`, whiteSpace: 'nowrap' }}>
                       {tipoLabel(r.tipo_mov)}
                     </span>
                   </td>
-                  <td style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--text-muted)' }}>{r.referencia_folio ?? '—'}</td>
+                  <td style={{ fontSize: 11, fontVariantNumeric: 'tabular-nums', color: 'var(--text-muted)' }}>{r.referencia_folio ?? '—'}</td>
                   <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--text-muted)' }}>{fmtN(r.cantidad_antes)}</td>
                   <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700,
-                    color: esEntrada ? '#15803d' : '#d97706' }}>
+                    color: esEntrada ? '#1F7A50' : '#B5761A' }}>
                     {esEntrada ? '+' : '−'}{fmtN(Math.abs(r.cantidad))}
                   </td>
                   <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: 'var(--blue)' }}>{fmtN(r.cantidad_despues)}</td>
@@ -185,8 +185,8 @@ export default function ReporteKardex() {
         </table>
       </div>
       {rows.length === 500 && (
-        <p style={{ fontSize: 12, color: '#d97706', marginTop: 8, textAlign: 'center' }}>
-          ⚠ Mostrando los últimos 500 movimientos. Usa los filtros para acotar el resultado.
+        <p style={{ fontSize: 12, color: '#B5761A', marginTop: 8, textAlign: 'center' }}>
+          Mostrando los últimos 500 movimientos. Usa los filtros para acotar el resultado.
         </p>
       )}
     </div>

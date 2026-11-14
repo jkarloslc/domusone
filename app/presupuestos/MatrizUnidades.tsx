@@ -83,18 +83,18 @@ export default function MatrizUnidades<T extends FilaMatriz>({
   // ── Estilos ──
   // Encabezado fijo arriba y columna Concepto fija a la izquierda: la tabla se
   // desplaza dentro de su propio contenedor (maxHeight), como la vista Mensual.
-  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase',
-    letterSpacing: '.04em', textAlign: 'right', whiteSpace: 'nowrap', background: '#f8fafc', borderBottom: '1px solid #e2e8f0',
+  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 11, fontWeight: 700, color: '#62666E', textTransform: 'uppercase',
+    letterSpacing: '.04em', textAlign: 'right', whiteSpace: 'nowrap', background: '#F8F9FA', borderBottom: '1px solid #E6E8EB',
     position: 'sticky', top: 0, zIndex: 2 }
-  const td: React.CSSProperties = { padding: '7px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', fontSize: 12.5, borderBottom: '1px solid #f1f5f9' }
+  const td: React.CSSProperties = { padding: '7px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', fontSize: 12.5, borderBottom: '1px solid #F4F5F7' }
   const tdNombre: React.CSSProperties = { padding: '7px 14px', position: 'sticky', left: 0, zIndex: 1, background: '#fff', whiteSpace: 'nowrap',
-    minWidth: 260, maxWidth: 380, overflow: 'hidden', textOverflow: 'ellipsis', borderRight: '1px solid #f1f5f9' }
+    minWidth: 260, maxWidth: 380, overflow: 'hidden', textOverflow: 'ellipsis', borderRight: '1px solid #F4F5F7' }
   const nCols = unidades.length + 2
 
   const celda = (ps: T[] | undefined, nombre: string, tipo: 'ingreso' | 'egreso', bold = false) => {
     const v = suma(ps)
     return (
-      <td style={{ ...td, fontWeight: bold ? 700 : 500, color: v === 0 ? '#cbd5e1' : '#1e293b' }}>
+      <td style={{ ...td, fontWeight: bold ? 700 : 500, color: v === 0 ? '#C9CCD3' : '#26282D' }}>
         {v === 0 ? '—' : (
           <button onClick={() => onDrill(nombre, tipo, ps ?? [])} title="Ver partidas"
             style={{ font: 'inherit', color: 'inherit', background: 'none', border: 'none', padding: 0, cursor: 'pointer',
@@ -105,14 +105,14 @@ export default function MatrizUnidades<T extends FilaMatriz>({
   }
 
   const banda = (label: string, tipo: 'ingreso' | 'egreso') => {
-    const c = tipo === 'ingreso' ? { bg: '#f0fdf4', fg: '#15803d', bd: '#bbf7d0' } : { bg: '#fef2f2', fg: '#dc2626', bd: '#fecaca' }
+    const c = tipo === 'ingreso' ? { bg: '#F4F5F7', fg: '#1F7A50', bd: '#E6E8EB' } : { bg: '#F4F5F7', fg: '#C23B3B', bd: '#E6E8EB' }
     return <tr><td colSpan={nCols} style={{ padding: '7px 16px', background: c.bg, fontWeight: 700, fontSize: 11, color: c.fg,
       textTransform: 'uppercase', letterSpacing: '.06em', borderTop: `2px solid ${c.bd}` }}>
       <span style={{ position: 'sticky', left: 16 }}>{label}</span></td></tr>
   }
 
   const filaTotal = (label: string, rows: T[], tipo: 'ingreso' | 'egreso') => {
-    const c = tipo === 'ingreso' ? { bg: '#dcfce7', fg: '#15803d' } : { bg: '#fee2e2', fg: '#b91c1c' }
+    const c = tipo === 'ingreso' ? { bg: '#E6E8EB', fg: '#1F7A50' } : { bg: '#E6E8EB', fg: '#A83232' }
     const pu = porUnidad(rows)
     return (
       <tr style={{ background: c.bg }}>
@@ -125,10 +125,10 @@ export default function MatrizUnidades<T extends FilaMatriz>({
 
   const filaResultado = (label: string, ingU: Record<string, T[]>, egrU: Record<string, T[]>, ingT: T[], egrT: T[], oscuro: boolean) => {
     const val = (i?: T[], e?: T[]) => suma(i) - suma(e)
-    const color = (v: number) => v >= 0 ? (oscuro ? '#86efac' : '#15803d') : (oscuro ? '#fca5a5' : '#dc2626')
+    const color = (v: number) => v >= 0 ? (oscuro ? '#7CC9A3' : '#1F7A50') : (oscuro ? '#EBB5B5' : '#C23B3B')
     return (
-      <tr style={{ background: oscuro ? '#1e293b' : '#f1f5f9', fontWeight: 700 }}>
-        <td style={{ ...tdNombre, background: oscuro ? '#1e293b' : '#f1f5f9', color: oscuro ? '#f1f5f9' : '#1e293b', fontSize: 12, textTransform: 'uppercase', letterSpacing: '.05em' }}>{label}</td>
+      <tr style={{ background: oscuro ? '#26282D' : '#F4F5F7', fontWeight: 700 }}>
+        <td style={{ ...tdNombre, background: oscuro ? '#26282D' : '#F4F5F7', color: oscuro ? '#F4F5F7' : '#26282D', fontSize: 12, textTransform: 'uppercase', letterSpacing: '.05em' }}>{label}</td>
         {unidades.map(u => { const v = val(ingU[u], egrU[u]); return <td key={u} style={{ ...td, color: color(v) }}>{fmt(v)}</td> })}
         {(() => { const v = val(ingT, egrT); return <td style={{ ...td, color: color(v) }}>{fmt(v)}</td> })()}
       </tr>
@@ -136,10 +136,10 @@ export default function MatrizUnidades<T extends FilaMatriz>({
   }
 
   const filaSaldo = (label: string, v: number | null, fuerte: boolean, colorV?: string) => (
-    <tr style={{ background: fuerte ? '#e0f2fe' : '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
-      <td style={{ ...tdNombre, background: fuerte ? '#e0f2fe' : '#f8fafc', fontWeight: 700, color: '#0c4a6e', fontSize: 12, textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</td>
-      {unidades.map(u => <td key={u} style={{ ...td, color: '#cbd5e1' }} />)}
-      <td style={{ ...td, fontWeight: 700, color: v == null ? '#cbd5e1' : (colorV ?? (v < 0 ? '#dc2626' : '#0c4a6e')) }}>{v == null ? '—' : fmt(v)}</td>
+    <tr style={{ background: fuerte ? '#E6E8EB' : '#F8F9FA', borderTop: '1px solid #E6E8EB' }}>
+      <td style={{ ...tdNombre, background: fuerte ? '#E6E8EB' : '#F8F9FA', fontWeight: 700, color: '#1F4E66', fontSize: 12, textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</td>
+      {unidades.map(u => <td key={u} style={{ ...td, color: '#C9CCD3' }} />)}
+      <td style={{ ...td, fontWeight: 700, color: v == null ? '#C9CCD3' : (colorV ?? (v < 0 ? '#C23B3B' : '#1F4E66')) }}>{v == null ? '—' : fmt(v)}</td>
     </tr>
   )
 
@@ -182,14 +182,14 @@ export default function MatrizUnidades<T extends FilaMatriz>({
     XLSX.writeFile(wb, `${archivo}-por-unidad_${new Date().toISOString().slice(0, 10)}.xlsx`)
   }
 
-  if (unidades.length === 0) return <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Sin movimientos en el período</div>
+  if (unidades.length === 0) return <div style={{ padding: 40, textAlign: 'center', color: '#7A7E87' }}>Sin movimientos en el período</div>
 
 
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: '1px solid #E6E8EB', flexWrap: 'wrap' }}>
         <ControlesArbol ui={ui} />
-        <span style={{ fontSize: 12, color: '#64748b' }}>
+        <span style={{ fontSize: 12, color: '#62666E' }}>
           Estado de resultados por unidad de negocio · Real del período · Corporativo se muestra como unidad propia (sin prorratear)
         </span>
         <button className="btn-ghost" onClick={exportar} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '5px 10px' }}>
@@ -202,7 +202,7 @@ export default function MatrizUnidades<T extends FilaMatriz>({
             <tr>
               <th style={{ ...th, textAlign: 'left', left: 0, zIndex: 3, minWidth: 260 }}>Concepto</th>
               {unidades.map(u => <th key={u} style={th}>{nombreUnidad(u)}</th>)}
-              <th style={{ ...th, color: '#1e293b' }}>Total</th>
+              <th style={{ ...th, color: '#26282D' }}>Total</th>
             </tr>
           </thead>
           <tbody>
@@ -214,10 +214,10 @@ export default function MatrizUnidades<T extends FilaMatriz>({
                   {lIng.length > 0 && <>
                     {banda(L.ingresos, 'ingreso')}
                     {lIng.map(l => {
-                      const d = l.nodo.depth, bg = d === 0 ? '#fff' : d === 1 ? '#fcfcfd' : '#f8fafc'
+                      const d = l.nodo.depth, bg = d === 0 ? '#fff' : '#F8F9FA'
                       return (
                         <tr key={l.key} style={{ background: bg }}>
-                          <td style={{ ...tdNombre, background: bg, borderBottom: '1px solid #f1f5f9' }}><EtiquetaNodo n={l.nodo} ui={ui} /></td>
+                          <td style={{ ...tdNombre, background: bg, borderBottom: '1px solid #F4F5F7' }}><EtiquetaNodo n={l.nodo} ui={ui} /></td>
                           {unidades.map(u => <Fragment key={u}>{celda(l.porUnidad[u], `${l.nombre} · ${nombreUnidad(u)}`, 'ingreso', d === 0)}</Fragment>)}
                           {celda(l.nodo.partidas, l.nombre, 'ingreso', true)}
                         </tr>
@@ -228,10 +228,10 @@ export default function MatrizUnidades<T extends FilaMatriz>({
                   {lEgr.length > 0 && <>
                     {banda(L.egresos, 'egreso')}
                     {lEgr.map(l => {
-                      const d = l.nodo.depth, bg = d === 0 ? '#fff' : d === 1 ? '#fcfcfd' : '#f8fafc'
+                      const d = l.nodo.depth, bg = d === 0 ? '#fff' : '#F8F9FA'
                       return (
                         <tr key={l.key} style={{ background: bg }}>
-                          <td style={{ ...tdNombre, background: bg, borderBottom: '1px solid #f1f5f9' }}><EtiquetaNodo n={l.nodo} ui={ui} /></td>
+                          <td style={{ ...tdNombre, background: bg, borderBottom: '1px solid #F4F5F7' }}><EtiquetaNodo n={l.nodo} ui={ui} /></td>
                           {unidades.map(u => <Fragment key={u}>{celda(l.porUnidad[u], `${l.nombre} · ${nombreUnidad(u)}`, 'egreso', d === 0)}</Fragment>)}
                           {celda(l.nodo.partidas, l.nombre, 'egreso', true)}
                         </tr>
@@ -241,10 +241,10 @@ export default function MatrizUnidades<T extends FilaMatriz>({
                   </>}
                   {filaResultado(L.balance, porUnidad(ing), porUnidad(egr), ing, egr, false)}
                   {clas === 'operativo' && (
-                    <tr style={{ background: '#f8fafc' }}>
-                      <td style={{ ...tdNombre, background: '#f8fafc', fontSize: 12, color: '#475569', fontWeight: 600 }}>Margen operativo</td>
-                      {unidades.map(u => <td key={u} style={{ ...td, color: '#475569', fontWeight: 600 }}>{margen(suma(ingOpU[u]), suma(egrOpU[u]))}</td>)}
-                      <td style={{ ...td, color: '#1e293b', fontWeight: 700 }}>{margen(suma(ingOp), suma(egrOp))}</td>
+                    <tr style={{ background: '#F8F9FA' }}>
+                      <td style={{ ...tdNombre, background: '#F8F9FA', fontSize: 12, color: '#4A4D54', fontWeight: 600 }}>Margen operativo</td>
+                      {unidades.map(u => <td key={u} style={{ ...td, color: '#4A4D54', fontWeight: 600 }}>{margen(suma(ingOpU[u]), suma(egrOpU[u]))}</td>)}
+                      <td style={{ ...td, color: '#26282D', fontWeight: 700 }}>{margen(suma(ingOp), suma(egrOp))}</td>
                     </tr>
                   )}
                 </Fragment>
@@ -255,7 +255,7 @@ export default function MatrizUnidades<T extends FilaMatriz>({
               {filaSaldo('Saldo final', saldos.final, true)}
               {filaSaldo('Saldo real en banco', saldos.real, false)}
               {filaSaldo(`Diferencia sin conciliar${explicaDiferencia(saldos) ? ' · ' + explicaDiferencia(saldos) : ''}`, saldos.diferencia, false,
-                saldos.diferencia == null ? undefined : Math.abs(saldos.diferencia) < 1 ? '#15803d' : '#b45309')}
+                saldos.diferencia == null ? undefined : Math.abs(saldos.diferencia) < 1 ? '#1F7A50' : '#96600F')}
             </>}
           </tbody>
         </table>

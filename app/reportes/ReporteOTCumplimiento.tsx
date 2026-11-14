@@ -9,7 +9,7 @@ const fmtFecha = (f: string | null) => f ? new Date(f + 'T12:00:00').toLocaleDat
 const pct = (num: number, den: number) => den > 0 ? Math.round((num / den) * 100) : 0
 const PctBar = ({ value, color }: { value: number; color: string }) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-    <div style={{ flex: 1, height: 6, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
+    <div style={{ flex: 1, height: 6, background: '#E6E8EB', borderRadius: 3, overflow: 'hidden' }}>
       <div style={{ height: '100%', width: `${value}%`, background: color, borderRadius: 3, transition: 'width .4s ease' }} />
     </div>
     <span style={{ fontSize: 12, fontWeight: 700, color, minWidth: 36, textAlign: 'right' }}>{value}%</span>
@@ -19,8 +19,8 @@ const PctBar = ({ value, color }: { value: number; color: string }) => (
 const TIPOS = ['Jardinería','Plomería','Electricidad','Limpieza','Obra Civil','Pintura','Fumigación','Mantto. Lineas Sanitarias','Otro']
 const STATUSES = ['Pendiente','En Proceso','En Pausa','Completada','Cancelada']
 const statusColor = (s: string) =>
-  s === 'Completada' ? '#15803d' : s === 'En Proceso' ? '#2563eb' :
-  s === 'En Pausa' ? '#7c3aed' : s === 'Cancelada' ? '#94a3b8' : '#d97706'
+  s === 'Completada' ? '#1F7A50' : s === 'En Proceso' ? '#1C1D21' :
+  s === 'En Pausa' ? '#6B4E79' : s === 'Cancelada' ? '#7A7E87' : '#B5761A'
 
 export default function ReporteOTCumplimiento() {
   const [rows,        setRows]     = useState<any[]>([])
@@ -124,7 +124,7 @@ export default function ReporteOTCumplimiento() {
     <div>
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16, padding: '12px 16px',
-        background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        background: '#F8F9FA', borderRadius: 10, border: '1px solid #E6E8EB' }}>
         <select className="select" style={{ fontSize: 12, height: 28, padding: '2px 8px', minWidth: 110 }}
           value={fEmpresa} onChange={e => setFEmpresa(e.target.value)}>
           <option value="">Empresa</option>
@@ -160,14 +160,14 @@ export default function ReporteOTCumplimiento() {
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
         {[
           { label: 'Total OTs',       value: total,         color: 'var(--blue)', bg: 'var(--blue-pale)' },
-          { label: 'Activas',         value: activas,       color: '#d97706',     bg: '#fffbeb' },
-          { label: 'Completadas',     value: completadas,   color: '#15803d',     bg: '#f0fdf4' },
-          { label: 'Canceladas',      value: canceladas,    color: '#94a3b8',     bg: '#f8fafc' },
-          { label: '% Cumplimiento',  value: `${pctComp}%`, color: pctComp >= 80 ? '#15803d' : pctComp >= 50 ? '#d97706' : '#dc2626', bg: '#fff' },
+          { label: 'Activas',         value: activas,       color: '#B5761A',     bg: '#F4F5F7' },
+          { label: 'Completadas',     value: completadas,   color: '#1F7A50',     bg: '#F4F5F7' },
+          { label: 'Canceladas',      value: canceladas,    color: '#7A7E87',     bg: '#F8F9FA' },
+          { label: '% Cumplimiento',  value: `${pctComp}%`, color: pctComp >= 80 ? '#1F7A50' : pctComp >= 50 ? '#B5761A' : '#C23B3B', bg: '#fff' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '10px 16px', background: k.bg, flex: '1 1 100px', maxWidth: 180 }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{k.label}</div>
+          <div key={k.label} className="card" style={{ padding: '10px 16px', background: '#fff', flex: '1 1 100px', maxWidth: 180 }}>
+            <div style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)',  }}>{k.value}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
           </div>
         ))}
       </div>
@@ -181,15 +181,15 @@ export default function ReporteOTCumplimiento() {
           <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginBottom: 10 }}>
             <div style={{ flex: 1, minWidth: 140 }}>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>En tiempo</div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: '#15803d' }}>{enTiempo}</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: '#1F7A50' }}>{enTiempo}</div>
             </div>
             <div style={{ flex: 1, minWidth: 140 }}>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Fuera de tiempo</div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: '#dc2626' }}>{fueraTiempo}</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: '#C23B3B' }}>{fueraTiempo}</div>
             </div>
             <div style={{ flex: 2, minWidth: 200 }}>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>% En tiempo</div>
-              <PctBar value={pctEnTiempo} color={pctEnTiempo >= 80 ? '#15803d' : pctEnTiempo >= 50 ? '#d97706' : '#dc2626'} />
+              <PctBar value={pctEnTiempo} color={pctEnTiempo >= 80 ? '#1F7A50' : pctEnTiempo >= 50 ? '#B5761A' : '#C23B3B'} />
             </div>
           </div>
         </div>
@@ -219,46 +219,46 @@ export default function ReporteOTCumplimiento() {
             <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', background: '#f1f5f9' }}>
+                  <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', background: '#F4F5F7' }}>
                     {groupBy === 'cc' ? 'Centro de Costo' : groupBy === 'area' ? 'Área' : groupBy === 'tipo' ? 'Tipo de Trabajo' : 'Semana'}
                   </th>
-                  <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', background: '#f1f5f9' }}>Total</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#d97706', background: '#f1f5f9' }}>Activas</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#15803d', background: '#f1f5f9' }}>Completadas</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', background: '#f1f5f9' }}>Canceladas</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', background: '#f1f5f9', minWidth: 160 }}>% Cumplimiento</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#15803d', background: '#f1f5f9' }}>En tiempo</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#dc2626', background: '#f1f5f9' }}>Fuera tiempo</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', background: '#F4F5F7' }}>Total</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#B5761A', background: '#F4F5F7' }}>Activas</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#1F7A50', background: '#F4F5F7' }}>Completadas</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#7A7E87', background: '#F4F5F7' }}>Canceladas</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', background: '#F4F5F7', minWidth: 160 }}>% Cumplimiento</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#1F7A50', background: '#F4F5F7' }}>En tiempo</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#C23B3B', background: '#F4F5F7' }}>Fuera tiempo</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedGrupos.map((g, i) => {
                   const p = pct(g.completadas, g.total)
-                  const pColor = p >= 80 ? '#15803d' : p >= 50 ? '#d97706' : '#dc2626'
+                  const pColor = p >= 80 ? '#1F7A50' : p >= 50 ? '#B5761A' : '#C23B3B'
                   return (
-                    <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <tr key={i} style={{ borderBottom: '1px solid #F4F5F7' }}>
                       <td style={{ padding: '8px 12px', fontWeight: 600, fontSize: 13 }}>{g.label}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700 }}>{g.total}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'center', color: '#d97706', fontWeight: 600 }}>{g.activas || '—'}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'center', color: '#15803d', fontWeight: 600 }}>{g.completadas || '—'}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'center', color: '#94a3b8' }}>{g.canceladas || '—'}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'center', color: '#B5761A', fontWeight: 600 }}>{g.activas || '—'}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'center', color: '#1F7A50', fontWeight: 600 }}>{g.completadas || '—'}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'center', color: '#7A7E87' }}>{g.canceladas || '—'}</td>
                       <td style={{ padding: '8px 12px', minWidth: 160 }}><PctBar value={p} color={pColor} /></td>
-                      <td style={{ padding: '8px 12px', textAlign: 'center', color: '#15803d', fontWeight: 600 }}>{g.enTiempo || '—'}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'center', color: g.fueraTiempo > 0 ? '#dc2626' : 'var(--text-muted)', fontWeight: g.fueraTiempo > 0 ? 700 : 400 }}>{g.fueraTiempo || '—'}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'center', color: '#1F7A50', fontWeight: 600 }}>{g.enTiempo || '—'}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'center', color: g.fueraTiempo > 0 ? '#C23B3B' : 'var(--text-muted)', fontWeight: g.fueraTiempo > 0 ? 700 : 400 }}>{g.fueraTiempo || '—'}</td>
                     </tr>
                   )
                 })}
               </tbody>
               <tfoot>
-                <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
+                <tr style={{ background: '#F8F9FA', borderTop: '2px solid #E6E8EB' }}>
                   <td style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--blue)' }}>TOTAL</td>
                   <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700 }}>{total}</td>
-                  <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: '#d97706' }}>{activas || '—'}</td>
-                  <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: '#15803d' }}>{completadas || '—'}</td>
-                  <td style={{ padding: '8px 12px', textAlign: 'center', color: '#94a3b8' }}>{canceladas || '—'}</td>
-                  <td style={{ padding: '8px 12px' }}><PctBar value={pctComp} color={pctComp >= 80 ? '#15803d' : pctComp >= 50 ? '#d97706' : '#dc2626'} /></td>
-                  <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: '#15803d' }}>{enTiempo || '—'}</td>
-                  <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: fueraTiempo > 0 ? '#dc2626' : 'var(--text-muted)' }}>{fueraTiempo || '—'}</td>
+                  <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: '#B5761A' }}>{activas || '—'}</td>
+                  <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: '#1F7A50' }}>{completadas || '—'}</td>
+                  <td style={{ padding: '8px 12px', textAlign: 'center', color: '#7A7E87' }}>{canceladas || '—'}</td>
+                  <td style={{ padding: '8px 12px' }}><PctBar value={pctComp} color={pctComp >= 80 ? '#1F7A50' : pctComp >= 50 ? '#B5761A' : '#C23B3B'} /></td>
+                  <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: '#1F7A50' }}>{enTiempo || '—'}</td>
+                  <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: fueraTiempo > 0 ? '#C23B3B' : 'var(--text-muted)' }}>{fueraTiempo || '—'}</td>
                 </tr>
               </tfoot>
             </table>

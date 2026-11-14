@@ -81,7 +81,7 @@ export default function HistorialPropietarios({ loteId, cveLote, onClose }: Prop
     <ModalShell modulo="lotes" titulo="Modal" onClose={onClose} maxWidth={600}
     >
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #E6E8EB' }}>
           <div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 600 }}>
               Historial de Propietarios
@@ -108,13 +108,13 @@ export default function HistorialPropietarios({ loteId, cveLote, onClose }: Prop
             <>
               {/* Propietario actual */}
               <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10, paddingBottom: 6, borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10, paddingBottom: 6, borderBottom: '1px solid #E6E8EB', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <CheckCircle size={12} /> Propietario Actual
                 </div>
                 {principal ? (
                   <PropietarioCard item={principal} actual />
                 ) : (
-                  <div style={{ padding: '16px', background: '#f8fafc', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>
+                  <div style={{ padding: '16px', background: '#F8F9FA', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>
                     Sin propietario principal asignado
                   </div>
                 )}
@@ -123,7 +123,7 @@ export default function HistorialPropietarios({ loteId, cveLote, onClose }: Prop
               {/* Historial anterior */}
               {anteriores.length > 0 && (
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10, paddingBottom: 6, borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10, paddingBottom: 6, borderBottom: '1px solid #E6E8EB', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Clock size={12} /> Propietarios Anteriores ({anteriores.length})
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -165,8 +165,8 @@ function PropietarioCard({ item, actual }: { item: PropietarioLote; actual?: boo
   return (
     <div style={{
       padding: '14px 16px',
-      background: actual ? '#eff6ff' : '#f8fafc',
-      border: `1px solid ${actual ? '#bfdbfe' : '#e2e8f0'}`,
+      background: actual ? '#F4F5F7' : '#F8F9FA',
+      border: `1px solid ${actual ? '#C9CCD3' : '#E6E8EB'}`,
       borderRadius: 8,
       display: 'grid',
       gridTemplateColumns: '1fr auto',
@@ -174,12 +174,12 @@ function PropietarioCard({ item, actual }: { item: PropietarioLote; actual?: boo
       alignItems: 'start',
     }}>
       <div>
-        <div style={{ fontWeight: 600, fontSize: 14, color: actual ? '#1d4ed8' : 'var(--text-primary)' }}>
+        <div style={{ fontWeight: 600, fontSize: 14, color: actual ? '#26282D' : 'var(--text-primary)' }}>
           {nombre}
         </div>
         <div style={{ display: 'flex', gap: 12, marginTop: 4, flexWrap: 'wrap' }}>
           {item.propietarios?.rfc && (
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
               RFC: {item.propietarios.rfc}
             </span>
           )}
@@ -195,7 +195,7 @@ function PropietarioCard({ item, actual }: { item: PropietarioLote; actual?: boo
         {item.fecha_desde && <div>Desde: <strong>{new Date(item.fecha_desde + 'T12:00:00').toLocaleDateString('es-MX')}</strong></div>}
         {item.fecha_hasta && <div>Hasta: <strong>{new Date(item.fecha_hasta + 'T12:00:00').toLocaleDateString('es-MX')}</strong></div>}
         {actual && !item.fecha_hasta && (
-          <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700 }}>
+          <span style={{ background: '#E6E8EB', color: '#26282D', padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700 }}>
             ACTUAL
           </span>
         )}
@@ -286,7 +286,7 @@ function TransferirPropietarioModal({
 
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {error && (
-            <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>
+            <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>
               {error}
             </div>
           )}
@@ -315,18 +315,18 @@ function TransferirPropietarioModal({
                   <button key={p.id}
                     onClick={() => { setSelectedProp(p); setPropSearch(nombreCompleto(p)); setPropResults([]) }}
                     style={{ display: 'flex', flexDirection: 'column', width: '100%', padding: '8px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                     <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{nombreCompleto(p)}</span>
-                    {p.rfc && <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{p.rfc}</span>}
+                    {p.rfc && <span style={{ fontSize: 11, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{p.rfc}</span>}
                   </button>
                 ))}
               </div>
             )}
             {selectedProp && (
-              <div style={{ marginTop: 6, padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <CheckCircle size={13} style={{ color: '#2563eb' }} />
-                <span style={{ fontSize: 13, color: '#1d4ed8', fontWeight: 500 }}>{nombreCompleto(selectedProp)}</span>
+              <div style={{ marginTop: 6, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <CheckCircle size={13} style={{ color: '#1C1D21' }} />
+                <span style={{ fontSize: 13, color: '#26282D', fontWeight: 500 }}>{nombreCompleto(selectedProp)}</span>
               </div>
             )}
           </div>
@@ -341,13 +341,13 @@ function TransferirPropietarioModal({
 
           {/* Resumen del cambio */}
           {selectedProp && (
-            <div style={{ padding: '12px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12 }}>
+            <div style={{ padding: '12px 14px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, fontSize: 12 }}>
               <div style={{ fontWeight: 600, marginBottom: 6, color: 'var(--text-primary)' }}>Resumen del cambio</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--text-secondary)' }}>
                 {propietarioActualId && (
-                  <div>🔴 Propietario anterior: fecha de cierre <strong>{new Date(fechaCambio + 'T12:00:00').toLocaleDateString('es-MX')}</strong></div>
+                  <div>Propietario anterior: fecha de cierre <strong>{new Date(fechaCambio + 'T12:00:00').toLocaleDateString('es-MX')}</strong></div>
                 )}
-                <div>🟢 Nuevo propietario: <strong>{nombreCompleto(selectedProp)}</strong> desde <strong>{new Date(fechaCambio + 'T12:00:00').toLocaleDateString('es-MX')}</strong></div>
+                <div>Nuevo propietario: <strong>{nombreCompleto(selectedProp)}</strong> desde <strong>{new Date(fechaCambio + 'T12:00:00').toLocaleDateString('es-MX')}</strong></div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
                   El historial del propietario anterior se conserva en el sistema.
                 </div>

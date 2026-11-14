@@ -30,10 +30,10 @@ type Ejecucion = {
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ORIGENES = ['Lago 7', 'Lago 2', 'Ordeña', 'Lago 12']
 const ORIGEN_COLOR: Record<string, string> = {
-  'Lago 7':  '#2563eb',
-  'Lago 2':  '#0ea5e9',
-  'Ordeña':  '#7c3aed',
-  'Lago 12': '#16a34a',
+  'Lago 7':  '#1C1D21',
+  'Lago 2':  '#4E97B8',
+  'Ordeña':  '#6B4E79',
+  'Lago 12': '#267F56',
 }
 
 // M³ programado semanal por origen (del Excel)
@@ -147,19 +147,19 @@ export default function ReporteRiegoConsumo() {
       {/* Filters */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24, alignItems: 'flex-end' }}>
         <div>
-          <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Fecha desde</label>
+          <label style={{ fontSize: 12, fontWeight: 600, color: '#33363C', display: 'block', marginBottom: 4 }}>Fecha desde</label>
           <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)}
-            style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13 }} />
+            style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid #E6E8EB', fontSize: 13 }} />
         </div>
         <div>
-          <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Fecha hasta</label>
+          <label style={{ fontSize: 12, fontWeight: 600, color: '#33363C', display: 'block', marginBottom: 4 }}>Fecha hasta</label>
           <input type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)}
-            style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13 }} />
+            style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid #E6E8EB', fontSize: 13 }} />
         </div>
         <div>
-          <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Origen</label>
+          <label style={{ fontSize: 12, fontWeight: 600, color: '#33363C', display: 'block', marginBottom: 4 }}>Origen</label>
           <select value={filtroOrigen} onChange={e => setFiltroOrigen(e.target.value)}
-            style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13, background: '#fff' }}>
+            style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid #E6E8EB', fontSize: 13, background: '#fff' }}>
             <option value="todos">Todos los orígenes</option>
             {ORIGENES.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
@@ -169,27 +169,27 @@ export default function ReporteRiegoConsumo() {
       <div id="reporte-print-area">
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>Cargando datos…</div>
+          <div style={{ textAlign: 'center', padding: '60px 0', color: '#7A7E87' }}>Cargando datos…</div>
         ) : (
           <>
             {/* KPI Summary Cards */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginBottom: 28 }}>
               {[
-                { label: 'M³ Real Total',   value: fmtM3(totalReal), color: '#7c3aed', bg: '#f5f3ff', icon: Droplets },
-                { label: 'M³ Programado',   value: fmtM3(totalProg), color: '#0ea5e9', bg: '#e0f2fe', icon: BarChart2 },
-                { label: 'Gap Acumulado',   value: (totalGap >= 0 ? '+' : '') + fmtM3(totalGap), color: totalGap > 0 ? '#dc2626' : '#16a34a', bg: totalGap > 0 ? '#fee2e2' : '#dcfce7', icon: totalGap > 0 ? TrendingUp : TrendingDown },
-                { label: '% vs Programa',   value: fmtPct(totalReal, totalProg), color: '#2563eb', bg: '#eff6ff', icon: BarChart2 },
-                { label: 'Días Registrados', value: String(totalDias), color: '#64748b', bg: '#f8fafc', icon: Droplets },
-                { label: 'Hrs Bomba Total', value: totalHrs.toFixed(1) + ' hrs', color: '#d97706', bg: '#fef3c7', icon: BarChart2 },
+                { label: 'M³ Real Total',   value: fmtM3(totalReal), color: '#6B4E79', bg: '#F4F5F7', icon: Droplets },
+                { label: 'M³ Programado',   value: fmtM3(totalProg), color: '#4E97B8', bg: '#E6E8EB', icon: BarChart2 },
+                { label: 'Gap Acumulado',   value: (totalGap >= 0 ? '+' : '') + fmtM3(totalGap), color: totalGap > 0 ? '#C23B3B' : '#267F56', bg: '#E6E8EB', icon: totalGap > 0 ? TrendingUp : TrendingDown },
+                { label: '% vs Programa',   value: fmtPct(totalReal, totalProg), color: '#1C1D21', bg: '#F4F5F7', icon: BarChart2 },
+                { label: 'Días Registrados', value: String(totalDias), color: '#62666E', bg: '#F8F9FA', icon: Droplets },
+                { label: 'Hrs Bomba Total', value: totalHrs.toFixed(1) + ' hrs', color: '#B5761A', bg: '#E6E8EB', icon: BarChart2 },
               ].map(k => {
                 const Icon = k.icon
                 return (
-                  <div key={k.label} style={{ flex: '1 1 140px', maxWidth: 200, background: k.bg, borderRadius: 14, padding: '16px 18px', border: `1.5px solid ${k.color}22` }}>
+                  <div key={k.label} style={{ flex: '1 1 140px', maxWidth: 200, background: '#fff', borderRadius: 12, padding: '16px 18px', border: '1px solid #E6E8EB' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                       <Icon size={14} style={{ color: k.color }} />
-                      <span style={{ fontSize: 11, color: k.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{k.label}</span>
+                      <span style={{ fontSize: 11, color: '#62666E', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{k.label}</span>
                     </div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: '#1e293b' }}>{k.value}</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: '#26282D' }}>{k.value}</div>
                   </div>
                 )
               })}
@@ -197,53 +197,53 @@ export default function ReporteRiegoConsumo() {
 
             {/* By Origen table */}
             <div style={{ marginBottom: 28 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Droplets size={16} style={{ color: '#0ea5e9' }} /> Consumo por Origen de Agua
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: '#26282D', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Droplets size={16} style={{ color: '#62666E' }} /> Consumo por Origen de Agua
               </h3>
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
                 <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
-                    <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                    <tr style={{ background: '#F8F9FA', borderBottom: '2px solid #E6E8EB' }}>
                       {['Origen','Días Reg.','M³ Programado','M³ Real','Gap m³','% vs Prog','Hrs Bomba'].map(h => (
-                        <th key={h} style={{ padding: '11px 14px', textAlign: h === 'Origen' ? 'left' : 'right', fontSize: 11, fontWeight: 700, color: '#64748b' }}>{h}</th>
+                        <th key={h} style={{ padding: '11px 14px', textAlign: h === 'Origen' ? 'left' : 'right', fontSize: 11, fontWeight: 700, color: '#62666E' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {byOrigen.filter(o => filtroOrigen === 'todos' || o.origen === filtroOrigen).map(o => (
-                      <tr key={o.origen} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <tr key={o.origen} style={{ borderBottom: '1px solid #F4F5F7' }}>
                         <td style={{ padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
                           <span style={{ width: 10, height: 10, borderRadius: '50%', background: ORIGEN_COLOR[o.origen], display: 'inline-block' }} />
-                          <span style={{ fontWeight: 700, color: '#1e293b' }}>{o.origen}</span>
+                          <span style={{ fontWeight: 700, color: '#26282D' }}>{o.origen}</span>
                         </td>
-                        <td style={{ padding: '11px 14px', textAlign: 'right', color: '#64748b' }}>{o.diasReg}</td>
-                        <td style={{ padding: '11px 14px', textAlign: 'right', color: '#0ea5e9', fontWeight: 600 }}>{fmtM3(o.m3Prog)}</td>
-                        <td style={{ padding: '11px 14px', textAlign: 'right', fontWeight: 700, color: o.m3Real > 0 ? '#7c3aed' : '#cbd5e1' }}>{fmtM3(o.m3Real)}</td>
-                        <td style={{ padding: '11px 14px', textAlign: 'right', fontWeight: 600, color: o.gap > 0 ? '#dc2626' : o.gap < 0 ? '#16a34a' : '#94a3b8' }}>
+                        <td style={{ padding: '11px 14px', textAlign: 'right', color: '#62666E' }}>{o.diasReg}</td>
+                        <td style={{ padding: '11px 14px', textAlign: 'right', color: '#4E97B8', fontWeight: 600 }}>{fmtM3(o.m3Prog)}</td>
+                        <td style={{ padding: '11px 14px', textAlign: 'right', fontWeight: 700, color: o.m3Real > 0 ? '#6B4E79' : '#C9CCD3' }}>{fmtM3(o.m3Real)}</td>
+                        <td style={{ padding: '11px 14px', textAlign: 'right', fontWeight: 600, color: o.gap > 0 ? '#C23B3B' : o.gap < 0 ? '#267F56' : '#7A7E87' }}>
                           {o.m3Real > 0 ? (o.gap >= 0 ? '+' : '') + fmtM3(o.gap) : '—'}
                         </td>
-                        <td style={{ padding: '11px 14px', textAlign: 'right', color: '#475569' }}>
+                        <td style={{ padding: '11px 14px', textAlign: 'right', color: '#4A4D54' }}>
                           {o.m3Real > 0 ? fmtPct(o.m3Real, o.m3Prog) : '—'}
                         </td>
-                        <td style={{ padding: '11px 14px', textAlign: 'right', color: '#64748b' }}>
+                        <td style={{ padding: '11px 14px', textAlign: 'right', color: '#62666E' }}>
                           {o.hrsBomba > 0 ? o.hrsBomba.toFixed(1) + ' hrs' : '—'}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0', fontWeight: 700 }}>
-                      <td style={{ padding: '11px 14px', color: '#1e293b' }}>TOTAL</td>
-                      <td style={{ padding: '11px 14px', textAlign: 'right', color: '#64748b' }}>—</td>
-                      <td style={{ padding: '11px 14px', textAlign: 'right', color: '#0ea5e9' }}>{fmtM3(totalProg)}</td>
-                      <td style={{ padding: '11px 14px', textAlign: 'right', color: '#7c3aed' }}>{fmtM3(totalReal)}</td>
-                      <td style={{ padding: '11px 14px', textAlign: 'right', color: totalGap > 0 ? '#dc2626' : '#16a34a' }}>
+                    <tr style={{ background: '#F8F9FA', borderTop: '2px solid #E6E8EB', fontWeight: 700 }}>
+                      <td style={{ padding: '11px 14px', color: '#26282D' }}>TOTAL</td>
+                      <td style={{ padding: '11px 14px', textAlign: 'right', color: '#62666E' }}>—</td>
+                      <td style={{ padding: '11px 14px', textAlign: 'right', color: '#4E97B8' }}>{fmtM3(totalProg)}</td>
+                      <td style={{ padding: '11px 14px', textAlign: 'right', color: '#6B4E79' }}>{fmtM3(totalReal)}</td>
+                      <td style={{ padding: '11px 14px', textAlign: 'right', color: totalGap > 0 ? '#C23B3B' : '#267F56' }}>
                         {totalReal > 0 ? (totalGap >= 0 ? '+' : '') + fmtM3(totalGap) : '—'}
                       </td>
-                      <td style={{ padding: '11px 14px', textAlign: 'right', color: '#475569' }}>
+                      <td style={{ padding: '11px 14px', textAlign: 'right', color: '#4A4D54' }}>
                         {totalReal > 0 ? fmtPct(totalReal, totalProg) : '—'}
                       </td>
-                      <td style={{ padding: '11px 14px', textAlign: 'right', color: '#64748b' }}>{totalHrs.toFixed(1)} hrs</td>
+                      <td style={{ padding: '11px 14px', textAlign: 'right', color: '#62666E' }}>{totalHrs.toFixed(1)} hrs</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -253,13 +253,13 @@ export default function ReporteRiegoConsumo() {
             {/* Weekly breakdown */}
             {semanas.length > 0 && (
               <div style={{ marginBottom: 28 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', marginBottom: 12 }}>Resumen por Semana</h3>
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: '#26282D', marginBottom: 12 }}>Resumen por Semana</h3>
                 <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead>
-                      <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                      <tr style={{ background: '#F8F9FA', borderBottom: '2px solid #E6E8EB' }}>
                         {['Semana','Inicio','M³ Programado','M³ Real','Gap','% Cumplim.','Actividades'].map(h => (
-                          <th key={h} style={{ padding: '10px 14px', textAlign: h === 'Semana' || h === 'Inicio' ? 'left' : 'right', fontSize: 11, fontWeight: 700, color: '#64748b' }}>{h}</th>
+                          <th key={h} style={{ padding: '10px 14px', textAlign: h === 'Semana' || h === 'Inicio' ? 'left' : 'right', fontSize: 11, fontWeight: 700, color: '#62666E' }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -267,20 +267,20 @@ export default function ReporteRiegoConsumo() {
                       {semanas.map(s => {
                         const pct = s.actividadesTotal > 0 ? Math.round(s.actividadesCompletas / s.actividadesTotal * 100) : null
                         return (
-                          <tr key={`${s.anio}-${s.semana}`} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '10px 14px', fontWeight: 700, color: '#1e293b' }}>Sem {s.semana} / {s.anio}</td>
-                            <td style={{ padding: '10px 14px', color: '#64748b' }}>{s.fechaInicio}</td>
-                            <td style={{ padding: '10px 14px', textAlign: 'right', color: '#0ea5e9', fontWeight: 600 }}>{fmtM3(s.m3Prog)}</td>
-                            <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: s.m3Real > 0 ? '#7c3aed' : '#cbd5e1' }}>{fmtM3(s.m3Real)}</td>
-                            <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, color: s.gap > 0 ? '#dc2626' : s.gap < 0 ? '#16a34a' : '#94a3b8' }}>
+                          <tr key={`${s.anio}-${s.semana}`} style={{ borderBottom: '1px solid #F4F5F7' }}>
+                            <td style={{ padding: '10px 14px', fontWeight: 700, color: '#26282D' }}>Sem {s.semana} / {s.anio}</td>
+                            <td style={{ padding: '10px 14px', color: '#62666E' }}>{s.fechaInicio}</td>
+                            <td style={{ padding: '10px 14px', textAlign: 'right', color: '#4E97B8', fontWeight: 600 }}>{fmtM3(s.m3Prog)}</td>
+                            <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: s.m3Real > 0 ? '#6B4E79' : '#C9CCD3' }}>{fmtM3(s.m3Real)}</td>
+                            <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, color: s.gap > 0 ? '#C23B3B' : s.gap < 0 ? '#267F56' : '#7A7E87' }}>
                               {s.m3Real > 0 ? (s.gap >= 0 ? '+' : '') + fmtM3(s.gap) : '—'}
                             </td>
                             <td style={{ padding: '10px 14px', textAlign: 'right' }}>
                               {pct != null ? (
-                                <span style={{ color: pct >= 80 ? '#16a34a' : pct >= 50 ? '#d97706' : '#dc2626', fontWeight: 700 }}>{pct}%</span>
+                                <span style={{ color: pct >= 80 ? '#267F56' : pct >= 50 ? '#B5761A' : '#C23B3B', fontWeight: 700 }}>{pct}%</span>
                               ) : '—'}
                             </td>
-                            <td style={{ padding: '10px 14px', textAlign: 'right', color: '#64748b' }}>
+                            <td style={{ padding: '10px 14px', textAlign: 'right', color: '#62666E' }}>
                               {s.actividadesTotal > 0 ? `${s.actividadesCompletas}/${s.actividadesTotal}` : '—'}
                             </td>
                           </tr>
@@ -295,13 +295,13 @@ export default function ReporteRiegoConsumo() {
             {/* Daily detail */}
             {detalleFiltered.length > 0 && (
               <div>
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', marginBottom: 12 }}>Detalle Diario</h3>
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: '#26282D', marginBottom: 12 }}>Detalle Diario</h3>
                 <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                     <thead>
-                      <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                      <tr style={{ background: '#F8F9FA', borderBottom: '2px solid #E6E8EB' }}>
                         {['Fecha','Origen','M³ Prog.','Hrs Bomba','Lect. Inicio','Lect. Fin','M³ Real','Gap','Observaciones'].map(h => (
-                          <th key={h} style={{ padding: '9px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748b' }}>{h}</th>
+                          <th key={h} style={{ padding: '9px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#62666E' }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -309,23 +309,23 @@ export default function ReporteRiegoConsumo() {
                       {detalleFiltered.map(c => {
                         const gap = c.m3_real != null && c.m3_programado != null ? c.m3_real - c.m3_programado : null
                         return (
-                          <tr key={c.id} style={{ borderBottom: '1px solid #f8fafc' }}>
-                            <td style={{ padding: '8px 12px', color: '#1e293b', fontWeight: 600 }}>{c.fecha}</td>
+                          <tr key={c.id} style={{ borderBottom: '1px solid #F8F9FA' }}>
+                            <td style={{ padding: '8px 12px', color: '#26282D', fontWeight: 600 }}>{c.fecha}</td>
                             <td style={{ padding: '8px 12px' }}>
                               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <span style={{ width: 8, height: 8, borderRadius: '50%', background: ORIGEN_COLOR[c.origen] ?? '#94a3b8', display: 'inline-block' }} />
+                                <span style={{ width: 8, height: 8, borderRadius: '50%', background: ORIGEN_COLOR[c.origen] ?? '#7A7E87', display: 'inline-block' }} />
                                 {c.origen}
                               </span>
                             </td>
-                            <td style={{ padding: '8px 12px', color: '#0ea5e9' }}>{c.m3_programado?.toFixed(1) ?? '—'}</td>
-                            <td style={{ padding: '8px 12px', color: '#64748b' }}>{c.horas_bomba?.toFixed(1) ?? '—'}</td>
-                            <td style={{ padding: '8px 12px', color: '#64748b' }}>{c.lectura_inicio?.toFixed(2) ?? '—'}</td>
-                            <td style={{ padding: '8px 12px', color: '#64748b' }}>{c.lectura_fin?.toFixed(2) ?? '—'}</td>
-                            <td style={{ padding: '8px 12px', fontWeight: 700, color: '#7c3aed' }}>{c.m3_real?.toFixed(1) ?? '—'}</td>
-                            <td style={{ padding: '8px 12px', fontWeight: 600, color: gap == null ? '#94a3b8' : gap > 0 ? '#dc2626' : '#16a34a' }}>
+                            <td style={{ padding: '8px 12px', color: '#4E97B8' }}>{c.m3_programado?.toFixed(1) ?? '—'}</td>
+                            <td style={{ padding: '8px 12px', color: '#62666E' }}>{c.horas_bomba?.toFixed(1) ?? '—'}</td>
+                            <td style={{ padding: '8px 12px', color: '#62666E' }}>{c.lectura_inicio?.toFixed(2) ?? '—'}</td>
+                            <td style={{ padding: '8px 12px', color: '#62666E' }}>{c.lectura_fin?.toFixed(2) ?? '—'}</td>
+                            <td style={{ padding: '8px 12px', fontWeight: 700, color: '#6B4E79' }}>{c.m3_real?.toFixed(1) ?? '—'}</td>
+                            <td style={{ padding: '8px 12px', fontWeight: 600, color: gap == null ? '#7A7E87' : gap > 0 ? '#C23B3B' : '#267F56' }}>
                               {gap != null ? (gap > 0 ? '+' : '') + gap.toFixed(1) : '—'}
                             </td>
-                            <td style={{ padding: '8px 12px', color: '#64748b', fontSize: 11 }}>{c.observaciones ?? '—'}</td>
+                            <td style={{ padding: '8px 12px', color: '#62666E', fontSize: 11 }}>{c.observaciones ?? '—'}</td>
                           </tr>
                         )
                       })}
@@ -336,7 +336,7 @@ export default function ReporteRiegoConsumo() {
             )}
 
             {detalleFiltered.length === 0 && !loading && (
-              <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>
+              <div style={{ textAlign: 'center', padding: '60px 0', color: '#7A7E87' }}>
                 <Droplets size={36} style={{ marginBottom: 12, opacity: 0.3 }} />
                 <div>No hay registros de consumo para el período seleccionado.</div>
                 <div style={{ fontSize: 12, marginTop: 8 }}>Registra el consumo diario desde el módulo de Riego en Golf.</div>

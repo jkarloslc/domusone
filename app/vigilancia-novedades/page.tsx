@@ -35,7 +35,7 @@ export default function VigilanciaNovedadesPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
       <PageHeader backHref="/residencial"
-        variant="xl" icon={ClipboardList} color="#475569" eyebrowLabel="Vigilancia"
+        variant="xl" icon={ClipboardList} color="#4A4D54" eyebrowLabel="Vigilancia"
         title="Parte de Novedades"
         subtitle="Parte diario de vigilancia: novedades por lote y ubicación"
         actions={canWrite('vigilancia-novedades') && (
@@ -49,7 +49,7 @@ export default function VigilanciaNovedadesPage() {
         {([['partes', 'Partes'], ['novedades', 'Novedades'], ['pendientes', 'Pendientes']] as [Tab, string][]).map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)}
             style={{ padding: '8px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: tab === k ? 600 : 400,
-              color: tab === k ? 'var(--text-primary)' : 'var(--text-muted)', borderBottom: `2px solid ${tab === k ? '#475569' : 'transparent'}`, marginBottom: -1 }}>
+              color: tab === k ? 'var(--text-primary)' : 'var(--text-muted)', borderBottom: `2px solid ${tab === k ? '#4A4D54' : 'transparent'}`, marginBottom: -1 }}>
             {l}
           </button>
         ))}
@@ -142,11 +142,11 @@ function PartesTab({ refresh, onOpen }: { refresh: number; onOpen: (p: Parte) =>
                     <td style={{ fontSize: 12 }}>{p.responsable ?? '—'}</td>
                     <td style={{ fontSize: 12 }}>{p.supervisor ?? '—'}</td>
                     <td style={{ textAlign: 'right', fontSize: 13 }}>{c.total}</td>
-                    <td style={{ textAlign: 'right', fontSize: 13, color: c.abiertas ? '#dc2626' : 'var(--text-muted)', fontWeight: c.abiertas ? 600 : 400 }}>{c.abiertas}</td>
-                    <td><Pill txt={p.status} c={p.status === 'Borrador' ? { bg: '#fffbeb', color: '#d97706' } : { bg: '#f0fdf4', color: '#15803d' }} /></td>
+                    <td style={{ textAlign: 'right', fontSize: 13, color: c.abiertas ? '#C23B3B' : 'var(--text-muted)', fontWeight: c.abiertas ? 600 : 400 }}>{c.abiertas}</td>
+                    <td><Pill txt={p.status} c={p.status === 'Borrador' ? { bg: '#F4F5F7', color: '#B5761A' } : { bg: '#F4F5F7', color: '#1F7A50' }} /></td>
                     <td>{p.status !== 'Enviado/Cerrado' ? <span style={{ color: 'var(--text-muted)' }}>—</span>
                       : p.visto_at ? <span title={p.visto_por ?? ''} style={{ fontSize: 12, color: 'var(--text-muted)' }}>Visto</span>
-                      : <Pill txt="Sin revisar" c={{ bg: '#fef2f2', color: '#dc2626' }} />}</td>
+                      : <Pill txt="Sin revisar" c={{ bg: '#F4F5F7', color: '#C23B3B' }} />}</td>
                     <td>
                       <div style={{ display: 'flex', gap: 4 }}>
                         <button className="btn-ghost" style={{ padding: 5 }} title="Ver" onClick={() => onOpen(p)}><Eye size={13} /></button>
@@ -283,7 +283,7 @@ function NovedadesTab({ soloPendientes, refresh, tipos, ubicaciones, onChanged }
               ) : rows.map(n => (
                 <tr key={n.id}>
                   <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{n.vig_partes?.fecha ? new Date(n.vig_partes.fecha + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}</td>
-                  <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{fmtHora(n.hora)}</td>
+                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{fmtHora(n.hora)}</td>
                   <td style={{ fontSize: 12 }}>{tipos.find(t => t.id === n.id_tipo_fk)?.nombre ?? '—'}</td>
                   <td style={{ fontSize: 12, maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={n.descripcion ?? ''}>{n.titulo}</td>
                   <td style={{ fontSize: 13, color: 'var(--gold-light)', fontFamily: 'var(--font-display)' }}>{n.id_lote_fk ? (lotes[n.id_lote_fk] ?? `#${n.id_lote_fk}`) : '—'}</td>

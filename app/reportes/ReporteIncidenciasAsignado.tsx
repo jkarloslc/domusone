@@ -7,7 +7,7 @@ import { PrintBar } from './utils'
 const fmtFecha = (d: string | null) => d ? new Date(d.includes('T') ? d : d + 'T12:00:00').toLocaleDateString('es-MX') : '—'
 
 const STATUS_COLOR: Record<string, string> = {
-  'Abierta': '#dc2626', 'En Proceso': '#1d4ed8', 'En Espera': '#94a3b8', 'Cerrada': '#15803d', 'Cancelada': '#94a3b8',
+  'Abierta': '#C23B3B', 'En Proceso': '#26282D', 'En Espera': '#7A7E87', 'Cerrada': '#1F7A50', 'Cancelada': '#7A7E87',
 }
 
 export default function ReporteIncidenciasAsignado() {
@@ -88,7 +88,7 @@ export default function ReporteIncidenciasAsignado() {
             <span style={{ fontSize: 11, background: 'var(--blue-pale)', color: 'var(--blue)', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
               {items.length} incidencia{items.length !== 1 ? 's' : ''}
             </span>
-            <span style={{ fontSize: 11, color: '#dc2626', fontWeight: 500 }}>
+            <span style={{ fontSize: 11, color: '#C23B3B', fontWeight: 500 }}>
               {items.filter(i => i.status === 'Abierta').length} abiertas
             </span>
           </div>
@@ -108,12 +108,12 @@ export default function ReporteIncidenciasAsignado() {
               <tbody>
                 {items.map(i => (
                   <tr key={i.id}>
-                    <td style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-muted)' }}>#{i.id}</td>
+                    <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--text-muted)' }}>#{i.id}</td>
                     <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{loteMap[i.id_lote_fk] ?? (i.id_lote_fk ? `#${i.id_lote_fk}` : '—')}</td>
                     <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{i.tipo ?? '—'}</td>
                     <td style={{ fontSize: 12, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.descripcion ?? '—'}</td>
                     <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{fmtFecha(i.fecha)}</td>
-                    <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: i.fecha_cierre ? '#15803d' : 'var(--text-muted)' }}>{fmtFecha(i.fecha_cierre)}</td>
+                    <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: i.fecha_cierre ? '#1F7A50' : 'var(--text-muted)' }}>{fmtFecha(i.fecha_cierre)}</td>
                     <td style={{ fontSize: 11, fontWeight: 600, color: STATUS_COLOR[i.status ?? ''] ?? 'var(--text-muted)' }}>{i.status ?? '—'}</td>
                   </tr>
                 ))}

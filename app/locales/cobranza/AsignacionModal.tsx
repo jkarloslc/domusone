@@ -36,8 +36,8 @@ const fmtNombre = (a: Arrendatario) =>
     : [a.nombre, a.apellido_paterno].filter(Boolean).join(' ')
 
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
-const inputStyle = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none' }
-const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }
+const inputStyle = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none' }
+const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }
 
 function periodoLabel(y: number, m: number) { return `${MESES[m - 1]} ${y}` }
 function periodoKey(y: number, m: number)   { return `${y}-${String(m).padStart(2, '0')}` }
@@ -301,7 +301,7 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
           <button className="btn-ghost" onClick={onClose}>Cancelar</button>
           <button className="btn-primary" onClick={handleSave}
             disabled={saving || loading || (!esEdicion && !soloCuotas && cuotas.length === 0)}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#0f766e' }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#126B63' }}>
             {saving ? <Loader size={13} /> : <Save size={13} />}
             {saving ? 'Guardando…' : btnLabel}
           </button>
@@ -343,7 +343,7 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
                     ))}
                   </select>
                   {propiedades.filter(p => p.status === 'Libre').length === 0 && (
-                    <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4 }}>Sin propiedades disponibles.</div>
+                    <div style={{ fontSize: 11, color: '#C23B3B', marginTop: 4 }}>Sin propiedades disponibles.</div>
                   )}
                 </div>
               )}
@@ -355,14 +355,14 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
                   <input style={inputStyle} type="number" min={0} step={0.01}
                     value={form.monto_mensual}
                     onChange={e => set('monto_mensual', parseFloat(e.target.value) || 0)} />
-                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>La renta es propia de cada asignación y puede editarse en cualquier momento.</div>
+                  <div style={{ fontSize: 11, color: '#62666E', marginTop: 2 }}>La renta es propia de cada asignación y puede editarse en cualquier momento.</div>
                 </div>
                 <div>
                   <label style={labelStyle}>Servicios de Mantto</label>
                   <input style={inputStyle} type="number" min={0} step={0.01}
                     value={form.monto_mantenimiento}
                     onChange={e => set('monto_mantenimiento', parseFloat(e.target.value) || 0)} />
-                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Opcional. Cargo aparte, variable según la propiedad.</div>
+                  <div style={{ fontSize: 11, color: '#62666E', marginTop: 2 }}>Opcional. Cargo aparte, variable según la propiedad.</div>
                 </div>
               </div>
 
@@ -387,17 +387,17 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
                   <label style={labelStyle}>Vencimiento de contrato</label>
                   <input style={inputStyle} type="date" value={form.fecha_fin ?? ''} min={form.fecha_inicio || undefined}
                     onChange={e => set('fecha_fin', e.target.value)} />
-                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Opcional. No tiene que ser de 1 año — cualquier duración.</div>
+                  <div style={{ fontSize: 11, color: '#62666E', marginTop: 2 }}>Opcional. No tiene que ser de 1 año — cualquier duración.</div>
                 </div>
               </div>
 
               {esEdicion && (
                 <div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#475569', cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#4A4D54', cursor: 'pointer' }}>
                     <input type="checkbox" checked={form.activo} onChange={e => set('activo', e.target.checked)} />
                     Activa
                   </label>
-                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                  <div style={{ fontSize: 11, color: '#62666E', marginTop: 2 }}>
                     Al desactivar (finalizar contrato) o al vencer la fecha de vencimiento, la propiedad se libera automáticamente y queda disponible para asignarse bajo otro contrato.
                   </div>
                 </div>
@@ -412,7 +412,7 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
               </div>
 
               {/* Separador si no es edición */}
-              {!esEdicion && <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0' }} />}
+              {!esEdicion && <hr style={{ border: 'none', borderTop: '1px solid #E6E8EB' }} />}
             </>
           )}
 
@@ -421,13 +421,13 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
             <>
               <div>
                 <label style={labelStyle}>Modalidad de cobro</label>
-                <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', gap: 0, border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
                   {(['MENSUAL', 'ANUAL'] as const).map(m => (
                     <button key={m} onClick={() => setModalidad(m)}
                       style={{ flex: 1, padding: '9px', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer',
-                        background: modalidad === m ? '#f0fdfa' : '#fff',
-                        color: modalidad === m ? '#0f766e' : '#94a3b8',
-                        borderLeft: m === 'ANUAL' ? '1px solid #e2e8f0' : 'none' }}>
+                        background: modalidad === m ? '#F4F5F7' : '#fff',
+                        color: modalidad === m ? '#126B63' : '#7A7E87',
+                        borderLeft: m === 'ANUAL' ? '1px solid #E6E8EB' : 'none' }}>
                       {m === 'MENSUAL' ? 'Mensual' : 'Anual (múltiples)'}
                     </button>
                   ))}
@@ -439,7 +439,7 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
                   <label style={labelStyle}>Rango de meses</label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 8, alignItems: 'end' }}>
                     <div>
-                      <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Desde</div>
+                      <div style={{ fontSize: 11, color: '#7A7E87', marginBottom: 4 }}>Desde</div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                         <select style={inputStyle} value={mesIni} onChange={e => {
                           const m = Number(e.target.value); setMesIni(m)
@@ -451,9 +451,9 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
                           onChange={e => { const a = Number(e.target.value); setAnioIni(a); if (diffMeses(a, mesIni, anioFin, mesFin) < 0) setAnioFin(a) }} />
                       </div>
                     </div>
-                    <div style={{ paddingBottom: 8, color: '#94a3b8', fontSize: 18, textAlign: 'center' }}>→</div>
+                    <div style={{ paddingBottom: 8, color: '#7A7E87', fontSize: 18, textAlign: 'center' }}>→</div>
                     <div>
-                      <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Hasta</div>
+                      <div style={{ fontSize: 11, color: '#7A7E87', marginBottom: 4 }}>Hasta</div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                         <select style={inputStyle} value={mesFin} onChange={e => setMesFin(Number(e.target.value))}>
                           {MESES.map((mn, i) => <option key={i+1} value={i+1}>{mn}</option>)}
@@ -464,7 +464,7 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
                     </div>
                   </div>
                   {diffMeses(anioIni, mesIni, anioFin, mesFin) < 0 && (
-                    <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4 }}>El mes fin debe ser igual o posterior al inicio.</div>
+                    <div style={{ fontSize: 11, color: '#C23B3B', marginTop: 4 }}>El mes fin debe ser igual o posterior al inicio.</div>
                   )}
                 </div>
               )}
@@ -491,7 +491,7 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
                       <label style={labelStyle}>Núm. cuotas</label>
                       <input style={inputStyle} type="number" value={numMeses} min={1} max={maxMesesAnual}
                         onChange={e => setNumMeses(Math.min(Math.max(1, Number(e.target.value)), maxMesesAnual))} />
-                      <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Máx. {maxMesesAnual}</div>
+                      <div style={{ fontSize: 11, color: '#62666E', marginTop: 2 }}>Máx. {maxMesesAnual}</div>
                     </div>
                   </div>
                   <div>
@@ -504,42 +504,42 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
 
               {/* Resumen cuotas */}
               {cuotas.length > 0 ? (
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 14 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+                <div style={{ background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10, padding: 14 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
                     Cuotas a generar ({cuotas.length}{cuotasMantto.length > 0 ? ` + ${cuotasMantto.length} de Mantto` : ''})
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 160, overflowY: 'auto' }}>
                     {cuotas.map((c, i) => (
-                      <div key={c.periodo} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#475569' }}>
+                      <div key={c.periodo} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#4A4D54' }}>
                         <span>{c.label}</span>
                         <span style={{ textAlign: 'right' }}>
                           <span style={{ fontWeight: 600 }}>${c.monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
                           {cuotasMantto[i] && (
-                            <span style={{ color: '#0f766e' }}> + ${cuotasMantto[i].monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })} mantto</span>
+                            <span style={{ color: '#126B63' }}> + ${cuotasMantto[i].monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })} mantto</span>
                           )}
                         </span>
                       </div>
                     ))}
                   </div>
-                  <div style={{ borderTop: '1px solid #e2e8f0', marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700 }}>
-                    <span style={{ color: '#1e293b' }}>Total</span>
+                  <div style={{ borderTop: '1px solid #E6E8EB', marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700 }}>
+                    <span style={{ color: '#26282D' }}>Total</span>
                     <div style={{ textAlign: 'right' }}>
                       {descuentoAnual > 0 && (
-                        <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 600 }}>
+                        <div style={{ fontSize: 11, color: '#267F56', fontWeight: 600 }}>
                           Descuento: -${descuentoAnual.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                         </div>
                       )}
                       {totalMantto > 0 && (
-                        <div style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>
+                        <div style={{ fontSize: 11, color: '#62666E', fontWeight: 500 }}>
                           Renta: ${totalCuotas.toLocaleString('es-MX', { minimumFractionDigits: 2 })} + Mantto: ${totalMantto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                         </div>
                       )}
-                      <span style={{ color: '#0f766e' }}>${(totalCuotas + totalMantto).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                      <span style={{ color: '#126B63' }}>${(totalCuotas + totalMantto).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div style={{ padding: '12px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+                <div style={{ padding: '12px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>
                   El rango seleccionado no genera cuotas. Ajusta los meses.
                 </div>
               )}
@@ -547,7 +547,7 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
           )}
 
           {err && (
-            <div style={{ fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>
+            <div style={{ fontSize: 12, color: '#C23B3B', background: '#F4F5F7', padding: '8px 12px', borderRadius: 6 }}>
               {err}
             </div>
           )}

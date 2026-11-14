@@ -104,7 +104,7 @@ export default function IngresosPage() {
 
       {/* Header */}
       <PageHeader icon={TrendingUp}
-        color="#059669"
+        color="#267F56"
         eyebrowLabel="Módulo"
         variant="xl"
         title="Ingresos"
@@ -186,12 +186,12 @@ export default function IngresosPage() {
               ) : rows.map(r => {
                 const centro = centrosMap[r.id_centro_ingreso_fk ?? 0]
                 const color  = colorAgrupador(centro?.id_agrupador_fk)
-                const sc     = STATUS_STYLE[r.status] ?? { bg: '#f8fafc', color: '#94a3b8' }
+                const sc     = STATUS_STYLE[r.status] ?? { bg: '#F8F9FA', color: '#7A7E87' }
                 const esCancelado = r.status === 'Cancelado'
                 return (
                   <tr key={r.id} style={{ opacity: esCancelado ? 0.55 : 1 }}>
                     <td>
-                      <span style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: 'var(--blue)' }}>
+                      <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, fontWeight: 600, color: 'var(--blue)' }}>
                         {r.folio ?? `#${r.id}`}
                       </span>
                     </td>
@@ -210,11 +210,11 @@ export default function IngresosPage() {
                     <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                       {r.origen === 'cobranza' ? 'Cobranza' : r.origen === 'externo' ? 'Externo' : 'Manual'}
                     </td>
-                    <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: esCancelado ? '#94a3b8' : '#059669' }}>
+                    <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: esCancelado ? '#7A7E87' : '#267F56' }}>
                       {fmt(r.monto_total ?? 0)}
                     </td>
                     <td>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: sc.bg, color: sc.color }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: sc.color, color: '#fff'}}>
                         {r.status}
                       </span>
                     </td>
@@ -230,17 +230,17 @@ export default function IngresosPage() {
             </tbody>
             {!loading && rows.length > 0 && (
               <tfoot>
-                <tr style={{ background: '#f0f9ff', borderTop: '2px solid #bae6fd' }}>
-                  <td colSpan={5} style={{ padding: '9px 12px', fontSize: 12, fontWeight: 600, color: '#0369a1' }}>
+                <tr style={{ background: '#F4F5F7', borderTop: '2px solid #E6E8EB' }}>
+                  <td colSpan={5} style={{ padding: '9px 12px', fontSize: 12, fontWeight: 600, color: '#2A6582' }}>
                     Total página · {rows.length} recibos
                   </td>
-                  <td style={{ textAlign: 'right', fontWeight: 800, fontSize: 13, color: '#0369a1', fontVariantNumeric: 'tabular-nums', padding: '9px 12px' }}>
+                  <td style={{ textAlign: 'right', fontWeight: 800, fontSize: 13, color: '#2A6582', fontVariantNumeric: 'tabular-nums', padding: '9px 12px' }}>
                     {fmt(totalPagina)}
                   </td>
-                  <td colSpan={2} style={{ padding: '9px 12px', fontSize: 11, color: '#64748b' }}>
-                    <span style={{ color: '#15803d', fontWeight: 600 }}>{fmt(totalConfirmado)}</span>
-                    {totalBorrador > 0 && <span style={{ color: '#d97706', fontWeight: 600, marginLeft: 8 }}>{fmt(totalBorrador)}</span>}
-                    {totalCancelado > 0 && <span style={{ color: '#94a3b8', marginLeft: 8 }}>{fmt(totalCancelado)}</span>}
+                  <td colSpan={2} style={{ padding: '9px 12px', fontSize: 11, color: '#62666E' }}>
+                    <span style={{ color: '#1F7A50', fontWeight: 600 }}>{fmt(totalConfirmado)}</span>
+                    {totalBorrador > 0 && <span style={{ color: '#B5761A', fontWeight: 600, marginLeft: 8 }}>{fmt(totalBorrador)}</span>}
+                    {totalCancelado > 0 && <span style={{ color: '#7A7E87', marginLeft: 8 }}>{fmt(totalCancelado)}</span>}
                   </td>
                 </tr>
               </tfoot>

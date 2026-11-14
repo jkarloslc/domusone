@@ -35,9 +35,9 @@ type CuotaConfigDet = {
 
 const TIPO_CUOTA_OPTS = ['INSCRIPCION', 'MENSUALIDAD', 'PENSION_CARRITO']
 const TIPO_LABEL: Record<string, { label: string; color: string; bg: string }> = {
-  INSCRIPCION:      { label: 'Inscripción',     color: '#7c3aed', bg: '#f5f3ff' },
-  MENSUALIDAD:      { label: 'Mensualidad',     color: '#0369a1', bg: '#e0f2fe' },
-  PENSION_CARRITO:  { label: 'Pensión Carrito', color: '#b45309', bg: '#fef3c7' },
+  INSCRIPCION:      { label: 'Inscripción',     color: '#6B4E79', bg: '#F4F5F7' },
+  MENSUALIDAD:      { label: 'Mensualidad',     color: '#2A6582', bg: '#E6E8EB' },
+  PENSION_CARRITO:  { label: 'Pensión Carrito', color: '#96600F', bg: '#E6E8EB' },
 }
 
 const emptyForm = () => ({
@@ -51,7 +51,7 @@ const emptyForm = () => ({
 })
 
 const fmt$ = (v: number) => '$' + Number(v).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const labelSt: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }
+const labelSt: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#4A4D54', display: 'block', marginBottom: 4 }
 
 // ── Panel principal ──────────────────────────────────────────
 export default function CuotasConfigPanel({ puedeEscribir }: { puedeEscribir: boolean }) {
@@ -137,8 +137,8 @@ export default function CuotasConfigPanel({ puedeEscribir }: { puedeEscribir: bo
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#7c3aed18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <DollarSign size={15} style={{ color: '#7c3aed' }} />
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#6B4E7918', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <DollarSign size={15} style={{ color: '#62666E' }} />
             </div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Cuotas de Membresía</h2>
           </div>
@@ -164,15 +164,15 @@ export default function CuotasConfigPanel({ puedeEscribir }: { puedeEscribir: bo
           <option value="all">Todos los tipos</option>
           {TIPO_CUOTA_OPTS.map(t => <option key={t} value={t}>{TIPO_LABEL[t]?.label ?? t}</option>)}
         </select>
-        <span style={{ fontSize: 12, color: '#94a3b8' }}>{filtered.length} registros</span>
+        <span style={{ fontSize: 12, color: '#7A7E87' }}>{filtered.length} registros</span>
       </div>
 
       {/* Formulario inline */}
       {showForm && (
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '20px 24px', marginBottom: 20 }}>
+        <div style={{ background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10, padding: '20px 24px', marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#1e293b' }}>{editing ? 'Editar cuota' : 'Nueva cuota'}</span>
-            <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={16} /></button>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#26282D' }}>{editing ? 'Editar cuota' : 'Nueva cuota'}</span>
+            <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87' }}><X size={16} /></button>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 20px' }}>
@@ -182,7 +182,7 @@ export default function CuotasConfigPanel({ puedeEscribir }: { puedeEscribir: bo
                 onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}>
                 {TIPO_CUOTA_OPTS.map(t => <option key={t} value={t}>{TIPO_LABEL[t]?.label ?? t}</option>)}
               </select>
-              {editing && <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>El tipo no se puede cambiar al editar</p>}
+              {editing && <p style={{ fontSize: 11, color: '#7A7E87', marginTop: 4 }}>El tipo no se puede cambiar al editar</p>}
             </div>
 
             <div>
@@ -209,7 +209,7 @@ export default function CuotasConfigPanel({ puedeEscribir }: { puedeEscribir: bo
             )}
 
             {!esPension && (
-              <div style={{ gridColumn: '1 / -1', padding: '10px 14px', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, fontSize: 12, color: '#6d28d9' }}>
+              <div style={{ gridColumn: '1 / -1', padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #5C4268', borderRadius: 8, fontSize: 12, color: '#5C4268' }}>
                 El precio de esta cuota se configura por categoría desde el botón <strong>“Precios”</strong> de la tabla, después de guardar.
               </div>
             )}
@@ -238,7 +238,7 @@ export default function CuotasConfigPanel({ puedeEscribir }: { puedeEscribir: bo
           </div>
 
           {error && (
-            <div style={{ marginTop: 12, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, fontSize: 13, color: '#dc2626' }}>
+            <div style={{ marginTop: 12, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 7, fontSize: 13, color: '#C23B3B' }}>
               {error}
             </div>
           )}
@@ -256,21 +256,21 @@ export default function CuotasConfigPanel({ puedeEscribir }: { puedeEscribir: bo
       {/* Tabla */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ padding: '32px', textAlign: 'center', color: '#94a3b8' }}>Cargando…</div>
+          <div style={{ padding: '32px', textAlign: 'center', color: '#7A7E87' }}>Cargando…</div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
+          <div style={{ padding: '40px', textAlign: 'center', color: '#7A7E87' }}>
             {items.length === 0 ? 'Sin cuotas configuradas. Crea la primera.' : 'Sin resultados con los filtros aplicados.'}
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nombre</th>
-                <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tipo</th>
-                <th style={{ padding: '10px 16px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Precio</th>
-                <th style={{ padding: '10px 16px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Meses</th>
-                <th style={{ padding: '10px 16px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Vence día</th>
-                <th style={{ padding: '10px 16px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Estatus</th>
+              <tr style={{ borderBottom: '1px solid #E6E8EB', background: '#F8F9FA' }}>
+                <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nombre</th>
+                <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tipo</th>
+                <th style={{ padding: '10px 16px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Precio</th>
+                <th style={{ padding: '10px 16px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Meses</th>
+                <th style={{ padding: '10px 16px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Vence día</th>
+                <th style={{ padding: '10px 16px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Estatus</th>
                 {puedeEscribir && <th style={{ padding: '10px 16px' }}></th>}
               </tr>
             </thead>
@@ -279,44 +279,44 @@ export default function CuotasConfigPanel({ puedeEscribir }: { puedeEscribir: bo
                 const tipoInfo = TIPO_LABEL[item.tipo]
                 const esPensionRow = item.tipo === 'PENSION_CARRITO'
                 return (
-                  <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9', opacity: item.activo ? 1 : 0.5 }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f8fafc'}
+                  <tr key={item.id} style={{ borderBottom: '1px solid #F4F5F7', opacity: item.activo ? 1 : 0.5 }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FA'}
                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
-                    <td style={{ padding: '10px 16px', fontWeight: 500, color: '#1e293b' }}>
+                    <td style={{ padding: '10px 16px', fontWeight: 500, color: '#26282D' }}>
                       {item.nombre}
-                      {item.notas && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{item.notas}</div>}
+                      {item.notas && <div style={{ fontSize: 11, color: '#7A7E87', marginTop: 2 }}>{item.notas}</div>}
                     </td>
                     <td style={{ padding: '10px 16px' }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: tipoInfo?.bg ?? '#f1f5f9', color: tipoInfo?.color ?? '#64748b' }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: tipoInfo?.bg ?? '#F4F5F7', color: tipoInfo?.color ?? '#62666E' }}>
                         {tipoInfo?.label ?? item.tipo}
                       </span>
                     </td>
                     <td style={{ padding: '10px 16px', textAlign: 'center' }}>
                       {esPensionRow ? (
                         <div>
-                          <div style={{ fontWeight: 600, color: '#1e293b', fontFamily: 'monospace' }}>{fmt$(item.monto)}</div>
-                          <div style={{ fontSize: 11, color: '#94a3b8' }}>{item.cat_categorias_socios?.nombre ?? 'Todas'}</div>
+                          <div style={{ fontWeight: 600, color: '#26282D', fontVariantNumeric: 'tabular-nums' }}>{fmt$(item.monto)}</div>
+                          <div style={{ fontSize: 11, color: '#7A7E87' }}>{item.cat_categorias_socios?.nombre ?? 'Todas'}</div>
                         </div>
                       ) : (
                         <button onClick={() => setPreciosFor(item)}
                           title="Ver / editar precios por categoría"
                           style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11,
                             padding: '3px 10px', borderRadius: 20, border: 'none', cursor: 'pointer', fontWeight: 600,
-                            background: (item._detCount ?? 0) > 0 ? '#dcfce7' : '#fef3c7',
-                            color:      (item._detCount ?? 0) > 0 ? '#15803d' : '#92400e' }}>
+                            background: (item._detCount ?? 0) > 0 ? '#1F7A50' : '#B5761A',
+                            color:      '#fff' }}>
                           <Eye size={11} />
                           {item._detCount ?? 0} categoría{(item._detCount ?? 0) !== 1 ? 's' : ''}
                         </button>
                       )}
                     </td>
-                    <td style={{ padding: '10px 16px', textAlign: 'center', color: '#64748b' }}>
+                    <td style={{ padding: '10px 16px', textAlign: 'center', color: '#62666E' }}>
                       {item.tipo === 'MENSUALIDAD' ? item.meses_aplicar : '—'}
                     </td>
-                    <td style={{ padding: '10px 16px', textAlign: 'center', color: '#64748b' }}>
+                    <td style={{ padding: '10px 16px', textAlign: 'center', color: '#62666E' }}>
                       {item.tipo !== 'INSCRIPCION' ? `día ${item.dia_vencimiento}` : '—'}
                     </td>
                     <td style={{ padding: '10px 16px', textAlign: 'center' }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: item.activo ? '#dcfce7' : '#f1f5f9', color: item.activo ? '#16a34a' : '#94a3b8' }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: item.activo ? '#1F7A50' : '#F4F5F7', color: item.activo ? '#fff' : '#7A7E87' }}>
                         {item.activo ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
@@ -326,7 +326,7 @@ export default function CuotasConfigPanel({ puedeEscribir }: { puedeEscribir: bo
                           <button className="btn-ghost" style={{ padding: '4px 8px' }} title="Editar" onClick={() => openEdit(item)}>
                             <Edit2 size={13} />
                           </button>
-                          <button className="btn-ghost" style={{ padding: '4px 8px', color: item.activo ? '#dc2626' : '#16a34a' }}
+                          <button className="btn-ghost" style={{ padding: '4px 8px', color: item.activo ? '#C23B3B' : '#267F56' }}
                             title={item.activo ? 'Desactivar' : 'Activar'} onClick={() => toggleActivo(item)}>
                             {item.activo ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}
                           </button>
@@ -419,13 +419,13 @@ function CuotaPreciosModal({ cuota, categorias, puedeEscribir, onClose }: {
       footer={<button className="btn-secondary" onClick={onClose}>Cerrar</button>}
     >
       <div style={{ padding: '0 24px 24px' }}>
-        <div style={{ display: 'flex', gap: 20, padding: '12px 0 16px', borderBottom: '1px solid #f1f5f9', marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 20, padding: '12px 0 16px', borderBottom: '1px solid #F4F5F7', marginBottom: 16 }}>
           <div>
-            <div style={{ fontSize: 10, color: '#7c3aed', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 2 }}>Tipo</div>
+            <div style={{ fontSize: 10, color: '#6B4E79', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 2 }}>Tipo</div>
             <div style={{ fontSize: 13, fontWeight: 600 }}>{TIPO_LABEL[cuota.tipo]?.label ?? cuota.tipo}</div>
           </div>
           <div>
-            <div style={{ fontSize: 10, color: '#7c3aed', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 2 }}>Categorías activas</div>
+            <div style={{ fontSize: 10, color: '#6B4E79', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 2 }}>Categorías activas</div>
             <div style={{ fontSize: 13, fontWeight: 600 }}>{lines.filter(l => l.activo).length}</div>
           </div>
         </div>
@@ -474,13 +474,13 @@ function CuotaPreciosModal({ cuota, categorias, puedeEscribir, onClose }: {
                     <button onClick={() => toggleLine(l)}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', margin: '0 auto' }}>
                       {l.activo
-                        ? <ToggleRight size={18} style={{ color: '#15803d' }} />
-                        : <ToggleLeft  size={18} style={{ color: '#cbd5e1' }} />}
+                        ? <ToggleRight size={18} style={{ color: '#1F7A50' }} />
+                        : <ToggleLeft  size={18} style={{ color: '#C9CCD3' }} />}
                     </button>
                   </td>
                   {puedeEscribir && (
                     <td>
-                      <button className="btn-ghost" style={{ padding: '3px 6px', color: '#dc2626' }}
+                      <button className="btn-ghost" style={{ padding: '3px 6px', color: '#C23B3B' }}
                         onClick={() => handleDelete(l.id)}>
                         <Trash2 size={12} />
                       </button>
@@ -493,7 +493,7 @@ function CuotaPreciosModal({ cuota, categorias, puedeEscribir, onClose }: {
         </div>
 
         {puedeEscribir && (
-          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '14px 16px' }}>
+          <div style={{ background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10, padding: '14px 16px' }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 10 }}>
               Agregar precio por categoría
             </div>
@@ -519,7 +519,7 @@ function CuotaPreciosModal({ cuota, categorias, puedeEscribir, onClose }: {
               </button>
             </div>
             {errorNew && (
-              <div style={{ marginTop: 8, fontSize: 12, color: '#dc2626' }}>{errorNew}</div>
+              <div style={{ marginTop: 8, fontSize: 12, color: '#C23B3B' }}>{errorNew}</div>
             )}
           </div>
         )}

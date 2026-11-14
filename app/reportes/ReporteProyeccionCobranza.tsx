@@ -110,10 +110,10 @@ const fmt$ = (v: number) => '$' + Number(v).toLocaleString('es-MX', { minimumFra
 const pct  = (a: number, t: number) => t > 0 ? Math.round((a / t) * 100) : 0
 
 const STATUS_COLOR: Record<string, { bg: string; color: string; label: string }> = {
-  PAGADO:       { bg: '#dcfce7', color: '#15803d', label: 'Pagado'       },
-  PENDIENTE:    { bg: '#fef9c3', color: '#ca8a04', label: 'Pendiente'    },
-  PAGO_PARCIAL: { bg: '#fff7ed', color: '#ea580c', label: 'Pago Parcial' },
-  CANCELADO:    { bg: '#f1f5f9', color: '#64748b', label: 'Cancelado'    },
+  PAGADO:       { bg: '#E6E8EB', color: '#1F7A50', label: 'Pagado'       },
+  PENDIENTE:    { bg: '#E6E8EB', color: '#A8821A', label: 'Pendiente'    },
+  PAGO_PARCIAL: { bg: '#F4F5F7', color: '#C8642A', label: 'Pago Parcial' },
+  CANCELADO:    { bg: '#F4F5F7', color: '#62666E', label: 'Cancelado'    },
 }
 
 // Genera lista de meses "YYYY-MM" de los últimos 12 meses + próximos 6
@@ -387,11 +387,11 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         {/* Selector de mes */}
         <div>
-          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Período (mes)</label>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', display: 'block', marginBottom: 4 }}>Período (mes)</label>
           <select
             value={mes}
             onChange={e => setMes(e.target.value)}
-            style={{ padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', minWidth: 200, textTransform: 'capitalize' }}>
+            style={{ padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', minWidth: 200, textTransform: 'capitalize' }}>
             {meses.map(m => (
               <option key={m} value={m} style={{ textTransform: 'capitalize' }}>{labelMes(m)}</option>
             ))}
@@ -401,11 +401,11 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
         {/* Tipo (solo si el módulo tiene más de un tipo de cuota) */}
         {cfg.tipos.length > 1 && (
           <div>
-            <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Tipo de cuota</label>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', display: 'block', marginBottom: 4 }}>Tipo de cuota</label>
             <div style={{ display: 'flex', gap: 4 }}>
               {[{ key: 'TODOS', label: 'Todos' }, ...cfg.tipos.map(t => ({ key: t, label: cfg.tipoLabels[t] ?? t }))].map(o => (
                 <button key={o.key} onClick={() => setFiltroTipo(o.key)}
-                  style={{ padding: '7px 12px', fontSize: 12, fontWeight: filtroTipo === o.key ? 700 : 500, borderRadius: 8, cursor: 'pointer', border: '1px solid', borderColor: filtroTipo === o.key ? '#2563eb' : '#e2e8f0', background: filtroTipo === o.key ? '#eff6ff' : '#fff', color: filtroTipo === o.key ? '#1d4ed8' : '#64748b' }}>
+                  style={{ padding: '7px 12px', fontSize: 12, fontWeight: filtroTipo === o.key ? 700 : 500, borderRadius: 8, cursor: 'pointer', border: '1px solid', borderColor: filtroTipo === o.key ? '#1C1D21' : '#E6E8EB', background: filtroTipo === o.key ? '#F4F5F7' : '#fff', color: filtroTipo === o.key ? '#26282D' : '#62666E' }}>
                   {o.label}
                 </button>
               ))}
@@ -415,7 +415,7 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
 
         {/* Status */}
         <div>
-          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Status</label>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', display: 'block', marginBottom: 4 }}>Status</label>
           <div style={{ display: 'flex', gap: 4 }}>
             {([
               { key: 'TODOS',     label: 'Todos'      },
@@ -423,7 +423,7 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
               { key: 'PAGADO',    label: 'Cobrados'   },
             ] as const).map(o => (
               <button key={o.key} onClick={() => setFiltroStatus(o.key)}
-                style={{ padding: '7px 12px', fontSize: 12, fontWeight: filtroStatus === o.key ? 700 : 500, borderRadius: 8, cursor: 'pointer', border: '1px solid', borderColor: filtroStatus === o.key ? '#059669' : '#e2e8f0', background: filtroStatus === o.key ? '#ecfdf5' : '#fff', color: filtroStatus === o.key ? '#15803d' : '#64748b' }}>
+                style={{ padding: '7px 12px', fontSize: 12, fontWeight: filtroStatus === o.key ? 700 : 500, borderRadius: 8, cursor: 'pointer', border: '1px solid', borderColor: filtroStatus === o.key ? '#267F56' : '#E6E8EB', background: filtroStatus === o.key ? '#F4F5F7' : '#fff', color: filtroStatus === o.key ? '#1F7A50' : '#62666E' }}>
                 {o.label}
               </button>
             ))}
@@ -432,15 +432,15 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
 
         {/* Cliente (popup) */}
         <div>
-          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>{cfg.clienteLabel}</label>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', display: 'block', marginBottom: 4 }}>{cfg.clienteLabel}</label>
           <div style={{ display: 'flex', gap: 4 }}>
             <button onClick={() => { setPickerQ(''); setPickerOpen(true) }}
-              style={{ padding: '8px 12px', fontSize: 13, border: '1px solid', borderColor: clienteSel ? '#2563eb' : '#e2e8f0', borderRadius: 8, background: clienteSel ? '#eff6ff' : '#fff', color: clienteSel ? '#1d4ed8' : '#64748b', fontFamily: 'inherit', cursor: 'pointer', minWidth: 200, maxWidth: 280, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+              style={{ padding: '8px 12px', fontSize: 13, border: '1px solid', borderColor: clienteSel ? '#1C1D21' : '#E6E8EB', borderRadius: 8, background: clienteSel ? '#F4F5F7' : '#fff', color: clienteSel ? '#26282D' : '#62666E', fontFamily: 'inherit', cursor: 'pointer', minWidth: 200, maxWidth: 280, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
               <Search size={13} /> {clienteSel ?? `Todos los ${cfg.clienteLabel.toLowerCase()}s`}
             </button>
             {clienteSel && (
               <button onClick={() => setClienteSel(null)} title="Quitar filtro"
-                style={{ padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', cursor: 'pointer', color: '#64748b' }}>
+                style={{ padding: '8px 10px', border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', cursor: 'pointer', color: '#62666E' }}>
                 <X size={13} />
               </button>
             )}
@@ -449,9 +449,9 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
 
         {/* Búsqueda */}
         <div style={{ flex: 1, minWidth: 200 }}>
-          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Buscar {cfg.clienteLabel.toLowerCase()}</label>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', display: 'block', marginBottom: 4 }}>Buscar {cfg.clienteLabel.toLowerCase()}</label>
           <input
-            style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }}
+            style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }}
             placeholder={`Nombre${cfg.clienteLabel === 'Socio' ? ', No. socio…' : '…'}`}
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
@@ -469,19 +469,19 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
       {pickerOpen && (
         <ModalShell modulo={fuente === 'hipico' ? 'hipico' : fuente === 'locales' ? 'locales' : 'golf'} titulo={`Filtrar por ${cfg.clienteLabel.toLowerCase()}`} onClose={() => setPickerOpen(false)}>
           <input autoFocus placeholder="Buscar nombre…" value={pickerQ} onChange={e => setPickerQ(e.target.value)}
-            style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const, marginBottom: 10 }} />
+            style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const, marginBottom: 10 }} />
           <div style={{ maxHeight: 360, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
             <button onClick={() => { setClienteSel(null); setPickerOpen(false) }}
-              style={{ textAlign: 'left', padding: '8px 12px', fontSize: 13, border: 'none', borderRadius: 6, background: !clienteSel ? '#eff6ff' : 'transparent', fontWeight: !clienteSel ? 700 : 500, cursor: 'pointer', color: '#334155' }}>
+              style={{ textAlign: 'left', padding: '8px 12px', fontSize: 13, border: 'none', borderRadius: 6, background: !clienteSel ? '#F4F5F7' : 'transparent', fontWeight: !clienteSel ? 700 : 500, cursor: 'pointer', color: '#33363C' }}>
               Todos
             </button>
             {clientesOpc.map(c => (
               <button key={c} onClick={() => { setClienteSel(c); setPickerOpen(false) }}
-                style={{ textAlign: 'left', padding: '8px 12px', fontSize: 13, border: 'none', borderRadius: 6, background: clienteSel === c ? '#eff6ff' : 'transparent', fontWeight: clienteSel === c ? 700 : 500, cursor: 'pointer', color: '#334155' }}>
+                style={{ textAlign: 'left', padding: '8px 12px', fontSize: 13, border: 'none', borderRadius: 6, background: clienteSel === c ? '#F4F5F7' : 'transparent', fontWeight: clienteSel === c ? 700 : 500, cursor: 'pointer', color: '#33363C' }}>
                 {c}
               </button>
             ))}
-            {clientesOpc.length === 0 && <div style={{ padding: 12, fontSize: 12, color: '#94a3b8' }}>Sin resultados</div>}
+            {clientesOpc.length === 0 && <div style={{ padding: 12, fontSize: 12, color: '#7A7E87' }}>Sin resultados</div>}
           </div>
         </ModalShell>
       )}
@@ -491,37 +491,37 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
         <>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             {[
-              { label: 'Total cargado',   value: fmt$(totalCargo),    sub: `${filas.length} cuota${filas.length !== 1 ? 's' : ''}`, color: '#2563eb', bg: '#eff6ff', icon: CreditCard  },
-              { label: 'Cobrado',         value: fmt$(totalCobrado),  sub: `${countPagadas} pagada${countPagadas !== 1 ? 's' : ''}`, color: '#15803d', bg: '#f0fdf4', icon: CheckCircle },
-              { label: 'Por cobrar',      value: fmt$(totalPendiente),sub: `${countPend} pendiente${countPend !== 1 ? 's' : ''}`,  color: '#d97706', bg: '#fffbeb', icon: Clock        },
-              { label: 'Avance',          value: `${avancePct}%`,     sub: 'del total cargado',                                     color: '#7c3aed', bg: '#faf5ff', icon: TrendingUp   },
+              { label: 'Total cargado',   value: fmt$(totalCargo),    sub: `${filas.length} cuota${filas.length !== 1 ? 's' : ''}`, color: '#1C1D21', bg: '#F4F5F7', icon: CreditCard  },
+              { label: 'Cobrado',         value: fmt$(totalCobrado),  sub: `${countPagadas} pagada${countPagadas !== 1 ? 's' : ''}`, color: '#1F7A50', bg: '#F4F5F7', icon: CheckCircle },
+              { label: 'Por cobrar',      value: fmt$(totalPendiente),sub: `${countPend} pendiente${countPend !== 1 ? 's' : ''}`,  color: '#B5761A', bg: '#F4F5F7', icon: Clock        },
+              { label: 'Avance',          value: `${avancePct}%`,     sub: 'del total cargado',                                     color: '#6B4E79', bg: '#F4F5F7', icon: TrendingUp   },
             ].map(k => {
               const Icon = k.icon
               return (
-                <div key={k.label} style={{ flex: '1 1 150px', maxWidth: 220, padding: '14px 18px', background: k.bg, border: `1px solid ${k.color}22`, borderRadius: 10 }}>
+                <div key={k.label} style={{ flex: '1 1 150px', maxWidth: 220, padding: '14px 18px', background: '#fff', border: '1px solid #E6E8EB', borderRadius: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
                     <Icon size={14} style={{ color: k.color }} />
-                    <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{k.label}</span>
+                    <span style={{ fontSize: 11, color: '#62666E', fontWeight: 600 }}>{k.label}</span>
                   </div>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: k.color, lineHeight: 1 }}>{k.value}</div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>{k.sub}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)', lineHeight: 1 }}>{k.value}</div>
+                  <div style={{ fontSize: 11, color: '#7A7E87', marginTop: 4 }}>{k.sub}</div>
                 </div>
               )
             })}
           </div>
 
           {/* Barra de avance */}
-          <div style={{ background: '#f1f5f9', borderRadius: 8, height: 10, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${avancePct}%`, background: avancePct >= 80 ? '#15803d' : avancePct >= 50 ? '#d97706' : '#dc2626', borderRadius: 8, transition: 'width 0.4s' }} />
+          <div style={{ background: '#F4F5F7', borderRadius: 8, height: 10, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${avancePct}%`, background: avancePct >= 80 ? '#1F7A50' : avancePct >= 50 ? '#B5761A' : '#C23B3B', borderRadius: 8, transition: 'width 0.4s' }} />
           </div>
 
           {/* Aclaración: no todo lo "Cobrado" de este período entró de banco este mes —
               pagos anualizados/adelantados hechos en meses anteriores ya dejan estas
               cuotas en PAGADO sin que haya movimiento bancario nuevo en {mes}. */}
           {totalCobradoAntes > 0 && (
-            <div style={{ fontSize: 11, color: '#64748b', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px' }}>
-              De lo <strong style={{ color: '#15803d' }}>cobrado</strong> en {labelMes(mes)}: <strong style={{ color: '#15803d' }}>{fmt$(totalCobradoEnMes)}</strong> entró de banco durante {labelMes(mes)}
-              {' '}· <strong style={{ color: '#2563eb' }}>{fmt$(totalCobradoAntes)}</strong> ya se había cobrado antes ({cobradoAntesRows.length} cuota{cobradoAntesRows.length !== 1 ? 's' : ''} de pago anualizado/adelantado) — no representa entrada de banco en {labelMes(mes)}.
+            <div style={{ fontSize: 11, color: '#62666E', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, padding: '8px 12px' }}>
+              De lo <strong style={{ color: '#1F7A50' }}>cobrado</strong> en {labelMes(mes)}: <strong style={{ color: '#1F7A50' }}>{fmt$(totalCobradoEnMes)}</strong> entró de banco durante {labelMes(mes)}
+              {' '}· <strong style={{ color: '#1C1D21' }}>{fmt$(totalCobradoAntes)}</strong> ya se había cobrado antes ({cobradoAntesRows.length} cuota{cobradoAntesRows.length !== 1 ? 's' : ''} de pago anualizado/adelantado) — no representa entrada de banco en {labelMes(mes)}.
             </div>
           )}
 
@@ -529,25 +529,25 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
           {porTipo.filter(t => t.total > 0).length > 1 && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 10 }}>
               {porTipo.filter(t => t.total > 0).map(t => (
-                <div key={t.tipo} style={{ padding: '14px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 10 }}>{t.label}</div>
+                <div key={t.tipo} style={{ padding: '14px 16px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#4A4D54', marginBottom: 10 }}>{t.label}</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, textAlign: 'center' }}>
                     {[
-                      { label: 'Cargo',    value: fmt$(t.cargo),    color: '#2563eb' },
-                      { label: 'Cobrado',  value: fmt$(t.cobrado),  color: '#15803d' },
-                      { label: 'Pendiente',value: fmt$(t.pendiente),color: '#d97706' },
+                      { label: 'Cargo',    value: fmt$(t.cargo),    color: '#1C1D21' },
+                      { label: 'Cobrado',  value: fmt$(t.cobrado),  color: '#1F7A50' },
+                      { label: 'Pendiente',value: fmt$(t.pendiente),color: '#B5761A' },
                     ].map(col => (
                       <div key={col.label}>
-                        <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 2 }}>{col.label}</div>
+                        <div style={{ fontSize: 10, color: '#7A7E87', marginBottom: 2 }}>{col.label}</div>
                         <div style={{ fontSize: 14, fontWeight: 700, color: col.color }}>{col.value}</div>
                       </div>
                     ))}
                   </div>
-                  <div style={{ marginTop: 8, fontSize: 11, color: '#94a3b8' }}>
+                  <div style={{ marginTop: 8, fontSize: 11, color: '#7A7E87' }}>
                     {t.pagadas} de {t.total} pagadas · {pct(t.cobrado, t.cargo)}% cobrado
                   </div>
-                  <div style={{ marginTop: 4, background: '#e2e8f0', borderRadius: 4, height: 6, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${pct(t.cobrado, t.cargo)}%`, background: '#15803d', borderRadius: 4 }} />
+                  <div style={{ marginTop: 4, background: '#E6E8EB', borderRadius: 4, height: 6, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct(t.cobrado, t.cargo)}%`, background: '#1F7A50', borderRadius: 4 }} />
                   </div>
                 </div>
               ))}
@@ -558,20 +558,20 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
 
       {/* ── Flujo de Cobranza: cobrado del mes / anticipado / vencido ── */}
       <div>
-        <h3 style={{ fontSize: 13, fontWeight: 700, color: '#334155', margin: '4px 0 10px' }}>
+        <h3 style={{ fontSize: 13, fontWeight: 700, color: '#33363C', margin: '4px 0 10px' }}>
           Flujo de Cobranza — {flujoTxt}
         </h3>
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 12 }}>
           <div>
-            <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Del mes</label>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', display: 'block', marginBottom: 4 }}>Del mes</label>
             <select className="select" value={flujoDesde}
               onChange={e => { setFlujoDesdeSel(e.target.value); if (e.target.value > flujoHasta) setFlujoHastaSel(e.target.value) }}>
               {meses.map(m => <option key={m} value={m} style={{ textTransform: 'capitalize' }}>{labelMes(m)}</option>)}
             </select>
           </div>
           <div>
-            <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Al mes</label>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', display: 'block', marginBottom: 4 }}>Al mes</label>
             <select className="select" value={flujoHasta}
               onChange={e => { setFlujoHastaSel(e.target.value); if (e.target.value < flujoDesde) setFlujoDesdeSel(e.target.value) }}>
               {meses.map(m => <option key={m} value={m} style={{ textTransform: 'capitalize' }}>{labelMes(m)}</option>)}
@@ -581,22 +581,22 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {[
-            { label: flujoDesde === flujoHasta ? 'Cobrado del mes' : 'Cobrado del periodo', value: fmt$(totalCobradoMesFlujo), sub: `${cobrosMes.length} pago${cobrosMes.length !== 1 ? 's' : ''} registrado${cobrosMes.length !== 1 ? 's' : ''}`, color: '#15803d', bg: '#f0fdf4', icon: CheckCircle },
-            { label: flujoDesde === flujoHasta ? 'Corriente del mes' : 'Corriente', value: fmt$(totalCorriente),    sub: `${corrienteRows.length} cuota${corrienteRows.length !== 1 ? 's' : ''} de su propio mes de cobro`, color: '#16a34a', bg: '#f0fdf4', icon: CheckCircle },
-            { label: 'Vencido recuperado', value: fmt$(totalVencidaRec),  sub: `${vencidaRows.length} de periodos anteriores`,        color: '#ea580c', bg: '#fff7ed', icon: Clock },
-            { label: 'Anticipado',      value: fmt$(totalAnticipado),      sub: `${anticipadoRows.length} de periodos futuros`,       color: '#2563eb', bg: '#eff6ff', icon: CalendarClock },
-            { label: `Cartera vencida al ${corteTxt}`, value: fmt$(totalVencidoCorte), sub: `${vencidosCorte.length} cuota${vencidosCorte.length !== 1 ? 's' : ''} vencida${vencidosCorte.length !== 1 ? 's' : ''} sin cobrar al cierre de ${labelMes(flujoHasta)}${corteFuturo ? ' (proyectado si no se cobra)' : ''}`, color: '#b91c1c', bg: '#fef2f2', icon: AlertTriangle },
-            { label: 'Cartera vencida (saldo a hoy)', value: fmt$(totalVencidoFlujo), sub: `${vencidos.length} cuota${vencidos.length !== 1 ? 's' : ''} sin cobrar — es un saldo, no flujo del mes`, color: '#dc2626', bg: '#fef2f2', icon: AlertTriangle },
+            { label: flujoDesde === flujoHasta ? 'Cobrado del mes' : 'Cobrado del periodo', value: fmt$(totalCobradoMesFlujo), sub: `${cobrosMes.length} pago${cobrosMes.length !== 1 ? 's' : ''} registrado${cobrosMes.length !== 1 ? 's' : ''}`, color: '#1F7A50', bg: '#F4F5F7', icon: CheckCircle },
+            { label: flujoDesde === flujoHasta ? 'Corriente del mes' : 'Corriente', value: fmt$(totalCorriente),    sub: `${corrienteRows.length} cuota${corrienteRows.length !== 1 ? 's' : ''} de su propio mes de cobro`, color: '#267F56', bg: '#F4F5F7', icon: CheckCircle },
+            { label: 'Vencido recuperado', value: fmt$(totalVencidaRec),  sub: `${vencidaRows.length} de periodos anteriores`,        color: '#C8642A', bg: '#F4F5F7', icon: Clock },
+            { label: 'Anticipado',      value: fmt$(totalAnticipado),      sub: `${anticipadoRows.length} de periodos futuros`,       color: '#1C1D21', bg: '#F4F5F7', icon: CalendarClock },
+            { label: `Cartera vencida al ${corteTxt}`, value: fmt$(totalVencidoCorte), sub: `${vencidosCorte.length} cuota${vencidosCorte.length !== 1 ? 's' : ''} vencida${vencidosCorte.length !== 1 ? 's' : ''} sin cobrar al cierre de ${labelMes(flujoHasta)}${corteFuturo ? ' (proyectado si no se cobra)' : ''}`, color: '#A83232', bg: '#F4F5F7', icon: AlertTriangle },
+            { label: 'Cartera vencida (saldo a hoy)', value: fmt$(totalVencidoFlujo), sub: `${vencidos.length} cuota${vencidos.length !== 1 ? 's' : ''} sin cobrar — es un saldo, no flujo del mes`, color: '#C23B3B', bg: '#F4F5F7', icon: AlertTriangle },
           ].map(k => {
             const Icon = k.icon
             return (
-              <div key={k.label} style={{ flex: '1 1 180px', maxWidth: 260, padding: '14px 18px', background: k.bg, border: `1px solid ${k.color}22`, borderRadius: 10 }}>
+              <div key={k.label} style={{ flex: '1 1 180px', maxWidth: 260, padding: '14px 18px', background: '#fff', border: '1px solid #E6E8EB', borderRadius: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
                   <Icon size={14} style={{ color: k.color }} />
-                  <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{k.label}</span>
+                  <span style={{ fontSize: 11, color: '#62666E', fontWeight: 600 }}>{k.label}</span>
                 </div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: k.color, lineHeight: 1 }}>{loadingFlujo ? '…' : k.value}</div>
-                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>{k.sub}</div>
+                <div style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)', lineHeight: 1 }}>{loadingFlujo ? '…' : k.value}</div>
+                <div style={{ fontSize: 11, color: '#7A7E87', marginTop: 4 }}>{k.sub}</div>
               </div>
             )
           })}
@@ -604,41 +604,41 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
 
         {!loadingFlujo && cobrosMes.length > 0 && (
           <div style={{ marginTop: 14 }}>
-            <div style={{ fontSize: 11, color: '#64748b', marginBottom: 8 }}>
-              De lo cobrado en el periodo: <strong style={{ color: '#16a34a' }}>{fmt$(totalCorriente)}</strong> del propio mes de cobro (desempeño)
-              {' '}· <strong style={{ color: '#ea580c' }}>{fmt$(totalVencidaRec)}</strong> de periodos anteriores (recuperación de cartera)
-              {' '}· <strong style={{ color: '#2563eb' }}>{fmt$(totalAnticipado)}</strong> de periodos futuros (adelantado)
-              {totalOtros > 0 && <> · <strong style={{ color: '#64748b' }}>{fmt$(totalOtros)}</strong> sin periodo</>}
+            <div style={{ fontSize: 11, color: '#62666E', marginBottom: 8 }}>
+              De lo cobrado en el periodo: <strong style={{ color: '#267F56' }}>{fmt$(totalCorriente)}</strong> del propio mes de cobro (desempeño)
+              {' '}· <strong style={{ color: '#C8642A' }}>{fmt$(totalVencidaRec)}</strong> de periodos anteriores (recuperación de cartera)
+              {' '}· <strong style={{ color: '#1C1D21' }}>{fmt$(totalAnticipado)}</strong> de periodos futuros (adelantado)
+              {totalOtros > 0 && <> · <strong style={{ color: '#62666E' }}>{fmt$(totalOtros)}</strong> sin periodo</>}
             </div>
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '8px 14px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>Desglose por fecha de cobro</span>
+              <div style={{ padding: '8px 14px', background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54' }}>Desglose por fecha de cobro</span>
               </div>
               <div style={{ overflowX: 'auto', maxHeight: 260, overflowY: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
-                    <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0' }}>
+                    <tr style={{ background: '#F4F5F7', borderBottom: '2px solid #E6E8EB' }}>
                       {['Fecha de cobro', 'Cuotas', 'Monto cobrado'].map(h => (
-                        <th key={h} style={{ padding: '8px 14px', textAlign: h === 'Monto cobrado' ? 'right' : 'left', fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{h}</th>
+                        <th key={h} style={{ padding: '8px 14px', textAlign: h === 'Monto cobrado' ? 'right' : 'left', fontSize: 10, fontWeight: 700, color: '#4A4D54', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {desglosePorDia.map(d => (
-                      <tr key={d.fecha} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '8px 14px', color: '#1e293b' }}>
+                      <tr key={d.fecha} style={{ borderBottom: '1px solid #F4F5F7' }}>
+                        <td style={{ padding: '8px 14px', color: '#26282D' }}>
                           {d.fecha !== '—' ? new Date(d.fecha + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'short', day: '2-digit', month: 'short' }) : '—'}
                         </td>
-                        <td style={{ padding: '8px 14px', color: '#64748b' }}>{d.count}</td>
-                        <td style={{ padding: '8px 14px', textAlign: 'right', fontWeight: 600, color: '#15803d' }}>{fmt$(d.monto)}</td>
+                        <td style={{ padding: '8px 14px', color: '#62666E' }}>{d.count}</td>
+                        <td style={{ padding: '8px 14px', textAlign: 'right', fontWeight: 600, color: '#1F7A50' }}>{fmt$(d.monto)}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0', fontWeight: 700 }}>
-                      <td style={{ padding: '8px 14px', fontSize: 12, color: '#475569' }}>Total</td>
-                      <td style={{ padding: '8px 14px', color: '#475569' }}>{cobrosMes.length}</td>
-                      <td style={{ padding: '8px 14px', textAlign: 'right', color: '#15803d' }}>{fmt$(totalCobradoMesFlujo)}</td>
+                    <tr style={{ background: '#F8F9FA', borderTop: '2px solid #E6E8EB', fontWeight: 700 }}>
+                      <td style={{ padding: '8px 14px', fontSize: 12, color: '#4A4D54' }}>Total</td>
+                      <td style={{ padding: '8px 14px', color: '#4A4D54' }}>{cobrosMes.length}</td>
+                      <td style={{ padding: '8px 14px', textAlign: 'right', color: '#1F7A50' }}>{fmt$(totalCobradoMesFlujo)}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -650,35 +650,35 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
         {!loadingFlujo && vencidos.length > 0 && (
           <div style={{ marginTop: 14 }}>
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '8px 14px', background: '#fef2f2', borderBottom: '1px solid #fee2e2' }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#b91c1c' }}>Cuotas vencidas sin cobrar (a la fecha de hoy)</span>
+              <div style={{ padding: '8px 14px', background: '#F4F5F7', borderBottom: '1px solid #E6E8EB' }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#A83232' }}>Cuotas vencidas sin cobrar (a la fecha de hoy)</span>
               </div>
               <div style={{ overflowX: 'auto', maxHeight: 260, overflowY: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
-                    <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0' }}>
+                    <tr style={{ background: '#F4F5F7', borderBottom: '2px solid #E6E8EB' }}>
                       {[cfg.clienteLabel, 'Concepto', 'Período', 'Vencimiento', 'Saldo'].map(h => (
-                        <th key={h} style={{ padding: '8px 14px', textAlign: h === 'Saldo' ? 'right' : 'left', fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{h}</th>
+                        <th key={h} style={{ padding: '8px 14px', textAlign: h === 'Saldo' ? 'right' : 'left', fontSize: 10, fontWeight: 700, color: '#4A4D54', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {vencidos.map(c => (
-                      <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '8px 14px', color: '#1e293b' }}>{c.cliente}</td>
-                        <td style={{ padding: '8px 14px', color: '#475569' }}>{c.concepto}</td>
-                        <td style={{ padding: '8px 14px', color: '#64748b', fontFamily: 'monospace' }}>{c.periodo ?? '—'}</td>
-                        <td style={{ padding: '8px 14px', color: '#dc2626', fontWeight: 600 }}>
+                      <tr key={c.id} style={{ borderBottom: '1px solid #F4F5F7' }}>
+                        <td style={{ padding: '8px 14px', color: '#26282D' }}>{c.cliente}</td>
+                        <td style={{ padding: '8px 14px', color: '#4A4D54' }}>{c.concepto}</td>
+                        <td style={{ padding: '8px 14px', color: '#62666E', fontVariantNumeric: 'tabular-nums' }}>{c.periodo ?? '—'}</td>
+                        <td style={{ padding: '8px 14px', color: '#C23B3B', fontWeight: 600 }}>
                           {c.fecha_vencimiento ? new Date(c.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
                         </td>
-                        <td style={{ padding: '8px 14px', textAlign: 'right', fontWeight: 600, color: '#dc2626' }}>{fmt$(c.saldo ?? c.monto_final)}</td>
+                        <td style={{ padding: '8px 14px', textAlign: 'right', fontWeight: 600, color: '#C23B3B' }}>{fmt$(c.saldo ?? c.monto_final)}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr style={{ background: '#fef2f2', borderTop: '2px solid #fee2e2', fontWeight: 700 }}>
-                      <td colSpan={4} style={{ padding: '8px 14px', fontSize: 12, color: '#b91c1c' }}>Total vencido ({vencidos.length})</td>
-                      <td style={{ padding: '8px 14px', textAlign: 'right', color: '#b91c1c' }}>{fmt$(totalVencidoFlujo)}</td>
+                    <tr style={{ background: '#F4F5F7', borderTop: '2px solid #E6E8EB', fontWeight: 700 }}>
+                      <td colSpan={4} style={{ padding: '8px 14px', fontSize: 12, color: '#A83232' }}>Total vencido ({vencidos.length})</td>
+                      <td style={{ padding: '8px 14px', textAlign: 'right', color: '#A83232' }}>{fmt$(totalVencidoFlujo)}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -691,15 +691,15 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
       {/* ── Tabla detalle ─────────────────────────────────── */}
       <div id="reporte-print-area">
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '10px 16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>
+          <div style={{ padding: '10px 16px', background: '#F8F9FA', borderBottom: '1px solid #E6E8EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54' }}>
               {loading ? 'Cargando…' : `${filtradas.length} cuota${filtradas.length !== 1 ? 's' : ''}`}
-              {filtroTipo !== 'TODOS' && <span style={{ fontWeight: 400, color: '#94a3b8', marginLeft: 6 }}>· {cfg.tipoLabels[filtroTipo] ?? filtroTipo}</span>}
+              {filtroTipo !== 'TODOS' && <span style={{ fontWeight: 400, color: '#7A7E87', marginLeft: 6 }}>· {cfg.tipoLabels[filtroTipo] ?? filtroTipo}</span>}
             </span>
             {!loading && filtradas.length > 0 && (
-              <span style={{ fontSize: 12, color: '#64748b' }}>
-                Cobrado: <strong style={{ color: '#15803d' }}>{fmt$(filtradas.reduce((a, f) => a + f.cobrado, 0))}</strong>
-                {' '}· Por cobrar: <strong style={{ color: '#d97706' }}>{fmt$(filtradas.reduce((a, f) => a + f.por_cobrar, 0))}</strong>
+              <span style={{ fontSize: 12, color: '#62666E' }}>
+                Cobrado: <strong style={{ color: '#1F7A50' }}>{fmt$(filtradas.reduce((a, f) => a + f.cobrado, 0))}</strong>
+                {' '}· Por cobrar: <strong style={{ color: '#B5761A' }}>{fmt$(filtradas.reduce((a, f) => a + f.por_cobrar, 0))}</strong>
               </span>
             )}
           </div>
@@ -707,73 +707,73 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
           <div style={{ overflowX: 'auto' }}>
             <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
-                <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0' }}>
+                <tr style={{ background: '#F4F5F7', borderBottom: '2px solid #E6E8EB' }}>
                   {(cfg.clienteLabel === 'Socio' ? ['No.'] : []).concat([cfg.clienteLabel, cfg.secundarioLabel, 'Tipo', 'Concepto', 'Cargo', 'Cobrado', 'Por cobrar', 'Status', 'Vencimiento', 'F. Pago', 'Forma Pago']).map(h => (
-                    <th key={h} style={{ padding: '9px 10px', textAlign: h === 'Cargo' || h === 'Cobrado' || h === 'Por cobrar' ? 'right' : 'left', fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                    <th key={h} style={{ padding: '9px 10px', textAlign: h === 'Cargo' || h === 'Cobrado' || h === 'Por cobrar' ? 'right' : 'left', fontSize: 10, fontWeight: 700, color: '#4A4D54', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={12} style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Cargando…</td></tr>
+                  <tr><td colSpan={12} style={{ padding: '40px', textAlign: 'center', color: '#7A7E87' }}>Cargando…</td></tr>
                 ) : filtradas.length === 0 ? (
-                  <tr><td colSpan={12} style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Sin cuotas para el período seleccionado</td></tr>
+                  <tr><td colSpan={12} style={{ padding: '40px', textAlign: 'center', color: '#7A7E87' }}>Sin cuotas para el período seleccionado</td></tr>
                 ) : (
                   filtradas.map(f => {
-                    const sc = STATUS_COLOR[f.status] ?? { bg: '#f1f5f9', color: '#64748b', label: f.status }
+                    const sc = STATUS_COLOR[f.status] ?? { bg: '#F4F5F7', color: '#62666E', label: f.status }
                     const venc = f.fecha_vencimiento && f.fecha_vencimiento < new Date().toLocaleDateString('en-CA') && f.status !== 'PAGADO'
                     return (
-                      <tr key={f.id} style={{ borderBottom: '1px solid #f1f5f9' }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f8fafc'}
+                      <tr key={f.id} style={{ borderBottom: '1px solid #F4F5F7' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FA'}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
                         {cfg.clienteLabel === 'Socio' && (
-                          <td style={{ padding: '9px 10px', color: '#94a3b8', fontFamily: 'monospace', fontSize: 11, whiteSpace: 'nowrap' }}>
+                          <td style={{ padding: '9px 10px', color: '#7A7E87', fontVariantNumeric: 'tabular-nums', fontSize: 11, whiteSpace: 'nowrap' }}>
                             {f.numero ?? '—'}
                           </td>
                         )}
-                        <td style={{ padding: '9px 10px', fontWeight: 500, color: '#1e293b', whiteSpace: 'nowrap' }}>
+                        <td style={{ padding: '9px 10px', fontWeight: 500, color: '#26282D', whiteSpace: 'nowrap' }}>
                           {f.cliente}
                         </td>
-                        <td style={{ padding: '9px 10px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                        <td style={{ padding: '9px 10px', color: '#62666E', whiteSpace: 'nowrap' }}>
                           {f.secundario ?? '—'}
                         </td>
                         <td style={{ padding: '9px 10px', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 20, background: '#eff6ff', color: '#2563eb' }}>
+                          <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 20, background: '#F4F5F7', color: '#1C1D21' }}>
                             {cfg.tipoLabels[f.tipo] ?? f.tipo}
                           </span>
                         </td>
-                        <td style={{ padding: '9px 10px', color: '#475569' }}>{f.concepto}</td>
-                        <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>
+                        <td style={{ padding: '9px 10px', color: '#4A4D54' }}>{f.concepto}</td>
+                        <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 600, color: '#26282D', whiteSpace: 'nowrap' }}>
                           {fmt$(f.monto_cargo)}
                         </td>
-                        <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 600, color: '#15803d', whiteSpace: 'nowrap' }}>
+                        <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 600, color: '#1F7A50', whiteSpace: 'nowrap' }}>
                           {f.cobrado > 0 ? fmt$(f.cobrado) : '—'}
                         </td>
-                        <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 600, color: f.por_cobrar > 0 ? '#d97706' : '#94a3b8', whiteSpace: 'nowrap' }}>
+                        <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 600, color: f.por_cobrar > 0 ? '#B5761A' : '#7A7E87', whiteSpace: 'nowrap' }}>
                           {f.por_cobrar > 0 ? fmt$(f.por_cobrar) : '—'}
                         </td>
                         <td style={{ padding: '9px 10px', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: sc.bg, color: sc.color }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: sc.color, color: '#fff'}}>
                             {sc.label}
                           </span>
                         </td>
-                        <td style={{ padding: '9px 10px', color: venc ? '#dc2626' : '#64748b', fontWeight: venc ? 600 : 400, whiteSpace: 'nowrap', fontSize: 11 }}>
+                        <td style={{ padding: '9px 10px', color: venc ? '#C23B3B' : '#62666E', fontWeight: venc ? 600 : 400, whiteSpace: 'nowrap', fontSize: 11 }}>
                           {f.fecha_vencimiento
                             ? new Date(f.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
                             : '—'}
-                          {venc && <span style={{ marginLeft: 4 }}>⚠</span>}
+                          {venc && <AlertTriangle size={11} style={{ marginLeft: 4, verticalAlign: -1 }} />}
                         </td>
-                        <td style={{ padding: '9px 10px', color: '#64748b', whiteSpace: 'nowrap', fontSize: 11 }}>
+                        <td style={{ padding: '9px 10px', color: '#62666E', whiteSpace: 'nowrap', fontSize: 11 }}>
                           {f.fecha_pago
                             ? new Date(f.fecha_pago + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
                             : '—'}
                           {f.fecha_pago && f.fecha_pago.slice(0, 7) < mes && (
-                            <span title="Cobrado antes de este período — no es entrada de banco nueva en este mes" style={{ marginLeft: 5, fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 20, background: '#dbeafe', color: '#2563eb' }}>
+                            <span title="Cobrado antes de este período — no es entrada de banco nueva en este mes" style={{ marginLeft: 5, fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 20, background: '#E6E8EB', color: '#1C1D21' }}>
                               anticipo
                             </span>
                           )}
                         </td>
-                        <td style={{ padding: '9px 10px', color: '#64748b', fontSize: 11 }}>
+                        <td style={{ padding: '9px 10px', color: '#62666E', fontSize: 11 }}>
                           {f.forma_pago ?? '—'}
                         </td>
                       </tr>
@@ -783,17 +783,17 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
               </tbody>
               {!loading && filtradas.length > 0 && (
                 <tfoot>
-                  <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0', fontWeight: 700 }}>
-                    <td colSpan={cfg.clienteLabel === 'Socio' ? 5 : 4} style={{ padding: '10px 10px', fontSize: 12, color: '#475569' }}>
+                  <tr style={{ background: '#F8F9FA', borderTop: '2px solid #E6E8EB', fontWeight: 700 }}>
+                    <td colSpan={cfg.clienteLabel === 'Socio' ? 5 : 4} style={{ padding: '10px 10px', fontSize: 12, color: '#4A4D54' }}>
                       Total ({filtradas.length} cuotas)
                     </td>
-                    <td style={{ padding: '10px 10px', textAlign: 'right', fontSize: 13, color: '#1e293b' }}>
+                    <td style={{ padding: '10px 10px', textAlign: 'right', fontSize: 13, color: '#26282D' }}>
                       {fmt$(filtradas.reduce((a, f) => a + f.monto_cargo, 0))}
                     </td>
-                    <td style={{ padding: '10px 10px', textAlign: 'right', fontSize: 13, color: '#15803d' }}>
+                    <td style={{ padding: '10px 10px', textAlign: 'right', fontSize: 13, color: '#1F7A50' }}>
                       {fmt$(filtradas.reduce((a, f) => a + f.cobrado, 0))}
                     </td>
-                    <td style={{ padding: '10px 10px', textAlign: 'right', fontSize: 13, color: '#d97706' }}>
+                    <td style={{ padding: '10px 10px', textAlign: 'right', fontSize: 13, color: '#B5761A' }}>
                       {fmt$(filtradas.reduce((a, f) => a + f.por_cobrar, 0))}
                     </td>
                     <td colSpan={4} />

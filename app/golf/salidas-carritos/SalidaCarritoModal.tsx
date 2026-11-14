@@ -32,10 +32,10 @@ const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigit
 const nc = (s: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null } | null) =>
   s ? [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ') : '—'
 
-const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }
+const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }
 const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0',
-  borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+  width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB',
+  borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
 }
 
 export default function SalidaCarritoModal({ onClose, onSaved }: Props) {
@@ -169,7 +169,7 @@ export default function SalidaCarritoModal({ onClose, onSaved }: Props) {
       footer={<>
         <button className="btn-ghost" onClick={onClose} disabled={saving}>Cancelar</button>
         <button className="btn-primary" onClick={handleSave} disabled={saving || loading || !idPension}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#059669' }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#267F56' }}>
           {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
           Registrar e Imprimir Ticket
         </button>
@@ -178,7 +178,7 @@ export default function SalidaCarritoModal({ onClose, onSaved }: Props) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
         {error && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 13, color: '#C23B3B' }}>
             <AlertCircle size={14} /> {error}
           </div>
         )}
@@ -186,7 +186,7 @@ export default function SalidaCarritoModal({ onClose, onSaved }: Props) {
         <div>
           <label style={labelStyle}>Carrito (solo carritos al corriente en cuotas)</label>
           {loading ? (
-            <div style={{ fontSize: 13, color: '#94a3b8', padding: '8px 0' }}>Cargando carritos…</div>
+            <div style={{ fontSize: 13, color: '#7A7E87', padding: '8px 0' }}>Cargando carritos…</div>
           ) : (
             <select value={idPension} onChange={e => { setIdPension(e.target.value ? Number(e.target.value) : ''); setError('') }} style={inputStyle}>
               <option value="">— Selecciona un carrito —</option>
@@ -218,25 +218,25 @@ export default function SalidaCarritoModal({ onClose, onSaved }: Props) {
             </select>
           )}
           {!loading && elegibles.length === 0 && (
-            <div style={{ fontSize: 12, color: '#d97706', marginTop: 6 }}>
+            <div style={{ fontSize: 12, color: '#B5761A', marginTop: 6 }}>
               No hay carritos disponibles: todos tienen adeudo de cuotas o ya están en ronda.
             </div>
           )}
         </div>
 
         {seleccionado && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', background: '#ecfdf5', borderRadius: 10, border: '1px solid #a7f3d0' }}>
-            <Car size={18} style={{ color: '#059669', flexShrink: 0 }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', background: '#F4F5F7', borderRadius: 10, border: '1px solid #E6E8EB' }}>
+            <Car size={18} style={{ color: '#62666E', flexShrink: 0 }} />
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#065f46' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#17603F' }}>
                 {[seleccionado.pension.cat_carritos?.marca, seleccionado.pension.cat_carritos?.modelo].filter(Boolean).join(' ') || 'Carrito'}
                 {seleccionado.pension.cat_carritos?.placa ? ` · Placa ${seleccionado.pension.cat_carritos.placa}` : ''}
               </div>
-              <div style={{ fontSize: 12, color: '#047857' }}>
+              <div style={{ fontSize: 12, color: '#1F7A50' }}>
                 {nc(seleccionado.pension.cat_socios)}
                 {seleccionado.pension.cat_socios?.numero_socio ? ` · #${seleccionado.pension.cat_socios.numero_socio}` : ''}
                 {seleccionado.pension.cat_slots ? ` · Cajón ${seleccionado.pension.cat_slots.numero}` : ''}
-                <span style={{ marginLeft: 8, fontWeight: 600, color: '#15803d' }}>✓ Al corriente</span>
+                <span style={{ marginLeft: 8, fontWeight: 600, color: '#1F7A50' }}>✓ Al corriente</span>
               </div>
             </div>
           </div>
@@ -249,8 +249,8 @@ export default function SalidaCarritoModal({ onClose, onSaved }: Props) {
             style={{ ...inputStyle, resize: 'vertical' }} />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
-          🖨 Al registrar la salida se imprime el ticket automáticamente. Motor Lobby da salida física al carrito únicamente con el ticket.
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 8, fontSize: 12, color: '#7A4B0C' }}>
+          Al registrar la salida se imprime el ticket automáticamente. Motor Lobby da salida física al carrito únicamente con el ticket.
         </div>
 
       </div>

@@ -57,7 +57,7 @@ export default function EstadoCuenta({ onClose }: { onClose: () => void }) {
         #edo-print, #edo-print * { visibility: visible !important; }
         #edo-print { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; background: white !important; padding: 20px !important; }
         table { font-size: 11px !important; border-collapse: collapse !important; width: 100% !important; }
-        th, td { padding: 5px 8px !important; border: 1px solid #e2e8f0 !important; }
+        th, td { padding: 5px 8px !important; border: 1px solid #E6E8EB !important; }
         @page { size: A4; margin: 1.5cm; }
       }
     `
@@ -91,7 +91,7 @@ export default function EstadoCuenta({ onClose }: { onClose: () => void }) {
                 {lotes.map((l: any) => (
                   <button key={l.id} onClick={() => cargarEdoCuenta(l.id, l.cve_lote ?? `#${l.lote}`)}
                     style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                     <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, color: 'var(--blue)' }}>{l.cve_lote ?? `#${l.lote}`}</span>
                     <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{l.tipo_lote}</span>
@@ -105,15 +105,15 @@ export default function EstadoCuenta({ onClose }: { onClose: () => void }) {
           {loteId && (
             <div id="edo-content">
               {/* Encabezado del lote */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, padding: '14px 18px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, padding: '14px 18px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 10 }}>
                 <div>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--blue)' }}>{loteNombre}</div>
-                  {pendientes > 0 && <div style={{ fontSize: 12, color: '#dc2626', marginTop: 2 }}>⚠ {pendientes} cargo(s) pendiente(s) de pago</div>}
+                  {pendientes > 0 && <div style={{ fontSize: 12, color: '#C23B3B', marginTop: 2 }}>{pendientes} cargo(s) pendiente(s) de pago</div>}
                 </div>
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 16 }}>
                   <Stat label="Total Cargado" value={fmt(totalCargado)} color="var(--text-primary)" />
-                  <Stat label="Total Pagado"  value={fmt(totalPagado)}  color="#15803d" />
-                  <Stat label="Saldo"         value={fmt(saldoTotal)}   color={saldoTotal > 0 ? '#dc2626' : '#15803d'} bold />
+                  <Stat label="Total Pagado"  value={fmt(totalPagado)}  color="#1F7A50" />
+                  <Stat label="Saldo"         value={fmt(saldoTotal)}   color={saldoTotal > 0 ? '#C23B3B' : '#1F7A50'} bold />
                 </div>
               </div>
 
@@ -126,7 +126,7 @@ export default function EstadoCuenta({ onClose }: { onClose: () => void }) {
                   {/* Tabla de cargos */}
                   <SectionTitle>Cargos / Adeudos</SectionTitle>
                   {cargos.length === 0 ? (
-                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, background: '#f8fafc', borderRadius: 8, marginBottom: 20 }}>Sin cargos registrados</div>
+                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, background: '#F8F9FA', borderRadius: 8, marginBottom: 20 }}>Sin cargos registrados</div>
                   ) : (
                     <div className="card" style={{ overflow: 'hidden', marginBottom: 24 }}>
                       <table>
@@ -154,14 +154,14 @@ export default function EstadoCuenta({ onClose }: { onClose: () => void }) {
                                   {fmtFecha(c.fecha_cargo)}
                                 </td>
                                 <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(c.monto)}</td>
-                                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#15803d' }}>
+                                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#1F7A50' }}>
                                   {c.monto_pagado > 0 ? fmt(c.monto_pagado) : '—'}
                                 </td>
-                                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: c.saldo > 0 ? '#dc2626' : '#15803d' }}>
+                                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: c.saldo > 0 ? '#C23B3B' : '#1F7A50' }}>
                                   {fmt(c.saldo)}
                                 </td>
                                 <td>
-                                  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}>
+                                  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: sc.color, color: '#fff', border: `1px solid ${sc.color}` }}>
                                     {c.status}
                                   </span>
                                 </td>
@@ -170,11 +170,11 @@ export default function EstadoCuenta({ onClose }: { onClose: () => void }) {
                           })}
                         </tbody>
                         <tfoot>
-                          <tr style={{ background: '#f8fafc' }}>
+                          <tr style={{ background: '#F8F9FA' }}>
                             <td colSpan={3} style={{ fontWeight: 700, padding: '10px 14px', fontSize: 13 }}>TOTALES</td>
                             <td style={{ textAlign: 'right', fontWeight: 700, padding: '10px 14px', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalCargado)}</td>
-                            <td style={{ textAlign: 'right', fontWeight: 700, padding: '10px 14px', color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalPagado)}</td>
-                            <td style={{ textAlign: 'right', fontWeight: 700, padding: '10px 14px', color: saldoTotal > 0 ? '#dc2626' : '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(saldoTotal)}</td>
+                            <td style={{ textAlign: 'right', fontWeight: 700, padding: '10px 14px', color: '#1F7A50', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalPagado)}</td>
+                            <td style={{ textAlign: 'right', fontWeight: 700, padding: '10px 14px', color: saldoTotal > 0 ? '#C23B3B' : '#1F7A50', fontVariantNumeric: 'tabular-nums' }}>{fmt(saldoTotal)}</td>
                             <td />
                           </tr>
                         </tfoot>
@@ -185,7 +185,7 @@ export default function EstadoCuenta({ onClose }: { onClose: () => void }) {
                   {/* Tabla de recibos */}
                   <SectionTitle>Recibos / Pagos Registrados</SectionTitle>
                   {recibos.length === 0 ? (
-                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, background: '#f8fafc', borderRadius: 8 }}>Sin recibos registrados</div>
+                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, background: '#F8F9FA', borderRadius: 8 }}>Sin recibos registrados</div>
                   ) : (
                     <div className="card" style={{ overflow: 'hidden' }}>
                       <table>
@@ -202,9 +202,9 @@ export default function EstadoCuenta({ onClose }: { onClose: () => void }) {
                         <tbody>
                           {recibos.map(r => (
                             <tr key={r.id} style={{ opacity: r.activo ? 1 : 0.5 }}>
-                              <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio ?? `#${r.id}`}</td>
+                              <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio ?? `#${r.id}`}</td>
                               <td style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{fmtFecha(r.fecha_recibo)}</td>
-                              <td style={{ fontSize: 12, color: r.fecha_pago ? '#15803d' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                              <td style={{ fontSize: 12, color: r.fecha_pago ? '#1F7A50' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                                 {r.fecha_pago ? fmtFecha(r.fecha_pago) : 'Pendiente'}
                               </td>
                               <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.propietario ?? '—'}</td>
@@ -218,9 +218,9 @@ export default function EstadoCuenta({ onClose }: { onClose: () => void }) {
                           ))}
                         </tbody>
                         <tfoot>
-                          <tr style={{ background: '#f8fafc' }}>
+                          <tr style={{ background: '#F8F9FA' }}>
                             <td colSpan={4} style={{ fontWeight: 700, padding: '10px 14px', fontSize: 13 }}>TOTAL RECIBIDO</td>
-                            <td style={{ textAlign: 'right', fontWeight: 700, padding: '10px 14px', color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalRecibos)}</td>
+                            <td style={{ textAlign: 'right', fontWeight: 700, padding: '10px 14px', color: '#1F7A50', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalRecibos)}</td>
                             <td />
                           </tr>
                         </tfoot>
@@ -237,7 +237,7 @@ export default function EstadoCuenta({ onClose }: { onClose: () => void }) {
 }
 
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10, paddingBottom: 6, borderBottom: '2px solid #dbeafe' }}>
+  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10, paddingBottom: 6, borderBottom: '2px solid #E6E8EB' }}>
     {children}
   </div>
 )

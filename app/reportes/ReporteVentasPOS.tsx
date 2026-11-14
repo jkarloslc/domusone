@@ -240,20 +240,20 @@ export default function ReporteVentasPOS() {
   }
 
   const selStyle: React.CSSProperties = {
-    height: 32, padding: '0 10px', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 13,
+    height: 32, padding: '0 10px', border: '1px solid #E6E8EB', borderRadius: 6, fontSize: 13,
     background: '#fff', fontFamily: 'var(--font-body)', color: 'var(--text-primary)',
   }
   const lbl: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }
   const th = (left = false): React.CSSProperties => ({
     padding: '8px 12px', textAlign: left ? 'left' : 'right', fontSize: 11, fontWeight: 700,
     color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap',
-    background: '#f8fafc', borderBottom: '1px solid #e2e8f0',
+    background: '#F8F9FA', borderBottom: '1px solid #E6E8EB',
   })
   const td = (left = false, bold = false): React.CSSProperties => ({
     padding: '8px 12px', textAlign: left ? 'left' : 'right', fontVariantNumeric: 'tabular-nums',
-    borderBottom: '1px solid #f1f5f9', fontWeight: bold ? 700 : 400, whiteSpace: left ? 'normal' : 'nowrap',
+    borderBottom: '1px solid #F4F5F7', fontWeight: bold ? 700 : 400, whiteSpace: left ? 'normal' : 'nowrap',
   })
-  const tf: React.CSSProperties = { padding: '8px 12px', textAlign: 'right', fontWeight: 700, background: '#f1f5f9', borderTop: '2px solid #cbd5e1', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
+  const tf: React.CSSProperties = { padding: '8px 12px', textAlign: 'right', fontWeight: 700, background: '#F4F5F7', borderTop: '2px solid #C9CCD3', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'resumen',     label: 'Resumen por Centro y Forma de Pago', icon: <Grid3x3 size={13} /> },
@@ -261,7 +261,7 @@ export default function ReporteVentasPOS() {
     { key: 'operaciones', label: 'Detalle de Operaciones',             icon: <LayoutList size={13} /> },
     { key: 'productos',   label: 'Detalle de Productos',               icon: <Package size={13} /> },
   ]
-  const ACC = '#2563eb'
+  const ACC = '#1C1D21'
 
   const count = (tab === 'resumen' || tab === 'agrupadores') ? matriz.filas.length : tab === 'operaciones' ? ventasFiltradas.length : productos.length
 
@@ -302,23 +302,23 @@ export default function ReporteVentasPOS() {
         </button>
       </div>
 
-      {error && <div className="card" style={{ padding: 12, marginBottom: 16, color: '#dc2626', fontSize: 13 }}>Error al cargar: {error}</div>}
+      {error && <div className="card" style={{ padding: 12, marginBottom: 16, color: '#C23B3B', fontSize: 13 }}>Error al cargar: {error}</div>}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
         {[
-          { label: 'Total Vendido',      value: fmt(totalVendido),               color: ACC,       bg: '#eff6ff' },
-          { label: 'Operaciones',        value: ventasFiltradas.length.toString(), color: '#7c3aed', bg: '#f5f3ff' },
-          { label: 'Ticket Promedio',    value: fmt(ticketProm),                 color: '#15803d', bg: '#f0fdf4' },
-          { label: 'Pendientes de Corte', value: pendientes.toString(),          color: '#d97706', bg: '#fffbeb' },
+          { label: 'Total Vendido',      value: fmt(totalVendido),               color: ACC,       bg: '#F4F5F7' },
+          { label: 'Operaciones',        value: ventasFiltradas.length.toString(), color: '#6B4E79', bg: '#F4F5F7' },
+          { label: 'Ticket Promedio',    value: fmt(ticketProm),                 color: '#1F7A50', bg: '#F4F5F7' },
+          { label: 'Pendientes de Corte', value: pendientes.toString(),          color: '#B5761A', bg: '#F4F5F7' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '14px 20px', background: k.bg, flex: '1 1 150px', maxWidth: 240 }}>
-            <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{k.label}</div>
+          <div key={k.label} className="card" style={{ padding: '14px 20px', background: '#fff', flex: '1 1 150px', maxWidth: 240 }}>
+            <div style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)',  }}>{k.value}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 16, gap: 2, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', marginBottom: 16, gap: 2, flexWrap: 'wrap' }}>
         {tabs.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', background: 'none', border: 'none', cursor: 'pointer',
@@ -426,7 +426,7 @@ export default function ReporteVentasPOS() {
                       {!pagosPorVenta.has(v.id) && '—'}
                     </td>
                     <td style={td(true)}>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: v.id_corte_fk ? '#15803d' : '#d97706' }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: v.id_corte_fk ? '#1F7A50' : '#B5761A' }}>
                         {v.id_corte_fk ? 'Cortada' : 'Pendiente'}
                       </span>
                     </td>

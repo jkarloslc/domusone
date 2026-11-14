@@ -24,7 +24,7 @@ export default function Paginador({ page, pageSize, totalItems, onChange, onPage
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8,
-      padding: '10px 16px', borderTop: '1px solid #e2e8f0' }}>
+      padding: '10px 16px', borderTop: '1px solid #E6E8EB' }}>
       <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
         {totalItems === 0 ? '0 registros' : `${desde}–${hasta} de ${totalItems} · Pág. ${page + 1} de ${total}`}
       </span>

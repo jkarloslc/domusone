@@ -141,26 +141,26 @@ export default function BitacoraUsoTab({
       {/* ── KPIs ─────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 14 }}>
         {[
-          { label: 'Registros',     value: registros.length,                                          color: '#2563eb', bg: '#eff6ff' },
-          { label: 'Litros totales',value: totalLitros    > 0 ? `${fmtN(totalLitros)} L`  : '—',     color: '#d97706', bg: '#fffbeb' },
-          { label: 'Recorrido',     value: totalRecorrido > 0 ? fmtN(totalRecorrido)        : '—',    color: '#0891b2', bg: '#ecfeff' },
-          { label: 'Horas uso',     value: totalHoras     > 0 ? `${fmtN(totalHoras, 2)} h` : '—',    color: '#7c3aed', bg: '#f5f3ff' },
-          { label: 'Rendim. prom.', value: rendGlobal != null ? `${fmtN(rendGlobal, 2)} km/L` : '—', color: '#059669', bg: '#f0fdf4' },
+          { label: 'Registros',     value: registros.length,                                          color: '#1C1D21', bg: '#F4F5F7' },
+          { label: 'Litros totales',value: totalLitros    > 0 ? `${fmtN(totalLitros)} L`  : '—',     color: '#B5761A', bg: '#F4F5F7' },
+          { label: 'Recorrido',     value: totalRecorrido > 0 ? fmtN(totalRecorrido)        : '—',    color: '#32789A', bg: '#F4F5F7' },
+          { label: 'Horas uso',     value: totalHoras     > 0 ? `${fmtN(totalHoras, 2)} h` : '—',    color: '#6B4E79', bg: '#F4F5F7' },
+          { label: 'Rendim. prom.', value: rendGlobal != null ? `${fmtN(rendGlobal, 2)} km/L` : '—', color: '#267F56', bg: '#F4F5F7' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '10px 12px', background: k.bg }}>
-            <div style={{ fontSize: typeof k.value === 'number' ? 22 : 15, fontWeight: 700, color: k.color }}>{k.value}</div>
-            <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{k.label}</div>
+          <div key={k.label} className="card" style={{ padding: '10px 12px', background: '#fff' }}>
+            <div style={{ fontSize: typeof k.value === 'number' ? 22 : 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{k.value}</div>
+            <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
           </div>
         ))}
       </div>
 
       {/* ── Filtros ───────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 12,
-        padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, flexWrap: 'wrap' }}>
+        padding: '8px 12px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, flexWrap: 'wrap' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
           <Filter size={11} /> Filtros
         </span>
-        <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
+        <div style={{ width: 1, height: 18, background: '#E6E8EB', flexShrink: 0 }} />
         <select className="select"
           style={{ flex: '1 1 150px', maxWidth: 220, fontSize: 12, padding: '3px 8px', height: 28 }}
           value={filterEq} onChange={e => setFilterEq(e.target.value)}>
@@ -175,7 +175,7 @@ export default function BitacoraUsoTab({
           value={filterHasta} onChange={e => setFilterHasta(e.target.value)} />
         {(filterEq || filterDesde || filterHasta) && (
           <button className="btn-ghost"
-            style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626', whiteSpace: 'nowrap' }}
+            style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#C23B3B', whiteSpace: 'nowrap' }}
             onClick={() => { setFilterEq(''); setFilterDesde(''); setFilterHasta('') }}>
             <X size={11} /> Limpiar
           </button>
@@ -243,19 +243,19 @@ export default function BitacoraUsoTab({
                   </td>
                   <td style={{ fontSize: 12, fontWeight: 600, padding: '8px 10px', textAlign: 'right',
                     fontVariantNumeric: 'tabular-nums',
-                    color: recorrido != null && recorrido > 0 ? '#2563eb' : 'var(--text-muted)' }}>
+                    color: recorrido != null && recorrido > 0 ? '#1C1D21' : 'var(--text-muted)' }}>
                     {recorrido != null ? `${fmtN(recorrido)} ${unidad}` : '—'}
                   </td>
                   <td style={{ fontSize: 11, padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                     {r.horas_uso != null ? `${fmtN(r.horas_uso, 2)} h` : '—'}
                   </td>
                   <td style={{ fontSize: 11, fontWeight: 600, padding: '8px 10px', textAlign: 'right',
-                    fontVariantNumeric: 'tabular-nums', color: '#d97706' }}>
+                    fontVariantNumeric: 'tabular-nums', color: '#B5761A' }}>
                     {r.litros != null ? `${fmtN(r.litros)} L` : '—'}
                   </td>
                   <td style={{ fontSize: 12, fontWeight: 700, padding: '8px 10px', textAlign: 'right',
                     fontVariantNumeric: 'tabular-nums',
-                    color: rendimiento != null ? '#059669' : 'var(--text-muted)' }}>
+                    color: rendimiento != null ? '#267F56' : 'var(--text-muted)' }}>
                     {rendimiento != null ? `${fmtN(rendimiento, 2)} km/L` : '—'}
                   </td>
                   <td style={{ fontSize: 11, padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
@@ -269,7 +269,7 @@ export default function BitacoraUsoTab({
                       </button>
                     )}
                     {canDelete() && (
-                      <button className="btn-ghost" style={{ padding: '3px 5px', color: '#dc2626' }}
+                      <button className="btn-ghost" style={{ padding: '3px 5px', color: '#C23B3B' }}
                         onClick={() => handleDelete(r.id)}>
                         <Trash2 size={12} />
                       </button>
@@ -286,7 +286,7 @@ export default function BitacoraUsoTab({
       {/* ── Rendimiento por equipo ────────────────────────────── */}
       {resumenPorEquipo.length > 0 && (
         <div className="card" style={{ overflow: 'hidden' }}>
-          <div style={{ padding: '10px 14px', borderBottom: '1px solid #f1f5f9',
+          <div style={{ padding: '10px 14px', borderBottom: '1px solid #F4F5F7',
             display: 'flex', alignItems: 'center', gap: 6 }}>
             <Gauge size={13} style={{ color: 'var(--blue)' }} />
             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue)',
@@ -319,19 +319,19 @@ export default function BitacoraUsoTab({
                     </td>
                     <td style={{ fontSize: 12, padding: '8px 10px', textAlign: 'center' }}>{row.count}</td>
                     <td style={{ fontSize: 12, fontWeight: 600, padding: '8px 10px', textAlign: 'right',
-                      color: '#2563eb', fontVariantNumeric: 'tabular-nums' }}>
+                      color: '#1C1D21', fontVariantNumeric: 'tabular-nums' }}>
                       {row.recorrido > 0 ? `${fmtN(row.recorrido)} ${unidad}` : '—'}
                     </td>
                     <td style={{ fontSize: 12, padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                       {row.horas > 0 ? `${fmtN(row.horas, 2)} hrs` : '—'}
                     </td>
                     <td style={{ fontSize: 12, fontWeight: 600, padding: '8px 10px', textAlign: 'right',
-                      color: '#d97706', fontVariantNumeric: 'tabular-nums' }}>
+                      color: '#B5761A', fontVariantNumeric: 'tabular-nums' }}>
                       {row.litros > 0 ? `${fmtN(row.litros)} L` : '—'}
                     </td>
                     <td style={{ padding: '8px 10px', textAlign: 'right' }}>
                       {rend != null
-                        ? <span style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>{fmtN(rend, 2)} km/L</span>
+                        ? <span style={{ fontSize: 13, fontWeight: 700, color: '#267F56' }}>{fmtN(rend, 2)} km/L</span>
                         : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                     </td>
                     <td style={{ fontSize: 12, padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
@@ -547,8 +547,8 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
       <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)',
         display: 'flex', flexDirection: 'column', gap: 10 }}>
         {error && (
-          <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca',
-            borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>
+          <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B',
+            borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>{error}</div>
         )}
 
         {/* Equipo, fecha, operador, actividad */}
@@ -582,7 +582,7 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
         </div>
 
         {/* Odómetro */}
-        <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
+        <div style={{ borderTop: '1px solid #F4F5F7', paddingTop: 10 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)',
             textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
             Odómetro ({unidad})
@@ -601,8 +601,8 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
             <div>
               <label className="label" style={{ fontSize: 11 }}>Recorrido</label>
               <div className="input" style={{
-                fontSize: 13, background: '#f8fafc', display: 'flex', alignItems: 'center',
-                color: recorrido != null && recorrido > 0 ? '#2563eb' : 'var(--text-muted)',
+                fontSize: 13, background: '#F8F9FA', display: 'flex', alignItems: 'center',
+                color: recorrido != null && recorrido > 0 ? '#1C1D21' : 'var(--text-muted)',
                 fontWeight: recorrido != null && recorrido > 0 ? 700 : 400,
               }}>
                 {recorrido != null
@@ -614,7 +614,7 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
         </div>
 
         {/* Horas de uso */}
-        <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
+        <div style={{ borderTop: '1px solid #F4F5F7', paddingTop: 10 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)',
             textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
             Horas de Uso
@@ -627,7 +627,7 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
         </div>
 
         {/* Combustible */}
-        <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
+        <div style={{ borderTop: '1px solid #F4F5F7', paddingTop: 10 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)',
             textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
             Combustible
@@ -652,8 +652,8 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
             <div>
               <label className="label" style={{ fontSize: 11 }}>Rendimiento</label>
               <div className="input" style={{
-                fontSize: 13, background: '#f8fafc', display: 'flex', alignItems: 'center',
-                color: rendimiento != null ? '#059669' : 'var(--text-muted)',
+                fontSize: 13, background: '#F8F9FA', display: 'flex', alignItems: 'center',
+                color: rendimiento != null ? '#267F56' : 'var(--text-muted)',
                 fontWeight: rendimiento != null ? 700 : 400,
               }}>
                 {rendimiento != null ? `${rendimiento.toFixed(2)} km/L` : '—'}

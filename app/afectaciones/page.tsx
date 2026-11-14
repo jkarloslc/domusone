@@ -116,7 +116,7 @@ export default function AfectacionesPage() {
       <PageHeader backHref="/residencial"
         variant="xl"
         icon={Scale}
-        color="#0284c7"
+        color="#32789A"
         eyebrowLabel="Módulo"
         title="Servidumbres y Afectaciones"
         subtitle={`${total} afectaciones registradas`}
@@ -133,14 +133,14 @@ export default function AfectacionesPage() {
           return (
             <div key={s} className="card card-hover" style={{ padding: '10px 16px', cursor: 'pointer', minWidth: 100 }}
               onClick={() => setFilter(filterStatus === s ? '' : s)}>
-              <div style={{ fontSize: 20, fontFamily: 'var(--font-display)', color: filterStatus === s ? '#0284c7' : 'var(--text-primary)' }}>{count}</div>
+              <div style={{ fontSize: 20, fontFamily: 'var(--font-display)', color: filterStatus === s ? '#32789A' : 'var(--text-primary)' }}>{count}</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>{s}</div>
             </div>
           )
         })}
         {afectaciones.filter(a => a.con_cobro).length > 0 && (
           <div className="card" style={{ padding: '10px 16px', minWidth: 120 }}>
-            <div style={{ fontSize: 20, fontFamily: 'var(--font-display)', color: '#15803d' }}>{afectaciones.filter(a => a.con_cobro).length}</div>
+            <div style={{ fontSize: 20, fontFamily: 'var(--font-display)', color: '#1F7A50' }}>{afectaciones.filter(a => a.con_cobro).length}</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Con cobro</div>
           </div>
         )}
@@ -188,7 +188,7 @@ export default function AfectacionesPage() {
                 <td>
                   {a.con_cobro ? (
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#15803d', fontWeight: 600 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#1F7A50', fontWeight: 600 }}>
                         <DollarSign size={11} /> {fmt(a.monto_cuota)}
                       </div>
                       {a.periodicidad && <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{a.periodicidad}</div>}
@@ -321,7 +321,7 @@ function AfectacionModal({ afectacion, onClose, onSaved }: { afectacion: Afectac
     >
 
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto', maxHeight: 'calc(90vh - 130px)' }}>
-          {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+          {error && <div style={{ padding: '10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
 
           {/* Lote */}
           <div>
@@ -334,7 +334,7 @@ function AfectacionModal({ afectacion, onClose, onSaved }: { afectacion: Afectac
                   <button key={l.id}
                     onClick={() => { setForm(f => ({ ...f, id_lote_fk: String(l.id) })); setLoteSearch(l.cve_lote ?? `#${l.lote}`); setLotes([]) }}
                     style={{ display: 'flex', width: '100%', padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--blue)', fontWeight: 600, fontSize: 14 }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                     {l.cve_lote ?? `#${l.lote}`}
                   </button>
@@ -392,12 +392,12 @@ function AfectacionModal({ afectacion, onClose, onSaved }: { afectacion: Afectac
           </div>
 
           {/* Cobro */}
-          <div style={{ padding: '14px 16px', background: form.con_cobro ? '#f0fdf4' : '#f8fafc', border: `1px solid ${form.con_cobro ? '#bbf7d0' : '#e2e8f0'}`, borderRadius: 8 }}>
+          <div style={{ padding: '14px 16px', background: form.con_cobro ? '#F4F5F7' : '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: form.con_cobro ? 12 : 0 }}>
               <input type="checkbox" id="con_cobro" checked={form.con_cobro}
                 onChange={e => setForm(f => ({ ...f, con_cobro: e.target.checked }))}
                 style={{ width: 16, height: 16, cursor: 'pointer' }} />
-              <label htmlFor="con_cobro" style={{ fontSize: 13, fontWeight: 500, cursor: 'pointer', color: form.con_cobro ? '#15803d' : 'var(--text-primary)' }}>
+              <label htmlFor="con_cobro" style={{ fontSize: 13, fontWeight: 500, cursor: 'pointer', color: form.con_cobro ? '#1F7A50' : 'var(--text-primary)' }}>
                 {form.con_cobro ? '✓ Con cobro de cuota adicional' : 'Sin cobro adicional de cuotas'}
               </label>
             </div>
@@ -474,7 +474,7 @@ function AfectacionDetail({ afectacion: a, onClose, onEdit }: { afectacion: Afec
             {a.descripcion && (
               <div style={{ gridColumn: '1 / -1' }}>
                 <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.06em' }}>Descripción</div>
-                <div style={{ fontSize: 13, color: 'var(--text-secondary)', padding: '10px 12px', background: '#f8fafc', borderRadius: 7, lineHeight: 1.6 }}>{a.descripcion}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)', padding: '10px 12px', background: '#F8F9FA', borderRadius: 7, lineHeight: 1.6 }}>{a.descripcion}</div>
               </div>
             )}
             <InfoRow label="Fecha Inicio"    value={fmtFecha(a.fecha_inicio)} />
@@ -485,12 +485,12 @@ function AfectacionDetail({ afectacion: a, onClose, onEdit }: { afectacion: Afec
 
           {/* Historial de notas */}
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12, paddingBottom: 6, borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12, paddingBottom: 6, borderBottom: '1px solid #E6E8EB', display: 'flex', alignItems: 'center', gap: 6 }}>
               <Clock size={12} /> Historial de Observaciones ({notas.length})
             </div>
 
             {/* Nueva nota */}
-            <div style={{ padding: '14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, marginBottom: 14 }}>
+            <div style={{ padding: '14px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, marginBottom: 14 }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8 }}>Agregar Observación</div>
               <textarea
                 className="input"
@@ -517,10 +517,10 @@ function AfectacionDetail({ afectacion: a, onClose, onEdit }: { afectacion: Afec
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {notas.map(n => (
-                  <div key={n.id} style={{ padding: '12px 14px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+                  <div key={n.id} style={{ padding: '12px 14px', background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8 }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
                       <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.6, flex: 1 }}>{n.nota}</p>
-                      <button className="btn-ghost" style={{ padding: '2px 6px', flexShrink: 0, color: '#dc2626' }} onClick={() => handleEliminarNota(n.id)}>
+                      <button className="btn-ghost" style={{ padding: '2px 6px', flexShrink: 0, color: '#C23B3B' }} onClick={() => handleEliminarNota(n.id)}>
                         <Trash2 size={11} />
                       </button>
                     </div>

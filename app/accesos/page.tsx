@@ -36,7 +36,7 @@ function AccesosContent({ embedded }: { embedded?: boolean }) {
             padding: '10px 18px', background: 'none', border: 'none', cursor: 'pointer',
             fontSize: 13, fontFamily: 'var(--font-body)',
             color: tab === t.id ? 'var(--gold-light)' : 'var(--text-muted)',
-            borderBottom: tab === t.id ? '2px solid var(--gold)' : '2px solid transparent',
+            borderBottom: tab === t.id ? '2px solid #19D3C5' : '2px solid transparent',
             marginBottom: -1, transition: 'color 0.2s',
           }}>{t.label}</button>
         ))}

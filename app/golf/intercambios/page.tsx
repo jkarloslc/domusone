@@ -98,10 +98,10 @@ const nivelCupo = (ocupados: number, max: number | null, pct: number): NivelCupo
   return 'ok'
 }
 const NIVEL_CFG: Record<NivelCupo, { bg: string; border: string; color: string; label: string }> = {
-  libre:  { bg: '#f8fafc', border: '#e2e8f0', color: '#64748b', label: 'Sin límite' },
-  ok:     { bg: '#f0fdf4', border: '#bbf7d0', color: '#15803d', label: 'Disponible' },
-  alerta: { bg: '#fffbeb', border: '#fde68a', color: '#b45309', label: 'Por llenarse' },
-  lleno:  { bg: '#fef2f2', border: '#fecaca', color: '#dc2626', label: 'Cupo lleno' },
+  libre:  { bg: '#F8F9FA', border: '#E6E8EB', color: '#62666E', label: 'Sin límite' },
+  ok:     { bg: '#F4F5F7', border: '#E6E8EB', color: '#1F7A50', label: 'Disponible' },
+  alerta: { bg: '#F4F5F7', border: '#E6E8EB', color: '#96600F', label: 'Por llenarse' },
+  lleno:  { bg: '#F4F5F7', border: '#E6E8EB', color: '#C23B3B', label: 'Cupo lleno' },
 }
 
 // ── Texto base por defecto (respaldo; el vigente vive en cfg.configuracion) ──
@@ -298,11 +298,11 @@ function CartaModal({
 
   const inp: React.CSSProperties = {
     width: '100%', padding: '8px 10px', borderRadius: 7,
-    border: '1px solid #e2e8f0', fontSize: 13, background: '#fff',
+    border: '1px solid #E6E8EB', fontSize: 13, background: '#fff',
     outline: 'none', boxSizing: 'border-box',
   }
   const lbl: React.CSSProperties = {
-    fontSize: 11, fontWeight: 600, color: '#64748b',
+    fontSize: 11, fontWeight: 600, color: '#62666E',
     marginBottom: 4, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em',
   }
 
@@ -324,7 +324,7 @@ function CartaModal({
             <label style={lbl}>Socio *</label>
             <div style={{ position: 'relative' }}>
               <Search size={12} style={{ position: 'absolute', left: 9, top: '50%',
-                transform: 'translateY(-50%)', color: '#94a3b8', zIndex: 1 }} />
+                transform: 'translateY(-50%)', color: '#7A7E87', zIndex: 1 }} />
               <input style={{ ...inp, paddingLeft: 28 }}
                 placeholder="Buscar por nombre o número de socio…"
                 value={busqueda}
@@ -332,26 +332,26 @@ function CartaModal({
               />
               {buscando && (
                 <RefreshCw size={12} style={{ position: 'absolute', right: 9, top: '50%',
-                  transform: 'translateY(-50%)', color: '#94a3b8' }} className="animate-spin" />
+                  transform: 'translateY(-50%)', color: '#7A7E87' }} className="animate-spin" />
               )}
               {opciones.length > 0 && (
                 <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
-                  background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+                  background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8,
                   boxShadow: '0 4px 20px rgba(0,0,0,0.12)', maxHeight: 220, overflowY: 'auto' }}>
                   {opciones.map(s => (
                     <button key={s.id} onMouseDown={e => { e.preventDefault(); seleccionarSocio(s) }}
                       style={{ display: 'flex', width: '100%', textAlign: 'left', padding: '9px 12px',
                         background: 'none', border: 'none', cursor: 'pointer',
-                        borderBottom: '1px solid #f1f5f9', alignItems: 'center', gap: 8 }}
-                      onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                        borderBottom: '1px solid #F4F5F7', alignItems: 'center', gap: 8 }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                       <div style={{ flex: 1 }}>
                         <span style={{ fontSize: 12, fontWeight: 600 }}>{fmtNombre(s)}</span>
-                        {s.numero_socio && <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 6 }}>#{s.numero_socio}</span>}
+                        {s.numero_socio && <span style={{ fontSize: 11, color: '#7A7E87', marginLeft: 6 }}>#{s.numero_socio}</span>}
                       </div>
                       {s.derecho_intercambios
-                        ? <span style={{ fontSize: 10, fontWeight: 600, color: '#15803d', background: '#f0fdf4', padding: '2px 6px', borderRadius: 8 }}>✓ Intercambio</span>
-                        : <span style={{ fontSize: 10, fontWeight: 600, color: '#dc2626', background: '#fef2f2', padding: '2px 6px', borderRadius: 8 }}>Sin derecho</span>
+                        ? <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', background: '#1F7A50', padding: '2px 6px', borderRadius: 8 }}>✓ Intercambio</span>
+                        : <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', background: '#C23B3B', padding: '2px 6px', borderRadius: 8 }}>Sin derecho</span>
                       }
                     </button>
                   ))}
@@ -361,18 +361,18 @@ function CartaModal({
             {/* Validación de derecho */}
             {socioSel && !socioSel.derecho_intercambios && (
               <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6,
-                background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, padding: '7px 10px' }}>
-                <AlertTriangle size={13} style={{ color: '#dc2626', flexShrink: 0 }} />
-                <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 500 }}>
+                background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 7, padding: '7px 10px' }}>
+                <AlertTriangle size={13} style={{ color: '#C23B3B', flexShrink: 0 }} />
+                <span style={{ fontSize: 12, color: '#C23B3B', fontWeight: 500 }}>
                   Este socio no tiene derecho a cartas de intercambio. Actívalo en su expediente.
                 </span>
               </div>
             )}
             {socioSel && socioSel.derecho_intercambios && (
               <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6,
-                background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 7, padding: '7px 10px' }}>
-                <Check size={13} style={{ color: '#15803d', flexShrink: 0 }} />
-                <span style={{ fontSize: 12, color: '#15803d', fontWeight: 500 }}>
+                background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 7, padding: '7px 10px' }}>
+                <Check size={13} style={{ color: '#1F7A50', flexShrink: 0 }} />
+                <span style={{ fontSize: 12, color: '#1F7A50', fontWeight: 500 }}>
                   Socio con derecho a intercambios confirmado
                 </span>
               </div>
@@ -387,33 +387,33 @@ function CartaModal({
                 {([['solo', 'Socio titular solo'], ['acompanado', 'Titular acompañado'], ['familiares', 'Solo familiar(es)']] as const).map(([val, txt]) => (
                   <button key={txt} type="button" onClick={() => setModo(val)}
                     style={{ flex: 1, padding: '8px 10px', borderRadius: 7, cursor: 'pointer', fontSize: 13, fontWeight: 600,
-                      border: `1px solid ${modo === val ? '#2563eb' : '#e2e8f0'}`,
-                      background: modo === val ? '#eff6ff' : '#fff',
-                      color: modo === val ? '#2563eb' : '#64748b' }}>
+                      border: `1px solid ${modo === val ? '#1C1D21' : '#E6E8EB'}`,
+                      background: modo === val ? '#F4F5F7' : '#fff',
+                      color: modo === val ? '#1C1D21' : '#62666E' }}>
                     {txt}
                   </button>
                 ))}
               </div>
               {modo === 'familiares' && (
-                <div style={{ fontSize: 12, color: '#64748b', marginBottom: 8 }}>
+                <div style={{ fontSize: 12, color: '#62666E', marginBottom: 8 }}>
                   Asistirá(n) únicamente el/los familiar(es) seleccionado(s); el socio titular no asiste.
                 </div>
               )}
               {modo !== 'solo' && (
-                loadingFam ? <div style={{ fontSize: 12, color: '#94a3b8' }}>Cargando familiares…</div>
+                loadingFam ? <div style={{ fontSize: 12, color: '#7A7E87' }}>Cargando familiares…</div>
                 : familiares.length === 0 ? (
-                  <div style={{ fontSize: 12, color: '#b45309', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 7, padding: '8px 10px' }}>
+                  <div style={{ fontSize: 12, color: '#96600F', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #96600F', borderRadius: 7, padding: '8px 10px' }}>
                     El socio no tiene familiares activos registrados. Agrégalos en su expediente (pestaña Familiares).
                   </div>
                 ) : (
-                  <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                  <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
                     {familiares.map(f => (
                       <label key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
-                        borderBottom: '1px solid #f1f5f9', cursor: 'pointer', background: famSel.includes(f.id) ? '#f8fbff' : '#fff' }}>
+                        borderBottom: '1px solid #F4F5F7', cursor: 'pointer', background: famSel.includes(f.id) ? '#F8F9FA' : '#fff' }}>
                         <input type="checkbox" checked={famSel.includes(f.id)} onChange={() => toggleFam(f.id)}
                           style={{ width: 15, height: 15 }} />
                         <span style={{ fontSize: 13, fontWeight: 500 }}>{fmtFam(f)}</span>
-                        {f.parentesco && <span style={{ fontSize: 11, color: '#94a3b8' }}>{f.parentesco}</span>}
+                        {f.parentesco && <span style={{ fontSize: 11, color: '#7A7E87' }}>{f.parentesco}</span>}
                       </label>
                     ))}
                   </div>
@@ -459,7 +459,7 @@ function CartaModal({
             </div>
           )}
           {nivel === 'ok' && ocupados != null && maxDia != null && (
-            <div style={{ fontSize: 12, color: '#15803d' }}>
+            <div style={{ fontSize: 12, color: '#1F7A50' }}>
               Cupo disponible: {maxDia - ocupados} de {maxDia} lugares ese día (esta carta usa {misLugares}).
             </div>
           )}
@@ -491,8 +491,8 @@ function CartaModal({
           </div>
 
           {error && (
-            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8,
-              padding: '10px 14px', color: '#dc2626', fontSize: 13, fontWeight: 500 }}>
+            <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8,
+              padding: '10px 14px', color: '#C23B3B', fontSize: 13, fontWeight: 500 }}>
               {error}
             </div>
           )}
@@ -555,11 +555,11 @@ function ClubModal({ club, onClose, onSaved }: { club: Club | null; onClose: () 
 
   const inp: React.CSSProperties = {
     width: '100%', padding: '8px 10px', borderRadius: 7,
-    border: '1px solid #e2e8f0', fontSize: 13, background: '#fff',
+    border: '1px solid #E6E8EB', fontSize: 13, background: '#fff',
     outline: 'none', boxSizing: 'border-box',
   }
   const lbl: React.CSSProperties = {
-    fontSize: 11, fontWeight: 600, color: '#64748b',
+    fontSize: 11, fontWeight: 600, color: '#62666E',
     marginBottom: 4, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em',
   }
 
@@ -593,8 +593,8 @@ function ClubModal({ club, onClose, onSaved }: { club: Club | null; onClose: () 
             </div>
           </div>
 
-          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#2563eb', marginBottom: 10,
+          <div style={{ borderTop: '1px solid #F4F5F7', paddingTop: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#1C1D21', marginBottom: 10,
               textTransform: 'uppercase', letterSpacing: '0.06em' }}>Datos del representante</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div>
@@ -621,8 +621,8 @@ function ClubModal({ club, onClose, onSaved }: { club: Club | null; onClose: () 
             </div>
           </div>
 
-          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#2563eb', marginBottom: 10,
+          <div style={{ borderTop: '1px solid #F4F5F7', paddingTop: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#1C1D21', marginBottom: 10,
               textTransform: 'uppercase', letterSpacing: '0.06em' }}>Política de máximos por día</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
               <div>
@@ -641,7 +641,7 @@ function ClubModal({ club, onClose, onSaved }: { club: Club | null; onClose: () 
                   onChange={e => set('alerta_pct', e.target.value)} />
               </div>
             </div>
-            <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 6, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 11.5, color: '#62666E', marginTop: 6, lineHeight: 1.5 }}>
               Número máximo de personas (socio + familiares) que el club acepta por día de visita. Vacío = sin límite.
               Se avisa al llegar al porcentaje indicado y se bloquea la emisión al alcanzar el máximo.
             </div>
@@ -660,8 +660,8 @@ function ClubModal({ club, onClose, onSaved }: { club: Club | null; onClose: () 
           </div>
 
           {error && (
-            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8,
-              padding: '9px 12px', color: '#dc2626', fontSize: 13 }}>{error}</div>
+            <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8,
+              padding: '9px 12px', color: '#C23B3B', fontSize: 13 }}>{error}</div>
           )}
         </div>
     </ModalShell>
@@ -685,11 +685,11 @@ async function htmlCarta(carta: Carta, socio: Partial<Socio>, club: Partial<Club
   } catch {}
   const logoHtml = orgLogo
     ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-    : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+    : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
   const fams = famsDeCarta(carta)
   const titAsiste = titularAsiste(carta)
   const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  const listaFams = fams.map(f => `<div class="socio-nombre" style="font-size:${titAsiste ? 13 : 15}px;font-weight:${titAsiste ? 600 : 700}">${esc(fmtFam(f))}${f.parentesco ? ` <span style="font-weight:400;color:#64748b;font-size:11px">(${esc(f.parentesco)})</span>` : ''}</div>`).join('')
+  const listaFams = fams.map(f => `<div class="socio-nombre" style="font-size:${titAsiste ? 13 : 15}px;font-weight:${titAsiste ? 600 : 700}">${esc(fmtFam(f))}${f.parentesco ? ` <span style="font-weight:400;color:#62666E;font-size:11px">(${esc(f.parentesco)})</span>` : ''}</div>`).join('')
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -697,48 +697,48 @@ async function htmlCarta(carta: Carta, socio: Partial<Socio>, club: Partial<Club
   <title>Carta de Intercambio — ${carta.folio ?? ''}</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Georgia',serif;font-size:13px;color:#1e293b;padding:0}
+    body{font-family:'Georgia',serif;font-size:13px;color:#26282D;padding:0}
     @page{size:A4;margin:0}
     html,body{width:210mm;height:297mm}
     .page{width:210mm;height:297mm;margin:0 auto;padding:14mm 20mm 24mm;position:relative;overflow:hidden;page-break-after:avoid;page-break-inside:avoid}
     /* Encabezado */
-    .org-header{display:flex;align-items:center;gap:16px;border-bottom:2px solid #0D4F80;padding-bottom:14px;margin-bottom:16px}
-    .org-nombre{font-size:18px;font-weight:700;color:#0D4F80;margin:0 0 2px}
-    .org-sub{font-size:11px;color:#64748b}
-    .doc-title{font-size:14px;font-weight:600;color:#0D4F80;margin-bottom:2px}
-    .folio-lbl{font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em}
-    .folio-val{font-size:18px;font-weight:700;color:#0D4F80;letter-spacing:1px}
+    .org-header{display:flex;align-items:center;gap:16px;border-bottom:2px solid #1C1D21;padding-bottom:14px;margin-bottom:16px}
+    .org-nombre{font-size:18px;font-weight:700;color:#1C1D21;margin:0 0 2px}
+    .org-sub{font-size:11px;color:#62666E}
+    .doc-title{font-size:14px;font-weight:600;color:#1C1D21;margin-bottom:2px}
+    .folio-lbl{font-size:9px;color:#7A7E87;text-transform:uppercase;letter-spacing:.1em}
+    .folio-val{font-size:18px;font-weight:700;color:#1C1D21;letter-spacing:1px}
     /* Tipo documento */
     .doc-type{text-align:center;margin-bottom:14px}
-    .doc-type h1{font-size:17px;font-weight:700;color:#0D4F80;letter-spacing:2px;text-transform:uppercase;border:2px solid #0D4F80;display:inline-block;padding:6px 24px;border-radius:4px}
+    .doc-type h1{font-size:17px;font-weight:700;color:#1C1D21;letter-spacing:2px;text-transform:uppercase;border:2px solid #1C1D21;display:inline-block;padding:6px 24px;border-radius:4px}
     /* Fechas */
-    .fechas{display:flex;gap:32px;margin-bottom:14px;font-size:12px;color:#475569}
-    .fecha-item span{font-weight:600;color:#1e293b}
+    .fechas{display:flex;gap:32px;margin-bottom:14px;font-size:12px;color:#4A4D54}
+    .fecha-item span{font-weight:600;color:#26282D}
     /* Destinatario */
-    .destinatario{margin-bottom:14px;background:#f8fafc;border-left:3px solid #2563eb;padding:12px 16px;border-radius:0 8px 8px 0}
-    .dest-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;margin-bottom:6px}
-    .dest-nombre{font-size:14px;font-weight:700;color:#0D4F80}
-    .dest-cargo{font-size:12px;color:#475569}
-    .dest-club{font-size:13px;font-weight:600;color:#2563eb;margin-top:2px}
-    .dest-lugar{font-size:11px;color:#64748b}
+    .destinatario{margin-bottom:14px;background:#F8F9FA;border-left:3px solid #1C1D21;padding:12px 16px;border-radius:0 8px 8px 0}
+    .dest-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#7A7E87;margin-bottom:6px}
+    .dest-nombre{font-size:14px;font-weight:700;color:#1C1D21}
+    .dest-cargo{font-size:12px;color:#4A4D54}
+    .dest-club{font-size:13px;font-weight:600;color:#1C1D21;margin-top:2px}
+    .dest-lugar{font-size:11px;color:#62666E}
     /* Saludo */
     .saludo{margin-bottom:10px;font-size:13px}
     /* Cuerpo */
-    .cuerpo{line-height:1.6;font-size:13px;text-align:justify;color:#334155;margin-bottom:14px;white-space:pre-wrap}
+    .cuerpo{line-height:1.6;font-size:13px;text-align:justify;color:#33363C;margin-bottom:14px;white-space:pre-wrap}
     /* Socio box */
-    .socio-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 16px;margin-bottom:16px}
-    .socio-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#3b82f6;margin-bottom:6px}
-    .socio-nombre{font-size:15px;font-weight:700;color:#0D4F80}
-    .socio-num{font-size:11px;color:#3b82f6;margin-top:2px}
+    .socio-box{background:#F4F5F7;border:1px solid #C9CCD3;border-radius:8px;padding:10px 16px;margin-bottom:16px}
+    .socio-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#33363C;margin-bottom:6px}
+    .socio-nombre{font-size:15px;font-weight:700;color:#1C1D21}
+    .socio-num{font-size:11px;color:#33363C;margin-top:2px}
     /* Firma */
     .firma{display:flex;justify-content:space-between;align-items:flex-end;margin-top:24px}
     .firma-bloque{text-align:center;width:200px}
-    .firma-linea{border-top:1px solid #0D4F80;padding-top:6px;margin-top:36px}
-    .firma-nombre{font-size:12px;font-weight:700;color:#1e293b}
-    .firma-cargo{font-size:10px;color:#64748b}
+    .firma-linea{border-top:1px solid #1C1D21;padding-top:6px;margin-top:36px}
+    .firma-nombre{font-size:12px;font-weight:700;color:#26282D}
+    .firma-cargo{font-size:10px;color:#62666E}
     /* Pie */
-    .pie{position:absolute;bottom:10mm;left:20mm;right:20mm;text-align:center;font-size:9px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:8px}
-    .vigencia{font-size:10px;color:#dc2626;font-style:italic;margin-top:4px}
+    .pie{position:absolute;bottom:10mm;left:20mm;right:20mm;text-align:center;font-size:9px;color:#7A7E87;border-top:1px solid #E6E8EB;padding-top:8px}
+    .vigencia{font-size:10px;color:#C23B3B;font-style:italic;margin-top:4px}
     @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}button{display:none}}
     ${modo === 'correo' ? 'html,body{width:auto;height:auto}.page{width:auto;max-width:680px;height:auto;padding:24px;overflow:visible}.pie{position:static;margin-top:24px}' : ''}
   </style>
@@ -1038,7 +1038,7 @@ function EnviarCartaModal({ carta, club, onClose, onSent }: {
     try {
       const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       const htmlCuerpo = await htmlCarta(carta, socio, club ?? {}, 'correo')
-      const html = `<div style="font-family:Arial,sans-serif;font-size:14px;color:#1e293b;white-space:pre-wrap;margin-bottom:20px">${esc(mensaje)}</div>${htmlCuerpo}`
+      const html = `<div style="font-family:Arial,sans-serif;font-size:14px;color:#26282D;white-space:pre-wrap;margin-bottom:20px">${esc(mensaje)}</div>${htmlCuerpo}`
       const pdf64 = await pdfCartaBase64(carta, socio, club ?? {})
       const res = await fetchConAuth('/api/send-email', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1060,8 +1060,8 @@ function EnviarCartaModal({ carta, club, onClose, onSent }: {
     }
   }
 
-  const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 7, border: '1px solid #e2e8f0', fontSize: 13, background: '#fff', outline: 'none', boxSizing: 'border-box' }
-  const lbl: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }
+  const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 7, border: '1px solid #E6E8EB', fontSize: 13, background: '#fff', outline: 'none', boxSizing: 'border-box' }
+  const lbl: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#62666E', marginBottom: 4, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }
 
   return (
     <ModalShell modulo="golf-pos" titulo={`Enviar carta ${carta.folio ?? ''}`} subtitulo={club?.nombre} icono={Mail} size="md" onClose={onClose}
@@ -1077,14 +1077,14 @@ function EnviarCartaModal({ carta, club, onClose, onSent }: {
       </>}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {carta.enviada_at && (
-          <div style={{ fontSize: 12, color: '#b45309', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 7, padding: '8px 10px' }}>
+          <div style={{ fontSize: 12, color: '#96600F', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #96600F', borderRadius: 7, padding: '8px 10px' }}>
             Ya se envió el {new Date(carta.enviada_at).toLocaleString('es-MX')} a {carta.enviada_a}. Se enviará de nuevo.
           </div>
         )}
         <div>
           <label style={lbl}>Para * (separa varios con coma)</label>
           <input style={inp} value={para} onChange={e => setPara(e.target.value)} placeholder="correo@club.com" />
-          {!club?.email_rep && <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 4 }}>El club no tiene correo de representante registrado.</div>}
+          {!club?.email_rep && <div style={{ fontSize: 11.5, color: '#7A7E87', marginTop: 4 }}>El club no tiene correo de representante registrado.</div>}
         </div>
         <div>
           <label style={lbl}>CC</label>
@@ -1099,11 +1099,11 @@ function EnviarCartaModal({ carta, club, onClose, onSent }: {
           <textarea style={{ ...inp, minHeight: 130, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5 }}
             value={mensaje} onChange={e => setMensaje(e.target.value)} />
         </div>
-        <div style={{ fontSize: 11.5, color: '#64748b' }}>
+        <div style={{ fontSize: 11.5, color: '#62666E' }}>
           La carta se incluye en el cuerpo del correo y como archivo PDF adjunto. Se envía desde el correo configurado para Intercambios.
         </div>
-        {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '9px 12px', color: '#dc2626', fontSize: 13 }}>{error}</div>}
-        {resultado && <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '9px 12px', color: '#15803d', fontSize: 12.5, wordBreak: 'break-word' }}>{resultado}</div>}
+        {error && <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, padding: '9px 12px', color: '#C23B3B', fontSize: 13 }}>{error}</div>}
+        {resultado && <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #1F7A50', borderRadius: 8, padding: '9px 12px', color: '#1F7A50', fontSize: 12.5, wordBreak: 'break-word' }}>{resultado}</div>}
       </div>
     </ModalShell>
   )
@@ -1138,8 +1138,8 @@ function AlertasCupo({ clubes, refreshKey, onVer }: { clubes: Club[]; refreshKey
   }, [clubes, refreshKey])
   if (filas.length === 0) return null
   return (
-    <div style={{ marginBottom: 16, border: '1px solid #fde68a', background: '#fffbeb', borderRadius: 10, padding: '10px 14px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 700, color: '#b45309', marginBottom: 6 }}>
+    <div style={{ marginBottom: 16, border: '1px solid #E6E8EB', background: '#F4F5F7', borderRadius: 10, padding: '10px 14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 700, color: '#96600F', marginBottom: 6 }}>
         <ShieldAlert size={14} /> Alertas de cupo · próximos 60 días ({filas.length})
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -1147,12 +1147,12 @@ function AlertasCupo({ clubes, refreshKey, onVer }: { clubes: Club[]; refreshKey
           <button key={`${f.club.id}${f.fecha}`} onClick={() => onVer(f.club.id, f.fecha)}
             style={{ display: 'flex', gap: 10, alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 12.5, padding: 0 }}>
             <span style={{ fontWeight: 600, color: NIVEL_CFG[f.nivel].color, minWidth: 92 }}>{f.nivel === 'lleno' ? 'CUPO LLENO' : 'Por llenarse'}</span>
-            <span style={{ color: '#1e293b' }}>{f.club.nombre}</span>
-            <span style={{ color: '#64748b' }}>{fmtFecha(f.fecha)}</span>
-            <span style={{ color: '#64748b' }}>{f.ocupados}/{f.max}</span>
+            <span style={{ color: '#26282D' }}>{f.club.nombre}</span>
+            <span style={{ color: '#62666E' }}>{fmtFecha(f.fecha)}</span>
+            <span style={{ color: '#62666E' }}>{f.ocupados}/{f.max}</span>
           </button>
         ))}
-        {filas.length > 8 && <span style={{ fontSize: 11.5, color: '#94a3b8' }}>y {filas.length - 8} más… revisa el calendario del club.</span>}
+        {filas.length > 8 && <span style={{ fontSize: 11.5, color: '#7A7E87' }}>y {filas.length - 8} más… revisa el calendario del club.</span>}
       </div>
     </div>
   )
@@ -1224,18 +1224,18 @@ function CalendarioClub({ clubes, refreshKey, inicial }: { clubes: Club[]; refre
           <button className="btn-ghost" onClick={() => mover(1)}><ChevronRight size={14} /></button>
           <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => { setAnio(hoy.getFullYear()); setMes(hoy.getMonth()) }}>Hoy</button>
         </div>
-        {loading && <Loader size={14} className="animate-spin" style={{ color: '#94a3b8' }} />}
+        {loading && <Loader size={14} className="animate-spin" style={{ color: '#7A7E87' }} />}
         {club && (
-          <div style={{ fontSize: 12, color: '#64748b', marginLeft: 'auto' }}>
+          <div style={{ fontSize: 12, color: '#62666E', marginLeft: 'auto' }}>
             Política: <b>{club.max_intercambios_dia ?? 'sin límite'}</b> entre semana · <b>{club.max_intercambios_dia_finsemana ?? club.max_intercambios_dia ?? 'sin límite'}</b> sáb/dom · alerta al {club.alerta_pct}%
-            {' '}· {totalOcupados} persona(s) en el mes{diasLlenos > 0 && <span style={{ color: '#dc2626', fontWeight: 600 }}> · {diasLlenos} día(s) llenos</span>}
+            {' '}· {totalOcupados} persona(s) en el mes{diasLlenos > 0 && <span style={{ color: '#C23B3B', fontWeight: 600 }}> · {diasLlenos} día(s) llenos</span>}
           </div>
         )}
       </div>
 
       <div className="card" style={{ padding: 10 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
-          {DIAS.map(d => <div key={d} style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#64748b', padding: '4px 0' }}>{d}</div>)}
+          {DIAS.map(d => <div key={d} style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#62666E', padding: '4px 0' }}>{d}</div>)}
           {celdas.map((f, i) => {
             if (!f) return <div key={i} />
             const lista = porDia.get(f) ?? []
@@ -1247,9 +1247,9 @@ function CalendarioClub({ clubes, refreshKey, inicial }: { clubes: Club[]; refre
             return (
               <button key={f} onClick={() => setDiaSel(f === diaSel ? null : f)}
                 style={{ textAlign: 'left', minHeight: 74, padding: '6px 8px', borderRadius: 8, cursor: 'pointer',
-                  background: cfg.bg, border: `${f === diaSel ? 2 : 1}px solid ${f === diaSel ? '#2563eb' : cfg.border}`,
-                  outline: f === hoyIso ? '2px solid #93c5fd' : 'none', outlineOffset: 1 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#1e293b' }}>{Number(f.slice(8))}</div>
+                  background: cfg.bg, border: `${f === diaSel ? 2 : 1}px solid ${f === diaSel ? '#1C1D21' : cfg.border}`,
+                  outline: f === hoyIso ? '2px solid #C9CCD3' : 'none', outlineOffset: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#26282D' }}>{Number(f.slice(8))}</div>
                 <div style={{ fontSize: 11, color: cfg.color, fontWeight: 600, marginTop: 2 }}>
                   {ocup} ocupado{ocup === 1 ? '' : 's'}
                 </div>
@@ -1260,7 +1260,7 @@ function CalendarioClub({ clubes, refreshKey, inicial }: { clubes: Club[]; refre
             )
           })}
         </div>
-        <div style={{ display: 'flex', gap: 14, marginTop: 10, fontSize: 11.5, color: '#64748b', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 14, marginTop: 10, fontSize: 11.5, color: '#62666E', flexWrap: 'wrap' }}>
           {(['ok', 'alerta', 'lleno', 'libre'] as NivelCupo[]).map(n => (
             <span key={n} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
               <span style={{ width: 11, height: 11, borderRadius: 3, background: NIVEL_CFG[n].bg, border: `1px solid ${NIVEL_CFG[n].border}` }} />{NIVEL_CFG[n].label}
@@ -1275,12 +1275,12 @@ function CalendarioClub({ clubes, refreshKey, inicial }: { clubes: Club[]; refre
             {fmtFecha(diaSel)} · {ocupDia(sel)} persona{ocupDia(sel) === 1 ? '' : 's'} ({sel.length} carta{sel.length === 1 ? '' : 's'})
             {maxDelDia(club, diaSel) != null && ` de ${maxDelDia(club, diaSel)}`}
           </div>
-          {sel.length === 0 ? <div style={{ fontSize: 12.5, color: '#94a3b8' }}>Sin intercambios ese día.</div> : sel.map(c => (
-            <div key={c.id} style={{ display: 'flex', gap: 12, fontSize: 12.5, padding: '4px 0', borderTop: '1px solid #f1f5f9' }}>
+          {sel.length === 0 ? <div style={{ fontSize: 12.5, color: '#7A7E87' }}>Sin intercambios ese día.</div> : sel.map(c => (
+            <div key={c.id} style={{ display: 'flex', gap: 12, fontSize: 12.5, padding: '4px 0', borderTop: '1px solid #F4F5F7' }}>
               <span style={{ fontWeight: 600, minWidth: 110 }}>{c.folio ?? `#${c.id}`}</span>
               <span>{[c.cat_socios?.nombre, c.cat_socios?.apellido_paterno].filter(Boolean).join(' ')}</span>
-              {c.cat_socios?.numero_socio && <span style={{ color: '#94a3b8' }}>#{c.cat_socios.numero_socio}</span>}
-              {famsDeCarta(c).length > 0 && <span style={{ color: '#2563eb' }}>{titularAsiste(c) ? '+ ' : 'Solo: '}{famsDeCarta(c).map(f => f.nombre).join(', ')}</span>}
+              {c.cat_socios?.numero_socio && <span style={{ color: '#7A7E87' }}>#{c.cat_socios.numero_socio}</span>}
+              {famsDeCarta(c).length > 0 && <span style={{ color: '#1C1D21' }}>{titularAsiste(c) ? '+ ' : 'Solo: '}{famsDeCarta(c).map(f => f.nombre).join(', ')}</span>}
             </div>
           ))}
         </div>
@@ -1403,7 +1403,7 @@ export default function IntercambiosPage() {
           variant="xl"
           backHref="/golf"
           icon={ArrowRightLeft}
-          color="#2563eb"
+          color="#1C1D21"
           eyebrowLabel="Golf"
           title="Cartas de Intercambio"
           subtitle="Emisión, historial y catálogo de clubes con convenio"
@@ -1423,7 +1423,7 @@ export default function IntercambiosPage() {
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 20,
-          background: '#f1f5f9', borderRadius: 10, padding: 4, width: 'fit-content' }}>
+          background: '#F4F5F7', borderRadius: 10, padding: 4, width: 'fit-content' }}>
           {([
             { key: 'cartas', label: 'Cartas emitidas', icon: ArrowRightLeft },
             { key: 'calendario', label: 'Calendario por club', icon: CalendarDays },
@@ -1435,16 +1435,16 @@ export default function IntercambiosPage() {
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px',
                   borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
                   background: tab === t.key ? '#fff' : 'transparent',
-                  color: tab === t.key ? '#2563eb' : 'var(--text-muted)',
+                  color: tab === t.key ? '#1C1D21' : 'var(--text-muted)',
                   boxShadow: tab === t.key ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
                   transition: 'all 0.15s' }}>
                 <Icon size={14} /> {t.label}
                 {t.key === 'cartas' && <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px',
-                  borderRadius: 10, background: tab === 'cartas' ? '#eff6ff' : '#e2e8f0',
-                  color: tab === 'cartas' ? '#2563eb' : '#64748b' }}>{cartas.length}</span>}
+                  borderRadius: 10, background: tab === 'cartas' ? '#F4F5F7' : '#E6E8EB',
+                  color: tab === 'cartas' ? '#1C1D21' : '#62666E' }}>{cartas.length}</span>}
                 {t.key === 'clubes' && <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px',
-                  borderRadius: 10, background: tab === 'clubes' ? '#eff6ff' : '#e2e8f0',
-                  color: tab === 'clubes' ? '#2563eb' : '#64748b' }}>{clubes.length}</span>}
+                  borderRadius: 10, background: tab === 'clubes' ? '#F4F5F7' : '#E6E8EB',
+                  color: tab === 'clubes' ? '#1C1D21' : '#62666E' }}>{clubes.length}</span>}
               </button>
             )
           })}
@@ -1465,7 +1465,7 @@ export default function IntercambiosPage() {
             <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
               <div style={{ position: 'relative', flex: '1 1 260px', maxWidth: 340 }}>
                 <Search size={12} style={{ position: 'absolute', left: 9, top: '50%',
-                  transform: 'translateY(-50%)', color: '#94a3b8', zIndex: 1 }} />
+                  transform: 'translateY(-50%)', color: '#7A7E87', zIndex: 1 }} />
                 <input className="input" style={{ paddingLeft: 28 }}
                   placeholder="Buscar por socio, folio o club…"
                   value={searchC} onChange={e => setSearchC(e.target.value)} />
@@ -1497,39 +1497,39 @@ export default function IntercambiosPage() {
                 <tbody>
                   {loadingC ? (
                     <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40 }}>
-                      <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: '#94a3b8' }} />
+                      <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: '#7A7E87' }} />
                     </td></tr>
                   ) : cartasFiltradas.length === 0 ? (
-                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: '#94a3b8' }}>
+                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: '#7A7E87' }}>
                       {searchC || filtroClub ? 'Sin resultados para los filtros aplicados' : 'No hay cartas de intercambio emitidas aún'}
                     </td></tr>
                   ) : cartasFiltradasPag.map((c, i) => (
                     <tr key={c.id} style={{ borderBottom: '1px solid var(--border)',
                       background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                       <td style={tdStyle}>
-                        <span style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: '#2563eb' }}>
+                        <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, fontWeight: 700, color: '#1C1D21' }}>
                           {c.folio ?? `#${c.id}`}
                         </span>
                       </td>
                       <td style={tdStyle}>
                         <div style={{ fontWeight: 600 }}>{[c.cat_socios?.nombre, c.cat_socios?.apellido_paterno].filter(Boolean).join(' ')}</div>
-                        {c.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: '#94a3b8' }}>#{c.cat_socios.numero_socio}</div>}
+                        {c.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: '#7A7E87' }}>#{c.cat_socios.numero_socio}</div>}
                         {famsDeCarta(c).length > 0 && (
-                          <div style={{ fontSize: 11, color: '#2563eb', marginTop: 2 }}>
+                          <div style={{ fontSize: 11, color: '#1C1D21', marginTop: 2 }}>
                             {titularAsiste(c) ? '+ ' : 'Solo: '}{famsDeCarta(c).map(f => f.nombre).join(', ')}
                           </div>
                         )}
                       </td>
                       <td style={tdStyle}>
                         <div style={{ fontWeight: 500 }}>{c.cat_clubes_intercambio?.nombre ?? '—'}</div>
-                        <div style={{ fontSize: 11, color: '#94a3b8' }}>
+                        <div style={{ fontSize: 11, color: '#7A7E87' }}>
                           {[c.cat_clubes_intercambio?.ciudad, c.cat_clubes_intercambio?.estado].filter(Boolean).join(', ')}
                         </div>
                       </td>
                       <td style={{ ...tdStyle, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                         {fmtFecha(c.fecha_elaboracion)}
                       </td>
-                      <td style={{ ...tdStyle, color: c.fecha_visita ? '#059669' : '#94a3b8', whiteSpace: 'nowrap' }}>
+                      <td style={{ ...tdStyle, color: c.fecha_visita ? '#267F56' : '#7A7E87', whiteSpace: 'nowrap' }}>
                         {fmtFecha(c.fecha_visita)}
                       </td>
                       <td style={{ ...tdStyle, color: 'var(--text-muted)', fontSize: 12 }}>
@@ -1543,7 +1543,7 @@ export default function IntercambiosPage() {
                             <Printer size={13} />
                           </button>
                           {puedeEscribir && (
-                            <button className="btn-ghost" style={{ padding: '5px 7px', color: c.enviada_at ? '#15803d' : undefined }}
+                            <button className="btn-ghost" style={{ padding: '5px 7px', color: c.enviada_at ? '#1F7A50' : undefined }}
                               title={c.enviada_at ? `Enviada ${new Date(c.enviada_at).toLocaleDateString('es-MX')} a ${c.enviada_a}. Reenviar` : 'Enviar por correo'}
                               onClick={() => setEnviarCarta(c)}>
                               <Mail size={13} />
@@ -1556,7 +1556,7 @@ export default function IntercambiosPage() {
                             </button>
                           )}
                           {puedeEliminar && (
-                            <button className="btn-ghost" style={{ padding: '5px 7px', color: '#dc2626' }}
+                            <button className="btn-ghost" style={{ padding: '5px 7px', color: '#C23B3B' }}
                               title="Eliminar" disabled={deletingC === c.id}
                               onClick={() => eliminarCarta(c.id, c.folio)}>
                               {deletingC === c.id ? <Loader size={13} className="animate-spin" /> : <Trash2 size={13} />}
@@ -1581,7 +1581,7 @@ export default function IntercambiosPage() {
             <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center' }}>
               <div style={{ position: 'relative', flex: '1 1 260px', maxWidth: 340 }}>
                 <Search size={12} style={{ position: 'absolute', left: 9, top: '50%',
-                  transform: 'translateY(-50%)', color: '#94a3b8', zIndex: 1 }} />
+                  transform: 'translateY(-50%)', color: '#7A7E87', zIndex: 1 }} />
                 <input className="input" style={{ paddingLeft: 28 }}
                   placeholder="Buscar club…"
                   value={searchCl} onChange={e => setSearchCl(e.target.value)} />
@@ -1608,10 +1608,10 @@ export default function IntercambiosPage() {
                 <tbody>
                   {loadingCl ? (
                     <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40 }}>
-                      <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: '#94a3b8' }} />
+                      <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: '#7A7E87' }} />
                     </td></tr>
                   ) : clubesFiltrados.length === 0 ? (
-                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: '#94a3b8' }}>
+                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: '#7A7E87' }}>
                       {searchCl ? 'Sin resultados' : 'No hay clubes registrados. Agrega el primer club.'}
                     </td></tr>
                   ) : clubesFiltrados.map((cl, i) => (
@@ -1620,20 +1620,20 @@ export default function IntercambiosPage() {
                       opacity: cl.activo ? 1 : 0.6 }}>
                       <td style={tdStyle}>
                         <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{cl.nombre}</div>
-                        {cl.notas && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{cl.notas}</div>}
+                        {cl.notas && <div style={{ fontSize: 11, color: '#7A7E87', marginTop: 2 }}>{cl.notas}</div>}
                       </td>
                       <td style={{ ...tdStyle, color: 'var(--text-secondary)' }}>
                         {[cl.ciudad, cl.estado, cl.pais].filter(Boolean).join(', ') || '—'}
                       </td>
                       <td style={tdStyle}>
                         <div>{cl.representante ?? '—'}</div>
-                        {cl.cargo_rep && <div style={{ fontSize: 11, color: '#94a3b8' }}>{cl.cargo_rep}</div>}
+                        {cl.cargo_rep && <div style={{ fontSize: 11, color: '#7A7E87' }}>{cl.cargo_rep}</div>}
                       </td>
                       <td style={{ ...tdStyle, fontSize: 12 }}>
                         {cl.telefono_rep && <div>{cl.telefono_rep}</div>}
-                        {cl.email_rep && <div style={{ color: '#2563eb' }}>{cl.email_rep}</div>}
-                        {cl.contacto && <div style={{ color: '#64748b' }}>Contacto: {cl.contacto}</div>}
-                        {!cl.telefono_rep && !cl.email_rep && !cl.contacto && <span style={{ color: '#94a3b8' }}>—</span>}
+                        {cl.email_rep && <div style={{ color: '#1C1D21' }}>{cl.email_rep}</div>}
+                        {cl.contacto && <div style={{ color: '#62666E' }}>Contacto: {cl.contacto}</div>}
+                        {!cl.telefono_rep && !cl.email_rep && !cl.contacto && <span style={{ color: '#7A7E87' }}>—</span>}
                       </td>
                       <td style={{ ...tdStyle, fontSize: 12 }}>
                         <div>Sem: <b>{cl.max_intercambios_dia ?? '∞'}</b></div>
@@ -1641,8 +1641,8 @@ export default function IntercambiosPage() {
                       </td>
                       <td style={tdStyle}>
                         <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 10,
-                          background: cl.activo ? '#f0fdf4' : '#f8fafc',
-                          color: cl.activo ? '#15803d' : '#64748b' }}>
+                          background: cl.activo ? '#1F7A50' : '#F8F9FA',
+                          color: cl.activo ? '#fff' : '#62666E' }}>
                           {cl.activo ? 'Activo' : 'Inactivo'}
                         </span>
                       </td>
@@ -1655,7 +1655,7 @@ export default function IntercambiosPage() {
                             </button>
                           )}
                           {puedeEliminar && (
-                            <button className="btn-ghost" style={{ padding: '5px 7px', color: '#dc2626' }}
+                            <button className="btn-ghost" style={{ padding: '5px 7px', color: '#C23B3B' }}
                               title="Eliminar" disabled={deletingCl === cl.id}
                               onClick={() => eliminarClub(cl.id, cl.nombre)}>
                               {deletingCl === cl.id ? <Loader size={13} className="animate-spin" /> : <Trash2 size={13} />}

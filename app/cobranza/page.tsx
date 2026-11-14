@@ -37,7 +37,7 @@ function CobranzaContent({ embedded }: { embedded?: boolean }) {
               fontWeight: tab === t.key ? 600 : 400,
               color: tab === t.key ? 'var(--blue)' : 'var(--text-muted)',
               background: 'none', border: 'none', cursor: 'pointer',
-              borderBottom: tab === t.key ? '2px solid var(--blue)' : '2px solid transparent',
+              borderBottom: tab === t.key ? '2px solid #19D3C5' : '2px solid transparent',
               marginBottom: -1, transition: 'all 0.15s',
             }}>
             {t.icon}{t.label}

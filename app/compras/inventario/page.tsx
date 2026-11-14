@@ -9,11 +9,11 @@ import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 
 const TIPO_MOV_COLOR: Record<string, string> = {
-  'ENTRADA':          '#15803d',
-  'TRANSFERENCIA_IN': '#0891b2',
-  'TRANSFERENCIA_OUT':'#d97706',
-  'SALIDA':           '#dc2626',
-  'AJUSTE':           '#7c3aed',
+  'ENTRADA':          '#1F7A50',
+  'TRANSFERENCIA_IN': '#32789A',
+  'TRANSFERENCIA_OUT':'#B5761A',
+  'SALIDA':           '#C23B3B',
+  'AJUSTE':           '#6B4E79',
 }
 
 // Valuación: precio de última compra del artículo; si aún no tiene, el costo
@@ -145,12 +145,12 @@ export default function InventarioPage() {
                     const bajominimo = art && item.cantidad <= (art.stock_minimo ?? 0)
                     return (
                       <tr key={item.id}>
-                        <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{art?.clave ?? '—'}</td>
+                        <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{art?.clave ?? '—'}</td>
                         <td style={{ fontWeight: 500 }}>{art?.nombre ?? `Art #${item.id_articulo_fk}`}</td>
                         <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{art?.unidad ?? '—'}</td>
                         <td style={{ textAlign: 'right', fontSize: 12, color: 'var(--text-muted)' }}>{art?.stock_minimo ?? 0}</td>
                         <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, fontSize: 14,
-                          color: bajominimo ? '#dc2626' : item.cantidad > 0 ? '#15803d' : 'var(--text-muted)' }}>
+                          color: bajominimo ? '#C23B3B' : item.cantidad > 0 ? '#1F7A50' : 'var(--text-muted)' }}>
                           {Number(item.cantidad).toLocaleString('es-MX', { maximumFractionDigits: 3 })}
                         </td>
                         <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
@@ -161,7 +161,7 @@ export default function InventarioPage() {
                         </td>
                         <td>
                           {bajominimo && (
-                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: '#C23B3B', color: '#fff', border: '1px solid #C23B3B' }}>
                               Bajo Mín.
                             </span>
                           )}
@@ -219,7 +219,7 @@ export default function InventarioPage() {
                         {new Date(m.created_at).toLocaleString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}
                       </td>
                       <td>
-                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: (TIPO_MOV_COLOR[m.tipo_mov] ?? '#64748b') + '18', color: TIPO_MOV_COLOR[m.tipo_mov] ?? '#64748b', border: `1px solid ${(TIPO_MOV_COLOR[m.tipo_mov] ?? '#64748b')}30` }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: (TIPO_MOV_COLOR[m.tipo_mov] ?? '#62666E'), color: '#fff', border: `1px solid ${(TIPO_MOV_COLOR[m.tipo_mov] ?? '#62666E')}` }}>
                           {m.tipo_mov}
                         </span>
                       </td>
@@ -385,9 +385,9 @@ function MovimientoModal({
   }
 
   const tipoConfig: Record<TipoMov, { label: string; color: string; bg: string; desc: string }> = {
-    ENTRADA: { label: 'Entrada',  color: '#15803d', bg: '#f0fdf4', desc: 'Suma al stock existente' },
-    SALIDA:  { label: 'Salida',   color: '#dc2626', bg: '#fef2f2', desc: 'Resta del stock existente (entrega, uso, merma)' },
-    AJUSTE:  { label: 'Ajuste',   color: '#7c3aed', bg: '#faf5ff', desc: 'Corrige el stock a un valor específico (inventario físico)' },
+    ENTRADA: { label: 'Entrada',  color: '#1F7A50', bg: '#F4F5F7', desc: 'Suma al stock existente' },
+    SALIDA:  { label: 'Salida',   color: '#C23B3B', bg: '#F4F5F7', desc: 'Resta del stock existente (entrega, uso, merma)' },
+    AJUSTE:  { label: 'Ajuste',   color: '#6B4E79', bg: '#F4F5F7', desc: 'Corrige el stock a un valor específico (inventario físico)' },
   }
   const tc = tipoConfig[form.tipo_mov]
 
@@ -405,7 +405,7 @@ function MovimientoModal({
 
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {error && (
-            <div style={{ padding: '10px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, color: '#dc2626', fontSize: 13 }}>
+            <div style={{ padding: '10px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 7, color: '#C23B3B', fontSize: 13 }}>
               {error}
             </div>
           )}
@@ -421,7 +421,7 @@ function MovimientoModal({
                   <button key={tipo} type="button"
                     onClick={() => setForm(f => ({ ...f, tipo_mov: tipo }))}
                     style={{ padding: '10px 8px', borderRadius: 8, cursor: 'pointer', textAlign: 'center',
-                      border: `2px solid ${active ? cfg.color : '#e2e8f0'}`,
+                      border: `2px solid ${active ? cfg.color : '#E6E8EB'}`,
                       background: active ? cfg.bg : 'var(--bg)',
                       transition: 'all 0.15s' }}>
                     <div style={{ fontWeight: 700, fontSize: 13, color: active ? cfg.color : 'var(--text-primary)', marginBottom: 2 }}>
@@ -464,14 +464,14 @@ function MovimientoModal({
               {artOpen && artSearch.length >= 2 && (
                 <div style={{
                   position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999,
-                  background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8,
+                  background: '#ffffff', border: '1px solid #E6E8EB', borderRadius: 8,
                   boxShadow: '0 4px 20px rgba(0,0,0,0.15)', maxHeight: 220, overflowY: 'auto',
                 }}>
                   {loadingArt && (
-                    <div style={{ padding: '10px 14px', fontSize: 13, color: '#6b7280' }}>Buscando…</div>
+                    <div style={{ padding: '10px 14px', fontSize: 13, color: '#62666E' }}>Buscando…</div>
                   )}
                   {!loadingArt && artOpciones.length === 0 && (
-                    <div style={{ padding: '10px 14px', fontSize: 13, color: '#6b7280' }}>Sin resultados</div>
+                    <div style={{ padding: '10px 14px', fontSize: 13, color: '#62666E' }}>Sin resultados</div>
                   )}
                   {artOpciones.map(a => (
                     <button key={a.id}
@@ -484,13 +484,13 @@ function MovimientoModal({
                       }}
                       style={{ display: 'block', width: '100%', textAlign: 'left',
                         padding: '8px 12px', background: 'none', border: 'none',
-                        borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                        borderBottom: '1px solid #F4F5F7', cursor: 'pointer' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                     >
-                      <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563eb' }}>{a.clave}</span>
+                      <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: '#1C1D21' }}>{a.clave}</span>
                       <span style={{ fontSize: 13, marginLeft: 8 }}>{a.nombre}</span>
-                      <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 6 }}>{a.unidad}</span>
+                      <span style={{ fontSize: 11, color: '#7A7E87', marginLeft: 6 }}>{a.unidad}</span>
                     </button>
                   ))}
                 </div>
@@ -506,7 +506,7 @@ function MovimientoModal({
                 Stock actual — {artSeleccionado?.nombre}
               </span>
               <span style={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
-                color: stockActual !== null && stockActual > 0 ? '#15803d' : 'var(--text-muted)' }}>
+                color: stockActual !== null && stockActual > 0 ? '#1F7A50' : 'var(--text-muted)' }}>
                 {loadingStock ? '…' : `${stockActual ?? 0} ${artSeleccionado?.unidad ?? ''}`}
               </span>
             </div>
@@ -522,7 +522,7 @@ function MovimientoModal({
               placeholder={form.tipo_mov === 'AJUSTE' ? 'ej. 50 (el stock quedará en este valor)' : 'ej. 10'}
             />
             {form.tipo_mov === 'AJUSTE' && form.cantidad && stockActual !== null && (
-              <p style={{ fontSize: 11, color: '#7c3aed', marginTop: 4 }}>
+              <p style={{ fontSize: 11, color: '#6B4E79', marginTop: 4 }}>
                 Ajuste: {stockActual} → {form.cantidad} {artSeleccionado?.unidad ?? ''}
                 &nbsp;({Number(form.cantidad) >= stockActual ? '+' : ''}{(Number(form.cantidad) - stockActual).toFixed(3)})
               </p>
@@ -536,7 +536,7 @@ function MovimientoModal({
               <input className="input" type="number" min="0" step="0.01"
                 value={form.costo_unitario} onChange={setF('costo_unitario')}
                 placeholder="ej. 45.50" />
-              <p style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>
+              <p style={{ fontSize: 11, color: '#62666E', marginTop: 4 }}>
                 Se registra como costo de última compra del artículo en este almacén.
               </p>
             </div>

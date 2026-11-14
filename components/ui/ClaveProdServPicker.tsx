@@ -50,7 +50,7 @@ export default function ClaveProdServPicker({ value, onChange, label = 'Clave de
       <div style={{ display: 'flex', gap: 6 }}>
         <button type="button" className="input" onClick={abrir}
           style={{ flex: 1, textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-            color: value ? 'var(--text-primary)' : '#cbd5e1' }}>
+            color: value ? 'var(--text-primary)' : '#C9CCD3' }}>
           <Tag size={13} style={{ flexShrink: 0, color: 'var(--text-muted)' }} />
           {value
             ? <span>{value}{encontrada ? ` — ${encontrada.desc}` : ''}</span>
@@ -66,7 +66,7 @@ export default function ClaveProdServPicker({ value, onChange, label = 'Clave de
 
       {open && (
         <ModalShell modulo="facturacion" titulo={label} onClose={() => setOpen(false)} maxWidth={480}>
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: 8 }}>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid #E6E8EB', display: 'flex', gap: 8 }}>
             <div style={{ position: 'relative', flex: 1 }}>
               <Search size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input className="input" autoFocus style={{ paddingLeft: 28 }} placeholder="Buscar por clave o descripción…"
@@ -79,7 +79,7 @@ export default function ClaveProdServPicker({ value, onChange, label = 'Clave de
           </div>
 
           {manual && (
-            <div style={{ padding: '10px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ padding: '10px 16px', borderBottom: '1px solid #E6E8EB', display: 'flex', gap: 8, alignItems: 'center' }}>
               <input className="input" style={{ flex: 1 }} placeholder="8 dígitos, ej. 80131801" maxLength={8}
                 value={manualVal} onChange={e => setManualVal(e.target.value.replace(/\D/g, ''))} />
               <button type="button" className="btn-primary" onClick={guardarManual}
@@ -100,14 +100,14 @@ export default function ClaveProdServPicker({ value, onChange, label = 'Clave de
               return (
                 <button key={c.clave} type="button" onClick={() => seleccionar(c.clave)}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 16px', width: '100%',
-                    background: checked ? '#eff6ff' : 'transparent', border: 'none',
+                    background: checked ? '#F4F5F7' : 'transparent', border: 'none',
                     borderLeft: `3px solid ${checked ? 'var(--blue)' : 'transparent'}`,
                     cursor: 'pointer', textAlign: 'left' }}>
-                  <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--text-muted)', flexShrink: 0 }}>{c.clave}</span>
-                  <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: checked ? '#1d4ed8' : '#1e293b', flex: 1 }}>
+                  <span style={{ fontSize: 11, fontVariantNumeric: 'tabular-nums', color: 'var(--text-muted)', flexShrink: 0 }}>{c.clave}</span>
+                  <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: '#26282D', flex: 1 }}>
                     {c.desc}
                   </span>
-                  {checked && <CheckCircle size={14} style={{ color: '#2563eb', flexShrink: 0 }} />}
+                  {checked && <CheckCircle size={14} style={{ color: '#1C1D21', flexShrink: 0 }} />}
                 </button>
               )
             })}

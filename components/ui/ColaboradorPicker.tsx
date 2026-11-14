@@ -44,7 +44,7 @@ export default function ColaboradorPicker({ value, onChange, onSelect, filtro, l
       <div style={{ display: 'flex', gap: 6 }}>
         <button type="button" className="input" onClick={() => setOpen(true)}
           style={{ flex: 1, textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-            color: value ? 'var(--text-primary)' : '#cbd5e1' }}>
+            color: value ? 'var(--text-primary)' : '#C9CCD3' }}>
           <User size={13} style={{ flexShrink: 0, color: 'var(--text-muted)' }} />
           {value || 'Seleccionar…'}
         </button>
@@ -58,7 +58,7 @@ export default function ColaboradorPicker({ value, onChange, onSelect, filtro, l
 
       {open && (
         <ModalShell modulo="mantenimiento" titulo={label} onClose={() => setOpen(false)} maxWidth={420}>
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0' }}>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid #E6E8EB' }}>
             <div style={{ position: 'relative' }}>
               <Search size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input className="input" autoFocus style={{ paddingLeft: 28 }} placeholder="Buscar colaborador…"
@@ -84,14 +84,14 @@ export default function ColaboradorPicker({ value, onChange, onSelect, filtro, l
               return (
                 <button key={c.id} type="button" onClick={() => seleccionar(c)}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 16px', width: '100%',
-                    background: checked ? '#eff6ff' : 'transparent', border: 'none',
+                    background: checked ? '#F4F5F7' : 'transparent', border: 'none',
                     borderLeft: `3px solid ${checked ? 'var(--blue)' : 'transparent'}`,
                     cursor: 'pointer', textAlign: 'left' }}>
-                  <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: checked ? '#1d4ed8' : '#1e293b', flex: 1 }}>
+                  <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: '#26282D', flex: 1 }}>
                     {nombre}
                   </span>
                   {c.puesto && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.puesto}</span>}
-                  {checked && <CheckCircle size={14} style={{ color: '#2563eb', flexShrink: 0 }} />}
+                  {checked && <CheckCircle size={14} style={{ color: '#1C1D21', flexShrink: 0 }} />}
                 </button>
               )
             })}

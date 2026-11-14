@@ -12,7 +12,7 @@ const MODULOS = [
     label: 'Arrendatarios',
     desc: 'Padrón de arrendatarios, datos fiscales y de contacto',
     icon: Users,
-    color: '#7c3aed',
+    color: '#6B4E79',
     href: '/locales/arrendatarios',
   },
   {
@@ -20,7 +20,7 @@ const MODULOS = [
     label: 'Locales / Propiedades',
     desc: 'Catálogo de locales comerciales y propiedades, disponibilidad y estatus',
     icon: Building2,
-    color: '#0f766e',
+    color: '#126B63',
     href: '/locales/propiedades',
   },
   {
@@ -28,7 +28,7 @@ const MODULOS = [
     label: 'Cobranza',
     desc: 'Asignaciones, rentas mensuales, cobros y recibos',
     icon: DollarSign,
-    color: '#dc2626',
+    color: '#C23B3B',
     href: '/locales/cobranza',
   },
 ]
@@ -43,7 +43,7 @@ function ModuloCard({ m }: { m: typeof MODULOS[number] }) {
         padding: '18px 20px',
         textAlign: 'left',
         background: '#fff',
-        border: '1px solid #e2e8f0',
+        border: '1px solid #E6E8EB',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
@@ -51,9 +51,8 @@ function ModuloCard({ m }: { m: typeof MODULOS[number] }) {
         textDecoration: 'none',
       }}
     >
-      <div style={{
+      <div className="icon-chip" style={{
         width: 40, height: 40, borderRadius: 10,
-        background: m.color + '15',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0, color: m.color,
       }}>
@@ -63,7 +62,7 @@ function ModuloCard({ m }: { m: typeof MODULOS[number] }) {
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{m.label}</div>
         <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{m.desc}</div>
       </div>
-      <ChevronRight size={14} style={{ color: '#cbd5e1', flexShrink: 0 }} />
+      <ChevronRight size={14} style={{ color: '#C9CCD3', flexShrink: 0 }} />
     </Link>
   )
 }
@@ -76,7 +75,7 @@ export default function LocalesPage() {
         variant="xl"
         backHref="/golf/administracion"
         icon={Building2}
-        color="#0f766e"
+        color="#126B63"
         eyebrowLabel="Módulo"
         title="Renta de Locales Comerciales y Propiedades"
         subtitle="Arrendatarios, catálogo de propiedades y cobranza de rentas"

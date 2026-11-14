@@ -16,9 +16,9 @@ const CLASIFICACION_LABEL: Record<Clasificacion, string> = {
   intercompanias: 'Intercompañías',
 }
 const CLASIFICACION_COLOR: Record<Clasificacion, { bg: string; color: string }> = {
-  operativo:      { bg: '#f1f5f9', color: '#475569' },
-  financiero:     { bg: '#eef2ff', color: '#4338ca' },
-  intercompanias: { bg: '#fff7ed', color: '#c2410c' },
+  operativo:      { bg: '#F4F5F7', color: '#4A4D54' },
+  financiero:     { bg: '#F4F5F7', color: '#1C1D21' },
+  intercompanias: { bg: '#F4F5F7', color: '#A8501F' },
 }
 
 const MODULOS = ['Golf', 'Mantenimiento', 'Hípico', 'Polo', 'Eventos', "Patron's", 'Locales', 'Corporativo']
@@ -28,17 +28,17 @@ const MODULOS = ['Golf', 'Mantenimiento', 'Hípico', 'Polo', 'Eventos', "Patron'
 const moduloLabel = (m: string) => m === 'Residencial' ? 'Fraccionamiento' : m
 
 const MODULO_COLOR: Record<string, { bg: string; color: string }> = {
-  General:       { bg: '#f1f5f9', color: '#475569' },
-  Residencial:   { bg: '#eff6ff', color: '#1d4ed8' },
-  Golf:          { bg: '#f0fdf4', color: '#15803d' },
-  Mantenimiento: { bg: '#fef3c7', color: '#92400e' },
-  Hípico:        { bg: '#fdf4ff', color: '#7e22ce' },
-  Polo:          { bg: '#fff7ed', color: '#c2410c' },
-  Eventos:       { bg: '#fff1f2', color: '#be123c' },
-  Hospitalidad:  { bg: '#ecfdf5', color: '#065f46' },
-  "Patron's":    { bg: '#f5f3ff', color: '#6d28d9' },
-  Locales:       { bg: '#fefce8', color: '#a16207' },
-  Corporativo:   { bg: '#f0f9ff', color: '#0369a1' },
+  General:       { bg: '#F4F5F7', color: '#4A4D54' },
+  Residencial:   { bg: '#F4F5F7', color: '#26282D' },
+  Golf:          { bg: '#F4F5F7', color: '#1F7A50' },
+  Mantenimiento: { bg: '#E6E8EB', color: '#7A4B0C' },
+  Hípico:        { bg: '#F4F5F7', color: '#5C4268' },
+  Polo:          { bg: '#F4F5F7', color: '#A8501F' },
+  Eventos:       { bg: '#F4F5F7', color: '#A83232' },
+  Hospitalidad:  { bg: '#F4F5F7', color: '#17603F' },
+  "Patron's":    { bg: '#F4F5F7', color: '#5C4268' },
+  Locales:       { bg: '#F4F5F7', color: '#8A6A12' },
+  Corporativo:   { bg: '#F4F5F7', color: '#2A6582' },
 }
 
 type Partida = {
@@ -102,10 +102,10 @@ const FUENTE_LABEL: Record<FuenteReal, string> = {
   manual:   'Manual',
 }
 const FUENTE_COLOR: Record<FuenteReal, { bg: string; color: string }> = {
-  seccion:  { bg: '#eff6ff', color: '#1d4ed8' },
-  concepto: { bg: '#f5f3ff', color: '#6d28d9' },
-  op_area:  { bg: '#fef3c7', color: '#92400e' },
-  manual:   { bg: '#f1f5f9', color: '#475569' },
+  seccion:  { bg: '#F4F5F7', color: '#26282D' },
+  concepto: { bg: '#F4F5F7', color: '#5C4268' },
+  op_area:  { bg: '#E6E8EB', color: '#7A4B0C' },
+  manual:   { bg: '#F4F5F7', color: '#4A4D54' },
 }
 
 export default function PartidasPage() {
@@ -345,7 +345,7 @@ export default function PartidasPage() {
         actions={<>
           {/* Filtro nombre */}
           <div style={{ position: 'relative', flex: '0 0 auto' }}>
-            <Search size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+            <Search size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
             <input className="input" placeholder="Buscar por nombre…"
               value={filterNombre} onChange={e => setFilterNombre(e.target.value)}
               style={{ fontSize: 12, padding: '5px 8px 5px 26px', width: 160 }} />
@@ -380,13 +380,13 @@ export default function PartidasPage() {
             {agrupadores.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
           </select>
           {/* Filtro tipo */}
-          <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px' }}>
+          <div style={{ display: 'flex', gap: 6, background: '#F4F5F7', borderRadius: 22, padding: '3px 4px' }}>
             {(['', 'ingreso', 'egreso'] as const).map(t => (
               <button key={t} onClick={() => setFilterTipo(t)}
                 style={{
                   padding: '4px 14px', borderRadius: 18, border: 'none', cursor: 'pointer', fontSize: 12,
                   background: filterTipo === t ? '#fff' : 'transparent',
-                  color: filterTipo === t ? '#1e293b' : '#64748b',
+                  color: filterTipo === t ? '#26282D' : '#62666E',
                   fontWeight: filterTipo === t ? 600 : 400,
                   boxShadow: filterTipo === t ? '0 1px 3px rgba(0,0,0,.12)' : 'none',
                   transition: 'all .15s',
@@ -412,33 +412,33 @@ export default function PartidasPage() {
 
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
-          <Loader size={28} color="#94a3b8" className="animate-spin" />
+          <Loader size={28} color="#7A7E87" className="animate-spin" />
         </div>
       ) : (
         <>
           {[
-            { label: 'Ingresos', data: ingresos, color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
-            { label: 'Egresos',  data: egresos,  color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
+            { label: 'Ingresos', data: ingresos, color: '#1F7A50', bg: '#F4F5F7', border: '#E6E8EB' },
+            { label: 'Egresos',  data: egresos,  color: '#A83232', bg: '#F4F5F7', border: '#E6E8EB' },
           ].map(grupo => (
             <div key={grupo.label} style={{ marginBottom: 28 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                 <span style={{
-                  background: grupo.bg, color: grupo.color, fontWeight: 700, fontSize: 11,
-                  padding: '3px 10px', borderRadius: 12, border: `1px solid ${grupo.border}`,
+                  background: grupo.color, color: '#fff', fontWeight: 700, fontSize: 11,
+                  padding: '3px 10px', borderRadius: 12, border: `1px solid ${grupo.color}`,
                   textTransform: 'uppercase', letterSpacing: '.06em',
                 }}>
                   {grupo.label}
                 </span>
-                <span style={{ color: '#94a3b8', fontSize: 13 }}>{grupo.data.length} partidas</span>
+                <span style={{ color: '#7A7E87', fontSize: 13 }}>{grupo.data.length} partidas</span>
               </div>
 
               {grupo.data.length === 0 ? (
-                <p style={{ color: '#94a3b8', fontSize: 14, padding: '8px 0' }}>Sin partidas registradas</p>
+                <p style={{ color: '#7A7E87', fontSize: 14, padding: '8px 0' }}>Sin partidas registradas</p>
               ) : (
                 <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
-                      <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                      <tr style={{ background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
                         <th style={th}>Nombre</th>
                         <th style={th}>Módulo</th>
                         <th style={th}>Clasificación</th>
@@ -465,17 +465,17 @@ export default function PartidasPage() {
                         if (fr === 'manual'   && p.id_centro_ingreso_fk) vinculo = ciMap[p.id_centro_ingreso_fk] ?? '—'
                         return (
                           <tr key={p.id} style={{
-                            borderBottom: '1px solid #f1f5f9',
+                            borderBottom: '1px solid #F4F5F7',
                             background: i % 2 === 0 ? '#fff' : '#fafafa',
                           }}>
-                            <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{p.nombre}</span>
-                              {p.descripcion && <span style={{ display: 'block', fontSize: 12, color: '#94a3b8' }}>{p.descripcion}</span>}
+                            <td style={td}><span style={{ fontWeight: 600, color: '#26282D' }}>{p.nombre}</span>
+                              {p.descripcion && <span style={{ display: 'block', fontSize: 12, color: '#7A7E87' }}>{p.descripcion}</span>}
                             </td>
                             <td style={td}>
                               {(() => {
                                 const mc = MODULO_COLOR[p.modulo ?? 'General'] ?? MODULO_COLOR.General
                                 return (
-                                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: mc.bg, color: mc.color }}>
+                                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: mc.color, color: '#fff'}}>
                                     {moduloLabel(p.modulo ?? 'General')}
                                   </span>
                                 )
@@ -485,7 +485,7 @@ export default function PartidasPage() {
                               {(() => {
                                 const cc = CLASIFICACION_COLOR[p.clasificacion ?? 'operativo']
                                 return (
-                                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: cc.bg, color: cc.color }}>
+                                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: cc.color, color: '#fff'}}>
                                     {CLASIFICACION_LABEL[p.clasificacion ?? 'operativo']}
                                   </span>
                                 )
@@ -493,15 +493,15 @@ export default function PartidasPage() {
                             </td>
                             <td style={td}>
                               {p.id_agrupador_fk && agMap[p.id_agrupador_fk] ? (
-                                <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: '#f5f3ff', color: '#6d28d9' }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: '#6B4E79', color: '#fff' }}>
                                   {agMap[p.id_agrupador_fk]}
                                 </span>
                               ) : (
-                                <span style={{ color: '#cbd5e1', fontSize: 12 }}>—</span>
+                                <span style={{ color: '#C9CCD3', fontSize: 12 }}>—</span>
                               )}
                               {p.comportamiento && (
                                 <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 9, marginLeft: 4,
-                                  background: p.comportamiento === 'fijo' ? '#ecfeff' : '#fff7ed', color: p.comportamiento === 'fijo' ? '#0e7490' : '#c2410c' }}>
+                                  background: p.comportamiento === 'fijo' ? '#32789A' : '#C8642A', color: '#fff' }}>
                                   {p.comportamiento === 'fijo' ? 'Fijo' : 'Variable'}
                                 </span>
                               )}
@@ -509,32 +509,32 @@ export default function PartidasPage() {
                             <td style={td}>
                               <span style={{
                                 fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10,
-                                background: fc.bg, color: fc.color,
+                                background: fc.color, color: '#fff',
                               }}>
                                 {FUENTE_LABEL[fr]}
                               </span>
                             </td>
-                            <td style={{ ...td, color: '#475569', fontSize: 13 }}>{vinculo}</td>
+                            <td style={{ ...td, color: '#4A4D54', fontSize: 13 }}>{vinculo}</td>
                             <td style={td}>
                               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                                 {(p.incluir_presupuesto ?? true) && (
-                                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 9, background: '#eff6ff', color: '#1d4ed8' }}>
+                                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 9, background: '#F4F5F7', color: '#26282D' }}>
                                     Presupuesto
                                   </span>
                                 )}
                                 {(p.incluir_flujo ?? true) && (
-                                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 9, background: '#eef2ff', color: '#4338ca' }}>
+                                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 9, background: '#F4F5F7', color: '#1C1D21' }}>
                                     Flujo
                                   </span>
                                 )}
                                 {p.devengado_igual_a_cobro && (
                                   <span title="Venta diaria: en base Generado su Real se toma del cobro"
-                                    style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 9, background: '#f0fdf4', color: '#15803d' }}>
+                                    style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 9, background: '#1F7A50', color: '#fff' }}>
                                     Venta diaria
                                   </span>
                                 )}
                                 {!(p.incluir_presupuesto ?? true) && !(p.incluir_flujo ?? true) && (
-                                  <span style={{ color: '#cbd5e1', fontSize: 12 }}>—</span>
+                                  <span style={{ color: '#C9CCD3', fontSize: 12 }}>—</span>
                                 )}
                               </div>
                             </td>
@@ -542,8 +542,8 @@ export default function PartidasPage() {
                             <td style={{ ...td, textAlign: 'center' }}>
                               <span style={{
                                 fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10,
-                                background: p.activo ? '#dcfce7' : '#f1f5f9',
-                                color: p.activo ? '#15803d' : '#64748b',
+                                background: p.activo ? '#1F7A50' : '#F4F5F7',
+                                color: p.activo ? '#fff' : '#62666E',
                               }}>
                                 {p.activo ? 'Sí' : 'No'}
                               </span>
@@ -563,7 +563,7 @@ export default function PartidasPage() {
                                   <button className="btn-ghost" onClick={() => handleDelete(p)}
                                     disabled={deletingId === p.id}
                                     title="Eliminar partida"
-                                    style={{ padding: '4px 8px', fontSize: 12, color: '#dc2626' }}>
+                                    style={{ padding: '4px 8px', fontSize: 12, color: '#C23B3B' }}>
                                     {deletingId === p.id
                                       ? <Loader size={13} className="animate-spin" />
                                       : <Trash2 size={13} />}
@@ -607,8 +607,8 @@ export default function PartidasPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {errorMsg && (
               <div style={{
-                padding: '10px 14px', borderRadius: 8, background: '#fef2f2',
-                border: '1px solid #fecaca', color: '#b91c1c', fontSize: 13,
+                padding: '10px 14px', borderRadius: 8, background: '#F4F5F7',
+                border: '1px solid #E6E8EB', borderLeft: '3px solid #A83232', color: '#A83232', fontSize: 13,
               }}>
                 {errorMsg}
               </div>
@@ -633,8 +633,8 @@ export default function PartidasPage() {
               Descripción
               <input className="input"
                 value={descripcionAuto(form.tipo, form.modulo, form.tipo === 'egreso' ? areaMap[form.id_area_fk ?? -1] : null)}
-                readOnly disabled style={{ background: '#f8fafc', color: '#64748b' }} />
-              <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                readOnly disabled style={{ background: '#F8F9FA', color: '#62666E' }} />
+              <span style={{ fontSize: 11, color: '#7A7E87' }}>
                 Se genera automáticamente a partir de Tipo + Módulo + Área.
               </span>
             </label>
@@ -646,7 +646,7 @@ export default function PartidasPage() {
                 <option value="16">16% — grava IVA</option>
                 <option value="0">0% — exento / sin IVA</option>
               </select>
-              <span style={{ fontSize: 11, color: '#94a3b8' }}>
+              <span style={{ fontSize: 11, color: '#7A7E87' }}>
                 El presupuesto se captura sin IVA. Flujo (con IVA) lo multiplica por (1 + %) para
                 compararlo contra el real de caja; Comparativo no lo usa.
               </span>
@@ -666,7 +666,7 @@ export default function PartidasPage() {
                   <option key={c} value={c}>{CLASIFICACION_LABEL[c]}</option>
                 ))}
               </select>
-              <span style={{ fontSize: 11, color: '#94a3b8' }}>
+              <span style={{ fontSize: 11, color: '#7A7E87' }}>
                 Operativo = negocio normal. Financiero/Intercompañías se muestran en apartados
                 separados en Comparativo, Flujo, Captura y Dashboard, fuera del Balance/Flujo operativo.
               </span>
@@ -680,7 +680,7 @@ export default function PartidasPage() {
                 <option value="fijo">Fijo</option>
                 <option value="variable">Variable</option>
               </select>
-              <span style={{ fontSize: 11, color: '#94a3b8' }}>
+              <span style={{ fontSize: 11, color: '#7A7E87' }}>
                 Filtro Fijo / Variable en Comparativo y Flujo de Efectivo (independiente del agrupador).
               </span>
             </label>
@@ -692,7 +692,7 @@ export default function PartidasPage() {
                 <option value="">— Sin agrupador —</option>
                 {agrupadores.filter(a => a.activo).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
               </select>
-              <span style={{ fontSize: 11, color: '#94a3b8' }}>
+              <span style={{ fontSize: 11, color: '#7A7E87' }}>
                 Usado para la vista sumarizada de Dashboard, Comparativo y Flujo de Efectivo.
               </span>
             </label>
@@ -726,15 +726,15 @@ export default function PartidasPage() {
               </label>
             )}
             {form.tipo === 'egreso' && form.fuente_real === 'manual' && form.clasificacion !== 'operativo' && (
-              <div style={{ padding: '10px 14px', borderRadius: 8, background: '#eff6ff',
-                border: '1px solid #bfdbfe', fontSize: 12, color: '#1e40af' }}>
+              <div style={{ padding: '10px 14px', borderRadius: 8, background: '#F4F5F7',
+                border: '1px solid #C9CCD3', fontSize: 12, color: '#1C1D21' }}>
                 Sin vínculo a OP: el presupuesto se captura en <strong>Captura Flujo</strong> y el real con <strong>+ Manual</strong> en Flujo de Efectivo.
               </div>
             )}
             {form.tipo === 'egreso' && !(form.clasificacion !== 'operativo' && form.fuente_real === 'manual') && (
               <>
-                <div style={{ padding: '10px 14px', borderRadius: 8, background: '#fef3c7',
-                  border: '1px solid #fde68a', fontSize: 12, color: '#92400e' }}>
+                <div style={{ padding: '10px 14px', borderRadius: 8, background: '#E6E8EB',
+                  border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', fontSize: 12, color: '#7A4B0C' }}>
                   Real automático: <strong>Órdenes de Pago</strong> filtradas por Área
                 </div>
                 <label style={lbl}>
@@ -764,7 +764,7 @@ export default function PartidasPage() {
                     <option value="">— Todos (sin filtro) —</option>
                     {catTG.activos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
                   </select>
-                  <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                  <span style={{ fontSize: 11, color: '#7A7E87' }}>
                     Filtra OPs por tipo de gasto dentro del área. Dejar vacío = tomar todo el área.
                   </span>
                 </label>
@@ -828,30 +828,30 @@ export default function PartidasPage() {
             <div>
               <span style={{ ...lbl, marginBottom: 6, display: 'block' }}>Aparece en</span>
               <div style={{ display: 'flex', gap: 16 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#374151', cursor: 'pointer' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#33363C', cursor: 'pointer' }}>
                   <input type="checkbox" checked={form.incluir_presupuesto}
                     onChange={e => setForm(f => ({ ...f, incluir_presupuesto: e.target.checked }))} />
                   Presupuesto
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#374151', cursor: 'pointer' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#33363C', cursor: 'pointer' }}>
                   <input type="checkbox" checked={form.incluir_flujo}
                     onChange={e => setForm(f => ({ ...f, incluir_flujo: e.target.checked }))} />
                   Flujo de Efectivo
                 </label>
               </div>
-              <span style={{ fontSize: 11, color: '#94a3b8' }}>
+              <span style={{ fontSize: 11, color: '#7A7E87' }}>
                 Desmarca &quot;Presupuesto&quot; para partidas solo de financiamiento (aportaciones, pago de capital de deuda, etc.) que no deben contarse en el presupuesto operativo.
               </span>
             </div>
 
             {form.tipo === 'ingreso' && (
               <div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#374151', cursor: 'pointer' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#33363C', cursor: 'pointer' }}>
                   <input type="checkbox" checked={form.devengado_igual_a_cobro}
                     onChange={e => setForm(f => ({ ...f, devengado_igual_a_cobro: e.target.checked }))} />
                   Venta diaria (el generado es igual al cobro)
                 </label>
-                <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                <span style={{ fontSize: 11, color: '#7A7E87' }}>
                   Márcala cuando el servicio se presta y se cobra el mismo día (green fees, torneos, tee de práctica): no tiene cartera de dónde generar, así que en base Generado su Real se toma del cobro. Sin esto la partida aparece con Real en cero.
                 </span>
               </div>
@@ -900,13 +900,13 @@ export default function PartidasPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {dupError && (
               <div style={{
-                padding: '10px 14px', borderRadius: 8, background: '#fef2f2',
-                border: '1px solid #fecaca', color: '#b91c1c', fontSize: 13,
+                padding: '10px 14px', borderRadius: 8, background: '#F4F5F7',
+                border: '1px solid #E6E8EB', borderLeft: '3px solid #A83232', color: '#A83232', fontSize: 13,
               }}>
                 {dupError}
               </div>
             )}
-            <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>
+            <p style={{ margin: 0, fontSize: 13, color: '#62666E' }}>
               Elige en qué otros módulos crear una copia de <strong>{dupSource.nombre}</strong>
               {dupSource.tipo === 'egreso' ? ' — indica el Centro de Costo y Área correspondiente en cada uno' : ''}.
             </p>
@@ -916,13 +916,13 @@ export default function PartidasPage() {
               const mc = MODULO_COLOR[modulo] ?? MODULO_COLOR.General
               return (
                 <div key={modulo} style={{
-                  border: '1px solid #e2e8f0', borderRadius: 8, padding: 12,
-                  background: t.selected ? '#f8fafc' : '#fff',
+                  border: '1px solid #E6E8EB', borderRadius: 8, padding: 12,
+                  background: t.selected ? '#F8F9FA' : '#fff',
                 }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                     <input type="checkbox" checked={t.selected}
                       onChange={e => patchDupTarget(modulo, { selected: e.target.checked })} />
-                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: mc.bg, color: mc.color }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: mc.color, color: '#fff'}}>
                       {modulo}
                     </span>
                   </label>
@@ -1030,8 +1030,8 @@ function AgrupadoresModal({ agrupadores, onClose, onSaved }: {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {error && (
           <div style={{
-            padding: '10px 14px', borderRadius: 8, background: '#fef2f2',
-            border: '1px solid #fecaca', color: '#b91c1c', fontSize: 13,
+            padding: '10px 14px', borderRadius: 8, background: '#F4F5F7',
+            border: '1px solid #E6E8EB', borderLeft: '3px solid #A83232', color: '#A83232', fontSize: 13,
           }}>
             {error}
           </div>
@@ -1049,13 +1049,13 @@ function AgrupadoresModal({ agrupadores, onClose, onSaved }: {
           </button>
         </div>
 
-        <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
           {agrupadores.length === 0 ? (
-            <p style={{ textAlign: 'center', padding: 20, color: '#94a3b8', fontSize: 13 }}>Sin agrupadores registrados</p>
+            <p style={{ textAlign: 'center', padding: 20, color: '#7A7E87', fontSize: 13 }}>Sin agrupadores registrados</p>
           ) : agrupadores.map((a, i) => (
             <div key={a.id} style={{
               display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
-              borderBottom: i < agrupadores.length - 1 ? '1px solid #f1f5f9' : 'none',
+              borderBottom: i < agrupadores.length - 1 ? '1px solid #F4F5F7' : 'none',
               background: a.activo ? '#fff' : '#fafafa', opacity: a.activo ? 1 : 0.6,
             }}>
               {editId === a.id ? (
@@ -1071,18 +1071,18 @@ function AgrupadoresModal({ agrupadores, onClose, onSaved }: {
                 </>
               ) : (
                 <>
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: '#1e293b', cursor: 'pointer' }}
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: '#26282D', cursor: 'pointer' }}
                     onClick={() => startEdit(a)} title="Clic para editar">
                     {a.nombre}
                   </span>
-                  <span style={{ fontSize: 11, color: '#94a3b8' }}>#{a.orden}</span>
+                  <span style={{ fontSize: 11, color: '#7A7E87' }}>#{a.orden}</span>
                   <button onClick={() => toggleActivo(a)}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
                     {a.activo
-                      ? <ToggleRight size={18} style={{ color: '#15803d' }} />
-                      : <ToggleLeft size={18} style={{ color: '#cbd5e1' }} />}
+                      ? <ToggleRight size={18} style={{ color: '#1F7A50' }} />
+                      : <ToggleLeft size={18} style={{ color: '#C9CCD3' }} />}
                   </button>
-                  <button className="btn-ghost" onClick={() => handleDelete(a)} style={{ padding: '4px 6px', color: '#dc2626' }}>
+                  <button className="btn-ghost" onClick={() => handleDelete(a)} style={{ padding: '4px 6px', color: '#C23B3B' }}>
                     <Trash2 size={13} />
                   </button>
                 </>
@@ -1097,10 +1097,10 @@ function AgrupadoresModal({ agrupadores, onClose, onSaved }: {
 
 const th: React.CSSProperties = {
   padding: '10px 14px', textAlign: 'left', fontSize: 11,
-  fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em',
+  fontWeight: 600, color: '#62666E', textTransform: 'uppercase', letterSpacing: '.05em',
 }
-const td: React.CSSProperties = { padding: '10px 14px', fontSize: 14, color: '#374151' }
+const td: React.CSSProperties = { padding: '10px 14px', fontSize: 14, color: '#33363C' }
 const lbl: React.CSSProperties = {
   display: 'flex', flexDirection: 'column', gap: 5,
-  fontSize: 13, fontWeight: 500, color: '#374151',
+  fontSize: 13, fontWeight: 500, color: '#33363C',
 }

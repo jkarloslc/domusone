@@ -98,9 +98,9 @@ type Jugador = {
 type SocioBusqueda = { id: number; nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_socio: string | null }
 
 const JUGADOR_STATUS_COLORS: Record<string, { bg: string; color: string }> = {
-  'Pagado':    { bg: '#f0fdf4', color: '#15803d' },
-  'Pendiente': { bg: '#fffbeb', color: '#d97706' },
-  'Cancelado': { bg: '#fef2f2', color: '#dc2626' },
+  'Pagado':    { bg: '#F4F5F7', color: '#1F7A50' },
+  'Pendiente': { bg: '#F4F5F7', color: '#B5761A' },
+  'Cancelado': { bg: '#F4F5F7', color: '#C23B3B' },
 }
 
 type Ingreso = {
@@ -160,11 +160,11 @@ const TIPOS_GASTO_EVT = [
 // ── Constants ────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
-  'Cotización': { bg: '#f0fdf4', color: '#16a34a' },
-  'Confirmado': { bg: '#eff6ff', color: '#2563eb' },
-  'En curso':   { bg: '#fff7ed', color: '#ea580c' },
-  'Realizado':  { bg: '#f0fdf4', color: '#15803d' },
-  'Cancelado':  { bg: '#fef2f2', color: '#dc2626' },
+  'Cotización': { bg: '#F4F5F7', color: '#267F56' },
+  'Confirmado': { bg: '#F4F5F7', color: '#1C1D21' },
+  'En curso':   { bg: '#F4F5F7', color: '#C8642A' },
+  'Realizado':  { bg: '#F4F5F7', color: '#1F7A50' },
+  'Cancelado':  { bg: '#F4F5F7', color: '#C23B3B' },
 }
 
 const FORMAS_PAGO = ['Efectivo', 'Transferencia', 'Tarjeta', 'Cheque', 'Otro']
@@ -217,7 +217,7 @@ function sortEventosDesc(a: Evento, b: Evento) {
 function FmSection({ title, color, children }: { title: string; color: string; children: React.ReactNode }) {
   return (
     <div>
-      <div style={{ fontSize: 11, fontWeight: 700, color, textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: 10, paddingBottom: 6, borderBottom: `2px solid ${color}33` }}>{title}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color, textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: 10, paddingBottom: 6, borderBottom: '2px solid #E6E8EB' }}>{title}</div>
       {children}
     </div>
   )
@@ -934,33 +934,33 @@ export default function EventosPage() {
     } catch {}
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
-    const STATUS_PRINT_COLOR: Record<string, string> = { Pagado: '#15803d', Pendiente: '#d97706', Cancelado: '#dc2626' }
+      : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
+    const STATUS_PRINT_COLOR: Record<string, string> = { Pagado: '#1F7A50', Pendiente: '#B5761A', Cancelado: '#C23B3B' }
     const win = window.open('', '_blank', 'width=900,height=1050')
     if (!win) return
     win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
 <title>Inscripciones — ${editEvt.folio}</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Segoe UI', Arial, sans-serif; padding: 36px; color: #1e1e1e; background: #fff; font-size: 13px; }
-.org-header { display:flex; align-items:center; gap:16px; padding-bottom:14px; border-bottom:2px solid #0D4F80; margin-bottom:22px; }
-.org-nombre { font-size:18px; font-weight:700; color:#0D4F80; margin:0 0 2px; }
-.org-sub { font-size:11px; color:#64748b; }
-.doc-title { font-size:14px; font-weight:600; color:#0D4F80; margin-bottom:2px; }
-.meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; padding: 14px 16px; background: #fffbeb; border-radius: 8px; border: 1px solid #fde68a; }
-.meta .f label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #b45309; display: block; margin-bottom: 2px; }
+body { font-family: 'Segoe UI', Arial, sans-serif; padding: 36px; color: #1C1D21; background: #fff; font-size: 13px; }
+.org-header { display:flex; align-items:center; gap:16px; padding-bottom:14px; border-bottom:2px solid #1C1D21; margin-bottom:22px; }
+.org-nombre { font-size:18px; font-weight:700; color:#1C1D21; margin:0 0 2px; }
+.org-sub { font-size:11px; color:#62666E; }
+.doc-title { font-size:14px; font-weight:600; color:#1C1D21; margin-bottom:2px; }
+.meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; padding: 14px 16px; background: #F4F5F7; border-radius: 8px; border: 1px solid #E6E8EB; }
+.meta .f label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #96600F; display: block; margin-bottom: 2px; }
 .meta .f span { font-size: 12px; }
-.sec-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #0D4F80; border-bottom: 2px solid #bfdbfe; padding-bottom: 4px; margin-bottom: 10px; }
+.sec-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #1C1D21; border-bottom: 2px solid #C9CCD3; padding-bottom: 4px; margin-bottom: 10px; }
 table { width: 100%; border-collapse: collapse; font-size: 12px; }
-th { background: #eff6ff; padding: 7px 10px; text-align: left; font-weight: 700; font-size: 9px; text-transform: uppercase; letter-spacing: .05em; color: #0D4F80; border-bottom: 2px solid #bfdbfe; }
-td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; }
+th { background: #F4F5F7; padding: 7px 10px; text-align: left; font-weight: 700; font-size: 9px; text-transform: uppercase; letter-spacing: .05em; color: #1C1D21; border-bottom: 2px solid #C9CCD3; }
+td { padding: 7px 10px; border-bottom: 1px solid #F4F5F7; }
 tr:last-child td { border-bottom: none; }
-.tr-total { background: #fffbeb; font-weight: 700; }
-.tr-total td { border-top: 2px solid #fde68a; font-weight: 700; }
+.tr-total { background: #F4F5F7; font-weight: 700; }
+.tr-total td { border-top: 2px solid #E6E8EB; font-weight: 700; }
 .num { text-align: right; }
 .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 9px; font-weight: 700; }
 .firma { margin-top: 44px; display: flex; gap: 40px; }
-.firma-line { flex: 1; border-top: 1px solid #ccc; padding-top: 8px; font-size: 10px; color: #888; text-align: center; }
+.firma-line { flex: 1; border-top: 1px solid #C9CCD3; padding-top: 8px; font-size: 10px; color: #7A7E87; text-align: center; }
 @media print { body { padding: 20px; } }
 </style></head><body>
 <div class="org-header">
@@ -971,7 +971,7 @@ tr:last-child td { border-bottom: none; }
   </div>
   <div style="margin-left:auto;text-align:right">
     <div class="doc-title">Inscripciones a Torneo</div>
-    <div style="font-size:11px;color:#64748b">${editEvt.nombre} · ${editEvt.folio}</div>
+    <div style="font-size:11px;color:#62666E">${editEvt.nombre} · ${editEvt.folio}</div>
   </div>
 </div>
 <div class="meta">
@@ -998,21 +998,21 @@ tr:last-child td { border-bottom: none; }
   <tbody>
     ${jugadores.map((j, i) => `
     <tr>
-      <td style="color:#9ca3af;font-size:10px">${i + 1}</td>
+      <td style="color:#7A7E87;font-size:10px">${i + 1}</td>
       <td style="font-weight:600">${j.nombre_completo}</td>
       <td>${j.tipo}</td>
       <td>${j.hoyo ?? '—'}</td>
       <td>${j.handicap ?? '—'}</td>
       <td class="num">${'$' + (j.inscripcion ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-      <td class="num" style="color:#16a34a">${'$' + (j.pago ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-      <td class="num" style="color:${(j.por_cobrar ?? 0) > 0 ? '#d97706' : '#94a3b8'}">${'$' + (j.por_cobrar ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-      <td><span class="badge" style="background:${STATUS_PRINT_COLOR[j.status] ?? '#64748b'}22;color:${STATUS_PRINT_COLOR[j.status] ?? '#64748b'}">${j.status}</span></td>
+      <td class="num" style="color:#267F56">${'$' + (j.pago ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+      <td class="num" style="color:${(j.por_cobrar ?? 0) > 0 ? '#B5761A' : '#7A7E87'}">${'$' + (j.por_cobrar ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+      <td><span class="badge" style="background:${STATUS_PRINT_COLOR[j.status] ?? '#62666E'};color:#fff">${j.status}</span></td>
     </tr>`).join('')}
     <tr class="tr-total">
-      <td colspan="5" style="text-align:right;padding-right:10px;font-size:11px;color:#b45309;letter-spacing:.05em">TOTALES</td>
-      <td class="num" style="color:#1e293b;font-size:13px">${'$' + totalInsc.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-      <td class="num" style="color:#16a34a;font-size:13px">${'$' + totalPago.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-      <td class="num" style="color:#d97706;font-size:13px">${'$' + totalPorCobrar.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+      <td colspan="5" style="text-align:right;padding-right:10px;font-size:11px;color:#96600F;letter-spacing:.05em">TOTALES</td>
+      <td class="num" style="color:#26282D;font-size:13px">${'$' + totalInsc.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+      <td class="num" style="color:#267F56;font-size:13px">${'$' + totalPago.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+      <td class="num" style="color:#B5761A;font-size:13px">${'$' + totalPorCobrar.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
       <td></td>
     </tr>
   </tbody>
@@ -1124,34 +1124,34 @@ tr:last-child td { border-bottom: none; }
     } catch {}
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+      : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
     const win = window.open('', '_blank', 'width=800,height=1050')
     if (!win) return
     win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
 <title>Personal Operativo — ${editEvt.folio}</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Segoe UI', Arial, sans-serif; padding: 36px; color: #1e1e1e; background: #fff; font-size: 13px; }
-.org-header { display:flex; align-items:center; gap:16px; padding-bottom:14px; border-bottom:2px solid #0D4F80; margin-bottom:22px; }
-.org-nombre { font-size:18px; font-weight:700; color:#0D4F80; margin:0 0 2px; }
-.org-sub { font-size:11px; color:#64748b; }
-.doc-title { font-size:14px; font-weight:600; color:#0D4F80; margin-bottom:2px; }
-.meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; padding: 14px 16px; background: #f0fdf4; border-radius: 8px; border: 1px solid #bbf7d0; }
-.meta .f label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #16a34a; display: block; margin-bottom: 2px; }
+body { font-family: 'Segoe UI', Arial, sans-serif; padding: 36px; color: #1C1D21; background: #fff; font-size: 13px; }
+.org-header { display:flex; align-items:center; gap:16px; padding-bottom:14px; border-bottom:2px solid #1C1D21; margin-bottom:22px; }
+.org-nombre { font-size:18px; font-weight:700; color:#1C1D21; margin:0 0 2px; }
+.org-sub { font-size:11px; color:#62666E; }
+.doc-title { font-size:14px; font-weight:600; color:#1C1D21; margin-bottom:2px; }
+.meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; padding: 14px 16px; background: #F4F5F7; border-radius: 8px; border: 1px solid #E6E8EB; }
+.meta .f label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #267F56; display: block; margin-bottom: 2px; }
 .meta .f span { font-size: 12px; }
-.notes-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; }
-.notes-box .lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #16a34a; margin-bottom: 6px; }
-.notes-box p { font-size: 12px; color: #374151; white-space: pre-wrap; }
-.sec-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #0D4F80; border-bottom: 2px solid #bfdbfe; padding-bottom: 4px; margin-bottom: 10px; }
+.notes-box { background: #F4F5F7; border: 1px solid #E6E8EB; border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; }
+.notes-box .lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #267F56; margin-bottom: 6px; }
+.notes-box p { font-size: 12px; color: #33363C; white-space: pre-wrap; }
+.sec-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #1C1D21; border-bottom: 2px solid #C9CCD3; padding-bottom: 4px; margin-bottom: 10px; }
 table { width: 100%; border-collapse: collapse; font-size: 12px; }
-th { background: #eff6ff; padding: 7px 10px; text-align: left; font-weight: 700; font-size: 9px; text-transform: uppercase; letter-spacing: .05em; color: #0D4F80; border-bottom: 2px solid #bfdbfe; }
-td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; }
+th { background: #F4F5F7; padding: 7px 10px; text-align: left; font-weight: 700; font-size: 9px; text-transform: uppercase; letter-spacing: .05em; color: #1C1D21; border-bottom: 2px solid #C9CCD3; }
+td { padding: 7px 10px; border-bottom: 1px solid #F4F5F7; }
 tr:last-child td { border-bottom: none; }
-.tr-total { background: #eff6ff; font-weight: 700; }
-.tr-total td { border-top: 2px solid #bfdbfe; font-weight: 700; }
+.tr-total { background: #F4F5F7; font-weight: 700; }
+.tr-total td { border-top: 2px solid #C9CCD3; font-weight: 700; }
 .num { text-align: right; }
 .firma { margin-top: 44px; display: flex; gap: 40px; }
-.firma-line { flex: 1; border-top: 1px solid #ccc; padding-top: 8px; font-size: 10px; color: #888; text-align: center; }
+.firma-line { flex: 1; border-top: 1px solid #C9CCD3; padding-top: 8px; font-size: 10px; color: #7A7E87; text-align: center; }
 @media print { body { padding: 20px; } }
 </style></head><body>
 <div class="org-header">
@@ -1162,7 +1162,7 @@ tr:last-child td { border-bottom: none; }
   </div>
   <div style="margin-left:auto;text-align:right">
     <div class="doc-title">Personal Operativo</div>
-    <div style="font-size:11px;color:#64748b">${editEvt.nombre} · ${editEvt.folio}</div>
+    <div style="font-size:11px;color:#62666E">${editEvt.nombre} · ${editEvt.folio}</div>
   </div>
 </div>
 <div class="meta">
@@ -1191,15 +1191,15 @@ ${form.justificacion_gasto_personal || form.notas_personal ? `
   <tbody>
     ${personal.map((p, i) => `
     <tr>
-      <td style="color:#9ca3af;font-size:10px">${i + 1}</td>
+      <td style="color:#7A7E87;font-size:10px">${i + 1}</td>
       <td style="font-weight:600">${p.nombre_empleado}</td>
       <td>${fmtD(p.dia)}</td>
       <td>${p.turno ?? '—'}</td>
-      <td class="num" style="font-weight:600;color:#16a34a">${'$' + (p.compensacion ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+      <td class="num" style="font-weight:600;color:#267F56">${'$' + (p.compensacion ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
     </tr>`).join('')}
     <tr class="tr-total">
-      <td colspan="4" style="text-align:right;padding-right:10px;font-size:11px;color:#166534;letter-spacing:.05em">TOTAL COMPENSACIONES</td>
-      <td class="num" style="color:#15803d;font-size:14px">${'$' + totalComp.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+      <td colspan="4" style="text-align:right;padding-right:10px;font-size:11px;color:#17603F;letter-spacing:.05em">TOTAL COMPENSACIONES</td>
+      <td class="num" style="color:#1F7A50;font-size:14px">${'$' + totalComp.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
     </tr>
   </tbody>
 </table>
@@ -1335,26 +1335,26 @@ ${form.justificacion_gasto_personal || form.notas_personal ? `
     } catch {}
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+      : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
     const win = window.open('', '_blank', 'width=700,height=900')
     if (!win) return
     win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
 <title>Recibo ${ing.folio}</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #1e1e1e; background: #fff; }
-  .org-header { display:flex; align-items:center; gap:16px; padding-bottom:14px; border-bottom:2px solid #0D4F80; margin-bottom:22px; }
-  .org-nombre { font-size:18px; font-weight:700; color:#0D4F80; margin:0 0 2px; }
-  .org-sub { font-size:11px; color:#64748b; }
-  .doc-title { font-size:14px; font-weight:600; color:#0D4F80; margin-bottom:2px; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #1C1D21; background: #fff; }
+  .org-header { display:flex; align-items:center; gap:16px; padding-bottom:14px; border-bottom:2px solid #1C1D21; margin-bottom:22px; }
+  .org-nombre { font-size:18px; font-weight:700; color:#1C1D21; margin:0 0 2px; }
+  .org-sub { font-size:11px; color:#62666E; }
+  .doc-title { font-size:14px; font-weight:600; color:#1C1D21; margin-bottom:2px; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-  .field label { display: block; font-size: 10px; font-weight: 700; color: #16a34a; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
-  .field span { font-size: 14px; color: #1e1e1e; }
-  .monto-box { background: #eff6ff; border: 2px solid #bfdbfe; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-  .monto-box .label { font-size: 12px; color: #0D4F80; font-weight: 600; }
-  .monto-box .value { font-size: 28px; font-weight: 800; color: #0D4F80; }
+  .field label { display: block; font-size: 10px; font-weight: 700; color: #267F56; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+  .field span { font-size: 14px; color: #1C1D21; }
+  .monto-box { background: #F4F5F7; border: 2px solid #C9CCD3; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+  .monto-box .label { font-size: 12px; color: #1C1D21; font-weight: 600; }
+  .monto-box .value { font-size: 28px; font-weight: 800; color: #1C1D21; }
   .firma { margin-top: 40px; display: flex; gap: 40px; }
-  .firma-line { flex: 1; border-top: 1px solid #ccc; padding-top: 8px; font-size: 11px; color: #666; text-align: center; }
+  .firma-line { flex: 1; border-top: 1px solid #C9CCD3; padding-top: 8px; font-size: 11px; color: #62666E; text-align: center; }
   @media print { body { padding: 20px; } }
 </style></head><body>
 <div class="org-header">
@@ -1365,7 +1365,7 @@ ${form.justificacion_gasto_personal || form.notas_personal ? `
   </div>
   <div style="margin-left:auto;text-align:right">
     <div class="doc-title">Recibo de Ingreso</div>
-    <div style="font-size:11px;color:#64748b">${ing.folio}</div>
+    <div style="font-size:11px;color:#62666E">${ing.folio}</div>
   </div>
 </div>
 <div class="grid">
@@ -1380,7 +1380,7 @@ ${form.justificacion_gasto_personal || form.notas_personal ? `
   <div class="label">MONTO TOTAL</div>
   <div class="value">${fmt$(ing.monto)}</div>
 </div>
-${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>Notas:</strong> ${ing.notas}</p>` : ''}
+${ing.notas ? `<p style="font-size:12px;color:#62666E;margin-bottom:20px;"><strong>Notas:</strong> ${ing.notas}</p>` : ''}
 <div class="firma">
   <div class="firma-line">Recibió</div>
   <div class="firma-line">Responsable del Evento</div>
@@ -1408,9 +1408,9 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
   const taSt:  React.CSSProperties = { fontSize: 13, width: '100%', resize: 'vertical' as const }
   const chkBadge = (checked: boolean, color: string): React.CSSProperties => ({
     display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer',
-    padding: '5px 12px', border: '1px solid', borderColor: checked ? color : '#e2e8f0',
-    borderRadius: 8, background: checked ? color + '15' : '#fff',
-    color: checked ? color : '#475569', fontWeight: checked ? 600 : 400, userSelect: 'none',
+    padding: '5px 12px', border: '1px solid', borderColor: checked ? color : '#E6E8EB',
+    borderRadius: 8, background: checked ? '#E6E8EB' : '#fff',
+    color: checked ? color : '#4A4D54', fontWeight: checked ? 600 : 400, userSelect: 'none',
   })
   // Estilos compactos para el formulario de Inscripciones (tab jugadores)
   const jlblSt: React.CSSProperties = { fontSize: 10, color: 'var(--text-muted)', display: 'block', marginBottom: 3 }
@@ -1438,7 +1438,7 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
     } catch {}
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+      : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
 
     const montItems: [string, boolean | undefined][] = [
       ['Carpas', viewEvt.montaje_carpas], ['Escenario', viewEvt.montaje_escenario],
@@ -1459,34 +1459,34 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
 <title>Ficha Maestra — ${viewEvt.folio}</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #1e1e1e; background: #fff; padding: 32px; }
-.org-header { display:flex; align-items:center; gap:16px; padding-bottom:14px; border-bottom:2px solid #0D4F80; margin-bottom:22px; }
-.org-nombre { font-size:18px; font-weight:700; color:#0D4F80; margin:0 0 2px; }
-.org-sub { font-size:11px; color:#64748b; }
-.doc-title { font-size:14px; font-weight:600; color:#0D4F80; margin-bottom:2px; }
+body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #1C1D21; background: #fff; padding: 32px; }
+.org-header { display:flex; align-items:center; gap:16px; padding-bottom:14px; border-bottom:2px solid #1C1D21; margin-bottom:22px; }
+.org-nombre { font-size:18px; font-weight:700; color:#1C1D21; margin:0 0 2px; }
+.org-sub { font-size:11px; color:#62666E; }
+.doc-title { font-size:14px; font-weight:600; color:#1C1D21; margin-bottom:2px; }
 .sec { margin-bottom: 18px; page-break-inside: avoid; }
-.sec-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #0D4F80; border-bottom: 2px solid #bfdbfe; padding-bottom: 4px; margin-bottom: 10px; }
+.sec-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #1C1D21; border-bottom: 2px solid #C9CCD3; padding-bottom: 4px; margin-bottom: 10px; }
 .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-.f label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #16a34a; display: block; margin-bottom: 2px; }
+.f label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #267F56; display: block; margin-bottom: 2px; }
 .f span { font-size: 12px; }
 .full { grid-column: 1 / -1; }
 .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .badge { font-size: 10px; padding: 3px 10px; border-radius: 10px; font-weight: 600; }
-.by { background:#ecfdf5; color:#15803d; border:1px solid #bbf7d0; }
-.bn { background:#f9fafb; color:#94a3b8; border:1px solid #e2e8f0; }
+.by { background:#F4F5F7; color:#1F7A50; border:1px solid #E6E8EB; }
+.bn { background:#F8F9FA; color:#7A7E87; border:1px solid #E6E8EB; }
 .chk { display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:6px; margin-bottom:4px; font-size:12px; }
-.chk.done { background:#f0fdf4; border:1px solid #bbf7d0; }
-.chk.pend { background:#f9fafb; border:1px solid #e2e8f0; color:#94a3b8; }
+.chk.done { background:#F4F5F7; border:1px solid #E6E8EB; }
+.chk.pend { background:#F8F9FA; border:1px solid #E6E8EB; color:#7A7E87; }
 .kpis { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px; }
 .kpi { padding:11px 14px; border-radius:8px; }
 .kpi .lbl { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px; }
 .kpi .val { font-size:18px; font-weight:800; }
-.tw { border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; margin-top:10px; }
+.tw { border:1px solid #E6E8EB; border-radius:8px; overflow:hidden; margin-top:10px; }
 table { width:100%; border-collapse:collapse; font-size:11px; }
-th { background:#f8fafc; padding:6px 10px; text-align:left; font-weight:700; font-size:9px; text-transform:uppercase; letter-spacing:.05em; color:#64748b; }
-td { padding:5px 10px; border-top:1px solid #f1f5f9; }
-.sig td { height:52px; vertical-align:top; padding:5px 10px; color:#bbb; font-size:10px; }
+th { background:#F8F9FA; padding:6px 10px; text-align:left; font-weight:700; font-size:9px; text-transform:uppercase; letter-spacing:.05em; color:#62666E; }
+td { padding:5px 10px; border-top:1px solid #F4F5F7; }
+.sig td { height:52px; vertical-align:top; padding:5px 10px; color:#C9CCD3; font-size:10px; }
 @media print { body { padding: 16px; } .sec { page-break-inside: avoid; } }
 </style></head><body>
 <div class="org-header">
@@ -1497,7 +1497,7 @@ td { padding:5px 10px; border-top:1px solid #f1f5f9; }
   </div>
   <div style="margin-left:auto;text-align:right">
     <div class="doc-title">Ficha Maestra de Evento</div>
-    <div style="font-size:11px;color:#64748b">${viewEvt.folio} · ${viewEvt.status}${tipo ? ' · ' + tipo.nombre : ''}</div>
+    <div style="font-size:11px;color:#62666E">${viewEvt.folio} · ${viewEvt.status}${tipo ? ' · ' + tipo.nombre : ''}</div>
   </div>
 </div>
 
@@ -1579,17 +1579,17 @@ ${viewEvt.hip_tipo_evento || viewEvt.hip_num_caballos ? `
 </div>` : ''}
 <div class="sec">
   <div class="sec-title">Checklist Operativo</div>
-  ${chkItems.map(([l, val]) => `<div class="chk ${val ? 'done' : 'pend'}"><span style="font-size:14px">${val ? '☑' : '☐'}</span><span>${l}</span>${val ? '<span style="margin-left:auto;font-size:10px;color:#166534;font-weight:700">Completado</span>' : ''}</div>`).join('')}
+  ${chkItems.map(([l, val]) => `<div class="chk ${val ? 'done' : 'pend'}"><span style="font-size:14px">${val ? '☑' : '☐'}</span><span>${l}</span>${val ? '<span style="margin-left:auto;font-size:10px;color:#17603F;font-weight:700">Completado</span>' : ''}</div>`).join('')}
 </div>
 <div class="sec">
   <div class="sec-title">Información Financiera</div>
   <div class="kpis">
-    <div class="kpi" style="background:#f0fdf4"><div class="lbl" style="color:#166534">Total Ingresos</div><div class="val" style="color:#16a34a">$${totalIng.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div><div style="font-size:10px;color:#64748b">${viewIng.length} pago(s)</div></div>
-    <div class="kpi" style="background:#fef2f2"><div class="lbl" style="color:#991b1b">Total Gastos</div><div class="val" style="color:#dc2626">$${totalGastos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div><div style="font-size:10px;color:#64748b">${viewOps.length} OP(s) · ${viewGastos.length} gasto(s) manual(es)</div></div>
-    <div class="kpi" style="background:${utilidad >= 0 ? '#eff6ff' : '#fef2f2'}"><div class="lbl" style="color:${utilidad >= 0 ? '#1e40af' : '#991b1b'}">Utilidad</div><div class="val" style="color:${utilidad >= 0 ? '#2563eb' : '#dc2626'}">$${utilidad.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div></div>
+    <div class="kpi" style="background:#F4F5F7"><div class="lbl" style="color:#17603F">Total Ingresos</div><div class="val" style="color:#267F56">$${totalIng.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div><div style="font-size:10px;color:#62666E">${viewIng.length} pago(s)</div></div>
+    <div class="kpi" style="background:#F4F5F7"><div class="lbl" style="color:#8C2A2A">Total Gastos</div><div class="val" style="color:#C23B3B">$${totalGastos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div><div style="font-size:10px;color:#62666E">${viewOps.length} OP(s) · ${viewGastos.length} gasto(s) manual(es)</div></div>
+    <div class="kpi" style="background:#F4F5F7"><div class="lbl" style="color:${utilidad >= 0 ? '#1C1D21' : '#8C2A2A'}">Utilidad</div><div class="val" style="color:${utilidad >= 0 ? '#1C1D21' : '#C23B3B'}">$${utilidad.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div></div>
   </div>
-  ${viewIng.length > 0 ? `<div class="tw"><table><thead><tr><th>Folio</th><th>Descripción</th><th>Forma de pago</th><th>Fecha</th><th style="text-align:right">Monto</th></tr></thead><tbody>${viewIng.map(i => `<tr><td style="font-family:monospace;color:#166534">${i.folio}</td><td>${i.descripcion}</td><td>${i.forma_pago}</td><td>${new Date(i.fecha_pago + 'T12:00:00').toLocaleDateString('es-MX')}</td><td style="text-align:right;font-weight:600">$${i.monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td></tr>`).join('')}</tbody></table></div>` : ''}
-  ${viewOps.length > 0 ? `<div class="tw" style="margin-top:8px"><table><thead><tr><th>Folio</th><th>Concepto</th><th>Proveedor</th><th>Status</th><th style="text-align:right">Monto</th><th style="text-align:right">Saldo</th></tr></thead><tbody>${viewOps.map(o => `<tr><td style="font-family:monospace;color:#16a34a">${o.folio}</td><td>${o.concepto}</td><td>${o.id_proveedor_fk ? (provMap[o.id_proveedor_fk] ?? '—') : '—'}</td><td>${o.status}</td><td style="text-align:right;font-weight:600">$${(o.monto ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td><td style="text-align:right;color:${(o.saldo ?? 0) > 0 ? '#dc2626' : '#16a34a'}">$${(o.saldo ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td></tr>`).join('')}</tbody></table></div>` : ''}
+  ${viewIng.length > 0 ? `<div class="tw"><table><thead><tr><th>Folio</th><th>Descripción</th><th>Forma de pago</th><th>Fecha</th><th style="text-align:right">Monto</th></tr></thead><tbody>${viewIng.map(i => `<tr><td style="font-variant-numeric:tabular-nums;color:#17603F">${i.folio}</td><td>${i.descripcion}</td><td>${i.forma_pago}</td><td>${new Date(i.fecha_pago + 'T12:00:00').toLocaleDateString('es-MX')}</td><td style="text-align:right;font-weight:600">$${i.monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td></tr>`).join('')}</tbody></table></div>` : ''}
+  ${viewOps.length > 0 ? `<div class="tw" style="margin-top:8px"><table><thead><tr><th>Folio</th><th>Concepto</th><th>Proveedor</th><th>Status</th><th style="text-align:right">Monto</th><th style="text-align:right">Saldo</th></tr></thead><tbody>${viewOps.map(o => `<tr><td style="font-variant-numeric:tabular-nums;color:#267F56">${o.folio}</td><td>${o.concepto}</td><td>${o.id_proveedor_fk ? (provMap[o.id_proveedor_fk] ?? '—') : '—'}</td><td>${o.status}</td><td style="text-align:right;font-weight:600">$${(o.monto ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td><td style="text-align:right;color:${(o.saldo ?? 0) > 0 ? '#C23B3B' : '#267F56'}">$${(o.saldo ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td></tr>`).join('')}</tbody></table></div>` : ''}
   ${viewGastos.length > 0 ? `<div class="tw" style="margin-top:8px"><table><thead><tr><th>Concepto</th><th>Tipo</th><th>Fecha</th><th style="text-align:right">Monto</th></tr></thead><tbody>${viewGastos.map(g => `<tr><td>${g.concepto}</td><td>${g.tipo_gasto ?? '—'}</td><td>${g.fecha ? fmtD(g.fecha) : '—'}</td><td style="text-align:right;font-weight:600">$${(g.monto ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td></tr>`).join('')}</tbody></table></div>` : ''}
 </div>
 ${viewEvt.post_incidencias || viewEvt.post_evaluacion || viewEvt.post_conclusion ? `
@@ -1602,7 +1602,7 @@ ${viewEvt.post_incidencias || viewEvt.post_evaluacion || viewEvt.post_conclusion
     ${viewEvt.post_conclusion ? `<div class="f full"><label>Conclusión Operativa</label><span>${viewEvt.post_conclusion}</span></div>` : ''}
   </div>
 </div>` : ''}
-${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div><p style="font-size:12px;color:#475569">${viewEvt.notas}</p></div>` : ''}
+${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div><p style="font-size:12px;color:#4A4D54">${viewEvt.notas}</p></div>` : ''}
 <div class="sec">
   <div class="sec-title">Firmas de Responsabilidad</div>
   <div class="tw"><table class="sig"><thead><tr><th>Área</th><th style="width:200px">Nombre</th><th style="width:160px">Firma</th><th style="width:110px">Fecha</th></tr></thead><tbody>
@@ -1612,7 +1612,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
     <tr><td>Dirección</td><td></td><td></td><td></td></tr>
   </tbody></table></div>
 </div>
-<div style="text-align:center;font-size:9px;color:#94a3b8;margin-top:20px;padding-top:10px;border-top:1px solid #e2e8f0">
+<div style="text-align:center;font-size:9px;color:#7A7E87;margin-top:20px;padding-top:10px;border-top:1px solid #E6E8EB">
   Generado: ${new Date().toLocaleString('es-MX')} · Club Balvanera · Sistema Domusone
 </div>
 </body></html>`)
@@ -1635,9 +1635,9 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
       {/* KPIs */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
         {[
-          { label: 'Total eventos', value: totalEventos, color: '#16a34a', bg: '#f0fdf4' },
-          { label: 'Confirmados / En curso', value: confirmados, color: '#2563eb', bg: '#eff6ff' },
-          { label: 'Realizados', value: realizados, color: '#16a34a', bg: '#f0fdf4' },
+          { label: 'Total eventos', value: totalEventos, color: '#267F56', bg: '#F4F5F7' },
+          { label: 'Confirmados / En curso', value: confirmados, color: '#1C1D21', bg: '#F4F5F7' },
+          { label: 'Realizados', value: realizados, color: '#267F56', bg: '#F4F5F7' },
         ].map(k => (
           <div key={k.label} className="card" style={{ flex: '1 1 160px', padding: '12px 16px', minWidth: 140 }}>
             <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>{k.label}</div>
@@ -1677,15 +1677,15 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
             </thead>
             <tbody>
               {eventosFiltrados.map((ev, i) => {
-                const sc = STATUS_COLORS[ev.status] ?? { bg: '#f8fafc', color: '#64748b' }
+                const sc = STATUS_COLORS[ev.status] ?? { bg: '#F8F9FA', color: '#62666E' }
                 const tipo = ev.cat_tipos_evento
                 return (
                   <tr key={ev.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
-                    <td style={{ padding: '9px 12px', fontWeight: 700, color: '#16a34a', fontFamily: 'monospace', fontSize: 11 }}>{ev.folio}</td>
+                    <td style={{ padding: '9px 12px', fontWeight: 700, color: '#267F56', fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>{ev.folio}</td>
                     <td style={{ padding: '9px 12px', fontWeight: 600, color: 'var(--text-primary)' }}>{ev.nombre}</td>
                     <td style={{ padding: '9px 12px' }}>
                       {tipo ? (
-                        <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: tipo.color + '22', color: tipo.color }}>
+                        <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: tipo.color, color: '#fff'}}>
                           {tipo.nombre}
                         </span>
                       ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
@@ -1697,21 +1697,21 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                     </td>
                     <td style={{ padding: '9px 12px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 12 }}>{fmtFecha(ev.fecha_inicio)}</td>
                     <td style={{ padding: '9px 12px', color: 'var(--text-secondary)', fontSize: 12 }}>{ev.cliente_nombre ?? '—'}</td>
-                    <td style={{ padding: '9px 12px', color: ev.precio_pactado != null ? '#1d4ed8' : 'var(--text-muted)', fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '9px 12px', color: ev.precio_pactado != null ? '#26282D' : 'var(--text-muted)', fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap' }}>
                       {ev.precio_pactado != null ? fmt$(ev.precio_pactado) : '—'}
                     </td>
                     <td style={{ padding: '9px 12px' }}>
-                      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: sc.bg, color: sc.color }}>{ev.status}</span>
+                      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: sc.color, color: '#fff'}}>{ev.status}</span>
                     </td>
                     <td style={{ padding: '9px 12px' }}>
                       <div style={{ display: 'flex', gap: 4 }}>
-                        <button className="btn-ghost" onClick={() => openView(ev)} style={{ padding: '4px 8px', fontSize: 11, color: '#0f766e' }} title="Consultar">
+                        <button className="btn-ghost" onClick={() => openView(ev)} style={{ padding: '4px 8px', fontSize: 11, color: '#126B63' }} title="Consultar">
                           <Eye size={12} />
                         </button>
                         <button className="btn-ghost" onClick={() => openEdit(ev)} style={{ padding: '4px 8px', fontSize: 11 }} title="Editar">
                           <Edit2 size={12} />
                         </button>
-                        <button className="btn-ghost" onClick={() => deleteEvento(ev.id)} style={{ padding: '4px 8px', fontSize: 11, color: '#dc2626' }} title="Eliminar">
+                        <button className="btn-ghost" onClick={() => deleteEvento(ev.id)} style={{ padding: '4px 8px', fontSize: 11, color: '#C23B3B' }} title="Eliminar">
                           <Trash2 size={12} />
                         </button>
                       </div>
@@ -1756,7 +1756,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
             <>
               {editEvt && (
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                  Total ingresos: <strong style={{ color: '#16a34a' }}>{fmt$(ingresos.reduce((s, i) => s + i.monto, 0))}</strong>
+                  Total ingresos: <strong style={{ color: '#267F56' }}>{fmt$(ingresos.reduce((s, i) => s + i.monto, 0))}</strong>
                 </div>
               )}
             </>
@@ -1764,9 +1764,9 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
             <>
               {editEvt && (
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 16 }}>
-                  <span>Gastos manuales: <strong style={{ color: '#d97706' }}>{fmt$(gastos.reduce((s, g) => s + g.monto, 0))}</strong></span>
-                  <span>OPs vinculadas: <strong style={{ color: '#16a34a' }}>{fmt$(ops.reduce((s, o) => s + o.monto, 0))}</strong></span>
-                  <span style={{ fontWeight: 700 }}>Total: <strong style={{ color: '#dc2626' }}>{fmt$(gastos.reduce((s, g) => s + g.monto, 0) + ops.reduce((s, o) => s + o.monto, 0))}</strong></span>
+                  <span>Gastos manuales: <strong style={{ color: '#B5761A' }}>{fmt$(gastos.reduce((s, g) => s + g.monto, 0))}</strong></span>
+                  <span>OPs vinculadas: <strong style={{ color: '#267F56' }}>{fmt$(ops.reduce((s, o) => s + o.monto, 0))}</strong></span>
+                  <span style={{ fontWeight: 700 }}>Total: <strong style={{ color: '#C23B3B' }}>{fmt$(gastos.reduce((s, g) => s + g.monto, 0) + ops.reduce((s, o) => s + o.monto, 0))}</strong></span>
                 </div>
               )}
             </>
@@ -1774,7 +1774,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
             <>
               {editEvt && personal.length > 0 && (
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                  Total compensaciones: <strong style={{ color: '#16a34a' }}>{fmt$(personal.reduce((s, p) => s + (p.compensacion ?? 0), 0))}</strong>
+                  Total compensaciones: <strong style={{ color: '#267F56' }}>{fmt$(personal.reduce((s, p) => s + (p.compensacion ?? 0), 0))}</strong>
                 </div>
               )}
             </>
@@ -1783,8 +1783,8 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
               {editEvt && jugadores.length > 0 && (
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 16 }}>
                   <span>{jugadores.length} inscrito{jugadores.length !== 1 ? 's' : ''}</span>
-                  <span>Pagados: <strong style={{ color: '#15803d' }}>{jugadores.filter(j => j.status === 'Pagado').length}</strong></span>
-                  <span style={{ fontWeight: 700 }}>Por cobrar: <strong style={{ color: '#d97706' }}>{fmt$(jugadores.reduce((s, j) => s + (j.por_cobrar ?? 0), 0))}</strong></span>
+                  <span>Pagados: <strong style={{ color: '#1F7A50' }}>{jugadores.filter(j => j.status === 'Pagado').length}</strong></span>
+                  <span style={{ fontWeight: 700 }}>Por cobrar: <strong style={{ color: '#B5761A' }}>{fmt$(jugadores.reduce((s, j) => s + (j.por_cobrar ?? 0), 0))}</strong></span>
                 </div>
               )}
             </>
@@ -1793,7 +1793,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
           {/* ── TAB INFO ── */}
           {activeTab === 'info' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {err && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', color: '#dc2626', fontSize: 12 }}>{err}</div>}
+              {err && <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, padding: '8px 12px', color: '#C23B3B', fontSize: 12 }}>{err}</div>}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div style={{ gridColumn: '1 / -1' }}>
@@ -1852,7 +1852,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
 
               {/* Cliente */}
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>Datos del cliente</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#267F56', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>Datos del cliente</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Nombre</label>
@@ -1883,7 +1883,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
               {/* Golf — sección principal */}
-              <FmSection title="Datos del Torneo de Golf" color="#16a34a">
+              <FmSection title="Datos del Torneo de Golf" color="#267F56">
                 <FmGrid2>
                   <div>
                     <label style={lblSt}>Tipo de torneo</label>
@@ -1909,7 +1909,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
               </FmSection>
 
               {/* Resumen Ejecutivo */}
-              <FmSection title="Resumen Ejecutivo" color="#166534">
+              <FmSection title="Resumen Ejecutivo" color="#17603F">
                 <FmGrid2>
                   <FmFull label="Objetivo del evento">
                     <textarea className="input" value={form.objetivo} onChange={e => setForm(f => ({ ...f, objetivo: e.target.value }))} rows={2} style={taSt} placeholder="Describir el objetivo principal del evento…" />
@@ -1921,7 +1921,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
               </FmSection>
 
               {/* Infraestructura y Montajes */}
-              <FmSection title="Infraestructura y Montajes" color="#0f766e">
+              <FmSection title="Infraestructura y Montajes" color="#126B63">
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
                   {([
                     ['montaje_carpas','Carpas'], ['montaje_escenario','Escenario'],
@@ -1929,8 +1929,8 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                     ['montaje_iluminacion','Iluminación'], ['montaje_audio','Audio'],
                     ['montaje_pantallas','Pantallas'], ['montaje_generador','Generador eléctrico'],
                   ] as [string, string][]).map(([k, label]) => (
-                    <label key={k} style={chkBadge((form as any)[k], '#0f766e')}>
-                      <input type="checkbox" checked={(form as any)[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.checked }))} style={{ accentColor: '#0f766e' }} />
+                    <label key={k} style={chkBadge((form as any)[k], '#126B63')}>
+                      <input type="checkbox" checked={(form as any)[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.checked }))} style={{ accentColor: '#126B63' }} />
                       {label}
                     </label>
                   ))}
@@ -1942,7 +1942,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
               </FmSection>
 
               {/* Seguridad */}
-              <FmSection title="Seguridad y Control Operativo" color="#dc2626">
+              <FmSection title="Seguridad y Control Operativo" color="#C23B3B">
                 <FmGrid2>
                   <div>
                     <label style={lblSt}>Guardias intramuros</label>
@@ -1955,8 +1955,8 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                 </FmGrid2>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
                   {([['seg_paramedicos','Paramédicos'],['seg_ambulancia','Ambulancia'],['seg_valet_parking','Valet Parking']] as [string, string][]).map(([k, label]) => (
-                    <label key={k} style={chkBadge((form as any)[k], '#dc2626')}>
-                      <input type="checkbox" checked={(form as any)[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.checked }))} style={{ accentColor: '#dc2626' }} />
+                    <label key={k} style={chkBadge((form as any)[k], '#C23B3B')}>
+                      <input type="checkbox" checked={(form as any)[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.checked }))} style={{ accentColor: '#C23B3B' }} />
                       {label}
                     </label>
                   ))}
@@ -1964,7 +1964,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
               </FmSection>
 
               {/* Alimentos y Bebidas */}
-              <FmSection title="Alimentos y Bebidas" color="#d97706">
+              <FmSection title="Alimentos y Bebidas" color="#B5761A">
                 <FmGrid2>
                   <div>
                     <label style={lblSt}>Banquetero / Proveedor</label>
@@ -1984,8 +1984,8 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                 </FmGrid2>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
                   {([['ayb_barra_libre','Barra libre'],['ayb_permisos_sanitarios','Permisos sanitarios']] as [string, string][]).map(([k, label]) => (
-                    <label key={k} style={chkBadge((form as any)[k], '#d97706')}>
-                      <input type="checkbox" checked={(form as any)[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.checked }))} style={{ accentColor: '#d97706' }} />
+                    <label key={k} style={chkBadge((form as any)[k], '#B5761A')}>
+                      <input type="checkbox" checked={(form as any)[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.checked }))} style={{ accentColor: '#B5761A' }} />
                       {label}
                     </label>
                   ))}
@@ -1993,7 +1993,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
               </FmSection>
 
               {/* Golf */}
-              <FmSection title="Datos de Golf" color="#166534">
+              <FmSection title="Datos de Golf" color="#17603F">
                 <FmGrid2>
                   <div>
                     <label style={lblSt}>Tipo de torneo</label>
@@ -2019,7 +2019,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
               </FmSection>
 
               {/* Ecuestre */}
-              <FmSection title="Datos Ecuestres" color="#92400e">
+              <FmSection title="Datos Ecuestres" color="#7A4B0C">
                 <FmGrid2>
                   <div>
                     <label style={lblSt}>Tipo de evento ecuestre</label>
@@ -2052,13 +2052,13 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
               {/* Checklist operativo */}
-              <FmSection title="Checklist Operativo" color="#166534">
+              <FmSection title="Checklist Operativo" color="#17603F">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {CHECKLIST_ITEMS.map(([k, label]) => {
                     const hasFile = !!checklistFiles[k]
                     const busy = checklistLoading[k]
                     return (
-                      <div key={k} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff' }}>
+                      <div key={k} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #E6E8EB', background: '#fff' }}>
                         <label className="label">{label}</label>
                         <input
                           ref={el => { checklistInputRefs.current[k] = el }}
@@ -2085,8 +2085,8 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                                 alignItems: 'center',
                                 gap: 4,
                                 padding: '5px 10px',
-                                background: '#eff6ff',
-                                border: '1px solid #bfdbfe',
+                                background: '#F4F5F7',
+                                border: '1px solid #C9CCD3',
                                 borderRadius: 6,
                                 textDecoration: 'none',
                                 flex: 1,
@@ -2098,7 +2098,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                             <button
                               type="button"
                               className="btn-ghost"
-                              style={{ padding: '5px 8px', color: '#dc2626' }}
+                              style={{ padding: '5px 8px', color: '#C23B3B' }}
                               onClick={() => borrarChecklist(k)}
                               disabled={busy || saving}
                             >
@@ -2121,7 +2121,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                     )
                   })}
                 </div>
-                <div style={{ marginTop: 10, padding: '8px 12px', background: '#f8fafc', borderRadius: 8, fontSize: 12, color: '#64748b' }}>
+                <div style={{ marginTop: 10, padding: '8px 12px', background: '#F8F9FA', borderRadius: 8, fontSize: 12, color: '#62666E' }}>
                   {!editEvt
                     ? 'Guarda primero el evento para habilitar la carga de PDF/JPG en el checklist.'
                     : `${CHECKLIST_ITEMS.filter(([k]) => !!checklistFiles[k]).length}/5 archivos cargados`}
@@ -2130,7 +2130,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
               </FmSection>
 
               {/* Reporte Posterior */}
-              <FmSection title="Reporte Posterior al Evento" color="#0f766e">
+              <FmSection title="Reporte Posterior al Evento" color="#126B63">
                 <FmGrid2>
                   <FmFull label="Incidencias operativas">
                     <textarea className="input" value={form.post_incidencias} onChange={e => setForm(f => ({ ...f, post_incidencias: e.target.value }))} rows={3} style={taSt} placeholder="Describe incidencias ocurridas durante el evento…" />
@@ -2157,31 +2157,31 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
           {/* ── TAB INGRESOS ── */}
           {activeTab === 'ingresos' && editEvt && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {err && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', color: '#dc2626', fontSize: 12 }}>{err}</div>}
+              {err && <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, padding: '8px 12px', color: '#C23B3B', fontSize: 12 }}>{err}</div>}
 
               {/* Formulario nuevo ingreso */}
-              <div className="card" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>Registrar ingreso</div>
+              <div className="card" style={{ background: '#F4F5F7', border: '1px solid #E6E8EB' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#267F56', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>Registrar ingreso</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, marginBottom: 10 }}>
                   <input className="input" placeholder="Buscar venta POS por folio, día o cliente…"
                     value={busqVentaPOS} onChange={e => setBusqVentaPOS(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && buscarVentasPOS()} style={{ fontSize: 12, width: '100%' }} />
-                  <button className="btn-primary" onClick={buscarVentasPOS} disabled={loadingVentasPOS} style={{ fontSize: 12, background: '#166534' }}>
+                  <button className="btn-primary" onClick={buscarVentasPOS} disabled={loadingVentasPOS} style={{ fontSize: 12, background: '#17603F' }}>
                     {loadingVentasPOS ? '…' : 'Buscar POS'}
                   </button>
                 </div>
 
                 {ventasPOS.length > 0 && (
-                  <div style={{ maxHeight: 150, overflowY: 'auto', border: '1px solid #bbf7d0', borderRadius: 8, marginBottom: 10, background: '#fff' }}>
+                  <div style={{ maxHeight: 150, overflowY: 'auto', border: '1px solid #E6E8EB', borderRadius: 8, marginBottom: 10, background: '#fff' }}>
                     {ventasPOS.map(v => (
                       <button key={v.id}
                         onClick={() => seleccionarVentaPOS(v)}
-                        style={{ width: '100%', textAlign: 'left', border: 'none', background: 'transparent', borderBottom: '1px solid #dcfce7', padding: '7px 10px', cursor: 'pointer' }}>
+                        style={{ width: '100%', textAlign: 'left', border: 'none', background: 'transparent', borderBottom: '1px solid #E6E8EB', padding: '7px 10px', cursor: 'pointer' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: '#166534', fontFamily: 'monospace' }}>{fmtFolioVentaPos(v)}</span>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: '#16a34a' }}>{fmt$(v.total)}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#17603F', fontVariantNumeric: 'tabular-nums' }}>{fmtFolioVentaPos(v)}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#267F56' }}>{fmt$(v.total)}</span>
                         </div>
-                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                        <div style={{ fontSize: 11, color: '#62666E', marginTop: 2 }}>
                           {v.nombre_cliente} · {new Date(v.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </div>
                       </button>
@@ -2190,11 +2190,11 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                 )}
 
                 {ingresoForm.id_venta_pos_fk && (
-                  <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', border: '1px solid #ddd6fe', borderRadius: 8, background: '#f5f3ff' }}>
-                    <div style={{ fontSize: 12, color: '#15803d' }}>
+                  <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', border: '1px solid #E6E8EB', borderRadius: 8, background: '#F4F5F7' }}>
+                    <div style={{ fontSize: 12, color: '#1F7A50' }}>
                       Venta POS asociada: <strong>#{String(ingresoForm.id_venta_pos_fk).padStart(6, '0')}</strong>
                     </div>
-                    <button className="btn-ghost" onClick={() => setIngresoForm(f => ({ ...f, id_venta_pos_fk: null }))} style={{ fontSize: 11, color: '#15803d', padding: '2px 6px' }}>
+                    <button className="btn-ghost" onClick={() => setIngresoForm(f => ({ ...f, id_venta_pos_fk: null }))} style={{ fontSize: 11, color: '#1F7A50', padding: '2px 6px' }}>
                       Quitar
                     </button>
                   </div>
@@ -2229,7 +2229,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                   </div>
                 </div>
                 <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
-                  <button className="btn-primary" onClick={saveIngreso} disabled={savingIngreso} style={{ fontSize: 12, background: '#16a34a' }}>
+                  <button className="btn-primary" onClick={saveIngreso} disabled={savingIngreso} style={{ fontSize: 12, background: '#267F56' }}>
                     {savingIngreso ? 'Guardando…' : '+ Registrar ingreso'}
                   </button>
                 </div>
@@ -2252,8 +2252,8 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                     <tbody>
                       {ingresos.map((ing, i) => (
                         <tr key={ing.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
-                          <td style={{ padding: '8px 10px', fontWeight: 700, color: '#16a34a', fontFamily: 'monospace', fontSize: 10 }}>{ing.folio}</td>
-                          <td style={{ padding: '8px 10px', color: '#15803d', fontSize: 11, fontFamily: ing.id_venta_pos_fk ? 'monospace' : 'inherit' }}>
+                          <td style={{ padding: '8px 10px', fontWeight: 700, color: '#267F56', fontVariantNumeric: 'tabular-nums', fontSize: 10 }}>{ing.folio}</td>
+                          <td style={{ padding: '8px 10px', color: '#1F7A50', fontSize: 11, fontFamily: ing.id_venta_pos_fk ? 'monospace' : 'inherit' }}>
                             {ing.id_venta_pos_fk
                               ? (ventaPosMap[ing.id_venta_pos_fk] ? fmtFolioVentaPos(ventaPosMap[ing.id_venta_pos_fk]) : `#${String(ing.id_venta_pos_fk).padStart(6, '0')}`)
                               : '—'}
@@ -2262,13 +2262,13 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                           <td style={{ padding: '8px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{fmtFecha(ing.fecha_pago)}</td>
                           <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{ing.forma_pago}</td>
                           <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{ing.referencia ?? '—'}</td>
-                          <td style={{ padding: '8px 10px', fontWeight: 700, color: '#16a34a' }}>{fmt$(ing.monto)}</td>
+                          <td style={{ padding: '8px 10px', fontWeight: 700, color: '#267F56' }}>{fmt$(ing.monto)}</td>
                           <td style={{ padding: '8px 10px' }}>
                             <div style={{ display: 'flex', gap: 4 }}>
                               <button className="btn-ghost" onClick={() => printRecibo(ing)} style={{ padding: '3px 6px', fontSize: 10 }} title="Imprimir recibo">
                                 <Printer size={11} />
                               </button>
-                              <button className="btn-ghost" onClick={() => deleteIngreso(ing.id)} style={{ padding: '3px 6px', fontSize: 10, color: '#dc2626' }}>
+                              <button className="btn-ghost" onClick={() => deleteIngreso(ing.id)} style={{ padding: '3px 6px', fontSize: 10, color: '#C23B3B' }}>
                                 <Trash2 size={11} />
                               </button>
                             </div>
@@ -2277,7 +2277,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                       ))}
                       <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
                         <td colSpan={6} style={{ padding: '8px 10px', fontWeight: 700, fontSize: 11, color: 'var(--text-muted)' }}>TOTAL</td>
-                        <td style={{ padding: '8px 10px', fontWeight: 700, color: '#16a34a' }}>{fmt$(ingresos.reduce((s, i) => s + i.monto, 0))}</td>
+                        <td style={{ padding: '8px 10px', fontWeight: 700, color: '#267F56' }}>{fmt$(ingresos.reduce((s, i) => s + i.monto, 0))}</td>
                         <td></td>
                       </tr>
                     </tbody>
@@ -2295,7 +2295,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
               {/* ══ Sección 1: Gastos Manuales ══ */}
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#d97706', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#B5761A', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
                     Gastos Manuales ({gastos.length})
                   </div>
                   {!modalGasto && (
@@ -2304,7 +2304,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                       setGastoForm({ concepto: '', proveedor: '', tipo_gasto: '', monto: '', fecha: editEvt.fecha_inicio, notas: '' })
                       setGastoErrMsg('')
                       setModalGasto(true)
-                    }} style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, color: '#d97706', border: '1px solid #fde68a', borderRadius: 6, padding: '4px 10px' }}>
+                    }} style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, color: '#B5761A', border: '1px solid #E6E8EB', borderRadius: 6, padding: '4px 10px' }}>
                       <Plus size={13} /> Agregar Gasto
                     </button>
                   )}
@@ -2312,8 +2312,8 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
 
                 {/* Inline form */}
                 {modalGasto && (
-                  <div className="card" style={{ background: '#fffbeb', border: '1px solid #fde68a', marginBottom: 12 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#d97706', letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 10 }}>
+                  <div className="card" style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#B5761A', letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 10 }}>
                       {gastoEdit ? 'Editar Gasto Manual' : 'Nuevo Gasto Manual'}
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
@@ -2368,12 +2368,12 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                       </div>
                     </div>
                     {gastoErrMsg && (
-                      <div style={{ marginBottom: 8, fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '6px 10px', borderRadius: 6 }}>{gastoErrMsg}</div>
+                      <div style={{ marginBottom: 8, fontSize: 12, color: '#C23B3B', background: '#F4F5F7', padding: '6px 10px', borderRadius: 6 }}>{gastoErrMsg}</div>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                       <button className="btn-ghost" onClick={() => { setModalGasto(false); setGastoEdit(null); setGastoErrMsg('') }} style={{ fontSize: 12 }}>Cancelar</button>
                       <button className="btn-primary" onClick={() => saveGasto(!!gastoEdit)} disabled={savingGasto}
-                        style={{ fontSize: 12, background: '#d97706' }}>
+                        style={{ fontSize: 12, background: '#B5761A' }}>
                         {savingGasto ? 'Guardando…' : gastoEdit ? 'Guardar cambios' : '+ Agregar gasto'}
                       </button>
                     </div>
@@ -2405,24 +2405,24 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                               <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{g.proveedor ?? '—'}</td>
                               <td style={{ padding: '8px 10px' }}>
                                 {g.tipo_gasto
-                                  ? <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 8, background: '#fffbeb', color: '#d97706', fontWeight: 600, border: '1px solid #fde68a' }}>{g.tipo_gasto}</span>
+                                  ? <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 8, background: '#B5761A', color: '#fff', fontWeight: 600, border: '1px solid #B5761A' }}>{g.tipo_gasto}</span>
                                   : <span style={{ color: 'var(--text-muted)' }}>—</span>
                                 }
                               </td>
                               <td style={{ padding: '8px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap' as const }}>
                                 {g.fecha ? fmtFecha(g.fecha) : '—'}
                               </td>
-                              <td style={{ padding: '8px 10px', fontWeight: 700, color: '#d97706', whiteSpace: 'nowrap' as const }}>{fmt$(g.monto)}</td>
+                              <td style={{ padding: '8px 10px', fontWeight: 700, color: '#B5761A', whiteSpace: 'nowrap' as const }}>{fmt$(g.monto)}</td>
                               <td style={{ padding: '8px 10px' }}>
                                 {g.id_personal_fk ? (
                                   <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>—</span>
                                 ) : g.id_op_fk ? (
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                    <span style={{ fontFamily: 'monospace', fontSize: 10, fontWeight: 700, color: '#16a34a', background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '2px 6px', borderRadius: 6 }}>
+                                    <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 10, fontWeight: 700, color: '#fff', background: '#1F7A50', border: '1px solid #1F7A50', padding: '2px 6px', borderRadius: 6 }}>
                                       {gastoOpMap[g.id_op_fk]?.folio ?? `OP #${g.id_op_fk}`}
                                     </span>
                                     <button className="btn-ghost" onClick={() => desvincularGastoDeOP(g.id)}
-                                      style={{ padding: '2px 4px', fontSize: 10, color: '#dc2626' }} title="Desvincular OP">
+                                      style={{ padding: '2px 4px', fontSize: 10, color: '#C23B3B' }} title="Desvincular OP">
                                       <X size={10} />
                                     </button>
                                   </div>
@@ -2431,14 +2431,14 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                                     setVincGastoId(vincGastoId === g.id ? null : g.id)
                                     setBusqOPGasto('')
                                     setOpsGasto([])
-                                  }} style={{ fontSize: 10, color: '#2563eb', padding: '2px 6px', border: '1px solid #bfdbfe', borderRadius: 5 }}>
+                                  }} style={{ fontSize: 10, color: '#1C1D21', padding: '2px 6px', border: '1px solid #C9CCD3', borderRadius: 5 }}>
                                     + Vincular OP
                                   </button>
                                 )}
                               </td>
                               <td style={{ padding: '8px 10px' }}>
                                 {g.id_personal_fk ? (
-                                  <span style={{ fontSize: 10, color: '#7c3aed', fontWeight: 600 }} title="Se edita en la pestaña Personal Op.">Auto · Personal</span>
+                                  <span style={{ fontSize: 10, color: '#6B4E79', fontWeight: 600 }} title="Se edita en la pestaña Personal Op.">Auto · Personal</span>
                                 ) : (
                                 <div style={{ display: 'flex', gap: 3 }}>
                                   <button className="btn-ghost" onClick={() => {
@@ -2449,7 +2449,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                                   }} style={{ padding: '3px 5px', fontSize: 10 }} title="Editar">
                                     <Edit2 size={11} />
                                   </button>
-                                  <button className="btn-ghost" onClick={() => deleteGasto(g.id)} style={{ padding: '3px 5px', fontSize: 10, color: '#dc2626' }} title="Eliminar">
+                                  <button className="btn-ghost" onClick={() => deleteGasto(g.id)} style={{ padding: '3px 5px', fontSize: 10, color: '#C23B3B' }} title="Eliminar">
                                     <Trash2 size={11} />
                                   </button>
                                 </div>
@@ -2457,9 +2457,9 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                               </td>
                             </tr>
                             {vincGastoId === g.id && (
-                              <tr key={`vinc-${g.id}`} style={{ borderBottom: '1px solid var(--border)', background: '#eff6ff' }}>
+                              <tr key={`vinc-${g.id}`} style={{ borderBottom: '1px solid var(--border)', background: '#F4F5F7' }}>
                                 <td colSpan={7} style={{ padding: '8px 12px' }}>
-                                  <div style={{ fontSize: 11, fontWeight: 700, color: '#2563eb', marginBottom: 6 }}>Vincular OP a: {g.concepto}</div>
+                                  <div style={{ fontSize: 11, fontWeight: 700, color: '#1C1D21', marginBottom: 6 }}>Vincular OP a: {g.concepto}</div>
                                   <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
                                     <input className="input" placeholder="Buscar OP por concepto o folio…"
                                       value={busqOPGasto}
@@ -2467,18 +2467,18 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                                       onKeyDown={e => e.key === 'Enter' && buscarOPsParaGasto()}
                                       style={{ flex: 1, fontSize: 12 }} />
                                     <button className="btn-primary" onClick={buscarOPsParaGasto} disabled={loadingVinc}
-                                      style={{ fontSize: 12, background: '#2563eb', padding: '4px 12px' }}>
+                                      style={{ fontSize: 12, background: '#1C1D21', padding: '4px 12px' }}>
                                       {loadingVinc ? '…' : 'Buscar'}
                                     </button>
                                     <button className="btn-ghost" onClick={() => { setVincGastoId(null); setOpsGasto([]) }}
                                       style={{ fontSize: 12, padding: '4px 8px' }}>✕</button>
                                   </div>
                                   {opsGasto.length > 0 && (
-                                    <div style={{ maxHeight: 140, overflowY: 'auto', border: '1px solid #bfdbfe', borderRadius: 6, background: '#fff' }}>
+                                    <div style={{ maxHeight: 140, overflowY: 'auto', border: '1px solid #C9CCD3', borderRadius: 6, background: '#fff' }}>
                                       {opsGasto.map(op => (
-                                        <div key={op.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', borderBottom: '1px solid #e0f2fe', fontSize: 12 }}>
+                                        <div key={op.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', borderBottom: '1px solid #E6E8EB', fontSize: 12 }}>
                                           <div>
-                                            <span style={{ fontWeight: 700, color: '#16a34a', marginRight: 6, fontFamily: 'monospace' }}>{op.folio}</span>
+                                            <span style={{ fontWeight: 700, color: '#267F56', marginRight: 6, fontVariantNumeric: 'tabular-nums' }}>{op.folio}</span>
                                             <span style={{ color: 'var(--text-primary)' }}>{op.concepto}</span>
                                             {op.id_proveedor_fk && provMap[op.id_proveedor_fk] && (
                                               <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>{provMap[op.id_proveedor_fk]}</span>
@@ -2487,7 +2487,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                             <span style={{ fontWeight: 700 }}>{fmt$(op.monto)}</span>
                                             <button className="btn-primary" onClick={() => vincularGastoAOP(g.id, op)}
-                                              style={{ fontSize: 11, padding: '3px 8px', background: '#2563eb' }}>Vincular</button>
+                                              style={{ fontSize: 11, padding: '3px 8px', background: '#1C1D21' }}>Vincular</button>
                                           </div>
                                         </div>
                                       ))}
@@ -2500,7 +2500,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                         ))}
                         <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
                           <td colSpan={4} style={{ padding: '8px 10px', fontWeight: 700, fontSize: 11, color: 'var(--text-muted)' }}>TOTAL GASTOS MANUALES</td>
-                          <td style={{ padding: '8px 10px', fontWeight: 700, color: '#d97706' }}>{fmt$(gastos.reduce((s, g) => s + g.monto, 0))}</td>
+                          <td style={{ padding: '8px 10px', fontWeight: 700, color: '#B5761A' }}>{fmt$(gastos.reduce((s, g) => s + g.monto, 0))}</td>
                           <td colSpan={2}></td>
                         </tr>
                       </tbody>
@@ -2515,13 +2515,13 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
 
               {/* ══ Sección 2: OPs del sistema ══ */}
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 10 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#267F56', letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 10 }}>
                   OPs del sistema
                 </div>
 
                 {/* Buscador de OPs */}
-                <div className="card" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: '#15803d', marginBottom: 8 }}>Vincular Orden de Pago existente</div>
+                <div className="card" style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#1F7A50', marginBottom: 8 }}>Vincular Orden de Pago existente</div>
                   <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
                     <input className="input" placeholder="Filtrar por concepto o folio…" value={busqOP} onChange={e => setBusqOP(e.target.value)}
                       style={{ flex: 1, fontSize: 12 }} />
@@ -2542,14 +2542,14 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                         {lista.map(op => (
                           <div key={op.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid var(--border)', fontSize: 12 }}>
                             <div>
-                              <span style={{ fontWeight: 700, color: '#16a34a', marginRight: 8, fontFamily: 'monospace' }}>{op.folio}</span>
+                              <span style={{ fontWeight: 700, color: '#267F56', marginRight: 8, fontVariantNumeric: 'tabular-nums' }}>{op.folio}</span>
                               <span style={{ color: 'var(--text-primary)' }}>{op.concepto}</span>
                               <span style={{ color: 'var(--text-muted)', marginLeft: 8 }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? '') : ''}</span>
                               <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 8 }}>{op.status}</span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <span style={{ fontWeight: 700 }}>{fmt$(op.monto)}</span>
-                              <button className="btn-primary" onClick={() => vincularOP(op)} style={{ fontSize: 11, padding: '3px 8px', background: '#16a34a' }}>Vincular</button>
+                              <button className="btn-primary" onClick={() => vincularOP(op)} style={{ fontSize: 11, padding: '3px 8px', background: '#267F56' }}>Vincular</button>
                             </div>
                           </div>
                         ))}
@@ -2578,17 +2578,17 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                           const eop = evtOps.find(e => e.id_op_fk === op.id)
                           return (
                             <tr key={op.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
-                              <td style={{ padding: '8px 10px', fontWeight: 700, color: '#16a34a', fontFamily: 'monospace', fontSize: 10 }}>{op.folio}</td>
+                              <td style={{ padding: '8px 10px', fontWeight: 700, color: '#267F56', fontVariantNumeric: 'tabular-nums', fontSize: 10 }}>{op.folio}</td>
                               <td style={{ padding: '8px 10px', color: 'var(--text-primary)' }}>{op.concepto}</td>
                               <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? `#${op.id_proveedor_fk}`) : '—'}</td>
                               <td style={{ padding: '8px 10px', fontWeight: 600 }}>{fmt$(op.monto)}</td>
-                              <td style={{ padding: '8px 10px', color: (op.saldo ?? 0) > 0 ? '#dc2626' : '#16a34a', fontWeight: 600 }}>{fmt$(op.saldo ?? 0)}</td>
+                              <td style={{ padding: '8px 10px', color: (op.saldo ?? 0) > 0 ? '#C23B3B' : '#267F56', fontWeight: 600 }}>{fmt$(op.saldo ?? 0)}</td>
                               <td style={{ padding: '8px 10px' }}>
-                                <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 8, background: '#f8fafc', color: '#64748b', fontWeight: 600 }}>{op.status}</span>
+                                <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 8, background: '#F8F9FA', color: '#62666E', fontWeight: 600 }}>{op.status}</span>
                               </td>
                               <td style={{ padding: '8px 10px' }}>
                                 {eop && (
-                                  <button className="btn-ghost" onClick={() => desvincularOP(eop.id)} style={{ padding: '3px 6px', fontSize: 10, color: '#dc2626' }} title="Desvincular">
+                                  <button className="btn-ghost" onClick={() => desvincularOP(eop.id)} style={{ padding: '3px 6px', fontSize: 10, color: '#C23B3B' }} title="Desvincular">
                                     <X size={11} />
                                   </button>
                                 )}
@@ -2599,7 +2599,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                         <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
                           <td colSpan={3} style={{ padding: '8px 10px', fontWeight: 700, fontSize: 11, color: 'var(--text-muted)' }}>TOTAL OPs</td>
                           <td style={{ padding: '8px 10px', fontWeight: 700 }}>{fmt$(ops.reduce((s, o) => s + o.monto, 0))}</td>
-                          <td style={{ padding: '8px 10px', fontWeight: 700, color: '#dc2626' }}>{fmt$(ops.reduce((s, o) => s + (o.saldo ?? 0), 0))}</td>
+                          <td style={{ padding: '8px 10px', fontWeight: 700, color: '#C23B3B' }}>{fmt$(ops.reduce((s, o) => s + (o.saldo ?? 0), 0))}</td>
                           <td colSpan={2}></td>
                         </tr>
                       </tbody>
@@ -2615,8 +2615,8 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
           {activeTab === 'personal' && editEvt && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {/* Justificación y notas */}
-              <div className="card" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>Justificación y Notas de Personal</div>
+              <div className="card" style={{ background: '#F4F5F7', border: '1px solid #E6E8EB' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#267F56', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>Justificación y Notas de Personal</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <div>
                     <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Justificación de Gasto de Personal Operativo</label>
@@ -2635,7 +2635,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                     />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <button className="btn-primary" onClick={saveEvento} disabled={saving} style={{ fontSize: 12, background: '#16a34a' }}>
+                    <button className="btn-primary" onClick={saveEvento} disabled={saving} style={{ fontSize: 12, background: '#267F56' }}>
                       {saving ? 'Guardando…' : 'Guardar notas'}
                     </button>
                   </div>
@@ -2643,8 +2643,8 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
               </div>
 
               {/* Formulario para agregar empleado */}
-              <div className="card" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>Agregar Empleado</div>
+              <div className="card" style={{ background: '#F4F5F7', border: '1px solid #E6E8EB' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#267F56', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>Agregar Empleado</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
                   <div style={{ gridColumn: '1 / -1' }}>
                     <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Nombre del Empleado *</label>
@@ -2679,11 +2679,11 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button className="btn-primary" onClick={savePersonal} disabled={savingPersonal} style={{ fontSize: 12, background: '#16a34a' }}>
+                  <button className="btn-primary" onClick={savePersonal} disabled={savingPersonal} style={{ fontSize: 12, background: '#267F56' }}>
                     {savingPersonal ? 'Guardando…' : '+ Agregar'}
                   </button>
                 </div>
-                {err && <div style={{ marginTop: 8, fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '6px 10px', borderRadius: 6 }}>{err}</div>}
+                {err && <div style={{ marginTop: 8, fontSize: 12, color: '#C23B3B', background: '#F4F5F7', padding: '6px 10px', borderRadius: 6 }}>{err}</div>}
               </div>
 
               {/* Tabla de empleados */}
@@ -2693,7 +2693,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                     Personal asignado ({personal.length})
                   </div>
                   {personal.length > 0 && (
-                    <button className="btn-ghost" onClick={printPersonal} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 6, padding: '4px 10px' }}>
+                    <button className="btn-ghost" onClick={printPersonal} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#267F56', border: '1px solid #E6E8EB', borderRadius: 6, padding: '4px 10px' }}>
                       <Printer size={12} /> Imprimir
                     </button>
                   )}
@@ -2717,9 +2717,9 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                             <td style={{ padding: '8px 10px', fontWeight: 600 }}>{p.nombre_empleado}</td>
                             <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{fmtFecha(p.dia)}</td>
                             <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{p.turno ?? '—'}</td>
-                            <td style={{ padding: '8px 10px', fontWeight: 600, color: '#16a34a' }}>{fmt$(p.compensacion ?? 0)}</td>
+                            <td style={{ padding: '8px 10px', fontWeight: 600, color: '#267F56' }}>{fmt$(p.compensacion ?? 0)}</td>
                             <td style={{ padding: '8px 10px' }}>
-                              <button className="btn-ghost" onClick={() => deletePersonal(p.id)} style={{ padding: '3px 6px', fontSize: 10, color: '#dc2626' }} title="Eliminar">
+                              <button className="btn-ghost" onClick={() => deletePersonal(p.id)} style={{ padding: '3px 6px', fontSize: 10, color: '#C23B3B' }} title="Eliminar">
                                 <Trash2 size={11} />
                               </button>
                             </td>
@@ -2727,7 +2727,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                         ))}
                         <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
                           <td colSpan={3} style={{ padding: '8px 10px', fontWeight: 700, fontSize: 11, color: 'var(--text-muted)' }}>TOTAL</td>
-                          <td style={{ padding: '8px 10px', fontWeight: 700, color: '#16a34a' }}>{fmt$(personal.reduce((s, p) => s + (p.compensacion ?? 0), 0))}</td>
+                          <td style={{ padding: '8px 10px', fontWeight: 700, color: '#267F56' }}>{fmt$(personal.reduce((s, p) => s + (p.compensacion ?? 0), 0))}</td>
                           <td></td>
                         </tr>
                       </tbody>
@@ -2743,9 +2743,9 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
           {activeTab === 'jugadores' && editEvt && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {/* Formulario para agregar/editar jugador */}
-              <div className="card" style={{ background: '#fffbeb', border: '1px solid #fde68a', padding: '12px 14px' }}>
+              <div className="card" style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', padding: '12px 14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#b45309', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#96600F', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                     {jugadorForm.id ? 'Editar Inscripción' : 'Agregar Jugador'}
                   </div>
                   <div style={{ display: 'flex', gap: 12 }}>
@@ -2765,28 +2765,28 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                     <div>
                       <label style={jlblSt}>Socio *</label>
                       {jugadorForm.id_socio_fk && jugadorForm.nombre_completo ? (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 9px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 7 }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: '#166534' }}>{jugadorForm.nombre_completo}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 9px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 7 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: '#17603F' }}>{jugadorForm.nombre_completo}</span>
                           <button onClick={() => setJugadorForm(f => ({ ...f, id_socio_fk: null, nombre_completo: '' }))}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2, display: 'flex' }}>
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2, display: 'flex' }}>
                             <X size={12} />
                           </button>
                         </div>
                       ) : (
                         <div style={{ position: 'relative' }}>
-                          <Search size={12} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                          <Search size={12} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
                           <input className="input" style={{ ...jinpSt, paddingLeft: 26 }}
                             value={busqSocio} onChange={e => setBusqSocio(e.target.value)}
                             placeholder="Buscar por nombre o número de socio…"
                             autoFocus
                           />
-                          {loadingSocios && <Loader size={12} className="animate-spin" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />}
+                          {loadingSocios && <Loader size={12} className="animate-spin" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />}
                           {sociosResult.length > 0 && (
-                            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.12)', zIndex: 20, maxHeight: 160, overflowY: 'auto' }}>
+                            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.12)', zIndex: 20, maxHeight: 160, overflowY: 'auto' }}>
                               {sociosResult.map(s => (
                                 <div key={s.id} onClick={() => seleccionarSocio(s)}
-                                  style={{ padding: '7px 9px', cursor: 'pointer', fontSize: 12, borderBottom: '1px solid #f1f5f9' }}
-                                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f8fafc'}
+                                  style={{ padding: '7px 9px', cursor: 'pointer', fontSize: 12, borderBottom: '1px solid #F4F5F7' }}
+                                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FA'}
                                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#fff'}>
                                   <strong>{[s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')}</strong>
                                   {s.numero_socio && <span style={{ color: 'var(--text-muted)' }}> · #{s.numero_socio}</span>}
@@ -2858,11 +2858,11 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                   {jugadorForm.id && (
                     <button className="btn-ghost" onClick={cancelEditJugador} style={{ fontSize: 11 }}>Cancelar</button>
                   )}
-                  <button className="btn-primary" onClick={saveJugador} disabled={savingJugador} style={{ fontSize: 11, padding: '6px 14px', background: '#b45309' }}>
+                  <button className="btn-primary" onClick={saveJugador} disabled={savingJugador} style={{ fontSize: 11, padding: '6px 14px', background: '#96600F' }}>
                     {savingJugador ? 'Guardando…' : jugadorForm.id ? 'Guardar cambios' : '+ Agregar'}
                   </button>
                 </div>
-                {errJugador && <div style={{ marginTop: 8, fontSize: 11, color: '#dc2626', background: '#fef2f2', padding: '5px 8px', borderRadius: 6 }}>{errJugador}</div>}
+                {errJugador && <div style={{ marginTop: 8, fontSize: 11, color: '#fff', background: '#C23B3B', padding: '5px 8px', borderRadius: 6 }}>{errJugador}</div>}
               </div>
 
               {/* Tabla de jugadores inscritos */}
@@ -2872,7 +2872,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                     Jugadores inscritos ({jugadores.length})
                   </div>
                   {jugadores.length > 0 && (
-                    <button className="btn-ghost" onClick={printJugadores} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#b45309', border: '1px solid #fde68a', borderRadius: 6, padding: '4px 10px' }}>
+                    <button className="btn-ghost" onClick={printJugadores} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#96600F', border: '1px solid #E6E8EB', borderRadius: 6, padding: '4px 10px' }}>
                       <Printer size={12} /> Imprimir
                     </button>
                   )}
@@ -2892,7 +2892,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                       </thead>
                       <tbody>
                         {jugadores.map((j, i) => {
-                          const sc = JUGADOR_STATUS_COLORS[j.status] ?? { bg: '#f8fafc', color: '#64748b' }
+                          const sc = JUGADOR_STATUS_COLORS[j.status] ?? { bg: '#F8F9FA', color: '#62666E' }
                           return (
                             <tr key={j.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                               <td style={{ padding: '8px 10px', fontWeight: 600 }}>{j.nombre_completo}</td>
@@ -2900,24 +2900,24 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                               <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{j.hoyo ?? '—'}</td>
                               <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{j.handicap ?? '—'}</td>
                               <td style={{ padding: '8px 10px' }}>{fmt$(j.inscripcion ?? 0)}</td>
-                              <td style={{ padding: '8px 10px', color: '#16a34a' }}>{fmt$(j.pago ?? 0)}</td>
-                              <td style={{ padding: '8px 10px', fontWeight: 600, color: (j.por_cobrar ?? 0) > 0 ? '#d97706' : 'var(--text-muted)' }}>{fmt$(j.por_cobrar ?? 0)}</td>
+                              <td style={{ padding: '8px 10px', color: '#267F56' }}>{fmt$(j.pago ?? 0)}</td>
+                              <td style={{ padding: '8px 10px', fontWeight: 600, color: (j.por_cobrar ?? 0) > 0 ? '#B5761A' : 'var(--text-muted)' }}>{fmt$(j.por_cobrar ?? 0)}</td>
                               <td style={{ padding: '8px 10px' }}>
-                                <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: sc.bg, color: sc.color }}>{j.status}</span>
+                                <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: sc.color, color: '#fff'}}>{j.status}</span>
                                 {j.id_venta_pos_fk && <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 2 }}>Ticket #{String(j.id_venta_pos_fk).padStart(6, '0')}</div>}
                               </td>
                               <td style={{ padding: '8px 10px' }}>
                                 <div style={{ display: 'flex', gap: 4 }}>
                                   {(j.por_cobrar ?? 0) > 0 && (
                                     <button className="btn-ghost" onClick={() => cobrarInscripcionPOS(j)} disabled={cobrandoJugadorId === j.id}
-                                      style={{ padding: '4px 8px', fontSize: 11, color: '#b45309' }} title="Cobrar / Generar Ticket POS">
+                                      style={{ padding: '4px 8px', fontSize: 11, color: '#96600F' }} title="Cobrar / Generar Ticket POS">
                                       {cobrandoJugadorId === j.id ? <Loader size={12} className="animate-spin" /> : <CreditCard size={12} />}
                                     </button>
                                   )}
                                   <button className="btn-ghost" onClick={() => editJugador(j)} style={{ padding: '4px 8px', fontSize: 11 }} title="Editar">
                                     <Edit2 size={12} />
                                   </button>
-                                  <button className="btn-ghost" onClick={() => deleteJugador(j.id)} style={{ padding: '4px 8px', fontSize: 11, color: '#dc2626' }} title="Eliminar">
+                                  <button className="btn-ghost" onClick={() => deleteJugador(j.id)} style={{ padding: '4px 8px', fontSize: 11, color: '#C23B3B' }} title="Eliminar">
                                     <Trash2 size={12} />
                                   </button>
                                 </div>
@@ -2942,7 +2942,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
         const totalGastos = viewOps.reduce((s, o) => s + (o.monto ?? 0), 0) + viewGastos.reduce((s, g) => s + (g.monto ?? 0), 0)
         const saldoGastos = viewOps.reduce((s, o) => s + (o.saldo ?? 0), 0)
         const utilidad    = totalIng - totalGastos
-        const sc          = STATUS_COLORS[viewEvt.status] ?? { bg: '#f8fafc', color: '#64748b' }
+        const sc          = STATUS_COLORS[viewEvt.status] ?? { bg: '#F8F9FA', color: '#62666E' }
         const tipo        = viewEvt.cat_tipos_evento
 
         return (
@@ -2955,7 +2955,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
             maxWidth={860}
             footer={
               <div style={{ display: 'flex', gap: 8, width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
-                <button className="btn-primary" onClick={printFichaMaestra} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#166534', fontSize: 13 }}>
+                <button className="btn-primary" onClick={printFichaMaestra} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#17603F', fontSize: 13 }}>
                   <Printer size={13} /> Imprimir Ficha Maestra
                 </button>
                 <button className="btn-secondary" onClick={() => setViewEvt(null)}>Cerrar</button>
@@ -2968,12 +2968,12 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: 14, background: 'var(--surface-700)', borderRadius: 8 }}>
                 <div>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 2 }}>Status</div>
-                  <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 10, fontWeight: 600, background: sc.bg, color: sc.color }}>{viewEvt.status}</span>
+                  <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 10, fontWeight: 600, background: sc.color, color: '#fff'}}>{viewEvt.status}</span>
                 </div>
                 <div>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 2 }}>Tipo</div>
                   {tipo ? (
-                    <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 10, fontWeight: 600, background: tipo.color + '22', color: tipo.color }}>{tipo.nombre}</span>
+                    <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 10, fontWeight: 600, background: tipo.color, color: '#fff'}}>{tipo.nombre}</span>
                   ) : <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
@@ -3015,31 +3015,31 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
               ) : (
                 <>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-                    <div className="card" style={{ padding: '12px 14px', background: '#f0fdf4' }}>
+                    <div className="card" style={{ padding: '12px 14px', background: '#fff' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                        <TrendingUp size={13} style={{ color: '#16a34a' }} />
-                        <span style={{ fontSize: 10, color: '#166534', textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 600 }}>Ingresos</span>
+                        <TrendingUp size={13} style={{ color: '#267F56' }} />
+                        <span style={{ fontSize: 10, color: '#17603F', textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 600 }}>Ingresos</span>
                       </div>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: '#16a34a' }}>{fmt$(totalIng)}</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{fmt$(totalIng)}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{viewIng.length} pago{viewIng.length !== 1 ? 's' : ''}</div>
                     </div>
-                    <div className="card" style={{ padding: '12px 14px', background: '#fef2f2' }}>
+                    <div className="card" style={{ padding: '12px 14px', background: '#fff' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                        <TrendingDown size={13} style={{ color: '#dc2626' }} />
-                        <span style={{ fontSize: 10, color: '#991b1b', textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 600 }}>Gastos</span>
+                        <TrendingDown size={13} style={{ color: '#C23B3B' }} />
+                        <span style={{ fontSize: 10, color: '#8C2A2A', textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 600 }}>Gastos</span>
                       </div>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: '#dc2626' }}>{fmt$(totalGastos)}</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{fmt$(totalGastos)}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                         {viewOps.length} OP{viewOps.length !== 1 ? 's' : ''} · {viewGastos.length} manual{viewGastos.length !== 1 ? 'es' : ''}
                         {saldoGastos > 0 && <> · saldo {fmt$(saldoGastos)}</>}
                       </div>
                     </div>
-                    <div className="card" style={{ padding: '12px 14px', background: utilidad >= 0 ? '#eff6ff' : '#fef2f2' }}>
+                    <div className="card" style={{ padding: '12px 14px', background: '#F4F5F7' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                        <DollarSign size={13} style={{ color: utilidad >= 0 ? '#2563eb' : '#dc2626' }} />
-                        <span style={{ fontSize: 10, color: utilidad >= 0 ? '#1e40af' : '#991b1b', textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 600 }}>Utilidad</span>
+                        <DollarSign size={13} style={{ color: utilidad >= 0 ? '#1C1D21' : '#C23B3B' }} />
+                        <span style={{ fontSize: 10, color: utilidad >= 0 ? '#1C1D21' : '#8C2A2A', textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 600 }}>Utilidad</span>
                       </div>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: utilidad >= 0 ? '#2563eb' : '#dc2626' }}>{fmt$(utilidad)}</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: utilidad >= 0 ? '#1C1D21' : '#C23B3B' }}>{fmt$(utilidad)}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Ingresos − Gastos</div>
                     </div>
                   </div>
@@ -3063,7 +3063,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                           <tbody>
                             {viewIng.map((ing, i) => (
                               <tr key={ing.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
-                                <td style={{ padding: '6px 10px', fontWeight: 700, color: '#16a34a', fontFamily: 'monospace', fontSize: 10 }}>{ing.folio}</td>
+                                <td style={{ padding: '6px 10px', fontWeight: 700, color: '#267F56', fontVariantNumeric: 'tabular-nums', fontSize: 10 }}>{ing.folio}</td>
                                 <td style={{ padding: '6px 10px' }}>{ing.descripcion}</td>
                                 <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{ing.forma_pago}</td>
                                 <td style={{ padding: '6px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{fmtFecha(ing.fecha_pago)}</td>
@@ -3096,14 +3096,14 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                           <tbody>
                             {viewOps.map((op, i) => (
                               <tr key={op.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
-                                <td style={{ padding: '6px 10px', fontWeight: 700, color: '#16a34a', fontFamily: 'monospace', fontSize: 10 }}>{op.folio}</td>
+                                <td style={{ padding: '6px 10px', fontWeight: 700, color: '#267F56', fontVariantNumeric: 'tabular-nums', fontSize: 10 }}>{op.folio}</td>
                                 <td style={{ padding: '6px 10px' }}>{op.concepto}</td>
                                 <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? '—') : '—'}</td>
                                 <td style={{ padding: '6px 10px' }}>
-                                  <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 8, background: '#f8fafc', color: '#64748b', fontWeight: 600 }}>{op.status}</span>
+                                  <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 8, background: '#F8F9FA', color: '#62666E', fontWeight: 600 }}>{op.status}</span>
                                 </td>
                                 <td style={{ padding: '6px 10px', fontWeight: 600, textAlign: 'right' }}>{fmt$(op.monto)}</td>
-                                <td style={{ padding: '6px 10px', fontWeight: 600, textAlign: 'right', color: (op.saldo ?? 0) > 0 ? '#dc2626' : '#16a34a' }}>{fmt$(op.saldo ?? 0)}</td>
+                                <td style={{ padding: '6px 10px', fontWeight: 600, textAlign: 'right', color: (op.saldo ?? 0) > 0 ? '#C23B3B' : '#267F56' }}>{fmt$(op.saldo ?? 0)}</td>
                               </tr>
                             ))}
                           </tbody>

@@ -107,7 +107,7 @@ const GRUPOS = [
     slug:   'vigilancia',
     modulo: 'vigilancia-novedades',
     label: 'Vigilancia',
-    color: '#475569',
+    color: '#4A4D54',
     reportes: [
       { id: 'vigilancia-novedades-estadisticas', label: 'Estadísticas de Novedades de Vigilancia', icon: ClipboardList, desc: 'Novedades por clase, tipo, criticidad, turno, hora, ubicación y lote; tendencia mensual, pendientes con antigüedad y cumplimiento de partes. Exporta a Excel' },
     ],
@@ -116,7 +116,7 @@ const GRUPOS = [
     slug:   'mantenimiento',
     modulo: 'mantenimiento',
     label: 'Mantenimiento',
-    color: '#7c3aed',
+    color: '#6B4E79',
     reportes: [
       { id: 'ordenes-trabajo',        label: 'Órdenes de Trabajo',          icon: Wrench,        desc: 'OT filtrable por status, tipo, área, prioridad y fecha' },
       { id: 'ot-financiero',          label: 'OT Financiero CC/Área',       icon: Wallet,        desc: 'Costo de MO y recursos por Centro de Costo, Área y Frente' },
@@ -131,7 +131,7 @@ const GRUPOS = [
     slug:   'hr',
     modulo: 'hr',
     label: 'HR',
-    color: '#b45309',
+    color: '#96600F',
     reportes: [
       { id: 'rol-pagos', label: 'Rol de Pagos', icon: Wallet, desc: 'Roles de pago agrupados por periodo, con detalle de colaboradores — filtrable por centro de costo (incluye Todos los Centros)' },
     ],
@@ -140,7 +140,7 @@ const GRUPOS = [
     slug:   'tesoreria',
     modulo: 'tesoreria',
     label: 'Tesorería',
-    color: '#0f766e',
+    color: '#126B63',
     reportes: [
       { id: 'estado-cuenta',        label: 'Estado de Cuenta',           icon: Building2, desc: 'Movimientos por cuenta bancaria con saldo inicial, cargos, abonos y saldo final del período' },
       { id: 'cxp',                  label: 'Antigüedad de Saldos CXP',  icon: FileText,  desc: 'Cuentas por pagar con bandas de vencimiento' },
@@ -156,7 +156,7 @@ const GRUPOS = [
     slug:   'ingresos',
     modulo: 'ingresos',
     label: 'Ingresos',
-    color: '#059669',
+    color: '#267F56',
     reportes: [
       { id: 'composicion-ingreso-cuotas', label: 'Composición del Ingreso por Cuotas',       icon: BarChart3,    desc: 'Descompone el cobro de cuotas de cada mes en corriente, vencida recuperada y anticipada, y lo concilia contra lo generado del periodo — Fraccionamiento, Golf, Hípico y Locales' },
       { id: 'ingresos-tipo',            label: 'Ingresos por Tipo',                       icon: TrendingDown, desc: 'Recibos agrupados por tipo de ingreso (Golf, Cuotas, Rentas, Caballerizas)' },
@@ -171,7 +171,7 @@ const GRUPOS = [
     slug:   'compras',
     modulo: 'compras',
     label: 'Compras e Inventarios',
-    color: '#059669',
+    color: '#267F56',
     reportes: [
       { id: 'consumo-cc',      label: 'Consumo por Centro de Costo', icon: TrendingDown, desc: 'Materiales transferidos a cada centro de costo' },
       { id: 'consumo-seccion', label: 'Consumo por Sección',         icon: MapPin,       desc: 'Órdenes de pago agrupadas por sección del residencial' },
@@ -197,7 +197,7 @@ const GRUPOS = [
     slug:   'golf',
     modulo: 'golf',
     label: 'Club Golf',
-    color: '#b8952a',
+    color: '#A8821A',
     reportes: [
       { id: 'golf-estado-cuenta', label: 'Estado de Cuenta',    icon: FileText,  desc: 'Cuotas y recibos por socio en un período' },
       { id: 'golf-miembros-categoria', label: 'Miembros por Categoría', icon: Users, desc: 'Socios agrupados por categoría con desglose de status (activo/vencido/inactivo) y detalle drill-down' },
@@ -226,7 +226,7 @@ const GRUPOS = [
     slug:   'hipico',
     modulo: 'hipico',
     label: 'Hípico',
-    color: '#92400e',
+    color: '#7A4B0C',
     reportes: [
       { id: 'hipico-arrendatarios', label: 'Arrendatarios', icon: Users, desc: 'Por arrendatario: no. de caballerizas asignadas, pagos hechos en un período y pendiente por pagar vencido' },
       { id: 'hipico-estado-cuenta', label: 'Estado de Cuenta', icon: FileText,  desc: 'Cargos y pagos por arrendatario en un período' },
@@ -240,7 +240,7 @@ const GRUPOS = [
     slug:   'locales',
     modulo: 'locales',
     label: 'Locales Comerciales',
-    color: '#0f766e',
+    color: '#126B63',
     reportes: [
       { id: 'locales-cobranza-corriente-vencida', label: 'Cobranza Corriente vs Vencida', icon: Wallet, desc: 'Rentas de locales y propiedades cobradas clasificadas por fecha de pago: corriente (del mes en curso) vs vencida (de meses anteriores)' },
       { id: 'locales-proyeccion-cobranza', label: 'Proyección de Cobranza', icon: TrendingDown, desc: 'Rentas de locales y mantenimiento por mes: cargo total, cobrado y por cobrar, con flujo de cobranza (cobrado del mes, anticipado y vencido)' },
@@ -252,7 +252,7 @@ const GRUPOS = [
     slug:   'hospitality',
     modulo: 'hospitality',
     label: 'Eventos',
-    color: '#9333ea',
+    color: '#6B4E79',
     reportes: [
       { id: 'hospitality-eventos', label: 'Eventos — Ingresos vs Gastos', icon: Star, desc: 'Resumen financiero por evento (Hospitality, Golf Torneos, Hípico): ingresos cobrados, OPs + gastos manuales y balance neto. Filtrable por módulo.' },
     ],
@@ -314,9 +314,9 @@ function ReportesContent() {
             {reportesVisibles.map(r => (
               <button key={r.id} onClick={() => setActive(r.id)}
                 className="card card-hover"
-                style={{ padding: '18px 20px', cursor: 'pointer', textAlign: 'left', border: '1px solid #e2e8f0', background: '#fff', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 9, background: grupo.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <r.icon size={16} style={{ color: grupo.color }} />
+                style={{ padding: '18px 20px', cursor: 'pointer', textAlign: 'left', border: '1px solid #E6E8EB', background: '#fff', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                <div className="icon-chip" style={{ width: 36, height: 36, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <r.icon size={16} />
                 </div>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 3 }}>{r.label}</div>

@@ -94,7 +94,7 @@ export default function ArbolResumen<T extends FilaArbol>({
   const conPromedio = mesesPromedio > 0
   const nCols = 3 + (conPromedio ? 1 : 0) + (hayPpto ? 2 : 0) + 1
 
-  const th: React.CSSProperties = { padding: '9px 14px', fontSize: 11, fontWeight: 700, color: '#64748b',
+  const th: React.CSSProperties = { padding: '9px 14px', fontSize: 11, fontWeight: 700, color: '#62666E',
     textTransform: 'uppercase', letterSpacing: '.04em', textAlign: 'right', whiteSpace: 'nowrap' }
   const tdNum: React.CSSProperties = { padding: '8px 14px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
 
@@ -103,21 +103,21 @@ export default function ArbolResumen<T extends FilaArbol>({
     const bueno = tipo === 'ingreso' ? varAbs >= 0 : varAbs <= 0
     return (
       <>
-        <td style={{ ...tdNum, fontWeight: bold ? 700 : 600, color: '#1e293b' }}>
-          {real === 0 ? <span style={{ color: '#cbd5e1' }}>—</span>
+        <td style={{ ...tdNum, fontWeight: bold ? 700 : 600, color: '#26282D' }}>
+          {real === 0 ? <span style={{ color: '#C9CCD3' }}>—</span>
             : onReal ? <button onClick={onReal} title="Ver detalle"
                 style={{ font: 'inherit', color: 'inherit', background: 'none', border: 'none', padding: 0, cursor: 'pointer',
                   textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3 }}>{fmt(real)}</button>
             : fmt(real)}
         </td>
-        <td style={{ ...tdNum, color: '#64748b', fontSize: 12 }}>{totalSeccion ? pct(real / totalSeccion * 100) : '—'}</td>
-        <td style={{ ...tdNum, color: '#64748b', fontSize: 12 }}>
+        <td style={{ ...tdNum, color: '#62666E', fontSize: 12 }}>{totalSeccion ? pct(real / totalSeccion * 100) : '—'}</td>
+        <td style={{ ...tdNum, color: '#62666E', fontSize: 12 }}>
           {tipo === 'egreso' && ingresosOperativos > 0 ? pct(real / ingresosOperativos * 100) : ''}
         </td>
-        {conPromedio && <td style={{ ...tdNum, color: '#475569', fontSize: 12 }}>{real ? fmt(real / mesesPromedio) : '—'}</td>}
+        {conPromedio && <td style={{ ...tdNum, color: '#4A4D54', fontSize: 12 }}>{real ? fmt(real / mesesPromedio) : '—'}</td>}
         {hayPpto && <>
-          <td style={{ ...tdNum, color: '#475569' }}>{ppto ? fmt(ppto) : '—'}</td>
-          <td style={{ ...tdNum, fontWeight: 600, color: varAbs === 0 ? '#94a3b8' : bueno ? '#15803d' : '#dc2626' }}>
+          <td style={{ ...tdNum, color: '#4A4D54' }}>{ppto ? fmt(ppto) : '—'}</td>
+          <td style={{ ...tdNum, fontWeight: 600, color: varAbs === 0 ? '#7A7E87' : bueno ? '#1F7A50' : '#C23B3B' }}>
             {varAbs === 0 ? '—' : `${varAbs > 0 ? '+' : '-'}${fmt(Math.abs(varAbs))}`}
           </td>
         </>}
@@ -132,22 +132,22 @@ export default function ArbolResumen<T extends FilaArbol>({
     const onReal = h
       ? () => (h.fuente_real === 'manual' ? onManual(h.id) : onDrillOps(h))
       : () => onDrill(n.nombre, tipo, n.partidas)
-    const bg = n.depth === 0 ? '#fff' : n.depth === 1 ? '#fcfcfd' : '#f8fafc'
+    const bg = n.depth === 0 ? '#fff' : '#F8F9FA'
     return (
       <Fragment key={n.key}>
-        <tr style={{ borderBottom: '1px solid #f1f5f9', background: bg }}>
+        <tr style={{ borderBottom: '1px solid #F4F5F7', background: bg }}>
           <td style={{ padding: '8px 14px', paddingLeft: 14 + n.depth * 20 }}>
             <span onClick={expandible ? () => toggle(n) : undefined}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: expandible ? 'pointer' : 'default',
                 fontWeight: n.depth === 0 ? 700 : n.depth === 1 ? 600 : 500,
-                color: n.esMenores ? '#64748b' : '#1e293b', fontStyle: n.esMenores ? 'italic' : 'normal',
+                color: n.esMenores ? '#62666E' : '#26282D', fontStyle: n.esMenores ? 'italic' : 'normal',
                 fontSize: n.depth === 0 ? 13 : 12.5 }}>
-              <span style={{ width: 14, display: 'inline-flex', color: '#94a3b8' }}>
+              <span style={{ width: 14, display: 'inline-flex', color: '#7A7E87' }}>
                 {expandible ? (open ? <ChevronDown size={14} /> : <ChevronRight size={14} />) : null}
               </span>
               {n.nombre}
               {expandible && !open && (
-                <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400 }}>· {n.hijos.length}</span>
+                <span style={{ fontSize: 11, color: '#7A7E87', fontWeight: 400 }}>· {n.hijos.length}</span>
               )}
             </span>
           </td>
@@ -155,7 +155,7 @@ export default function ArbolResumen<T extends FilaArbol>({
           <td style={{ padding: '4px 10px', textAlign: 'right' }}>
             {h && h.fuente_real === 'manual' && canWriteManual && (
               <button className="btn-ghost" onClick={() => onManual(h.id)} title="Capturar Real manual"
-                style={{ fontSize: 11, padding: '2px 8px', color: '#64748b', whiteSpace: 'nowrap' }}>+ Manual</button>
+                style={{ fontSize: 11, padding: '2px 8px', color: '#62666E', whiteSpace: 'nowrap' }}>+ Manual</button>
             )}
           </td>
         </tr>
@@ -165,7 +165,7 @@ export default function ArbolResumen<T extends FilaArbol>({
   }
 
   function banda(label: string, tipo: 'ingreso' | 'egreso') {
-    const c = tipo === 'ingreso' ? { bg: '#f0fdf4', fg: '#15803d', bd: '#bbf7d0' } : { bg: '#fef2f2', fg: '#dc2626', bd: '#fecaca' }
+    const c = tipo === 'ingreso' ? { bg: '#F4F5F7', fg: '#1F7A50', bd: '#E6E8EB' } : { bg: '#F4F5F7', fg: '#C23B3B', bd: '#E6E8EB' }
     return (
       <tr className="ppto-print-band">
         <td colSpan={nCols} style={{ padding: '7px 16px', background: c.bg, fontWeight: 700, fontSize: 11, color: c.fg,
@@ -175,7 +175,7 @@ export default function ArbolResumen<T extends FilaArbol>({
   }
 
   function total(label: string, real: number, ppto: number, totalSeccion: number, tipo: 'ingreso' | 'egreso') {
-    const c = tipo === 'ingreso' ? { bg: '#dcfce7', fg: '#15803d' } : { bg: '#fee2e2', fg: '#b91c1c' }
+    const c = tipo === 'ingreso' ? { bg: '#E6E8EB', fg: '#1F7A50' } : { bg: '#E6E8EB', fg: '#A83232' }
     return (
       <tr className="ppto-print-total" style={{ background: c.bg }}>
         <td style={{ padding: '9px 14px', fontWeight: 700, color: c.fg, fontSize: 12 }}>{label}</td>
@@ -188,17 +188,17 @@ export default function ArbolResumen<T extends FilaArbol>({
   function balance(label: string, real: number, ppto: number, oscuro: boolean) {
     const varAbs = real - ppto
     return (
-      <tr className="ppto-print-total" style={{ background: oscuro ? '#1e293b' : '#f1f5f9', fontWeight: 700 }}>
-        <td style={{ padding: '10px 14px', color: oscuro ? '#f1f5f9' : '#1e293b', fontSize: 12, textTransform: 'uppercase', letterSpacing: '.05em' }}>{label}</td>
-        <td style={{ ...tdNum, color: real >= 0 ? (oscuro ? '#86efac' : '#15803d') : (oscuro ? '#fca5a5' : '#dc2626') }}>{fmt(real)}</td>
+      <tr className="ppto-print-total" style={{ background: oscuro ? '#26282D' : '#F4F5F7', fontWeight: 700 }}>
+        <td style={{ padding: '10px 14px', color: oscuro ? '#F4F5F7' : '#26282D', fontSize: 12, textTransform: 'uppercase', letterSpacing: '.05em' }}>{label}</td>
+        <td style={{ ...tdNum, color: real >= 0 ? (oscuro ? '#7CC9A3' : '#1F7A50') : (oscuro ? '#EBB5B5' : '#C23B3B') }}>{fmt(real)}</td>
         <td />
-        <td style={{ ...tdNum, fontSize: 12, color: oscuro ? '#cbd5e1' : '#64748b' }}>
+        <td style={{ ...tdNum, fontSize: 12, color: oscuro ? '#C9CCD3' : '#62666E' }}>
           {ingresosOperativos > 0 ? `Margen ${pct(real / ingresosOperativos * 100)}` : ''}
         </td>
-        {conPromedio && <td style={{ ...tdNum, fontSize: 12, color: oscuro ? '#cbd5e1' : '#475569' }}>{fmt(real / mesesPromedio)}</td>}
+        {conPromedio && <td style={{ ...tdNum, fontSize: 12, color: oscuro ? '#C9CCD3' : '#4A4D54' }}>{fmt(real / mesesPromedio)}</td>}
         {hayPpto && <>
-          <td style={{ ...tdNum, color: oscuro ? '#94a3b8' : '#475569' }}>{fmt(ppto)}</td>
-          <td style={{ ...tdNum, color: varAbs >= 0 ? (oscuro ? '#86efac' : '#15803d') : (oscuro ? '#fca5a5' : '#dc2626') }}>
+          <td style={{ ...tdNum, color: oscuro ? '#7A7E87' : '#4A4D54' }}>{fmt(ppto)}</td>
+          <td style={{ ...tdNum, color: varAbs >= 0 ? (oscuro ? '#7CC9A3' : '#1F7A50') : (oscuro ? '#EBB5B5' : '#C23B3B') }}>
             {varAbs === 0 ? '—' : `${varAbs > 0 ? '+' : '-'}${fmt(Math.abs(varAbs))}`}
           </td>
         </>}
@@ -210,12 +210,12 @@ export default function ArbolResumen<T extends FilaArbol>({
 
   // Filas de saldo (Flujo de Efectivo): consolidado de todas las partidas, sin filtros.
   const filaSaldo = (label: string, v: number | null, fuerte: boolean, nota?: string, colorV?: string) => (
-    <tr className="ppto-print-total" style={{ background: fuerte ? '#e0f2fe' : '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
-      <td style={{ padding: '9px 14px', fontWeight: 700, color: '#0c4a6e', fontSize: 12, textTransform: 'uppercase', letterSpacing: '.04em' }}>
-        {label}{nota && <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: '#64748b', marginLeft: 6 }}>{nota}</span>}
+    <tr className="ppto-print-total" style={{ background: fuerte ? '#E6E8EB' : '#F8F9FA', borderTop: '1px solid #E6E8EB' }}>
+      <td style={{ padding: '9px 14px', fontWeight: 700, color: '#1F4E66', fontSize: 12, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+        {label}{nota && <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: '#62666E', marginLeft: 6 }}>{nota}</span>}
       </td>
       <td style={{ padding: '9px 14px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700,
-        color: v == null ? '#cbd5e1' : (colorV ?? (v < 0 ? '#dc2626' : '#0c4a6e')) }}>{v == null ? '—' : fmt(v)}</td>
+        color: v == null ? '#C9CCD3' : (colorV ?? (v < 0 ? '#C23B3B' : '#1F4E66')) }}>{v == null ? '—' : fmt(v)}</td>
       <td colSpan={nCols - 2} />
     </tr>
   )
@@ -226,10 +226,10 @@ export default function ArbolResumen<T extends FilaArbol>({
 
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 14px', borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 14px', borderBottom: '1px solid #E6E8EB', flexWrap: 'wrap' }}>
         <ControlesArbol ui={ui} />
         {onProrrateoLotes && filas.some(f => f.zona) && (
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#475569', cursor: 'pointer' }}
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#4A4D54', cursor: 'pointer' }}
             title="El gasto sin zona (operación, vigilancia, vialidades) se reparte entre las zonas según su número de lotes">
             <input type="checkbox" checked={!!prorrateoLotes} onChange={e => onProrrateoLotes(e.target.checked)} />
             Prorratear gasto general entre zonas por lotes
@@ -239,7 +239,7 @@ export default function ArbolResumen<T extends FilaArbol>({
       <div style={{ overflowX: 'auto' }}>
         <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
-            <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+            <tr style={{ background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
               <th style={{ ...th, textAlign: 'left' }}>Concepto</th>
               <th style={th}>Real</th>
               <th style={th}>% del total</th>
@@ -277,7 +277,7 @@ export default function ArbolResumen<T extends FilaArbol>({
               {filaSaldo('Saldo final', saldos.final, true, 'saldo inicial + flujo neto (todas las partidas)')}
               {filaSaldo('Saldo real en banco', saldos.real, false)}
               {filaSaldo('Diferencia sin conciliar', saldos.diferencia, false, explicaDiferencia(saldos) ?? 'saldo real − saldo calculado',
-                saldos.diferencia == null ? undefined : Math.abs(saldos.diferencia) < 1 ? '#15803d' : '#b45309')}
+                saldos.diferencia == null ? undefined : Math.abs(saldos.diferencia) < 1 ? '#1F7A50' : '#96600F')}
             </>}
           </tbody>
         </table>

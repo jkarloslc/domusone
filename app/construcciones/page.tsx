@@ -89,7 +89,7 @@ export default function ConstruccionesPage() {
       <PageHeader backHref="/residencial"
         variant="xl"
         icon={HardHat}
-        color="#d97706"
+        color="#B5761A"
         eyebrowLabel="Módulo"
         title="Construcciones"
         subtitle={`${total} expedientes de obra registrados`}
@@ -106,7 +106,7 @@ export default function ConstruccionesPage() {
           return (
             <div key={s} className="card card-hover" style={{ padding: '10px 16px', cursor: 'pointer', minWidth: 110 }}
               onClick={() => { setFilterStatus(filterStatus === s ? '' : s); setPage(0) }}>
-              <div style={{ fontSize: 20, fontFamily: 'var(--font-display)', color: filterStatus === s ? '#d97706' : 'var(--text-primary)' }}>{count}</div>
+              <div style={{ fontSize: 20, fontFamily: 'var(--font-display)', color: filterStatus === s ? '#B5761A' : 'var(--text-primary)' }}>{count}</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>{s}</div>
             </div>
           )
@@ -147,14 +147,14 @@ export default function ConstruccionesPage() {
               const done = c.construcciones_checklist?.filter(e => e.completado).length ?? 0
               return (
                 <tr key={c.id} style={{ cursor: 'pointer' }} onClick={() => { setEditing(c); setModalOpen(true) }}>
-                  <td style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: '#d97706', fontWeight: 600 }}>{loteMap[c.id_lote_fk] ?? `#${c.id_lote_fk}`}</td>
+                  <td style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: '#B5761A', fontWeight: 600 }}>{loteMap[c.id_lote_fk] ?? `#${c.id_lote_fk}`}</td>
                   <td>{c.motivo ?? '—'}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.responsable_obra ?? '—'}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{fmtFecha(c.fecha_apertura)}</td>
-                  <td style={{ fontSize: 12, color: c.fecha_cierre ? '#15803d' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>{fmtFecha(c.fecha_cierre)}</td>
+                  <td style={{ fontSize: 12, color: c.fecha_cierre ? '#1F7A50' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>{fmtFecha(c.fecha_cierre)}</td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <ClipboardCheck size={13} style={{ color: done === ETAPAS.length ? '#15803d' : 'var(--text-muted)' }} />
+                      <ClipboardCheck size={13} style={{ color: done === ETAPAS.length ? '#1F7A50' : 'var(--text-muted)' }} />
                       <span style={{ fontSize: 12 }}>{done}/{ETAPAS.length}</span>
                     </div>
                   </td>

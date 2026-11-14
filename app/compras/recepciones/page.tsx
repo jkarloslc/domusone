@@ -82,7 +82,7 @@ export default function RecepcionesPage() {
               <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Sin recepciones registradas</td></tr>
             ) : rows.map(r => (
               <tr key={r.id}>
-                <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
+                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>OC #{r.id_oc_fk}</td>
                 <td style={{ fontSize: 12 }}>Almacén #{r.id_almacen_fk}</td>
                 <td style={{ fontSize: 12 }}>{fmtFecha(r.fecha_recepcion)}</td>
@@ -90,9 +90,9 @@ export default function RecepcionesPage() {
                 <td style={{ fontSize: 12 }}>{r.recibio}</td>
                 <td>
                   <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                    background: r.condicion === 'Completa' ? '#f0fdf4' : r.condicion === 'Con Daños' ? '#fef2f2' : '#fffbeb',
-                    color:      r.condicion === 'Completa' ? '#15803d' : r.condicion === 'Con Daños' ? '#dc2626' : '#d97706',
-                    border:     `1px solid ${r.condicion === 'Completa' ? '#bbf7d0' : r.condicion === 'Con Daños' ? '#fecaca' : '#fde68a'}`,
+                    background: r.condicion === 'Completa' ? '#1F7A50' : r.condicion === 'Con Daños' ? '#C23B3B' : '#B5761A',
+                    color:      '#fff',
+                    border:     `1px solid ${r.condicion === 'Completa' ? '#1F7A50' : r.condicion === 'Con Daños' ? '#C23B3B' : '#B5761A'}`,
                   }}>{r.condicion}</span>
                 </td>
                 <td>
@@ -282,7 +282,7 @@ function RecepcionModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
     >
 
         <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(90vh - 130px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+          {error && <div style={{ padding: '10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
@@ -319,20 +319,20 @@ function RecepcionModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
 
           {/* Selector tipo recepción */}
           {ocDet.length > 0 && !tipoRecepcion && (
-            <div style={{ padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+            <div style={{ padding: '16px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10 }}>
               <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>¿Cómo llega la mercancía?</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <button onClick={() => aplicarTipo('completa')}
-                  style={{ padding: '14px 16px', borderRadius: 10, border: '2px solid #bbf7d0',
-                    background: '#f0fdf4', cursor: 'pointer', textAlign: 'left' }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#15803d', marginBottom: 4 }}>✓ Recepción Completa</div>
-                  <div style={{ fontSize: 12, color: '#64748b' }}>Se recibe todo lo pendiente. La OC se cierra.</div>
+                  style={{ padding: '14px 16px', borderRadius: 10, border: '2px solid #E6E8EB',
+                    background: '#F4F5F7', cursor: 'pointer', textAlign: 'left' }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#1F7A50', marginBottom: 4 }}>✓ Recepción Completa</div>
+                  <div style={{ fontSize: 12, color: '#62666E' }}>Se recibe todo lo pendiente. La OC se cierra.</div>
                 </button>
                 <button onClick={() => aplicarTipo('parcial')}
-                  style={{ padding: '14px 16px', borderRadius: 10, border: '2px solid #fde68a',
-                    background: '#fffbeb', cursor: 'pointer', textAlign: 'left' }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#d97706', marginBottom: 4 }}>⚡ Recepción Parcial</div>
-                  <div style={{ fontSize: 12, color: '#64748b' }}>Solo parte de la mercancía. Define cantidad por artículo.</div>
+                  style={{ padding: '14px 16px', borderRadius: 10, border: '2px solid #E6E8EB',
+                    background: '#F4F5F7', cursor: 'pointer', textAlign: 'left' }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#B5761A', marginBottom: 4 }}>Recepción Parcial</div>
+                  <div style={{ fontSize: 12, color: '#62666E' }}>Solo parte de la mercancía. Define cantidad por artículo.</div>
                 </button>
               </div>
             </div>
@@ -367,7 +367,7 @@ function RecepcionModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
                         <td style={{ textAlign: 'right', fontSize: 12, color: 'var(--text-muted)' }}>{d.cantidad_pedida}</td>
                         <td style={{ textAlign: 'right' }}>
                           {tipoRecepcion === 'completa' ? (
-                            <span style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>{d.cantidad_recibida}</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: '#1F7A50' }}>{d.cantidad_recibida}</span>
                           ) : (
                             <input className="input" type="number" min="0" step="0.001" max={d.cantidad_pedida}
                               value={d.cantidad_recibida}
@@ -387,24 +387,24 @@ function RecepcionModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
 
           {/* Pregunta cierre OC — solo parcial */}
           {tipoRecepcion === 'parcial' && det.length > 0 && (
-            <div style={{ padding: '14px 16px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#d97706', marginBottom: 10 }}>
+            <div style={{ padding: '14px 16px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#B5761A', marginBottom: 10 }}>
                 ¿Qué ocurre con la OC después de esta recepción?
               </div>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={() => setCierraOC(false)}
                   style={{ flex: 1, padding: '10px 14px', borderRadius: 8, cursor: 'pointer',
-                    border: `2px solid ${cierraOC === false ? '#d97706' : '#e2e8f0'}`,
-                    background: cierraOC === false ? '#fffbeb' : '#fff', textAlign: 'left' }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#d97706' }}>⏳ Queda pendiente</div>
-                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>La OC pasa a "Recibida Parcial" — habrá más entregas.</div>
+                    border: `2px solid ${cierraOC === false ? '#B5761A' : '#E6E8EB'}`,
+                    background: cierraOC === false ? '#F4F5F7' : '#fff', textAlign: 'left' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#B5761A' }}>⏳ Queda pendiente</div>
+                  <div style={{ fontSize: 11, color: '#62666E', marginTop: 2 }}>La OC pasa a "Recibida Parcial" — habrá más entregas.</div>
                 </button>
                 <button onClick={() => setCierraOC(true)}
                   style={{ flex: 1, padding: '10px 14px', borderRadius: 8, cursor: 'pointer',
-                    border: `2px solid ${cierraOC === true ? '#2563eb' : '#e2e8f0'}`,
-                    background: cierraOC === true ? '#eff6ff' : '#fff', textAlign: 'left' }}>
+                    border: `2px solid ${cierraOC === true ? '#1C1D21' : '#E6E8EB'}`,
+                    background: cierraOC === true ? '#F4F5F7' : '#fff', textAlign: 'left' }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--blue)' }}>✓ Cerrar OC</div>
-                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>La OC se cierra con lo recibido hasta ahora.</div>
+                  <div style={{ fontSize: 11, color: '#62666E', marginTop: 2 }}>La OC se cierra con lo recibido hasta ahora.</div>
                 </button>
               </div>
             </div>
@@ -440,7 +440,7 @@ function RecepcionDetail({ rec, onClose }: { rec: any; onClose: () => void }) {
                   <tr key={i}>
                     <td style={{ fontSize: 13 }}>{d.descripcion}</td>
                     <td style={{ textAlign: 'right', fontSize: 12 }}>{d.cantidad_pedida}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, color: d.cantidad_recibida < d.cantidad_pedida ? '#d97706' : '#15803d' }}>{d.cantidad_recibida}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600, color: d.cantidad_recibida < d.cantidad_pedida ? '#B5761A' : '#1F7A50' }}>{d.cantidad_recibida}</td>
                     <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{d.unidad}</td>
                   </tr>
                 ))}

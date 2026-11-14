@@ -91,10 +91,10 @@ function tipoAcomp(a: Acomp): 'Familiar' | 'Invitado · Pase' | 'Green Fee' | 'I
 }
 
 const BADGE_COLORS: Record<string, { bg: string; color: string }> = {
-  'Familiar':       { bg: '#eff6ff', color: '#1d4ed8' },
-  'Invitado · Pase':{ bg: '#fffbeb', color: '#d97706' },
-  'Green Fee':      { bg: '#f0fdf4', color: '#16a34a' },
-  'Intercambio':    { bg: '#fdf4ff', color: '#a21caf' },
+  'Familiar':       { bg: '#F4F5F7', color: '#26282D' },
+  'Invitado · Pase':{ bg: '#F4F5F7', color: '#B5761A' },
+  'Green Fee':      { bg: '#F4F5F7', color: '#267F56' },
+  'Intercambio':    { bg: '#F4F5F7', color: '#6B4E79' },
 }
 
 // ---------------------------------------------------------------------------
@@ -423,7 +423,7 @@ export default function ReporteGolfAccesos() {
 
       {/* Error */}
       {error && (
-        <div className="card" style={{ padding: '12px 16px', color: '#dc2626', background: '#fef2f2', marginBottom: 16, fontSize: 13 }}>
+        <div className="card" style={{ padding: '12px 16px', color: '#C23B3B', background: '#F4F5F7', marginBottom: 16, fontSize: 13 }}>
           {error}
         </div>
       )}
@@ -444,10 +444,10 @@ export default function ReporteGolfAccesos() {
           {/* KPIs */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
             {[
-              { label: 'Total rondas',       value: accesos.length,  color: '#2563eb', bg: '#eff6ff' },
-              { label: 'Socios únicos',       value: sociosUnicos,    color: '#7c3aed', bg: '#f5f3ff' },
-              { label: 'Total acompañantes',  value: totalAcomps,     color: '#d97706', bg: '#fffbeb' },
-              { label: 'Días con accesos',    value: diasConAcceso,   color: '#0891b2', bg: '#ecfeff' },
+              { label: 'Total rondas',       value: accesos.length,  color: '#1C1D21', bg: '#F4F5F7' },
+              { label: 'Socios únicos',       value: sociosUnicos,    color: '#6B4E79', bg: '#F4F5F7' },
+              { label: 'Total acompañantes',  value: totalAcomps,     color: '#B5761A', bg: '#F4F5F7' },
+              { label: 'Días con accesos',    value: diasConAcceso,   color: '#32789A', bg: '#F4F5F7' },
             ].map(k => (
               <div key={k.label} className="card" style={{ flex: '1 1 140px', padding: '12px 16px' }}>
                 <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>{k.label}</div>
@@ -477,7 +477,7 @@ export default function ReporteGolfAccesos() {
                       <span style={{ color: 'var(--text-secondary)', minWidth: 120 }}>{cat}</span>
                       <span style={{
                         fontWeight: 700,
-                        color: '#2563eb',
+                        color: '#1C1D21',
                         fontSize: 14,
                         minWidth: 28,
                         textAlign: 'right',
@@ -552,15 +552,15 @@ export default function ReporteGolfAccesos() {
                             <td
                               colSpan={10}
                               style={{
-                                background: '#f1f5f9',
+                                background: '#F4F5F7',
                                 fontWeight: 700,
                                 fontSize: 11,
-                                color: '#475569',
+                                color: '#4A4D54',
                                 textTransform: 'uppercase',
                                 letterSpacing: '.06em',
                                 padding: '6px 12px',
                                 borderBottom: '1px solid var(--border)',
-                                borderTop: i > 0 ? '2px solid #cbd5e1' : undefined,
+                                borderTop: i > 0 ? '2px solid #C9CCD3' : undefined,
                               }}
                             >
                               {catActual}
@@ -581,11 +581,11 @@ export default function ReporteGolfAccesos() {
                             {fmtFecha(a.fecha_entrada)}
                           </td>
                           {/* Hora entrada */}
-                          <td style={{ padding: '8px 12px', fontFamily: 'monospace', fontSize: 11, color: 'var(--text-secondary)' }}>
+                          <td style={{ padding: '8px 12px', fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--text-secondary)' }}>
                             {fmtHora(a.fecha_entrada)}
                           </td>
                           {/* Hora salida */}
-                          <td style={{ padding: '8px 12px', fontFamily: 'monospace', fontSize: 11, color: a.fecha_salida ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
+                          <td style={{ padding: '8px 12px', fontVariantNumeric: 'tabular-nums', fontSize: 11, color: a.fecha_salida ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
                             {a.fecha_salida ? fmtHora(a.fecha_salida) : '—'}
                           </td>
                           {/* Categoría */}
@@ -612,8 +612,8 @@ export default function ReporteGolfAccesos() {
                               fontWeight: 600,
                               padding: '2px 8px',
                               borderRadius: 999,
-                              background: enCampo ? '#eff6ff' : '#f0fdf4',
-                              color: enCampo ? '#1d4ed8' : '#16a34a',
+                              background: enCampo ? '#F4F5F7' : '#1F7A50',
+                              color: enCampo ? '#26282D' : '#fff',
                               whiteSpace: 'nowrap',
                             }}>
                               {enCampo ? 'En campo' : 'Completado'}
@@ -626,8 +626,8 @@ export default function ReporteGolfAccesos() {
                               const venta = ventasGFMap[String(a.folio_ticket_pos)]
                               if (!venta) {
                                 return (
-                                  <span title="No se encontró ese ticket en las ventas del POS de Green Fees" style={{ fontSize: 11, fontWeight: 600, color: '#d97706' }}>
-                                    #{String(a.folio_ticket_pos).padStart(6, '0')} ⚠
+                                  <span title="No se encontró ese ticket en las ventas del POS de Green Fees" style={{ fontSize: 11, fontWeight: 600, color: '#B5761A' }}>
+                                    #{String(a.folio_ticket_pos).padStart(6, '0')} 
                                   </span>
                                 )
                               }
@@ -638,8 +638,8 @@ export default function ReporteGolfAccesos() {
                                   style={{
                                     display: 'inline-flex', alignItems: 'center', gap: 4,
                                     fontSize: 11, fontWeight: 600,
-                                    color: venta.status === 'CANCELADA' ? '#dc2626' : '#16a34a',
-                                    background: venta.status === 'CANCELADA' ? '#fef2f2' : '#f0fdf4',
+                                    color: '#fff',
+                                    background: venta.status === 'CANCELADA' ? '#C23B3B' : '#1F7A50',
                                     border: 'none', borderRadius: 999, padding: '3px 8px', cursor: 'pointer',
                                   }}
                                 >
@@ -669,8 +669,8 @@ export default function ReporteGolfAccesos() {
                                         fontSize: 10,
                                         padding: '2px 6px',
                                         borderRadius: 999,
-                                        background: bc.bg,
-                                        color: bc.color,
+                                        background: bc.color,
+                                        color: '#fff',
                                         fontWeight: 500,
                                         whiteSpace: 'nowrap',
                                       }}

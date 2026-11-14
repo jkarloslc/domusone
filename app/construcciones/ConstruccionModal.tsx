@@ -178,7 +178,7 @@ export default function ConstruccionModal({ construccion, onClose, onSaved }: {
         </button>
       </> : <button className="btn-secondary" onClick={handleClose}>Cerrar</button>}
     >
-      {error && <div style={{ padding: '10px', marginBottom: 12, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+      {error && <div style={{ padding: '10px', marginBottom: 12, background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
 
       {tab === 'expediente' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -192,8 +192,8 @@ export default function ConstruccionModal({ construccion, onClose, onSaved }: {
                   <div className="card" style={{ marginTop: 4, padding: '4px 0' }}>
                     {lotes.map(l => (
                       <button key={l.id} onClick={() => { setForm(f => ({ ...f, id_lote_fk: String(l.id) })); setLoteSearch(l.cve_lote ?? `#${l.lote}`); setLotes([]) }}
-                        style={{ display: 'flex', width: '100%', padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', color: '#d97706', fontWeight: 600, fontSize: 14 }}
-                        onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                        style={{ display: 'flex', width: '100%', padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', color: '#B5761A', fontWeight: 600, fontSize: 14 }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                         {l.cve_lote ?? `#${l.lote}`}
                       </button>
                     ))}
@@ -201,7 +201,7 @@ export default function ConstruccionModal({ construccion, onClose, onSaved }: {
                 )}
               </>
             ) : (
-              <div className="input" style={{ background: '#f8fafc', color: 'var(--text-secondary)' }}>{loteLabel}</div>
+              <div className="input" style={{ background: '#F8F9FA', color: 'var(--text-secondary)' }}>{loteLabel}</div>
             )}
           </div>
 
@@ -320,15 +320,15 @@ function ChecklistTab({ construccionId, loteId, onConstruccionClosed }: {
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
               <button onClick={() => toggle(item)} disabled={busy === item.id}
                 style={{ background: 'none', border: 'none', cursor: bloqueado && !item.completado ? 'not-allowed' : 'pointer', padding: 0, marginTop: 1 }}>
-                {busy === item.id ? <Loader size={19} className="animate-spin" style={{ color: '#d97706' }} />
-                  : item.completado ? <CheckCircle2 size={19} style={{ color: '#15803d' }} />
-                  : bloqueado ? <Lock size={17} style={{ color: '#cbd5e1' }} />
-                  : <Circle size={19} style={{ color: '#94a3b8' }} />}
+                {busy === item.id ? <Loader size={19} className="animate-spin" style={{ color: '#B5761A' }} />
+                  : item.completado ? <CheckCircle2 size={19} style={{ color: '#1F7A50' }} />
+                  : bloqueado ? <Lock size={17} style={{ color: '#C9CCD3' }} />
+                  : <Circle size={19} style={{ color: '#7A7E87' }} />}
               </button>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 700 }}>{item.orden}.</span>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: item.completado ? '#15803d' : 'var(--text-primary)' }}>{etapa?.label}</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: item.completado ? '#1F7A50' : 'var(--text-primary)' }}>{etapa?.label}</span>
                   {item.completado && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>· {fmtFecha(item.fecha_completado)}{item.completado_por ? ` · ${item.completado_por}` : ''}</span>}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 8 }}>
@@ -383,7 +383,7 @@ function AvancesTab({ construccionId }: { construccionId: number }) {
   return (
     <div>
       <div className="card" style={{ padding: 16, marginBottom: 16 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: '#d97706', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Registrar Avance</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#B5761A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Registrar Avance</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
           <div><label className="label">Fecha</label><input className="input" type="date" value={form.fecha} onChange={e => setForm(f => ({ ...f, fecha: e.target.value }))} /></div>
           <div><label className="label">% de Avance</label><input className="input" type="number" min={0} max={100} value={form.porcentaje_avance} onChange={e => setForm(f => ({ ...f, porcentaje_avance: e.target.value }))} /></div>
@@ -401,7 +401,7 @@ function AvancesTab({ construccionId }: { construccionId: number }) {
             <div key={a.id} className="card" style={{ padding: '12px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{fmtFecha(a.fecha)} {a.porcentaje_avance != null && <span style={{ color: '#d97706' }}>· {a.porcentaje_avance}%</span>}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{fmtFecha(a.fecha)} {a.porcentaje_avance != null && <span style={{ color: '#B5761A' }}>· {a.porcentaje_avance}%</span>}</div>
                   {a.descripcion && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{a.descripcion}</div>}
                   {a.registrado_por && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{a.registrado_por}</div>}
                 </div>
@@ -409,7 +409,7 @@ function AvancesTab({ construccionId }: { construccionId: number }) {
               </div>
               {a.imagenes?.length > 0 && (
                 <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-                  {a.imagenes.map((url, i) => <a key={i} href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt="" style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 6, border: '1px solid #e2e8f0' }} /></a>)}
+                  {a.imagenes.map((url, i) => <a key={i} href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt="" style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 6, border: '1px solid #E6E8EB' }} /></a>)}
                 </div>
               )}
             </div>
@@ -476,7 +476,7 @@ function IncidenciasTab({ construccionId, loteId, loteCve }: { construccionId: n
   return (
     <div>
       <div className="card" style={{ padding: 16, marginBottom: 16 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: '#d97706', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Registrar Incidencia</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#B5761A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Registrar Incidencia</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
           <div><label className="label">Fecha</label><input className="input" type="date" value={form.fecha} onChange={e => setForm(f => ({ ...f, fecha: e.target.value }))} /></div>
           <div><label className="label">Tipo</label><select className="select" value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}><option value="">—</option>{TIPOS_INCIDENCIA_OBRA.map(t => <option key={t}>{t}</option>)}</select></div>
@@ -509,7 +509,7 @@ function IncidenciasTab({ construccionId, loteId, loteCve }: { construccionId: n
                   {inc.registrado_por && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{inc.registrado_por}</div>}
                   {inc.imagenes?.length > 0 && (
                     <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-                      {inc.imagenes.map((url, i) => <a key={i} href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt="" style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 6, border: '1px solid #e2e8f0' }} /></a>)}
+                      {inc.imagenes.map((url, i) => <a key={i} href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt="" style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 6, border: '1px solid #E6E8EB' }} /></a>)}
                     </div>
                   )}
                 </div>
@@ -519,7 +519,7 @@ function IncidenciasTab({ construccionId, loteId, loteCve }: { construccionId: n
                   </select>
                   {inc.tiene_multa && (
                     inc.id_cargo_fk
-                      ? <span style={{ fontSize: 11, color: '#15803d', display: 'flex', alignItems: 'center', gap: 4 }}><Receipt size={12} /> Cargo #{inc.id_cargo_fk} generado</span>
+                      ? <span style={{ fontSize: 11, color: '#1F7A50', display: 'flex', alignItems: 'center', gap: 4 }}><Receipt size={12} /> Cargo #{inc.id_cargo_fk} generado</span>
                       : <button className="btn-ghost" style={{ fontSize: 11, padding: '4px 8px' }} disabled={genCargo === inc.id} onClick={() => generarCargo(inc)}>
                           {genCargo === inc.id ? <Loader size={11} className="animate-spin" /> : <Receipt size={11} />} Generar Cargo (CxC)
                         </button>
@@ -567,7 +567,7 @@ function DocumentosTab({ construccionId }: { construccionId: number }) {
   return (
     <div>
       <div className="card" style={{ padding: 16, marginBottom: 16 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: '#d97706', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Agregar Documento</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#B5761A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Agregar Documento</div>
         <div style={{ marginBottom: 10 }}><label className="label">Descripción / Etiqueta</label><input className="input" placeholder="Ej. Plano arquitectónico, oficio de vecinos…" value={etiqueta} onChange={e => setEtiqueta(e.target.value)} /></div>
         <FileUpload value={pendingUrl} onChange={handleUpload} accept="any" folder={`construcciones/${construccionId}/documentos`} label="Archivo" preview={false} />
       </div>
@@ -575,8 +575,8 @@ function DocumentosTab({ construccionId }: { construccionId: number }) {
       {docs.length === 0 ? <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)', fontSize: 13 }}>Sin documentos adicionales</div> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {docs.map(d => (
-            <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: '#f8fafc', borderRadius: 6 }}>
-              <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: '#d97706', fontWeight: 500, textDecoration: 'none' }}>{d.nombre_archivo}</a>
+            <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: '#F8F9FA', borderRadius: 6 }}>
+              <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: '#B5761A', fontWeight: 500, textDecoration: 'none' }}>{d.nombre_archivo}</a>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtFecha(d.created_at)}{d.subido_por ? ` · ${d.subido_por}` : ''}</span>
                 {canDelete() && <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => handleDelete(d.id)}><Trash2 size={13} /></button>}

@@ -6,7 +6,7 @@ import { PrintBar } from '@/app/reportes/utils'
 
 const UNIDAD: Record<string, string> = { CFE: 'kWh', Agua: 'm³', 'Gas LP': 'L' }
 type Sem = 'ROJO' | 'AMARILLO' | 'VERDE' | null
-const SEM_COLOR: Record<string, string> = { ROJO: '#dc2626', AMARILLO: '#d97706', VERDE: '#15803d' }
+const SEM_COLOR: Record<string, string> = { ROJO: '#C23B3B', AMARILLO: '#B5761A', VERDE: '#1F7A50' }
 
 const money = (n: number | null | undefined, d = 0) =>
   n == null ? '—' : n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: d, maximumFractionDigits: d })
@@ -154,14 +154,14 @@ export default function InformeServicio({ catalogo, registros, ccMap, areaMap, s
             return (
               <g key={i}>
                 <rect x={x} y={H - P.b - h} width={Math.max(bw - 6, 4)} height={h} rx={2} fill={color} opacity={ultimo ? 1 : 0.55} />
-                <text x={x + (bw - 6) / 2} y={H - P.b - h - 3} textAnchor="middle" fontSize={8} fill="#64748b">{fmtV(d.v)}</text>
-                <text x={x + (bw - 6) / 2} y={H - 10} textAnchor="middle" fontSize={8} fill="#64748b">{d.l}</text>
+                <text x={x + (bw - 6) / 2} y={H - P.b - h - 3} textAnchor="middle" fontSize={8} fill="#62666E">{fmtV(d.v)}</text>
+                <text x={x + (bw - 6) / 2} y={H - 10} textAnchor="middle" fontSize={8} fill="#62666E">{d.l}</text>
               </g>
             )
           })}
           {datos.length > 1 && <>
-            <line x1={P.l} x2={W - P.r} y1={yp} y2={yp} stroke="#94a3b8" strokeDasharray="4 3" strokeWidth={1} />
-            <text x={W - P.r} y={yp - 3} textAnchor="end" fontSize={8} fill="#94a3b8">promedio {fmtV(prom)}</text>
+            <line x1={P.l} x2={W - P.r} y1={yp} y2={yp} stroke="#7A7E87" strokeDasharray="4 3" strokeWidth={1} />
+            <text x={W - P.r} y={yp - 3} textAnchor="end" fontSize={8} fill="#7A7E87">promedio {fmtV(prom)}</text>
           </>}
         </svg>
       </div>
@@ -174,7 +174,7 @@ export default function InformeServicio({ catalogo, registros, ccMap, areaMap, s
     <div>
       {/* Filtros y parámetros */}
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, padding: '8px 12px',
-        background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, flexWrap: 'wrap' }}>
+        background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, flexWrap: 'wrap' }}>
         <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Umbral amarillo %
           <input className="input" type="number" style={{ ...inpS, width: 60, marginLeft: 4 }} value={umbAm} onChange={e => setUmbAm(Number(e.target.value))} /></label>
         <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>rojo %
@@ -203,7 +203,7 @@ export default function InformeServicio({ catalogo, registros, ccMap, areaMap, s
           </div>
 
           <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 12 }}>
-            <div style={{ padding: '8px 14px', fontSize: 12, fontWeight: 600, borderBottom: '1px solid #e2e8f0' }}>Por centro de costo (último periodo de cada servicio)</div>
+            <div style={{ padding: '8px 14px', fontSize: 12, fontWeight: 600, borderBottom: '1px solid #E6E8EB' }}>Por centro de costo (último periodo de cada servicio)</div>
             <table>
               <thead><tr><th>Centro de Costo</th><th style={{ textAlign: 'right' }}>Servicios</th><th style={{ textAlign: 'right' }}>Costo</th><th style={{ textAlign: 'right' }}>Participación</th></tr></thead>
               <tbody>{porCC.map(([k, v]) => (
@@ -215,7 +215,7 @@ export default function InformeServicio({ catalogo, registros, ccMap, areaMap, s
           </div>
 
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '8px 14px', fontSize: 12, fontWeight: 600, borderBottom: '1px solid #e2e8f0' }}>Ranking de servicios por costo</div>
+            <div style={{ padding: '8px 14px', fontSize: 12, fontWeight: 600, borderBottom: '1px solid #E6E8EB' }}>Ranking de servicios por costo</div>
             <div style={{ overflowX: 'auto' }}>
               <table id="reporte-table">
                 <thead><tr>
@@ -238,7 +238,7 @@ export default function InformeServicio({ catalogo, registros, ccMap, areaMap, s
                       <td style={{ textAlign: 'right' }}>{pct(c.varConsumo)}</td>
                       <td style={{ textAlign: 'right' }}>{totalUlt ? ((c.costo / totalUlt) * 100).toFixed(1) : 0}%</td>
                       <td><SemBadge s={sem(Math.max(c.varConsumo ?? -1, c.varPrecio ?? -1) === -1 ? null : Math.max(c.varConsumo ?? -1, c.varPrecio ?? -1))} /></td>
-                      <td style={{ color: warns ? '#d97706' : 'var(--text-muted)', fontWeight: warns ? 600 : 400 }}>{warns || '—'}</td>
+                      <td style={{ color: warns ? '#B5761A' : 'var(--text-muted)', fontWeight: warns ? 600 : 400 }}>{warns || '—'}</td>
                     </tr>
                   )
                 })}</tbody>
@@ -281,9 +281,9 @@ export default function InformeServicio({ catalogo, registros, ccMap, areaMap, s
             const h = [...cur.regs].slice(0, 12).reverse()
             return (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
-                <Barras titulo={`Consumo por periodo (${UNIDAD[cur.s.tipo_servicio]})`} color="#d97706"
+                <Barras titulo={`Consumo por periodo (${UNIDAD[cur.s.tipo_servicio]})`} color="#B5761A"
                   datos={h.map(r => ({ l: lblPeriodo(r.fecha_inicio), v: r.consumo_periodo ?? 0 }))} fmtV={n => numf(n)} />
-                <Barras titulo="Costo por periodo ($)" color="#2563eb"
+                <Barras titulo="Costo por periodo ($)" color="#1C1D21"
                   datos={h.map(r => ({ l: lblPeriodo(r.fecha_inicio), v: r.monto_periodo ?? 0 }))} fmtV={n => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(Math.round(n)))} />
               </div>
             )
@@ -295,8 +295,8 @@ export default function InformeServicio({ catalogo, registros, ccMap, areaMap, s
               <b>Composición del último recibo:</b>
               <span>Subtotal {money(cur.ult.subtotal, 2)}</span><span>IVA {money(cur.ult.iva, 2)}</span>
               {cur.ult.dap != null && <span>DAP {money(cur.ult.dap, 2)}</span>}
-              {cur.ult.cargo_fp ? <span style={{ color: '#dc2626' }}>Cargo FP {money(cur.ult.cargo_fp, 2)}</span> : null}
-              {cur.ult.bonif_fp ? <span style={{ color: '#15803d' }}>Bonif. FP {money(cur.ult.bonif_fp, 2)}</span> : null}
+              {cur.ult.cargo_fp ? <span style={{ color: '#C23B3B' }}>Cargo FP {money(cur.ult.cargo_fp, 2)}</span> : null}
+              {cur.ult.bonif_fp ? <span style={{ color: '#1F7A50' }}>Bonif. FP {money(cur.ult.bonif_fp, 2)}</span> : null}
               {cur.ult.demanda_max_kw != null && <span>Demanda {numf(cur.ult.demanda_max_kw, 1)} kW</span>}
               {cur.ult.factor_potencia != null && <span>FP {numf(cur.ult.factor_potencia, 2)}%</span>}
             </div>
@@ -304,7 +304,7 @@ export default function InformeServicio({ catalogo, registros, ccMap, areaMap, s
 
           {/* Comparativo */}
           <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 10 }}>
-            <div style={{ padding: '8px 14px', fontSize: 12, fontWeight: 600, borderBottom: '1px solid #e2e8f0' }}>
+            <div style={{ padding: '8px 14px', fontSize: 12, fontWeight: 600, borderBottom: '1px solid #E6E8EB' }}>
               Último recibo vs anterior vs promedio de {cur.nPrev} periodos previos
             </div>
             <table>
@@ -331,7 +331,7 @@ export default function InformeServicio({ catalogo, registros, ccMap, areaMap, s
             <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Alertas automáticas</div>
             {cur.alertas.map((a, i) => (
               <div key={i} style={{ fontSize: 12, display: 'flex', gap: 6, alignItems: 'center', padding: '2px 0',
-                color: a.nivel === 'warn' ? '#b45309' : a.nivel === 'ok' ? '#15803d' : 'var(--text-muted)' }}>
+                color: a.nivel === 'warn' ? '#96600F' : a.nivel === 'ok' ? '#1F7A50' : 'var(--text-muted)' }}>
                 {a.nivel === 'warn' ? <AlertTriangle size={12} /> : a.nivel === 'ok' ? <CheckCircle2 size={12} /> : <span style={{ width: 12, textAlign: 'center' }}>•</span>}
                 {a.txt}
               </div>

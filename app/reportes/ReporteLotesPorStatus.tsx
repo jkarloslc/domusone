@@ -11,9 +11,9 @@ const fmtPeso = (n: number) =>
 const STATUSES = ['Vendido', 'Libre', 'Bloqueado']
 
 const STATUS_META: Record<string, { color: string; bg: string; border: string; headerBg: string }> = {
-  Vendido:   { color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0', headerBg: '#dcfce7' },
-  Libre:     { color: '#1d4ed8', bg: '#eff6ff', border: '#bfdbfe', headerBg: '#dbeafe' },
-  Bloqueado: { color: '#dc2626', bg: '#fef2f2', border: '#fecaca', headerBg: '#fee2e2' },
+  Vendido:   { color: '#1F7A50', bg: '#F4F5F7', border: '#E6E8EB', headerBg: '#E6E8EB' },
+  Libre:     { color: '#26282D', bg: '#F4F5F7', border: '#C9CCD3', headerBg: '#E6E8EB' },
+  Bloqueado: { color: '#C23B3B', bg: '#F4F5F7', border: '#E6E8EB', headerBg: '#E6E8EB' },
 }
 
 export default function ReporteLotesPorStatus() {
@@ -128,11 +128,11 @@ export default function ReporteLotesPorStatus() {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
         {[
           { label: 'Total',       value: totalLotes,    color: 'var(--blue)',      pct: null },
-          { label: 'Vendidos',    value: totalVendidos, color: '#15803d',          pct: totalLotes ? Math.round(totalVendidos / totalLotes * 100) : 0 },
-          { label: 'Libres',      value: totalLibres,   color: '#1d4ed8',          pct: totalLotes ? Math.round(totalLibres   / totalLotes * 100) : 0 },
-          { label: 'Bloqueados',  value: totalBloq,     color: '#dc2626',          pct: totalLotes ? Math.round(totalBloq     / totalLotes * 100) : 0 },
+          { label: 'Vendidos',    value: totalVendidos, color: '#1F7A50',          pct: totalLotes ? Math.round(totalVendidos / totalLotes * 100) : 0 },
+          { label: 'Libres',      value: totalLibres,   color: '#26282D',          pct: totalLotes ? Math.round(totalLibres   / totalLotes * 100) : 0 },
+          { label: 'Bloqueados',  value: totalBloq,     color: '#C23B3B',          pct: totalLotes ? Math.round(totalBloq     / totalLotes * 100) : 0 },
           { label: 'Sup. total m²', value: fmt(supTotal), color: 'var(--text-primary)', pct: null },
-          { label: 'Valor total', value: fmtPeso(valTotal), color: '#0f766e',      pct: null },
+          { label: 'Valor total', value: fmtPeso(valTotal), color: '#126B63',      pct: null },
         ].map(k => (
           <div key={k.label} className="card"
             style={{ padding: '10px 16px', flex: '1 1 120px', maxWidth: 185, borderTop: `3px solid ${k.color}` }}>
@@ -148,8 +148,8 @@ export default function ReporteLotesPorStatus() {
       </div>
 
       {queryError && (
-        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8,
-          padding: '10px 14px', marginBottom: 12, fontSize: 12, color: '#dc2626' }}>
+        <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8,
+          padding: '10px 14px', marginBottom: 12, fontSize: 12, color: '#C23B3B' }}>
           Error: {queryError}
         </div>
       )}
@@ -178,24 +178,24 @@ export default function ReporteLotesPorStatus() {
                 <button onClick={() => toggleStatus(st)}
                   style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '12px 16px', border: 'none', cursor: 'pointer',
-                    background: meta?.headerBg ?? '#f8fafc',
-                    borderBottom: isOpen ? `1px solid ${meta?.border ?? '#e2e8f0'}` : 'none' }}>
+                    background: meta?.headerBg ?? '#F8F9FA',
+                    borderBottom: isOpen ? `1px solid ${meta?.border ?? '#E6E8EB'}` : 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     {isOpen
-                      ? <ChevronDown  size={14} style={{ color: meta?.color ?? '#64748b' }} />
-                      : <ChevronRight size={14} style={{ color: meta?.color ?? '#64748b' }} />}
-                    <span style={{ fontSize: 14, fontWeight: 700, color: meta?.color ?? '#64748b' }}>{st}</span>
+                      ? <ChevronDown  size={14} style={{ color: meta?.color ?? '#62666E' }} />
+                      : <ChevronRight size={14} style={{ color: meta?.color ?? '#62666E' }} />}
+                    <span style={{ fontSize: 14, fontWeight: 700, color: meta?.color ?? '#62666E' }}>{st}</span>
                     <span style={{ fontSize: 12, padding: '1px 8px', borderRadius: 20, fontWeight: 600,
-                      color: meta?.color ?? '#64748b',
-                      background: (meta?.color ?? '#64748b') + '15',
-                      border: `1px solid ${meta?.border ?? '#e2e8f0'}` }}>
+                      color: '#fff',
+                      background: (meta?.color ?? '#62666E'),
+                      border: `1px solid ${meta?.border ?? '#E6E8EB'}` }}>
                       {grupo.length} lote{grupo.length !== 1 ? 's' : ''} · {pct}%
                     </span>
                   </div>
                   <div style={{ display: 'flex', gap: 20, fontSize: 12, color: 'var(--text-secondary)' }}>
                     <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(supGrupo)} m²</span>
                     {valGrupo > 0 && (
-                      <span style={{ fontVariantNumeric: 'tabular-nums', color: meta?.color ?? '#64748b', fontWeight: 600 }}>
+                      <span style={{ fontVariantNumeric: 'tabular-nums', color: meta?.color ?? '#62666E', fontWeight: 600 }}>
                         {fmtPeso(valGrupo)}
                       </span>
                     )}
@@ -247,17 +247,17 @@ export default function ReporteLotesPorStatus() {
                         </tr>
                       ))}
                       {/* Subtotal del grupo */}
-                      <tr style={{ background: meta?.bg ?? '#f8fafc', fontWeight: 600 }}>
-                        <td colSpan={4} style={{ fontSize: 11, color: meta?.color ?? '#64748b', paddingLeft: 12 }}>
+                      <tr style={{ background: meta?.bg ?? '#F8F9FA', fontWeight: 600 }}>
+                        <td colSpan={4} style={{ fontSize: 11, color: meta?.color ?? '#62666E', paddingLeft: 12 }}>
                           Subtotal {st} — {grupo.length} lote{grupo.length !== 1 ? 's' : ''}
                         </td>
                         <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums',
-                          color: meta?.color ?? '#64748b' }}>
+                          color: meta?.color ?? '#62666E' }}>
                           {fmt(supGrupo)}
                         </td>
                         <td colSpan={2} />
                         <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums',
-                          color: meta?.color ?? '#64748b' }}>
+                          color: meta?.color ?? '#62666E' }}>
                           {fmtPeso(valGrupo)}
                         </td>
                       </tr>

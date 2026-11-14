@@ -17,7 +17,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <>
       {/* Sub-navegación del módulo — patrón Riego/POS */}
-      <div style={{ display: 'flex', gap: 4, borderBottom: '2px solid #e2e8f0',
+      <div style={{ display: 'flex', gap: 4, borderBottom: '2px solid #E6E8EB',
         paddingLeft: 32, background: '#fff' }}>
         {NAV.map(item => {
           const active = path === item.href || path.startsWith(item.href + '/')
@@ -27,8 +27,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               style={{
                 padding: '10px 18px', border: 'none', background: 'none', cursor: 'pointer',
                 fontSize: 13, fontWeight: active ? 700 : 500,
-                color: active ? '#2563eb' : '#64748b',
-                borderBottom: active ? '2px solid #2563eb' : '2px solid transparent',
+                color: active ? '#1C1D21' : '#62666E',
+                borderBottom: active ? '2px solid #19D3C5' : '2px solid transparent',
                 marginBottom: -2, display: 'flex', alignItems: 'center', gap: 6,
                 transition: 'all 0.15s', textDecoration: 'none', whiteSpace: 'nowrap',
               }}>

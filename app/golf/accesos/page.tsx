@@ -192,18 +192,18 @@ export default function AccesosPage() {
       {/* Stats */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
         {[
-          { label: esHoy ? 'Jugadores Hoy' : 'Total del Día', value: stats.total,      color: '#2563eb', bg: '#eff6ff', icon: Users },
-          { label: 'En campo (socios + acomp.)',              value: stats.activos,     color: '#16a34a', bg: '#f0fdf4', icon: LogIn  },
-          { label: 'Completados (socios + acomp.)',           value: stats.completados, color: '#64748b', bg: '#f8fafc', icon: LogOut },
+          { label: esHoy ? 'Jugadores Hoy' : 'Total del Día', value: stats.total,      color: '#1C1D21', bg: '#F4F5F7', icon: Users },
+          { label: 'En campo (socios + acomp.)',              value: stats.activos,     color: '#267F56', bg: '#F4F5F7', icon: LogIn  },
+          { label: 'Completados (socios + acomp.)',           value: stats.completados, color: '#62666E', bg: '#F8F9FA', icon: LogOut },
         ].map(card => {
           const Icon = card.icon
           return (
-            <div key={card.label} className="card" style={{ flex: '1 1 160px', maxWidth: 220, padding: '14px 18px', background: card.bg, border: `1px solid ${card.color}22` }}>
+            <div key={card.label} className="card" style={{ flex: '1 1 160px', maxWidth: 220, padding: '14px 18px', background: '#fff', border: '1px solid #E6E8EB' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <Icon size={14} style={{ color: card.color }} />
-                <span style={{ fontSize: 11, color: '#64748b' }}>{card.label}</span>
+                <span style={{ fontSize: 11, color: '#62666E' }}>{card.label}</span>
               </div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: card.color, lineHeight: 1 }}>{card.value}</div>
+              <div style={{ fontSize: 28, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)', lineHeight: 1 }}>{card.value}</div>
             </div>
           )
         })}
@@ -212,7 +212,7 @@ export default function AccesosPage() {
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Filter size={13} style={{ color: '#94a3b8' }} />
+          <Filter size={13} style={{ color: '#7A7E87' }} />
           <input
             type="date"
             value={fecha}
@@ -231,7 +231,7 @@ export default function AccesosPage() {
           {(['todos', 'activos', 'completados'] as const).map(s => (
             <button key={s} onClick={() => setFiltroStatus(s)} style={{
               padding: '7px 14px', fontSize: 12, fontWeight: filtroStatus === s ? 600 : 400,
-              background: filtroStatus === s ? '#2563eb' : 'var(--surface-800)',
+              background: filtroStatus === s ? '#1C1D21' : 'var(--surface-800)',
               color: filtroStatus === s ? '#fff' : 'var(--text-muted)',
               border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s',
             }}>
@@ -239,7 +239,7 @@ export default function AccesosPage() {
             </button>
           ))}
         </div>
-        {esHoy && <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>● Hoy</span>}
+        {esHoy && <span style={{ fontSize: 12, color: '#267F56', fontWeight: 600 }}>● Hoy</span>}
       </div>
 
       {/* Tabla */}
@@ -283,7 +283,7 @@ export default function AccesosPage() {
                     </td>
                     <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <Clock size={11} style={{ color: '#16a34a' }} />
+                        <Clock size={11} style={{ color: '#267F56' }} />
                         <span style={{ fontSize: 13, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{fmtHora(a.fecha_entrada)}</span>
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtFecha(a.fecha_entrada)}</div>
@@ -292,12 +292,12 @@ export default function AccesosPage() {
                       {a.fecha_salida ? (
                         <>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                            <Clock size={11} style={{ color: '#64748b' }} />
+                            <Clock size={11} style={{ color: '#62666E' }} />
                             <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>{fmtHora(a.fecha_salida)}</span>
                           </div>
                         </>
                       ) : (
-                        <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#dcfce7', color: '#16a34a' }}>En campo</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#1F7A50', color: '#fff' }}>En campo</span>
                       )}
                     </td>
                     <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)' }}>
@@ -307,7 +307,7 @@ export default function AccesosPage() {
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                         <button
                           className="btn-ghost"
-                          style={{ padding: '4px 6px', color: '#64748b' }}
+                          style={{ padding: '4px 6px', color: '#62666E' }}
                           onClick={() => abrirDetalle(a)}
                           title="Ver detalle">
                           <Eye size={13} />
@@ -315,7 +315,7 @@ export default function AccesosPage() {
                         {enCampo && puedeEscribir && (
                           <button
                             className="btn-ghost"
-                            style={{ padding: '4px 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, color: '#dc2626', opacity: isSalida ? 0.5 : 1 }}
+                            style={{ padding: '4px 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, color: '#C23B3B', opacity: isSalida ? 0.5 : 1 }}
                             onClick={() => registrarSalida(a.id)}
                             disabled={isSalida}
                             title="Registrar salida">
@@ -353,18 +353,18 @@ export default function AccesosPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
             {/* Socio */}
-            <div style={{ padding: '12px 16px', background: '#eff6ff', borderRadius: 10, border: '1px solid #bfdbfe' }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#1d4ed8' }}>
+            <div style={{ padding: '12px 16px', background: '#F4F5F7', borderRadius: 10, border: '1px solid #C9CCD3' }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#26282D' }}>
                 {detalle.cat_socios
                   ? [detalle.cat_socios.nombre, detalle.cat_socios.apellido_paterno, detalle.cat_socios.apellido_materno].filter(Boolean).join(' ')
                   : '—'}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
                 {detalle.cat_socios?.numero_socio && (
-                  <span style={{ fontSize: 12, color: '#3b82f6' }}>#{detalle.cat_socios.numero_socio}</span>
+                  <span style={{ fontSize: 12, color: '#33363C' }}>#{detalle.cat_socios.numero_socio}</span>
                 )}
                 {detalle.cat_socios?.cat_categorias_socios?.nombre && (
-                  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#dbeafe', color: '#1d4ed8' }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#E6E8EB', color: '#26282D' }}>
                     {detalle.cat_socios.cat_categorias_socios.nombre}
                   </span>
                 )}
@@ -380,7 +380,7 @@ export default function AccesosPage() {
                 { label: 'Salida',            value: detalle.fecha_salida ? `${fmtFecha(detalle.fecha_salida)} ${fmtHora(detalle.fecha_salida)}` : '—' },
                 { label: 'Status',            value: detalle.fecha_salida ? 'Completado' : 'En campo' },
               ].map(({ label, value }) => (
-                <div key={label} style={{ padding: '10px 12px', background: 'var(--bg-muted, #f8fafc)', borderRadius: 8, border: '1px solid var(--border, #e2e8f0)' }}>
+                <div key={label} style={{ padding: '10px 12px', background: 'var(--bg-muted, #F8F9FA)', borderRadius: 8, border: '1px solid var(--border, #E6E8EB)' }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>{label}</div>
                   <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{value}</div>
                 </div>
@@ -393,26 +393,26 @@ export default function AccesosPage() {
                 Acompañantes {!loadingAcomps && `(${detalleAcomps.length})`}
               </div>
               {loadingAcomps ? (
-                <div style={{ fontSize: 13, color: '#94a3b8' }}>Cargando…</div>
+                <div style={{ fontSize: 13, color: '#7A7E87' }}>Cargando…</div>
               ) : detalleAcomps.length === 0 ? (
-                <div style={{ fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>Sin acompañantes registrados</div>
+                <div style={{ fontSize: 13, color: '#7A7E87', fontStyle: 'italic' }}>Sin acompañantes registrados</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {detalleAcomps.map((ac, i) => {
                     const tipo = !ac.es_externo
-                      ? { label: 'Familiar',  bg: '#eff6ff', color: '#1d4ed8' }
+                      ? { label: 'Familiar',  bg: '#F4F5F7', color: '#26282D' }
                       : ac.origen_pago === 'PASE'
-                        ? { label: 'Invitado · Pase',  bg: '#fffbeb', color: '#d97706' }
+                        ? { label: 'Invitado · Pase',  bg: '#F4F5F7', color: '#B5761A' }
                         : ac.origen_pago === 'INTERCAMBIO'
-                          ? { label: 'Intercambio', bg: '#fdf4ff', color: '#a21caf' }
-                        : { label: 'Green Fee', bg: '#f0fdf4', color: '#16a34a' }
+                          ? { label: 'Intercambio', bg: '#F4F5F7', color: '#6B4E79' }
+                        : { label: 'Green Fee', bg: '#F4F5F7', color: '#267F56' }
                     return (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                        <span style={{ fontSize: 13, color: '#334155', fontWeight: 500 }}>
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', background: '#F8F9FA', borderRadius: 8, border: '1px solid #E6E8EB' }}>
+                        <span style={{ fontSize: 13, color: '#33363C', fontWeight: 500 }}>
                           {ac.nombre}
                           {ac.origen_pago === 'INTERCAMBIO' && ac.club_origen ? ` · ${ac.club_origen}` : ''}
                         </span>
-                        <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 20, background: tipo.bg, color: tipo.color, flexShrink: 0 }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 20, background: tipo.color, color: '#fff', flexShrink: 0 }}>
                           {tipo.label}
                         </span>
                       </div>
@@ -424,7 +424,7 @@ export default function AccesosPage() {
 
             {/* Observaciones */}
             {detalle.observaciones && (
-              <div style={{ padding: '10px 14px', background: '#fffbeb', borderRadius: 8, border: '1px solid #fde68a', fontSize: 13, color: '#78350f' }}>
+              <div style={{ padding: '10px 14px', background: '#F4F5F7', borderRadius: 8, border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', fontSize: 13, color: '#7A4B0C' }}>
                 <span style={{ fontWeight: 600 }}>Observaciones: </span>{detalle.observaciones}
               </div>
             )}

@@ -38,10 +38,10 @@ type Props = {
 }
 
 const inp: React.CSSProperties = {
-  width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0',
-  borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none',
+  width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB',
+  borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none',
 }
-const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }
+const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }
 
 const HORAS = Array.from({ length: 79 }, (_, i) => {
   const totalMin = 7 * 60 + i * 10
@@ -200,20 +200,20 @@ export default function ReservacionModal({ fecha, reservacion, onClose, onSaved 
         {/* Toggle Socio / Visitante externo */}
         <div>
           <label style={lbl}>Tipo de jugador *</label>
-          <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', gap: 0, border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
             <button onClick={() => switchTipo(false)} style={{
               flex: 1, padding: '9px 0', fontSize: 13, fontWeight: !esExterno ? 600 : 400,
-              background: !esExterno ? '#eff6ff' : '#fff',
-              color: !esExterno ? '#1d4ed8' : '#94a3b8',
+              background: !esExterno ? '#F4F5F7' : '#fff',
+              color: !esExterno ? '#26282D' : '#7A7E87',
               border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              borderRight: '1px solid #e2e8f0', transition: 'all 0.15s',
+              borderRight: '1px solid #E6E8EB', transition: 'all 0.15s',
             }}>
               <UserCheck size={14} /> Socio
             </button>
             <button onClick={() => switchTipo(true)} style={{
               flex: 1, padding: '9px 0', fontSize: 13, fontWeight: esExterno ? 600 : 400,
-              background: esExterno ? '#fff7ed' : '#fff',
-              color: esExterno ? '#c2410c' : '#94a3b8',
+              background: esExterno ? '#F4F5F7' : '#fff',
+              color: esExterno ? '#A8501F' : '#7A7E87',
               border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               transition: 'all 0.15s',
             }}>
@@ -227,33 +227,33 @@ export default function ReservacionModal({ fecha, reservacion, onClose, onSaved 
           <div>
             <label style={lbl}>Socio *</label>
             {socioSelec ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8 }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1d4ed8' }}>{nombreSocio}</div>
-                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#26282D' }}>{nombreSocio}</div>
+                  <div style={{ fontSize: 11, color: '#62666E', marginTop: 1 }}>
                     {socioSelec.numero_socio && `#${socioSelec.numero_socio} · `}
                     {socioSelec.cat_categorias_socios?.nombre}
                   </div>
                 </div>
-                <button onClick={() => setSocioSelec(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={14} /></button>
+                <button onClick={() => setSocioSelec(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87' }}><X size={14} /></button>
               </div>
             ) : (
               <div style={{ position: 'relative' }}>
-                <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                {buscando && <Loader size={12} className="animate-spin" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />}
+                <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
+                {buscando && <Loader size={12} className="animate-spin" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />}
                 <input style={{ ...inp, paddingLeft: 30 }} placeholder="Buscar por nombre o número de socio…"
                   value={socioSearch} onChange={e => setSocioSearch(e.target.value)} autoFocus />
                 {socioResults.length > 0 && (
-                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4 }}>
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4 }}>
                     {socioResults.map(s => {
                       const nombre = [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')
                       return (
                         <button key={s.id} onClick={() => seleccionarSocio(s)}
-                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', padding: '9px 14px', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
-                          onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', padding: '9px 14px', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid #F4F5F7' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{nombre}</span>
-                          <span style={{ fontSize: 11, color: '#64748b' }}>{s.numero_socio && `#${s.numero_socio} · `}{s.cat_categorias_socios?.nombre}</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>{nombre}</span>
+                          <span style={{ fontSize: 11, color: '#62666E' }}>{s.numero_socio && `#${s.numero_socio} · `}{s.cat_categorias_socios?.nombre}</span>
                         </button>
                       )
                     })}
@@ -323,11 +323,11 @@ export default function ReservacionModal({ fecha, reservacion, onClose, onSaved 
         </div>
 
         {/* Carro de Golf */}
-        <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+        <div style={{ padding: '12px 14px', background: '#F8F9FA', borderRadius: 8, border: '1px solid #E6E8EB' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: form.carro_golf ? 12 : 0 }}>
             <input type="checkbox" id="carro" checked={form.carro_golf} onChange={e => set('carro_golf', e.target.checked)} style={{ width: 16, height: 16, cursor: 'pointer' }} />
             <label htmlFor="carro" style={{ ...lbl, marginBottom: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Car size={14} style={{ color: '#64748b' }} /> Incluye carro de golf
+              <Car size={14} style={{ color: '#62666E' }} /> Incluye carro de golf
             </label>
           </div>
           {form.carro_golf && (
@@ -347,7 +347,7 @@ export default function ReservacionModal({ fecha, reservacion, onClose, onSaved 
         </div>
 
         {error && (
-          <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>{error}</div>
+          <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 13, color: '#C23B3B' }}>{error}</div>
         )}
       </div>
     </ModalShell>

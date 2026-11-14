@@ -12,14 +12,14 @@ const MODULOS = [
     key:   'cxp',
     label: 'Cuentas por Pagar',
     icon:  FileText,
-    color: '#dc2626',
+    color: '#C23B3B',
     desc:  'Saldos por proveedor, antigüedad de documentos y registro de pagos',
   },
   {
     key:   'cuentas-bancarias',
     label: 'Cuentas Bancarias',
     icon:  Building2,
-    color: '#0f766e',
+    color: '#126B63',
     desc:  'Saldos, movimientos y administración de cuentas bancarias',
   },
   // Flujo de Caja oculto del hub (se trabaja por fuera); la ruta /tesoreria/flujo-caja sigue existiendo.
@@ -49,13 +49,12 @@ export default function TesoreriaPage() {
             <button key={m.key}
               onClick={() => router.push(`/tesoreria/${m.key}`)}
               className="card card-hover"
-              style={{ padding: '22px 24px', textAlign: 'left', background: 'none',
-                border: '1px solid #e2e8f0', cursor: 'pointer',
+              style={{ padding: '22px 24px', textAlign: 'left', background: '#fff',
+                border: '1px solid #E6E8EB', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: 16 }}>
-              <div style={{ width: 48, height: 48, borderRadius: 12,
-                background: m.color + '15',
+              <div className="icon-chip" style={{ width: 48, height: 48, borderRadius: 12,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Icon size={22} style={{ color: m.color }} />
+                <Icon size={22} style={{ color: '#1C1D21' }} />
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 3 }}>
@@ -65,14 +64,14 @@ export default function TesoreriaPage() {
                   {m.desc}
                 </div>
               </div>
-              <ChevronRight size={15} style={{ color: '#cbd5e1', flexShrink: 0 }} />
+              <ChevronRight size={15} style={{ color: '#C9CCD3', flexShrink: 0 }} />
             </button>
           )
         })}
       </div>
 
       {/* Nota de acceso */}
-      <div className="card" style={{ padding: '14px 20px', marginTop: 24, background: '#f8fafc',
+      <div className="card" style={{ padding: '14px 20px', marginTop: 24, background: '#F8F9FA',
         display: 'flex', alignItems: 'center', gap: 10 }}>
         <Clock size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
         <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>

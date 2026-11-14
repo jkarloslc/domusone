@@ -16,15 +16,15 @@ import { nextFolio } from '@/app/compras/types'
 import { cargarTiposGasto, armarCatalogo } from '@/lib/tiposGasto'
 
 const STATUS_COLOR: Record<string, { bg: string; color: string; border: string }> = {
-  'Capturado':  { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
-  'Autorizado': { bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
-  'Rechazado':  { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
+  'Capturado':  { bg: '#F4F5F7', color: '#B5761A', border: '#E6E8EB' },
+  'Autorizado': { bg: '#F4F5F7', color: '#1F7A50', border: '#E6E8EB' },
+  'Rechazado':  { bg: '#F4F5F7', color: '#C23B3B', border: '#E6E8EB' },
 }
 const StatusBadge = ({ status }: { status: string }) => {
   const s = STATUS_COLOR[status] ?? STATUS_COLOR['Capturado']
   return (
     <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-      background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
+      background: s.color, color: '#fff', border: `1px solid ${s.color}` }}>
       {status}
     </span>
   )
@@ -117,7 +117,7 @@ export default function RolDePagosPage() {
       <PageHeader
         backHref="/hr"
         icon={Wallet}
-        color="#b45309"
+        color="#96600F"
         eyebrowLabel="HR"
         title="Rol de Pagos"
         subtitle={`Asistencia semanal de colaboradores y monto a pagar · ${rows.length} lotes`}
@@ -140,7 +140,7 @@ export default function RolDePagosPage() {
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
-            <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+            <tr style={{ background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
               <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Folio</th>
               <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Periodo</th>
               <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Centro de Costo</th>
@@ -155,11 +155,11 @@ export default function RolDePagosPage() {
             ) : rows.length === 0 ? (
               <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>Sin rol de pagos capturado</td></tr>
             ) : rows.map(l => (
-              <tr key={l.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: 600, color: 'var(--blue)' }}>
+              <tr key={l.id} style={{ borderBottom: '1px solid #F4F5F7' }}>
+                <td style={{ padding: '10px 14px', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: 'var(--blue)' }}>
                   {l.folio}
                   {l.id_op_fk && (
-                    <span title="Ya tiene Orden de Pago generada" style={{ fontFamily: 'inherit', fontSize: 9, fontWeight: 600, marginLeft: 6, padding: '1px 6px', borderRadius: 20, background: '#eff6ff', color: 'var(--blue)', border: '1px solid #bfdbfe' }}>
+                    <span title="Ya tiene Orden de Pago generada" style={{ fontFamily: 'inherit', fontSize: 9, fontWeight: 600, marginLeft: 6, padding: '1px 6px', borderRadius: 20, background: '#F4F5F7', color: 'var(--blue)', border: '1px solid #C9CCD3' }}>
                     OP
                     </span>
                   )}
@@ -477,23 +477,23 @@ function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, o
     } catch {}
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+      : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
 
     const html = `<!DOCTYPE html><html><head><title>Rol de Pagos ${lote.folio}</title>
       <style>
-        body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
-        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
-        .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
-        .org-sub { font-size: 11px; color: #64748b; }
-        .doc-title { font-size: 14px; font-weight: 600; color: #0D4F80; margin-bottom: 2px; }
-        .sub { color: #64748b; font-size: 12px; margin-bottom: 24px; }
+        body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #26282D; }
+        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #1C1D21; margin-bottom: 18px; }
+        .org-nombre { font-size: 18px; font-weight: 700; color: #1C1D21; margin: 0 0 2px; }
+        .org-sub { font-size: 11px; color: #62666E; }
+        .doc-title { font-size: 14px; font-weight: 600; color: #1C1D21; margin-bottom: 2px; }
+        .sub { color: #62666E; font-size: 12px; margin-bottom: 24px; }
         table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-        td, th { border: 1px solid #e2e8f0; padding: 6px 8px; font-size: 11px; }
-        th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; text-align: left; }
-        .total { background: #eff6ff; font-size: 14px; font-weight: 700; color: #0D4F80; }
+        td, th { border: 1px solid #E6E8EB; padding: 6px 8px; font-size: 11px; }
+        th { background: #F4F5F7; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; text-align: left; }
+        .total { background: #F4F5F7; font-size: 14px; font-weight: 700; color: #1C1D21; }
         .firmas { display: flex; gap: 60px; margin-top: 60px; }
-        .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 180px; font-size: 11px; color: #64748b; }
-        .leyenda { font-size: 10px; color: #64748b; margin-top: 6px; }
+        .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 180px; font-size: 11px; color: #62666E; }
+        .leyenda { font-size: 10px; color: #62666E; margin-top: 6px; }
         @page { margin: 1.2cm; }
       </style></head><body>
       <div class="org-header">
@@ -541,13 +541,13 @@ function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, o
       </table>
       <div class="firmas">
         <div class="firma">
-          <div style="margin-bottom:2px;font-weight:600;color:#1e293b">${lote.captured_by ?? 'Sin registro'}</div>
+          <div style="margin-bottom:2px;font-weight:600;color:#26282D">${lote.captured_by ?? 'Sin registro'}</div>
           Capturó
         </div>
         <div class="firma">
-          <div style="margin-bottom:2px;font-weight:600;color:#1e293b">${lote.authorized_by ?? 'Sin registro'}</div>
+          <div style="margin-bottom:2px;font-weight:600;color:#26282D">${lote.authorized_by ?? 'Sin registro'}</div>
           Autorizó
-          ${lote.fecha_autorizacion ? `<div style="font-size:10px;color:#64748b;margin-top:2px">${new Date(lote.fecha_autorizacion).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
+          ${lote.fecha_autorizacion ? `<div style="font-size:10px;color:#62666E;margin-top:2px">${new Date(lote.fecha_autorizacion).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
         </div>
       </div>
       </body></html>`
@@ -593,26 +593,26 @@ function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, o
     } catch {}
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+      : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
 
     const html = `<!DOCTYPE html><html><head><title>Recibo ${lote.folio} - ${t.nombre}</title>
       <style>
-        body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
-        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
-        .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
-        .org-sub { font-size: 11px; color: #64748b; }
-        .doc-title { font-size: 16px; font-weight: 700; color: #0D4F80; margin-bottom: 2px; letter-spacing: .04em; }
-        .sub { color: #64748b; font-size: 12px; margin: 0; }
-        .monto-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px 20px; margin: 20px 0; text-align: center; }
-        .monto-num { font-size: 30px; font-weight: 700; color: #15803d; }
-        .monto-letra { font-size: 12px; color: #166534; margin-top: 4px; text-transform: uppercase; }
+        body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #26282D; }
+        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #1C1D21; margin-bottom: 18px; }
+        .org-nombre { font-size: 18px; font-weight: 700; color: #1C1D21; margin: 0 0 2px; }
+        .org-sub { font-size: 11px; color: #62666E; }
+        .doc-title { font-size: 16px; font-weight: 700; color: #1C1D21; margin-bottom: 2px; letter-spacing: .04em; }
+        .sub { color: #62666E; font-size: 12px; margin: 0; }
+        .monto-box { background: #F4F5F7; border: 1px solid #E6E8EB; border-radius: 8px; padding: 16px 20px; margin: 20px 0; text-align: center; }
+        .monto-num { font-size: 30px; font-weight: 700; color: #1F7A50; }
+        .monto-letra { font-size: 12px; color: #17603F; margin-top: 4px; text-transform: uppercase; }
         table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-        td, th { border: 1px solid #e2e8f0; padding: 8px 10px; font-size: 12px; }
-        th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; text-align: left; width: 160px; }
+        td, th { border: 1px solid #E6E8EB; padding: 8px 10px; font-size: 12px; }
+        th { background: #F4F5F7; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; text-align: left; width: 160px; }
         .declaracion { font-size: 12px; line-height: 1.6; margin: 20px 0; text-align: justify; }
         .firmas { display: flex; justify-content: space-around; gap: 40px; margin-top: 70px; }
-        .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 220px; font-size: 11px; color: #64748b; }
-        .leyenda { font-size: 10px; color: #94a3b8; margin-top: 30px; text-align: center; }
+        .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 220px; font-size: 11px; color: #62666E; }
+        .leyenda { font-size: 10px; color: #7A7E87; margin-top: 30px; text-align: center; }
         @page { margin: 1.5cm; }
       </style></head><body>
       <div class="org-header">
@@ -689,22 +689,22 @@ function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, o
           )}
           {mostrarAutorizacion && !rechazando && (
             <>
-              <button className="btn-ghost" style={{ color: '#dc2626' }} onClick={() => setRechazando(true)}>
+              <button className="btn-ghost" style={{ color: '#C23B3B' }} onClick={() => setRechazando(true)}>
                 <XCircle size={14} style={{ marginRight: 4 }} /> Rechazar
               </button>
-              <button className="btn-primary" style={{ background: '#15803d' }} onClick={autorizar} disabled={saving}>
+              <button className="btn-primary" style={{ background: '#1F7A50' }} onClick={autorizar} disabled={saving}>
                 <CheckCircle size={14} style={{ marginRight: 4 }} /> Autorizar
               </button>
             </>
           )}
           {puedeGenerarOp && (
-            <button className="btn-primary" style={{ background: '#b45309' }} onClick={generarOP} disabled={generandoOp}>
+            <button className="btn-primary" style={{ background: '#96600F' }} onClick={generarOP} disabled={generandoOp}>
               {generandoOp ? <Loader size={14} className="animate-spin" style={{ marginRight: 4 }} /> : <Receipt size={14} style={{ marginRight: 4 }} />}
               Generar Orden de Pago
             </button>
           )}
           {rechazando && (
-            <button className="btn-primary" style={{ background: '#dc2626' }} onClick={confirmarRechazo} disabled={saving}>
+            <button className="btn-primary" style={{ background: '#C23B3B' }} onClick={confirmarRechazo} disabled={saving}>
               Confirmar Rechazo
             </button>
           )}
@@ -717,13 +717,13 @@ function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, o
       }
     >
       {error && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, color: '#dc2626', fontSize: 12, marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, color: '#C23B3B', fontSize: 12, marginBottom: 14 }}>
           <AlertTriangle size={14} /> {error}
         </div>
       )}
 
       {duplicarDe && (
-        <div style={{ padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, color: 'var(--blue)', fontSize: 12, marginBottom: 14 }}>
+        <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8, color: 'var(--blue)', fontSize: 12, marginBottom: 14 }}>
           Copia de {duplicarDe.folio}: el periodo inicia 7 días después y termina 4 días después (periodo de 5 días) y se copiaron colaboradores, Área/Frente, costo por día y asistencias. Revisa y ajusta antes de guardar; se creará con un folio nuevo.
         </div>
       )}
@@ -732,11 +732,11 @@ function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, o
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
           <StatusBadge status={lote.status} />
           {lote.status === 'Autorizado' && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Autorizó {lote.authorized_by} · {fmtFecha(lote.fecha_autorizacion?.slice(0, 10))}</span>}
-          {lote.status === 'Rechazado' && <span style={{ fontSize: 12, color: '#dc2626' }}>Motivo: {lote.motivo_rechazo}</span>}
+          {lote.status === 'Rechazado' && <span style={{ fontSize: 12, color: '#C23B3B' }}>Motivo: {lote.motivo_rechazo}</span>}
           {opGenerada && (
             <a href="/compras/ordenes-pago" target="_blank" rel="noopener noreferrer"
               style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                background: '#eff6ff', color: 'var(--blue)', border: '1px solid #bfdbfe', textDecoration: 'none' }}>
+                background: '#F4F5F7', color: 'var(--blue)', border: '1px solid #C9CCD3', textDecoration: 'none' }}>
               <Receipt size={11} /> OP {opGenerada.folio} · {opGenerada.status} <ExternalLink size={10} />
             </a>
           )}
@@ -789,15 +789,15 @@ function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, o
       </div>
 
       {dias.length === 0 ? (
-        <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)', fontSize: 12, border: '1px dashed #e2e8f0', borderRadius: 8 }}>
+        <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)', fontSize: 12, border: '1px dashed #E6E8EB', borderRadius: 8 }}>
           Selecciona el periodo (fecha desde / hasta) para capturar asistencia
         </div>
       ) : (
-        <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
-                <tr style={{ background: '#f8fafc' }}>
+                <tr style={{ background: '#F8F9FA' }}>
                   <th style={{ padding: '6px 8px', textAlign: 'left', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', minWidth: 180 }}>Nombre</th>
                   <th style={{ padding: '6px 8px', textAlign: 'left', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', minWidth: 120 }}>Puesto</th>
                   <th style={{ padding: '6px 8px', textAlign: 'left', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', minWidth: 150 }}>Área (CC)</th>
@@ -817,7 +817,7 @@ function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, o
                 {trabajadores.length === 0 ? (
                   <tr><td colSpan={dias.length + 7 + (isEdit ? 1 : 0)} style={{ padding: 14, textAlign: 'center', color: 'var(--text-muted)' }}>Sin colaboradores capturados</td></tr>
                 ) : trabajadores.map(t => (
-                  <tr key={t.tempId} style={{ borderTop: '1px solid #f1f5f9' }}>
+                  <tr key={t.tempId} style={{ borderTop: '1px solid #F4F5F7' }}>
                     <td style={{ padding: '4px 6px' }}>
                       {editable ? (
                         <ColaboradorPopup
@@ -881,26 +881,26 @@ function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, o
                       <td key={f} style={{ padding: '2px', textAlign: 'center' }}>
                         <button type="button" disabled={!editable} onClick={() => toggleAsistencia(t.tempId, f)}
                           title={t.asistencias[f] ? 'Asistió' : 'No trabajó'}
-                          style={{ width: 26, height: 26, border: '1px solid #e2e8f0', borderRadius: 5,
-                            background: t.asistencias[f] ? '#dcfce7' : '#fff', cursor: editable ? 'pointer' : 'default',
-                            color: t.asistencias[f] ? '#15803d' : '#cbd5e1', fontWeight: 700, fontSize: 13 }}>
+                          style={{ width: 26, height: 26, border: '1px solid #E6E8EB', borderRadius: 5,
+                            background: t.asistencias[f] ? '#E6E8EB' : '#fff', cursor: editable ? 'pointer' : 'default',
+                            color: t.asistencias[f] ? '#1F7A50' : '#C9CCD3', fontWeight: 700, fontSize: 13 }}>
                           {t.asistencias[f] ? '✓' : '—'}
                         </button>
                       </td>
                     ))}
                     <td style={{ padding: '4px 6px', textAlign: 'center', fontWeight: 600 }}>{diasTrabajador(t)}</td>
-                    <td style={{ padding: '4px 6px', textAlign: 'right', fontWeight: 600, color: '#059669' }}>{fmt(costoTrabajador(t))}</td>
+                    <td style={{ padding: '4px 6px', textAlign: 'right', fontWeight: 600, color: '#267F56' }}>{fmt(costoTrabajador(t))}</td>
                     {isEdit && (
                       <td style={{ padding: '4px 6px', textAlign: 'center' }}>
                         <button type="button" onClick={() => imprimirRecibo(t)} title="Imprimir recibo de dinero"
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0369a1' }}>
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2A6582' }}>
                           <Printer size={13} />
                         </button>
                       </td>
                     )}
                     {editable && (
                       <td style={{ padding: '4px 6px', textAlign: 'center' }}>
-                        <button type="button" onClick={() => removeTrabajador(t.tempId)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626' }}>
+                        <button type="button" onClick={() => removeTrabajador(t.tempId)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#C23B3B' }}>
                           <Trash2 size={13} />
                         </button>
                       </td>
@@ -910,9 +910,9 @@ function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, o
               </tbody>
               {trabajadores.length > 0 && (
                 <tfoot>
-                  <tr style={{ borderTop: '2px solid #e2e8f0', background: '#f8fafc' }}>
+                  <tr style={{ borderTop: '2px solid #E6E8EB', background: '#F8F9FA' }}>
                     <td colSpan={dias.length + 6} style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, fontSize: 12 }}>Total del rol de pagos</td>
-                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: '#059669', fontSize: 13 }}>{fmt(totalLote)}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: '#267F56', fontSize: 13 }}>{fmt(totalLote)}</td>
                     {isEdit && <td></td>}
                     {editable && <td></td>}
                   </tr>
@@ -956,7 +956,7 @@ function ColaboradorPopup({ value, onChange }: {
     <div ref={ref} style={{ position: 'relative' }}>
       <button type="button" onClick={() => setOpen(o => !o)}
         style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6,
-          background: '#fff', border: '1px solid #e2e8f0', borderRadius: 6,
+          background: '#fff', border: '1px solid #E6E8EB', borderRadius: 6,
           padding: '4px 8px', fontSize: 12, cursor: 'pointer',
           color: value.nombre ? 'var(--text-primary)' : 'var(--text-muted)' }}>
         <User size={12} style={{ flexShrink: 0, color: 'var(--text-muted)' }} />
@@ -967,9 +967,9 @@ function ColaboradorPopup({ value, onChange }: {
       </button>
       {open && (
         <div style={{ position: 'absolute', top: '100%', left: 0, minWidth: 240, zIndex: 9999,
-          background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+          background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8,
           boxShadow: '0 8px 24px rgba(0,0,0,.12)', marginTop: 4, overflow: 'hidden' }}>
-          <div style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ padding: '8px 10px', borderBottom: '1px solid #F4F5F7', display: 'flex', alignItems: 'center', gap: 6 }}>
             <Search size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
             <input autoFocus value={query} onChange={e => setQuery(e.target.value)}
               placeholder="Buscar colaborador…"
@@ -985,7 +985,7 @@ function ColaboradorPopup({ value, onChange }: {
                 <button key={c.id} type="button"
                   onClick={() => { onChange({ ...c, nombre }); setOpen(false); setQuery('') }}
                   style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 12px',
-                    fontSize: 12, background: selected ? '#eff6ff' : 'transparent',
+                    fontSize: 12, background: selected ? '#F4F5F7' : 'transparent',
                     color: selected ? 'var(--blue)' : 'var(--text-primary)',
                     border: 'none', cursor: 'pointer' }}>
                   {nombre}

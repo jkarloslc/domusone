@@ -57,119 +57,119 @@ const HorseIcon = ({ size = 15, ...props }: { size?: number } & SVGProps<SVGSVGE
 
 const ACCESOS: Record<Rol, Acceso[]> = {
   superadmin: [
-    { label: 'Dashboard',       href: '/dashboards',           icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
-    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
-    { label: 'Golf',             href: '/golf',                icon: Flag,            color: '#16a34a', bg: '#f0fdf4' },
-    { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#7c3aed', bg: '#f5f3ff' },
-    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
-    { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#0f766e', bg: '#f0fdfa' },
-    { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#dc2626', bg: '#fef2f2' },
-    { label: 'Usuarios',         href: '/usuarios',            icon: Users,           color: '#64748b', bg: '#f8fafc' },
+    { label: 'Dashboard',       href: '/dashboards',           icon: LayoutDashboard, color: '#1C1D21', bg: '#E6E8EB' },
+    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#126B63', bg: '#F4F5F7' },
+    { label: 'Golf',             href: '/golf',                icon: Flag,            color: '#267F56', bg: '#F4F5F7' },
+    { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#6B4E79', bg: '#F4F5F7' },
+    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#26282D', bg: '#F4F5F7' },
+    { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#126B63', bg: '#F4F5F7' },
+    { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#C23B3B', bg: '#F4F5F7' },
+    { label: 'Usuarios',         href: '/usuarios',            icon: Users,           color: '#62666E', bg: '#F8F9FA' },
   ],
   admin: [
-    { label: 'Dashboard',       href: '/dashboards',           icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
-    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
-    { label: 'Golf',             href: '/golf',                icon: Flag,            color: '#16a34a', bg: '#f0fdf4' },
-    { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#7c3aed', bg: '#f5f3ff' },
-    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
-    { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#0f766e', bg: '#f0fdfa' },
-    { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#dc2626', bg: '#fef2f2' },
+    { label: 'Dashboard',       href: '/dashboards',           icon: LayoutDashboard, color: '#1C1D21', bg: '#E6E8EB' },
+    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#126B63', bg: '#F4F5F7' },
+    { label: 'Golf',             href: '/golf',                icon: Flag,            color: '#267F56', bg: '#F4F5F7' },
+    { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#6B4E79', bg: '#F4F5F7' },
+    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#26282D', bg: '#F4F5F7' },
+    { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#126B63', bg: '#F4F5F7' },
+    { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#C23B3B', bg: '#F4F5F7' },
   ],
   admin_lector: [
-    { label: 'Dashboard',       href: '/dashboards',           icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
-    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
-    { label: 'Golf',             href: '/golf',                icon: Flag,            color: '#16a34a', bg: '#f0fdf4' },
-    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
-    { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#0f766e', bg: '#f0fdfa' },
-    { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#dc2626', bg: '#fef2f2' },
+    { label: 'Dashboard',       href: '/dashboards',           icon: LayoutDashboard, color: '#1C1D21', bg: '#E6E8EB' },
+    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#126B63', bg: '#F4F5F7' },
+    { label: 'Golf',             href: '/golf',                icon: Flag,            color: '#267F56', bg: '#F4F5F7' },
+    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#26282D', bg: '#F4F5F7' },
+    { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#126B63', bg: '#F4F5F7' },
+    { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#C23B3B', bg: '#F4F5F7' },
   ],
   usuarioadmin: [
-    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
-    { label: 'Golf',             href: '/golf',                icon: Flag,            color: '#16a34a', bg: '#f0fdf4' },
-    { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#7c3aed', bg: '#f5f3ff' },
-    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
-    { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#0f766e', bg: '#f0fdfa' },
-    { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
+    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#126B63', bg: '#F4F5F7' },
+    { label: 'Golf',             href: '/golf',                icon: Flag,            color: '#267F56', bg: '#F4F5F7' },
+    { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#6B4E79', bg: '#F4F5F7' },
+    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#26282D', bg: '#F4F5F7' },
+    { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#126B63', bg: '#F4F5F7' },
+    { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#1C1D21', bg: '#E6E8EB' },
   ],
   usuariomantto: [
-    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
-    { label: 'Mantenimiento',    href: '/residencial/mantenimiento',       icon: Wrench,          color: '#b45309', bg: '#fffbeb' },
-    { label: 'Vehículos',        href: '/equipo-flota',        icon: Truck,           color: '#64748b', bg: '#f8fafc' },
-    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
-    { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
+    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#126B63', bg: '#F4F5F7' },
+    { label: 'Mantenimiento',    href: '/residencial/mantenimiento',       icon: Wrench,          color: '#96600F', bg: '#F4F5F7' },
+    { label: 'Vehículos',        href: '/equipo-flota',        icon: Truck,           color: '#62666E', bg: '#F8F9FA' },
+    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#26282D', bg: '#F4F5F7' },
+    { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#1C1D21', bg: '#E6E8EB' },
   ],
   atencion_residentes: [
-    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
-    { label: 'Mantenimiento',    href: '/residencial/mantenimiento',       icon: Wrench,          color: '#b45309', bg: '#fffbeb' },
-    { label: 'Comunicados',      href: '/comunicados',         icon: MessageSquare,   color: '#0284c7', bg: '#f0f9ff' },
-    { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#dc2626', bg: '#fef2f2' },
+    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#126B63', bg: '#F4F5F7' },
+    { label: 'Mantenimiento',    href: '/residencial/mantenimiento',       icon: Wrench,          color: '#96600F', bg: '#F4F5F7' },
+    { label: 'Comunicados',      href: '/comunicados',         icon: MessageSquare,   color: '#32789A', bg: '#F4F5F7' },
+    { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#C23B3B', bg: '#F4F5F7' },
   ],
   cobranza: [
-    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
-    { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#dc2626', bg: '#fef2f2' },
+    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#126B63', bg: '#F4F5F7' },
+    { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#C23B3B', bg: '#F4F5F7' },
   ],
   vigilancia: [
-    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
+    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#126B63', bg: '#F4F5F7' },
   ],
   compras: [
-    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
-    { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#dc2626', bg: '#fef2f2' },
+    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#26282D', bg: '#F4F5F7' },
+    { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#C23B3B', bg: '#F4F5F7' },
   ],
   compras_supervisor: [
-    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
-    { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#dc2626', bg: '#fef2f2' },
+    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#26282D', bg: '#F4F5F7' },
+    { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#C23B3B', bg: '#F4F5F7' },
   ],
   almacen: [
-    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
-    { label: 'Inventario',       href: '/compras/inventario',  icon: Package,         color: '#0f766e', bg: '#f0fdfa' },
-    { label: 'Transferencias',   href: '/compras/transferencias', icon: ArrowLeftRight, color: '#7c3aed', bg: '#f5f3ff' },
+    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#26282D', bg: '#F4F5F7' },
+    { label: 'Inventario',       href: '/compras/inventario',  icon: Package,         color: '#126B63', bg: '#F4F5F7' },
+    { label: 'Transferencias',   href: '/compras/transferencias', icon: ArrowLeftRight, color: '#6B4E79', bg: '#F4F5F7' },
   ],
   mantenimiento: [
-    { label: 'Mantenimiento',    href: '/residencial/mantenimiento',       icon: Wrench,          color: '#b45309', bg: '#fffbeb' },
-    { label: 'Vehículos',        href: '/equipo-flota',        icon: Truck,           color: '#64748b', bg: '#f8fafc' },
-    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
+    { label: 'Mantenimiento',    href: '/residencial/mantenimiento',       icon: Wrench,          color: '#96600F', bg: '#F4F5F7' },
+    { label: 'Vehículos',        href: '/equipo-flota',        icon: Truck,           color: '#62666E', bg: '#F8F9FA' },
+    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#126B63', bg: '#F4F5F7' },
   ],
   fraccionamiento: [
-    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
-    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
-    { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#0f766e', bg: '#f0fdfa' },
-    { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
-    { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#dc2626', bg: '#fef2f2' },
+    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#126B63', bg: '#F4F5F7' },
+    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#26282D', bg: '#F4F5F7' },
+    { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#126B63', bg: '#F4F5F7' },
+    { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#1C1D21', bg: '#E6E8EB' },
+    { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#C23B3B', bg: '#F4F5F7' },
   ],
   tesoreria: [
-    { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#0f766e', bg: '#f0fdfa' },
-    { label: 'Ingresos',         href: '/ingresos',            icon: DollarSign,      color: '#059669', bg: '#f0fdf4' },
-    { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
-    { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#dc2626', bg: '#fef2f2' },
+    { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#126B63', bg: '#F4F5F7' },
+    { label: 'Ingresos',         href: '/ingresos',            icon: DollarSign,      color: '#267F56', bg: '#F4F5F7' },
+    { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#1C1D21', bg: '#E6E8EB' },
+    { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#C23B3B', bg: '#F4F5F7' },
   ],
   seguridad: [
-    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
-    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
+    { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#126B63', bg: '#F4F5F7' },
+    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#26282D', bg: '#F4F5F7' },
   ],
   usuario_solicitante: [
-    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
-    { label: 'Requisiciones',    href: '/compras/requisiciones', icon: FileText,      color: '#7c3aed', bg: '#f5f3ff' },
-    { label: 'Transferencias',   href: '/compras/transferencias', icon: ArrowLeftRight, color: '#0f766e', bg: '#f0fdfa' },
+    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#26282D', bg: '#F4F5F7' },
+    { label: 'Requisiciones',    href: '/compras/requisiciones', icon: FileText,      color: '#6B4E79', bg: '#F4F5F7' },
+    { label: 'Transferencias',   href: '/compras/transferencias', icon: ArrowLeftRight, color: '#126B63', bg: '#F4F5F7' },
   ],
   ingresos: [
-    { label: 'Ingresos',         href: '/ingresos',            icon: DollarSign,      color: '#059669', bg: '#f0fdf4' },
-    { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
-    { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#dc2626', bg: '#fef2f2' },
+    { label: 'Ingresos',         href: '/ingresos',            icon: DollarSign,      color: '#267F56', bg: '#F4F5F7' },
+    { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#1C1D21', bg: '#E6E8EB' },
+    { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#C23B3B', bg: '#F4F5F7' },
   ],
   usuariogolf: [
-    { label: 'Golf',             href: '/golf',                icon: Flag,            color: '#16a34a', bg: '#f0fdf4' },
-    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
+    { label: 'Golf',             href: '/golf',                icon: Flag,            color: '#267F56', bg: '#F4F5F7' },
+    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#26282D', bg: '#F4F5F7' },
   ],
   usuariohipico: [
-    { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#7c3aed', bg: '#f5f3ff' },
-    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
+    { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#6B4E79', bg: '#F4F5F7' },
+    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#26282D', bg: '#F4F5F7' },
   ],
   usuariohospitality: [
-    { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#7c3aed', bg: '#f5f3ff' },
-    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
+    { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#6B4E79', bg: '#F4F5F7' },
+    { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#26282D', bg: '#F4F5F7' },
   ],
   usuario_nomina: [
-    { label: 'Órdenes de Pago',  href: '/compras/ordenes-pago', icon: Landmark,      color: '#0f766e', bg: '#f0fdfa' },
+    { label: 'Órdenes de Pago',  href: '/compras/ordenes-pago', icon: Landmark,      color: '#126B63', bg: '#F4F5F7' },
   ],
 }
 
@@ -345,7 +345,7 @@ export default function InicioPage() {
               <Link key={a.href} href={a.href} style={{ textDecoration: 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8,
                   padding: '9px 14px', borderRadius: 10,
-                  background: a.bg, border: `1px solid ${a.color}20`,
+                  background: '#fff', border: '1px solid #E6E8EB',
                   cursor: 'pointer', transition: 'transform 0.1s, box-shadow 0.1s' }}
                   onMouseEnter={e => {
                     const el = e.currentTarget as HTMLElement
@@ -357,8 +357,8 @@ export default function InicioPage() {
                     el.style.transform = 'none'
                     el.style.boxShadow = 'none'
                   }}>
-                  <Icon size={14} style={{ color: a.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, fontWeight: 500, color: a.color, whiteSpace: 'nowrap' }}>
+                  <Icon size={14} style={{ color: '#62666E', flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
                     {a.label}
                   </span>
                 </div>
@@ -381,10 +381,10 @@ export default function InicioPage() {
           </div>
         ) : pendientes.length === 0 ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10,
-            padding: '14px 18px', background: '#f0fdf4', borderRadius: 10,
-            border: '1px solid #bbf7d0' }}>
-            <CheckCircle size={16} style={{ color: '#16a34a', flexShrink: 0 }} />
-            <span style={{ fontSize: 13, color: '#15803d', fontWeight: 500 }}>
+            padding: '14px 18px', background: '#F4F5F7', borderRadius: 10,
+            border: '1px solid #E6E8EB' }}>
+            <CheckCircle size={16} style={{ color: '#267F56', flexShrink: 0 }} />
+            <span style={{ fontSize: 13, color: '#1F7A50', fontWeight: 500 }}>
               Todo al día — sin pendientes urgentes
             </span>
           </div>
@@ -395,22 +395,22 @@ export default function InicioPage() {
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '12px 16px', borderRadius: 10, cursor: 'pointer',
-                  background: p.urgente ? '#fef2f2' : '#f8fafc',
-                  border: `1px solid ${p.urgente ? '#fecaca' : '#e2e8f0'}`,
+                  background: p.urgente ? '#F4F5F7' : '#F8F9FA',
+                  border: '1px solid #E6E8EB',
                   transition: 'transform 0.1s',
                 }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateX(2px)' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     {p.urgente
-                      ? <AlertTriangle size={14} style={{ color: '#dc2626', flexShrink: 0 }} />
-                      : <ChevronRight size={14} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                      ? <AlertTriangle size={14} style={{ color: '#C23B3B', flexShrink: 0 }} />
+                      : <ChevronRight size={14} style={{ color: '#7A7E87', flexShrink: 0 }} />
                     }
-                    <span style={{ fontSize: 13, color: p.urgente ? '#dc2626' : 'var(--text-primary)', fontWeight: p.urgente ? 600 : 400 }}>
+                    <span style={{ fontSize: 13, color: p.urgente ? '#C23B3B' : 'var(--text-primary)', fontWeight: p.urgente ? 600 : 400 }}>
                       {p.texto}
                     </span>
                   </div>
-                  <ChevronRight size={13} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                  <ChevronRight size={13} style={{ color: '#7A7E87', flexShrink: 0 }} />
                 </div>
               </Link>
             ))}

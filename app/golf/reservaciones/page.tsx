@@ -155,7 +155,7 @@ export default function ReservacionesPage() {
         </div>
         <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', textTransform: 'capitalize' }}>
           {fmtFechaLarga(fecha)}
-          {esHoy && <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#dcfce7', color: '#16a34a' }}>HOY</span>}
+          {esHoy && <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#1F7A50', color: '#fff' }}>HOY</span>}
         </div>
         {!esHoy && (
           <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setFecha(hoy)}>← Hoy</button>
@@ -165,14 +165,14 @@ export default function ReservacionesPage() {
       {/* KPIs */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { label: 'Reservaciones', value: stats.total,              color: '#7c3aed', bg: '#f5f3ff' },
-          { label: 'Jugadores',     value: stats.jugadores,          color: '#2563eb', bg: '#eff6ff' },
-          { label: 'Carros',        value: stats.carros,             color: '#0891b2', bg: '#ecfeff' },
-          { label: 'Monto Total',   value: fmt$(stats.monto),        color: '#16a34a', bg: '#f0fdf4' },
+          { label: 'Reservaciones', value: stats.total,              color: '#6B4E79', bg: '#F4F5F7' },
+          { label: 'Jugadores',     value: stats.jugadores,          color: '#1C1D21', bg: '#F4F5F7' },
+          { label: 'Carros',        value: stats.carros,             color: '#32789A', bg: '#F4F5F7' },
+          { label: 'Monto Total',   value: fmt$(stats.monto),        color: '#267F56', bg: '#F4F5F7' },
         ].map(card => (
-          <div key={card.label} className="card" style={{ flex: '1 1 140px', maxWidth: 200, padding: '12px 16px', background: card.bg, border: `1px solid ${card.color}22` }}>
-            <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>{card.label}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: card.color }}>{card.value}</div>
+          <div key={card.label} className="card" style={{ flex: '1 1 140px', maxWidth: 200, padding: '12px 16px', background: '#fff', border: '1px solid #E6E8EB' }}>
+            <div style={{ fontSize: 11, color: '#62666E', marginBottom: 4 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: card.color, marginRight: 6, verticalAlign: 'middle' }} />{card.label}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{card.value}</div>
           </div>
         ))}
       </div>
@@ -217,14 +217,14 @@ export default function ReservacionesPage() {
                     onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)'}
                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
                     <td style={{ padding: '10px 14px', fontVariantNumeric: 'tabular-nums' }}>
-                      <span style={{ fontWeight: 700, fontSize: 14, color: r.cancelado ? '#94a3b8' : 'var(--text-primary)' }}>{fmtHora(r.hora_reservacion)}</span>
+                      <span style={{ fontWeight: 700, fontSize: 14, color: r.cancelado ? '#7A7E87' : 'var(--text-primary)' }}>{fmtHora(r.hora_reservacion)}</span>
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{nc(r)}</div>
                       {!r.es_externo && r.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>#{r.cat_socios.numero_socio}</div>}
                       {r.es_externo && r.telefono_externo && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.telefono_externo}</div>}
                       {r.es_externo && (
-                        <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, background: '#fff7ed', color: '#c2410c', fontWeight: 600 }}>Visitante</span>
+                        <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, background: '#C8642A', color: '#fff', fontWeight: 600 }}>Visitante</span>
                       )}
                     </td>
                     <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>
@@ -238,27 +238,27 @@ export default function ReservacionesPage() {
                     </td>
                     <td style={{ padding: '10px 14px', textAlign: 'center' }}>
                       {r.carro_golf
-                        ? <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#ecfeff', color: '#0891b2', fontWeight: 600 }}>Sí</span>
-                        : <span style={{ color: '#cbd5e1', fontSize: 12 }}>—</span>}
+                        ? <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#32789A', color: '#fff', fontWeight: 600 }}>Sí</span>
+                        : <span style={{ color: '#C9CCD3', fontSize: 12 }}>—</span>}
                     </td>
-                    <td style={{ padding: '10px 14px', fontWeight: 600, color: '#16a34a', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                      {montoTotal > 0 ? fmt$(montoTotal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                    <td style={{ padding: '10px 14px', fontWeight: 600, color: '#267F56', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                      {montoTotal > 0 ? fmt$(montoTotal) : <span style={{ color: '#C9CCD3' }}>—</span>}
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       {r.cancelado
-                        ? <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#fef2f2', color: '#dc2626', fontWeight: 600 }}>Cancelada</span>
-                        : <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f0fdf4', color: '#16a34a', fontWeight: 600 }}>Activa</span>}
+                        ? <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#C23B3B', color: '#fff', fontWeight: 600 }}>Cancelada</span>
+                        : <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#1F7A50', color: '#fff', fontWeight: 600 }}>Activa</span>}
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       {!r.cancelado && puedeEscribir && (
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                           <button className="btn-ghost"
-                            style={{ padding: '4px 10px', fontSize: 12, color: '#2563eb', display: 'flex', alignItems: 'center', gap: 5 }}
+                            style={{ padding: '4px 10px', fontSize: 12, color: '#1C1D21', display: 'flex', alignItems: 'center', gap: 5 }}
                             onClick={() => setEditReservacion(r)}>
                             <Pencil size={13} /> Editar
                           </button>
                           <button className="btn-ghost"
-                            style={{ padding: '4px 10px', fontSize: 12, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 5, opacity: cancelando === r.id ? 0.5 : 1 }}
+                            style={{ padding: '4px 10px', fontSize: 12, color: '#C23B3B', display: 'flex', alignItems: 'center', gap: 5, opacity: cancelando === r.id ? 0.5 : 1 }}
                             onClick={() => cancelar(r.id)} disabled={cancelando === r.id}>
                             <X size={13} /> Cancelar
                           </button>

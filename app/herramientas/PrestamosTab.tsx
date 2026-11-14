@@ -13,16 +13,16 @@ import Paginador from '@/components/ui/Paginador'
 const CONDICIONES = ['Bueno', 'Regular', 'Dañado']
 
 const STATUS_STYLE: Record<string, { color: string; bg: string; border: string }> = {
-  'Prestado':  { color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
-  'Atrasado':  { color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
-  'Devuelto':  { color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
+  'Prestado':  { color: '#1C1D21', bg: '#F4F5F7', border: '#C9CCD3' },
+  'Atrasado':  { color: '#C23B3B', bg: '#F4F5F7', border: '#E6E8EB' },
+  'Devuelto':  { color: '#1F7A50', bg: '#F4F5F7', border: '#E6E8EB' },
 }
 
 const Badge = ({ text }: { text: string }) => {
   const s = STATUS_STYLE[text] ?? STATUS_STYLE['Prestado']
   return (
     <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-      color: s.color, background: s.bg, border: `1px solid ${s.border}`, whiteSpace: 'nowrap' }}>
+      color: '#fff', background: s.color, border: `1px solid ${s.color}`, whiteSpace: 'nowrap' }}>
       {text}
     </span>
   )
@@ -105,25 +105,25 @@ export default function PrestamosTab({ herramientas, herrMap, areaMap, areas, on
 <html lang="es"><head><meta charset="UTF-8"/><title>Ticket de Préstamo ${esc(p.folio)}</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: Arial, sans-serif; font-size:12px; color:#1e293b; background:#f1f5f9; padding:16px; }
-  .ticket { max-width:320px; margin:0 auto; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:18px 20px; }
-  h1 { font-size:15px; font-weight:800; text-align:center; color:#1e293b; }
-  .sub { text-align:center; font-size:10px; color:#64748b; margin-top:2px; margin-bottom:10px; }
-  .folio { text-align:center; font-size:20px; font-weight:900; color:#2563eb; margin:8px 0 12px; letter-spacing:0.04em; }
-  hr { border:none; border-top:1px dashed #cbd5e1; margin:10px 0; }
+  body { font-family: Arial, sans-serif; font-size:12px; color:#26282D; background:#F4F5F7; padding:16px; }
+  .ticket { max-width:320px; margin:0 auto; background:#fff; border:1px solid #E6E8EB; border-radius:10px; padding:18px 20px; }
+  h1 { font-size:15px; font-weight:800; text-align:center; color:#26282D; }
+  .sub { text-align:center; font-size:10px; color:#62666E; margin-top:2px; margin-bottom:10px; }
+  .folio { text-align:center; font-size:20px; font-weight:900; color:#1C1D21; margin:8px 0 12px; letter-spacing:0.04em; }
+  hr { border:none; border-top:1px dashed #C9CCD3; margin:10px 0; }
   .row { display:flex; justify-content:space-between; gap:10px; padding:3px 0; font-size:12px; }
-  .lbl { color:#64748b; }
+  .lbl { color:#62666E; }
   .val { font-weight:700; text-align:right; }
-  .section-title { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#2563eb; margin:10px 0 4px; }
-  .firma { margin-top:26px; border-top:1px solid #1e293b; padding-top:4px; text-align:center; font-size:10px; color:#64748b; }
+  .section-title { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#1C1D21; margin:10px 0 4px; }
+  .firma { margin-top:26px; border-top:1px solid #26282D; padding-top:4px; text-align:center; font-size:10px; color:#62666E; }
   .firmas { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:30px; }
-  .footer { text-align:center; font-size:10px; color:#94a3b8; margin-top:16px; }
+  .footer { text-align:center; font-size:10px; color:#7A7E87; margin-top:16px; }
   .no-print { text-align:center; margin-bottom:14px; }
   @media print { .no-print { display:none; } body { background:#fff; padding:0; } .ticket { border:none; } }
 </style></head>
 <body>
   <div class="no-print">
-    <button onclick="window.print()" style="padding:8px 20px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨 Imprimir</button>
+    <button onclick="window.print()" style="padding:8px 20px;background:#1C1D21;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">Imprimir</button>
   </div>
   <div class="ticket">
     <h1>Ticket de Préstamo de Herramienta</h1>
@@ -161,25 +161,25 @@ export default function PrestamosTab({ herramientas, herrMap, areaMap, areas, on
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 14 }}>
         {[
-          { label: 'Préstamos activos', value: activos.length,   color: '#2563eb', bg: '#eff6ff' },
-          { label: 'Atrasados',         value: atrasados.length, color: '#dc2626', bg: '#fef2f2' },
-          { label: 'Devueltos',         value: devueltos.length, color: '#15803d', bg: '#f0fdf4' },
-          { label: 'Total registros',   value: registros.length, color: '#64748b', bg: '#f8fafc' },
+          { label: 'Préstamos activos', value: activos.length,   color: '#1C1D21', bg: '#F4F5F7' },
+          { label: 'Atrasados',         value: atrasados.length, color: '#C23B3B', bg: '#F4F5F7' },
+          { label: 'Devueltos',         value: devueltos.length, color: '#1F7A50', bg: '#F4F5F7' },
+          { label: 'Total registros',   value: registros.length, color: '#62666E', bg: '#F8F9FA' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '10px 12px', background: k.bg }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: k.color }}>{k.value}</div>
-            <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{k.label}</div>
+          <div key={k.label} className="card" style={{ padding: '10px 12px', background: '#fff' }}>
+            <div style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{k.value}</div>
+            <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
           </div>
         ))}
       </div>
 
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 12,
-        padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, flexWrap: 'wrap' }}>
+        padding: '8px 12px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, flexWrap: 'wrap' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
           <Filter size={11} /> Filtros
         </span>
-        <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
+        <div style={{ width: 1, height: 18, background: '#E6E8EB', flexShrink: 0 }} />
         <select className="select" style={{ flex: '1 1 160px', maxWidth: 220, fontSize: 12, padding: '3px 8px', height: 28 }}
           value={filterHerr} onChange={e => setFilterHerr(e.target.value)}>
           <option value="">Todas las herramientas</option>
@@ -196,7 +196,7 @@ export default function PrestamosTab({ herramientas, herrMap, areaMap, areas, on
         <input className="input" type="date" title="Hasta" style={{ flex: '1 1 120px', maxWidth: 150, fontSize: 12, padding: '3px 8px', height: 28 }}
           value={filterHasta} onChange={e => setFilterHasta(e.target.value)} />
         {(filterHerr || filterStatus || filterDesde || filterHasta) && (
-          <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626', whiteSpace: 'nowrap' }}
+          <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#C23B3B', whiteSpace: 'nowrap' }}
             onClick={() => { setFilterHerr(''); setFilterStatus(''); setFilterDesde(''); setFilterHasta('') }}>
             <X size={11} /> Limpiar
           </button>
@@ -236,7 +236,7 @@ export default function PrestamosTab({ herramientas, herrMap, areaMap, areas, on
               const estado = estadoVisual(p)
               return (
                 <tr key={p.id}>
-                  <td style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)', fontWeight: 600, padding: '8px 10px' }}>{p.folio}</td>
+                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--blue)', fontWeight: 600, padding: '8px 10px' }}>{p.folio}</td>
                   <td style={{ padding: '8px 10px' }}>
                     <div style={{ fontSize: 12, fontWeight: 500 }}>{h?.descripcion ?? `#${p.id_herramienta_fk}`}</div>
                     <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{h?.no_serie ?? ''}</div>
@@ -246,7 +246,7 @@ export default function PrestamosTab({ herramientas, herrMap, areaMap, areas, on
                     {p.id_area_fk ? (areaMap[p.id_area_fk] ?? '—') : '—'}
                   </td>
                   <td style={{ fontSize: 11, padding: '8px 10px', whiteSpace: 'nowrap' }}>{fmtF(p.fecha_prestamo)} {fmtH(p.hora_prestamo)}</td>
-                  <td style={{ fontSize: 11, padding: '8px 10px', color: estado === 'Atrasado' ? '#dc2626' : 'var(--text-muted)', fontWeight: estado === 'Atrasado' ? 700 : 400 }}>
+                  <td style={{ fontSize: 11, padding: '8px 10px', color: estado === 'Atrasado' ? '#C23B3B' : 'var(--text-muted)', fontWeight: estado === 'Atrasado' ? 700 : 400 }}>
                     {fmtF(p.fecha_entrega_prog)}
                   </td>
                   <td style={{ fontSize: 11, padding: '8px 10px', color: 'var(--text-muted)' }}>
@@ -260,7 +260,7 @@ export default function PrestamosTab({ herramientas, herrMap, areaMap, areas, on
                       <Printer size={12} />
                     </button>
                     {canWrite('mantenimiento') && p.status === 'Prestado' && (
-                      <button className="btn-ghost" style={{ padding: '3px 5px', color: '#15803d' }} title="Registrar devolución"
+                      <button className="btn-ghost" style={{ padding: '3px 5px', color: '#1F7A50' }} title="Registrar devolución"
                         onClick={() => setModalDevol({ open: true, p })}>
                         <RotateCcw size={12} />
                       </button>
@@ -271,7 +271,7 @@ export default function PrestamosTab({ herramientas, herrMap, areaMap, areas, on
                       </button>
                     )}
                     {canDelete() && (
-                      <button className="btn-ghost" style={{ padding: '3px 5px', color: '#dc2626' }} onClick={() => handleDelete(p.id)}>
+                      <button className="btn-ghost" style={{ padding: '3px 5px', color: '#C23B3B' }} onClick={() => handleDelete(p.id)}>
                         <Trash2 size={12} />
                       </button>
                     )}
@@ -382,7 +382,7 @@ function PrestamoModal({ p, herramientas, areas, onClose, onSaved }: {
       </>}
     >
       <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+        {error && <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>{error}</div>}
 
         <div>
           <label className="label" style={{ fontSize: 11 }}>Herramienta *</label>
@@ -503,9 +503,9 @@ function DevolucionModal({ p, herrMap, onClose, onSaved }: {
       </>}
     >
       <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+        {error && <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>{error}</div>}
 
-        <div style={{ padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, fontSize: 12 }}>
+        <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8, fontSize: 12 }}>
           <strong>{h?.descripcion ?? `#${p.id_herramienta_fk}`}</strong> · prestada a <strong>{p.solicitante}</strong> el {fmtF(p.fecha_prestamo)}
         </div>
 
@@ -534,9 +534,9 @@ function DevolucionModal({ p, herrMap, onClose, onSaved }: {
         </div>
 
         {form.condicion_devolucion === 'Dañado' && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
-            <AlertTriangle size={14} style={{ color: '#d97706', flexShrink: 0, marginTop: 1 }} />
-            <span style={{ fontSize: 11, color: '#92400e' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
+            <AlertTriangle size={14} style={{ color: '#B5761A', flexShrink: 0, marginTop: 1 }} />
+            <span style={{ fontSize: 11, color: '#7A4B0C' }}>
               La herramienta pasará a status <strong>En Mantenimiento</strong>. Registra el servicio correspondiente en la Bitácora de Servicios.
             </span>
           </div>

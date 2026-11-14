@@ -79,8 +79,8 @@ const INSTITUCION = {
 }
 
 const STATUS_COLOR: Record<string, { bg: string; color: string; label: string }> = {
-  VIGENTE:   { bg: '#dcfce7', color: '#15803d', label: 'Vigente' },
-  CANCELADO: { bg: '#fee2e2', color: '#dc2626', label: 'Cancelado' },
+  VIGENTE:   { bg: '#E6E8EB', color: '#1F7A50', label: 'Vigente' },
+  CANCELADO: { bg: '#E6E8EB', color: '#C23B3B', label: 'Cancelado' },
 }
 
 
@@ -288,7 +288,7 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
     } catch {}
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+      : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
     const win = window.open('', '_blank', 'width=750,height=900')
     if (!win) return
     const rows = r.recibos_golf_det.map(d => `
@@ -305,32 +305,32 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
       <title>Recibo ${r.folio}</title>
       <style>
         *{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:Arial,sans-serif;font-size:12px;color:#1e293b;padding:32px}
-        .org-header{display:flex;align-items:center;gap:16px;padding-bottom:14px;border-bottom:2px solid #0D4F80;margin-bottom:18px}
-        .org-nombre{font-size:18px;font-weight:700;color:#0D4F80;margin:0 0 2px}
-        .org-sub{font-size:11px;color:#64748b}
-        .doc-title{font-size:14px;font-weight:600;color:#0D4F80;margin-bottom:2px}
+        body{font-family:Arial,sans-serif;font-size:12px;color:#26282D;padding:32px}
+        .org-header{display:flex;align-items:center;gap:16px;padding-bottom:14px;border-bottom:2px solid #1C1D21;margin-bottom:18px}
+        .org-nombre{font-size:18px;font-weight:700;color:#1C1D21;margin:0 0 2px}
+        .org-sub{font-size:11px;color:#62666E}
+        .doc-title{font-size:14px;font-weight:600;color:#1C1D21;margin-bottom:2px}
         .section{margin-bottom:18px}
-        .section-title{font-size:10px;font-weight:700;color:#0D4F80;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;border-bottom:1px solid #bfdbfe;padding-bottom:4px}
+        .section-title{font-size:10px;font-weight:700;color:#1C1D21;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;border-bottom:1px solid #C9CCD3;padding-bottom:4px}
         .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px}
-        .info-item label{font-size:10px;color:#64748b;display:block;margin-bottom:1px}
+        .info-item label{font-size:10px;color:#62666E;display:block;margin-bottom:1px}
         .info-item span{font-size:12px;font-weight:500}
         table{width:100%;border-collapse:collapse;margin-bottom:16px}
-        th{padding:7px 10px;background:#f1f5f9;color:#0D4F80;font-size:10px;text-align:left;text-transform:uppercase;letter-spacing:.05em;border:1px solid #e2e8f0}
-        td{padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px}
+        th{padding:7px 10px;background:#F4F5F7;color:#1C1D21;font-size:10px;text-align:left;text-transform:uppercase;letter-spacing:.05em;border:1px solid #E6E8EB}
+        td{padding:8px 10px;border-bottom:1px solid #E6E8EB;font-size:12px}
         tr:last-child td{border-bottom:none}
         .right{text-align:right}
         .totales{margin-left:auto;width:260px}
         .totales-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px}
-        .totales-row.total{font-weight:700;font-size:15px;border-top:2px solid #0D4F80;padding-top:8px;margin-top:4px;color:#0D4F80}
-        .pago-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:12px}
-        .pago-label{font-size:10px;color:#0D4F80;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
-        .pago-val{font-size:14px;font-weight:700;color:#0D4F80}
+        .totales-row.total{font-weight:700;font-size:15px;border-top:2px solid #1C1D21;padding-top:8px;margin-top:4px;color:#1C1D21}
+        .pago-box{background:#F4F5F7;border:1px solid #C9CCD3;border-radius:8px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:12px}
+        .pago-label{font-size:10px;color:#1C1D21;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+        .pago-val{font-size:14px;font-weight:700;color:#1C1D21}
         .firma-area{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:48px}
-        .firma-line{border-top:1px solid #1e293b;padding-top:4px;font-size:10px;color:#64748b;text-align:center}
-        .footer{margin-top:32px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:12px}
+        .firma-line{border-top:1px solid #26282D;padding-top:4px;font-size:10px;color:#62666E;text-align:center}
+        .footer{margin-top:32px;font-size:10px;color:#7A7E87;text-align:center;border-top:1px solid #E6E8EB;padding-top:12px}
         .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600}
-        .badge-cancel{background:#fee2e2;color:#dc2626}
+        .badge-cancel{background:#E6E8EB;color:#C23B3B}
         @page{margin:1.2cm}
       </style></head><body>
       <div class="org-header">
@@ -341,8 +341,8 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
         </div>
         <div style="margin-left:auto;text-align:right">
           <div class="doc-title">Recibo de Cobro</div>
-          <div style="font-size:11px;color:#64748b">Folio: <strong>${r.folio}</strong></div>
-          <div style="font-size:11px;color:#64748b">${fechaFmt(r.fecha_recibo)}</div>
+          <div style="font-size:11px;color:#62666E">Folio: <strong>${r.folio}</strong></div>
+          <div style="font-size:11px;color:#62666E">${fechaFmt(r.fecha_recibo)}</div>
           ${r.status === 'CANCELADO' ? '<span class="badge badge-cancel" style="margin-top:4px">CANCELADO</span>' : ''}
         </div>
       </div>
@@ -363,16 +363,16 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
         </table>
         <div class="totales">
           <div class="totales-row"><span>Subtotal</span><span>${fmt$(r.subtotal)}</span></div>
-          ${r.descuento > 0 ? `<div class="totales-row"><span>Descuento adicional</span><span style="color:#dc2626">– ${fmt$(r.descuento)}</span></div>` : ''}
+          ${r.descuento > 0 ? `<div class="totales-row"><span>Descuento adicional</span><span style="color:#C23B3B">– ${fmt$(r.descuento)}</span></div>` : ''}
           <div class="totales-row total"><span>TOTAL</span><span>${fmt$(r.total)}</span></div>
         </div>
       </div>
       <div class="pago-box">
         <div><div class="pago-label">Forma de pago</div><div class="pago-val">${r.forma_pago_nombre ?? '—'}</div></div>
         ${r.referencia_pago ? `<div style="margin-left:32px"><div class="pago-label">Referencia</div><div class="pago-val" style="font-size:12px">${r.referencia_pago}</div></div>` : ''}
-        <div style="margin-left:auto;text-align:right"><div class="pago-label">Emitido por</div><div style="font-size:12px;font-weight:600;color:#15803d">${r.usuario_cobra ?? '—'}</div></div>
+        <div style="margin-left:auto;text-align:right"><div class="pago-label">Emitido por</div><div style="font-size:12px;font-weight:600;color:#1F7A50">${r.usuario_cobra ?? '—'}</div></div>
       </div>
-      ${r.observaciones ? `<div style="font-size:11px;color:#64748b;padding:8px 12px;background:#f8fafc;border-radius:6px;margin-bottom:16px"><strong>Observaciones:</strong> ${r.observaciones}</div>` : ''}
+      ${r.observaciones ? `<div style="font-size:11px;color:#62666E;padding:8px 12px;background:#F8F9FA;border-radius:6px;margin-bottom:16px"><strong>Observaciones:</strong> ${r.observaciones}</div>` : ''}
       <div class="firma-area">
         <div class="firma-line">Firma del Socio</div>
         <div class="firma-line">Cajero / Recibí</div>
@@ -504,7 +504,7 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
         <PageHeader
           backHref="/golf/administracion"
           icon={Receipt}
-          color="#0891b2"
+          color="#32789A"
           eyebrowLabel="Club"
           title="Recibos de Cobro"
           subtitle="Consulta y reimpresión de cobros de cuotas"
@@ -517,11 +517,11 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
       {/* KPIs */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
         {[
-          { label: 'Recibos vigentes', value: countVigente, sub: fmt$(totalVigente), color: '#15803d', bg: '#dcfce7' },
+          { label: 'Recibos vigentes', value: countVigente, sub: fmt$(totalVigente), color: '#1F7A50', bg: '#E6E8EB' },
         ].map(k => (
-          <div key={k.label} style={{ flex: '1 1 180px', minWidth: 160, background: k.bg, borderRadius: 12, padding: '14px 18px' }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: k.color, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>{k.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 700, color: k.color, lineHeight: 1 }}>{k.value}</div>
+          <div key={k.label} style={{ flex: '1 1 180px', minWidth: 160, background: '#fff', borderRadius: 12, padding: '14px 18px' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: k.color, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
+            <div style={{ fontSize: 26, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)', lineHeight: 1 }}>{k.value}</div>
             <div style={{ fontSize: 11, color: k.color, opacity: 0.75, marginTop: 3 }}>{k.sub}</div>
           </div>
         ))}
@@ -530,15 +530,15 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 220px' }}>
-          <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
           <input
-            style={{ width: '100%', paddingLeft: 32, paddingRight: 10, paddingTop: 8, paddingBottom: 8, fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, outline: 'none', background: '#fff' }}
+            style={{ width: '100%', paddingLeft: 32, paddingRight: 10, paddingTop: 8, paddingBottom: 8, fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, outline: 'none', background: '#fff' }}
             placeholder="Buscar por socio o folio…"
             value={busqueda} onChange={e => { setBusqueda(e.target.value); setPagina(1) }}
           />
         </div>
         <select
-          style={{ padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', outline: 'none' }}
+          style={{ padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', outline: 'none' }}
           value={filtroStatus} onChange={e => { setFiltroStatus(e.target.value); setPagina(1) }}>
           <option value="todos">Todos los status</option>
           <option value="VIGENTE">Vigentes</option>
@@ -546,64 +546,64 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
         </select>
         {embedded && (
           <button onClick={cargar}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', cursor: 'pointer' }}>
             <RefreshCw size={14} /> Actualizar
           </button>
         )}
       </div>
 
       {/* Tabla */}
-      <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ background: '#fff', border: '1px solid #E6E8EB', borderRadius: 12, overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ background: '#f8fafc' }}>
+            <tr style={{ background: '#F8F9FA' }}>
               {['Folio', 'Socio', 'Fecha', 'Cuotas', 'Total', 'Forma pago', 'Status', 'Acciones'].map(h => (
-                <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
+                <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#62666E', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid #E6E8EB', whiteSpace: 'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: '#94a3b8', fontSize: 13 }}>Cargando recibos…</td></tr>
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: '#7A7E87', fontSize: 13 }}>Cargando recibos…</td></tr>
             ) : recibosPag.length === 0 ? (
-              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: '#94a3b8', fontSize: 13 }}>Sin recibos con los filtros actuales</td></tr>
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: '#7A7E87', fontSize: 13 }}>Sin recibos con los filtros actuales</td></tr>
             ) : recibosPag.map((r, i) => {
               const sc  = STATUS_COLOR[r.status] ?? STATUS_COLOR['VIGENTE']
               const cancelado = r.status === 'CANCELADO'
               return (
-                <tr key={r.id} style={{ borderBottom: i < recibosPag.length - 1 ? '1px solid #f1f5f9' : 'none', opacity: cancelado ? 0.65 : 1 }}>
+                <tr key={r.id} style={{ borderBottom: i < recibosPag.length - 1 ? '1px solid #F4F5F7' : 'none', opacity: cancelado ? 0.65 : 1 }}>
                   {/* Folio */}
                   <td style={{ padding: '12px 14px' }}>
                     <button onClick={() => setDetalle(r)}
-                      style={{ fontSize: 13, fontWeight: 700, color: '#0891b2', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                      style={{ fontSize: 13, fontWeight: 700, color: '#32789A', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
                       {r.folio}
                     </button>
                   </td>
                   {/* Socio */}
                   <td style={{ padding: '12px 14px' }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>{nc(r.cat_socios)}</div>
-                    {r.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: '#94a3b8' }}>#{r.cat_socios.numero_socio}</div>}
+                    <div style={{ fontSize: 13, fontWeight: 500, color: '#26282D' }}>{nc(r.cat_socios)}</div>
+                    {r.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: '#7A7E87' }}>#{r.cat_socios.numero_socio}</div>}
                   </td>
                   {/* Fecha */}
-                  <td style={{ padding: '12px 14px', fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>
+                  <td style={{ padding: '12px 14px', fontSize: 12, color: '#62666E', whiteSpace: 'nowrap' }}>
                     {fechaFmt(r.fecha_recibo)}
                   </td>
                   {/* Cuotas */}
-                  <td style={{ padding: '12px 14px', fontSize: 13, color: '#475569', textAlign: 'center' }}>
+                  <td style={{ padding: '12px 14px', fontSize: 13, color: '#4A4D54', textAlign: 'center' }}>
                     {r.recibos_golf_det.length}
                   </td>
                   {/* Total */}
-                  <td style={{ padding: '12px 14px', fontSize: 14, fontWeight: 700, color: cancelado ? '#94a3b8' : '#059669', whiteSpace: 'nowrap' }}>
+                  <td style={{ padding: '12px 14px', fontSize: 14, fontWeight: 700, color: cancelado ? '#7A7E87' : '#267F56', whiteSpace: 'nowrap' }}>
                     {fmt$(r.total)}
                   </td>
                   {/* Forma pago */}
-                  <td style={{ padding: '12px 14px', fontSize: 12, color: '#64748b' }}>
+                  <td style={{ padding: '12px 14px', fontSize: 12, color: '#62666E' }}>
                     {r.forma_pago_nombre ?? '—'}
                   </td>
                   {/* Status */}
                   <td style={{ padding: '12px 14px' }}>
-                    <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: sc.bg, color: sc.color }}>
+                    <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: sc.color, color: '#fff'}}>
                       {sc.label}
                     </span>
                   </td>
@@ -611,18 +611,18 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
                   <td style={{ padding: '12px 14px' }}>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button onClick={() => handlePrint(r)} title="Reimprimir"
-                        style={{ padding: '5px 8px', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer', color: '#475569', display: 'flex', alignItems: 'center' }}>
+                        style={{ padding: '5px 8px', border: '1px solid #E6E8EB', borderRadius: 6, background: '#fff', cursor: 'pointer', color: '#4A4D54', display: 'flex', alignItems: 'center' }}>
                         <Printer size={13} />
                       </button>
                       {!cancelado && (
                         <button onClick={() => { setCancelando(r); setMotivoCancel('') }} title="Cancelar recibo"
-                          style={{ padding: '5px 8px', border: '1px solid #fecaca', borderRadius: 6, background: '#fef2f2', cursor: 'pointer', color: '#dc2626', display: 'flex', alignItems: 'center' }}>
+                          style={{ padding: '5px 8px', border: '1px solid #C23B3B', borderRadius: 6, background: '#C23B3B', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center' }}>
                           <XCircle size={13} />
                         </button>
                       )}
                       {cancelado && authUser?.rol === 'superadmin' && (
                         <button onClick={() => handleReabrir(r)} disabled={reabriendoId === r.id} title="Reabrir recibo (solo superadmin)"
-                          style={{ padding: '5px 8px', border: '1px solid #bbf7d0', borderRadius: 6, background: '#f0fdf4', cursor: 'pointer', color: '#15803d', display: 'flex', alignItems: 'center', opacity: reabriendoId === r.id ? 0.6 : 1 }}>
+                          style={{ padding: '5px 8px', border: '1px solid #1F7A50', borderRadius: 6, background: '#1F7A50', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', opacity: reabriendoId === r.id ? 0.6 : 1 }}>
                           {reabriendoId === r.id ? <Loader size={13} className="animate-spin" /> : <RotateCcw size={13} />}
                         </button>
                       )}
@@ -651,7 +651,7 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
             <button className="btn-secondary" onClick={() => { setDetalle(null); setTicketErrDetalle('') }}>Cerrar</button>
             {detalle.status === 'VIGENTE' && (
               <button onClick={() => generarTicketDesdeRecibo(detalle)} disabled={generandoTicketDetalle}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #a7f3d0', borderRadius: 8, background: '#ecfdf5', color: '#047857', cursor: 'pointer', opacity: generandoTicketDetalle ? 0.6 : 1 }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #E6E8EB', borderRadius: 8, background: '#F4F5F7', color: '#1F7A50', cursor: 'pointer', opacity: generandoTicketDetalle ? 0.6 : 1 }}>
                 {generandoTicketDetalle ? <Loader size={14} className="animate-spin" /> : <Receipt size={14} />}
                 {detalle.id_venta_pos_fk ? 'Reimprimir Ticket POS' : 'Generar Ticket POS'}
               </button>
@@ -669,31 +669,31 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
               </div>
 
               {ticketErrDetalle && (
-                <div style={{ marginBottom: 16, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+                <div style={{ marginBottom: 16, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>
                   {ticketErrDetalle}
                 </div>
               )}
 
               {/* Socio */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px', marginBottom: 20, padding: '12px 16px', background: '#f8fafc', borderRadius: 10 }}>
-                <div><div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Socio</div><div style={{ fontSize: 13, fontWeight: 600 }}>{nc(detalle.cat_socios)}</div></div>
-                {detalle.cat_socios?.numero_socio && <div><div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>No. Socio</div><div style={{ fontSize: 13, fontWeight: 600 }}>#{detalle.cat_socios.numero_socio}</div></div>}
-                {detalle.cat_socios?.cat_categorias_socios?.nombre && <div><div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Categoría</div><div style={{ fontSize: 13, fontWeight: 600 }}>{detalle.cat_socios.cat_categorias_socios.nombre}</div></div>}
-                <div><div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Cajero</div><div style={{ fontSize: 13, fontWeight: 600 }}>{detalle.usuario_cobra ?? '—'}</div></div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px', marginBottom: 20, padding: '12px 16px', background: '#F8F9FA', borderRadius: 10 }}>
+                <div><div style={{ fontSize: 10, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Socio</div><div style={{ fontSize: 13, fontWeight: 600 }}>{nc(detalle.cat_socios)}</div></div>
+                {detalle.cat_socios?.numero_socio && <div><div style={{ fontSize: 10, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>No. Socio</div><div style={{ fontSize: 13, fontWeight: 600 }}>#{detalle.cat_socios.numero_socio}</div></div>}
+                {detalle.cat_socios?.cat_categorias_socios?.nombre && <div><div style={{ fontSize: 10, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Categoría</div><div style={{ fontSize: 13, fontWeight: 600 }}>{detalle.cat_socios.cat_categorias_socios.nombre}</div></div>}
+                <div><div style={{ fontSize: 10, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Cajero</div><div style={{ fontSize: 13, fontWeight: 600 }}>{detalle.usuario_cobra ?? '—'}</div></div>
               </div>
               {/* Cuotas */}
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Cuotas cobradas</div>
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Cuotas cobradas</div>
+                <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
                   {detalle.recibos_golf_det.map((d, i) => (
-                    <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: i < detalle.recibos_golf_det.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                    <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: i < detalle.recibos_golf_det.length - 1 ? '1px solid #F4F5F7' : 'none' }}>
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>{d.concepto}</div>
-                        <div style={{ fontSize: 11, color: '#94a3b8' }}>{TIPOS_LABEL[d.tipo] ?? d.tipo}{d.periodo ? ` · ${d.periodo}` : ''}</div>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: '#26282D' }}>{d.concepto}</div>
+                        <div style={{ fontSize: 11, color: '#7A7E87' }}>{TIPOS_LABEL[d.tipo] ?? d.tipo}{d.periodo ? ` · ${d.periodo}` : ''}</div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        {d.descuento > 0 && <div style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through' }}>{fmt$(d.monto_original)}</div>}
-                        <div style={{ fontSize: 14, fontWeight: 700, color: '#059669' }}>{fmt$(d.monto_final)}</div>
+                        {d.descuento > 0 && <div style={{ fontSize: 10, color: '#7A7E87', textDecoration: 'line-through' }}>{fmt$(d.monto_original)}</div>}
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#267F56' }}>{fmt$(d.monto_final)}</div>
                       </div>
                     </div>
                   ))}
@@ -702,18 +702,18 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
               {/* Totales */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
                 <div style={{ width: 220 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b', padding: '3px 0' }}><span>Subtotal</span><span>{fmt$(detalle.subtotal)}</span></div>
-                  {detalle.descuento > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#dc2626', padding: '3px 0' }}><span>Descuento</span><span>– {fmt$(detalle.descuento)}</span></div>}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 700, color: '#059669', borderTop: '2px solid #e2e8f0', paddingTop: 6, marginTop: 4 }}><span>Total</span><span>{fmt$(detalle.total)}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#62666E', padding: '3px 0' }}><span>Subtotal</span><span>{fmt$(detalle.subtotal)}</span></div>
+                  {detalle.descuento > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#C23B3B', padding: '3px 0' }}><span>Descuento</span><span>– {fmt$(detalle.descuento)}</span></div>}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 700, color: '#267F56', borderTop: '2px solid #E6E8EB', paddingTop: 6, marginTop: 4 }}><span>Total</span><span>{fmt$(detalle.total)}</span></div>
                 </div>
               </div>
               {/* Pago */}
-              <div style={{ display: 'flex', gap: 12, padding: '10px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-                <div><div style={{ fontSize: 10, color: '#15803d', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Forma de pago</div><div style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>{detalle.forma_pago_nombre ?? '—'}</div></div>
-                {detalle.referencia_pago && <div><div style={{ fontSize: 10, color: '#15803d', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Referencia</div><div style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>{detalle.referencia_pago}</div></div>}
+              <div style={{ display: 'flex', gap: 12, padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+                <div><div style={{ fontSize: 10, color: '#1F7A50', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Forma de pago</div><div style={{ fontSize: 13, fontWeight: 700, color: '#1F7A50' }}>{detalle.forma_pago_nombre ?? '—'}</div></div>
+                {detalle.referencia_pago && <div><div style={{ fontSize: 10, color: '#1F7A50', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Referencia</div><div style={{ fontSize: 13, fontWeight: 700, color: '#1F7A50' }}>{detalle.referencia_pago}</div></div>}
               </div>
               {detalle.observaciones && (
-                <div style={{ padding: '8px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#64748b' }}>
+                <div style={{ padding: '8px 14px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, fontSize: 12, color: '#62666E' }}>
                   <strong>Observaciones:</strong> {detalle.observaciones}
                 </div>
               )}
@@ -728,17 +728,17 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
           footer={<>
             <button className="btn-secondary" onClick={() => setCancelando(null)}>Cancelar</button>
             <button onClick={handleCancelar} disabled={savingCancel}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 7, background: '#dc2626', color: '#fff', cursor: 'pointer', opacity: savingCancel ? 0.6 : 1 }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 7, background: '#C23B3B', color: '#fff', cursor: 'pointer', opacity: savingCancel ? 0.6 : 1 }}>
               <XCircle size={14} /> {savingCancel ? 'Cancelando…' : 'Confirmar cancelación'}
             </button>
           </>}
         >
-            <p style={{ fontSize: 13, color: '#475569', marginBottom: 16, lineHeight: 1.5 }}>
+            <p style={{ fontSize: 13, color: '#4A4D54', marginBottom: 16, lineHeight: 1.5 }}>
               Las cuotas incluidas volverán a status <strong>PENDIENTE</strong>. Esta acción no se puede deshacer.
             </p>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Motivo de cancelación</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>Motivo de cancelación</label>
             <textarea
-              style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', height: 72, resize: 'vertical', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, fontFamily: 'inherit', outline: 'none', height: 72, resize: 'vertical', boxSizing: 'border-box' }}
               value={motivoCancel} onChange={e => setMotivoCancel(e.target.value)} placeholder="Opcional…" />
         </ModalShell>
       )}

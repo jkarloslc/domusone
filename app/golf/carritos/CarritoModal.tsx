@@ -24,8 +24,8 @@ type Props = {
   onSaved: (carrito: { id: number; id_socio_fk: number; id_familiar_fk?: number | null }) => void
 }
 
-const inputStyle   = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none' }
-const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }
+const inputStyle   = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none' }
+const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }
 const nc = (s: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null }) =>
   [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')
 
@@ -233,10 +233,10 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
       maxWidth={600}
       onClose={onClose}
       footer={<>
-        <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
+        <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', cursor: 'pointer' }}>
           Cancelar
         </button>
-        <button onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+        <button onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#267F56', color: '#fff', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
           {saving ? <Loader size={14} /> : <Save size={14} />}
           {isNew ? 'Registrar' : 'Guardar'}
         </button>
@@ -249,21 +249,21 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
           <div>
             <label style={labelStyle}>Socio Propietario *</label>
             {socioSelec ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#065f46' }}>{nc(socioSelec)}</div>
-                  {socioSelec.numero_socio && <div style={{ fontSize: 11, color: '#6b7280' }}>#{socioSelec.numero_socio}</div>}
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#17603F' }}>{nc(socioSelec)}</div>
+                  {socioSelec.numero_socio && <div style={{ fontSize: 11, color: '#62666E' }}>#{socioSelec.numero_socio}</div>}
                 </div>
                 {!socioInicial && (
-                  <button onClick={() => { setSocioSelec(null); setFamiliarId(null) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+                  <button onClick={() => { setSocioSelec(null); setFamiliarId(null) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87' }}>
                     <X size={14} />
                   </button>
                 )}
               </div>
             ) : (
               <div style={{ position: 'relative' }}>
-                <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                {buscando && <Loader size={12} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />}
+                <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
+                {buscando && <Loader size={12} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />}
                 <input
                   style={{ ...inputStyle, paddingLeft: 30 }}
                   placeholder="Buscar socio…"
@@ -272,15 +272,15 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
                   autoFocus
                 />
                 {socioResults.length > 0 && (
-                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4 }}>
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4 }}>
                     {socioResults.map(s => (
                       <button key={s.id}
                         onClick={() => { setSocioSelec(s); setSocioSearch(''); setSocioResults([]) }}
-                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', padding: '9px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #f1f5f9' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', padding: '9px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #F4F5F7' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{nc(s)}</span>
-                        {s.numero_socio && <span style={{ fontSize: 11, color: '#64748b' }}>#{s.numero_socio}</span>}
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>{nc(s)}</span>
+                        {s.numero_socio && <span style={{ fontSize: 11, color: '#62666E' }}>#{s.numero_socio}</span>}
                       </button>
                     ))}
                   </div>
@@ -294,11 +294,11 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
         {(socioSelec || (!isNew && carrito)) && (
           <div>
             <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Users size={12} style={{ color: '#7c3aed' }} />
+              <Users size={12} style={{ color: '#62666E' }} />
               Familiar (opcional)
             </label>
             {familiares.length === 0 ? (
-              <div style={{ fontSize: 12, color: '#94a3b8', padding: '8px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: 12, color: '#7A7E87', padding: '8px 12px', background: '#F8F9FA', borderRadius: 8, border: '1px solid #E6E8EB' }}>
                 Este socio no tiene familiares registrados
               </div>
             ) : (
@@ -312,7 +312,7 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
               </select>
             )}
             {familiarId && (
-              <div style={{ fontSize: 11, color: '#7c3aed', marginTop: 4 }}>
+              <div style={{ fontSize: 11, color: '#6B4E79', marginTop: 4 }}>
                 La cuota se cargará al socio titular. El familiar queda registrado para identificar el carrito.
               </div>
             )}
@@ -324,8 +324,8 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
           <label style={labelStyle}>Tipo *</label>
           <div style={{ display: 'flex', gap: 8 }}>
             {TIPOS_CARRITO.map(t => (
-              <button key={t} onClick={() => set('tipo', t)} style={{ flex: 1, padding: '8px 0', fontSize: 12, fontWeight: 600, borderRadius: 8, border: `1px solid ${form.tipo === t ? '#059669' : '#e2e8f0'}`, background: form.tipo === t ? '#ecfdf5' : '#fff', color: form.tipo === t ? '#065f46' : '#94a3b8', cursor: 'pointer' }}>
-                {t === 'ELECTRICO' ? '⚡ Eléctrico' : t === 'GASOLINERO' ? '⛽ Gasolinero' : '🔧 Otro'}
+              <button key={t} onClick={() => set('tipo', t)} style={{ flex: 1, padding: '8px 0', fontSize: 12, fontWeight: 600, borderRadius: 8, border: `1px solid ${form.tipo === t ? '#267F56' : '#E6E8EB'}`, background: form.tipo === t ? '#F4F5F7' : '#fff', color: form.tipo === t ? '#17603F' : '#7A7E87', cursor: 'pointer' }}>
+                {t === 'ELECTRICO' ? 'Eléctrico' : t === 'GASOLINERO' ? 'Gasolinero' : 'Otro'}
               </button>
             ))}
           </div>
@@ -365,18 +365,18 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
 
         {/* ── Con cargador (solo eléctrico) ── */}
         {isElectrico && (
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none', padding: '10px 14px', background: form.con_cargador ? '#eff6ff' : '#f8fafc', border: `1px solid ${form.con_cargador ? '#bfdbfe' : '#e2e8f0'}`, borderRadius: 8, transition: 'all 0.15s' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none', padding: '10px 14px', background: form.con_cargador ? '#F4F5F7' : '#F8F9FA', border: `1px solid ${form.con_cargador ? '#C9CCD3' : '#E6E8EB'}`, borderRadius: 8, transition: 'all 0.15s' }}>
             <input
               type="checkbox"
               checked={form.con_cargador}
               onChange={e => set('con_cargador', e.target.checked)}
-              style={{ width: 16, height: 16, accentColor: '#2563eb', cursor: 'pointer' }}
+              style={{ width: 16, height: 16, accentColor: '#1C1D21', cursor: 'pointer' }}
             />
-            <span style={{ fontSize: 13, fontWeight: 600, color: form.con_cargador ? '#1d4ed8' : '#475569' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: form.con_cargador ? '#26282D' : '#4A4D54' }}>
               Con cargador incluido
             </span>
             {form.con_cargador && (
-              <span style={{ fontSize: 11, color: '#60a5fa', marginLeft: 2 }}>🔌 Sí</span>
+              <span style={{ fontSize: 11, color: '#9A9EA7', marginLeft: 2 }}>Sí</span>
             )}
           </label>
         )}
@@ -389,21 +389,21 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
 
         {/* ── Baterías (solo eléctrico) ── */}
         {isElectrico && (
-          <div style={{ border: '1px solid #bfdbfe', borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ border: '1px solid #C9CCD3', borderRadius: 10, overflow: 'hidden' }}>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#eff6ff', borderBottom: baterias.length > 0 ? '1px solid #bfdbfe' : 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#F4F5F7', borderBottom: baterias.length > 0 ? '1px solid #C9CCD3' : 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                <Battery size={14} style={{ color: '#2563eb' }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#1e40af' }}>Baterías</span>
-                <span style={{ fontSize: 11, color: '#60a5fa', background: '#dbeafe', padding: '1px 7px', borderRadius: 20, fontWeight: 600 }}>
+                <Battery size={14} style={{ color: '#1C1D21' }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#1C1D21' }}>Baterías</span>
+                <span style={{ fontSize: 11, color: '#9A9EA7', background: '#E6E8EB', padding: '1px 7px', borderRadius: 20, fontWeight: 600 }}>
                   {baterias.length}/8
                 </span>
-                {loadingBat && <Loader size={12} style={{ color: '#60a5fa' }} />}
+                {loadingBat && <Loader size={12} style={{ color: '#9A9EA7' }} />}
               </div>
               {baterias.length < 8 && (
                 <button
                   onClick={addBateria}
-                  style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#2563eb', background: '#dbeafe', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#1C1D21', background: '#E6E8EB', border: '1px solid #C9CCD3', borderRadius: 7, padding: '5px 10px', cursor: 'pointer' }}
                 >
                   <Plus size={12} /> Agregar batería
                 </button>
@@ -412,22 +412,22 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
 
             {/* Tabla de baterías */}
             {baterias.length === 0 ? (
-              <div style={{ padding: '14px 16px', fontSize: 12, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center', background: '#f8fafc' }}>
+              <div style={{ padding: '14px 16px', fontSize: 12, color: '#7A7E87', fontStyle: 'italic', textAlign: 'center', background: '#F8F9FA' }}>
                 Sin baterías registradas — usa "Agregar batería" para añadir.
               </div>
             ) : (
               <div style={{ background: '#fff' }}>
                 {/* Cabecera columnas */}
-                <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr 70px 1fr 32px', gap: 6, padding: '6px 12px 4px', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr 70px 1fr 32px', gap: 6, padding: '6px 12px 4px', background: '#F4F5F7', borderBottom: '1px solid #E6E8EB' }}>
                   {['Tipo', 'Marca', 'Año', 'No. de Serie', ''].map(h => (
-                    <div key={h} style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</div>
+                    <div key={h} style={{ fontSize: 10, fontWeight: 700, color: '#62666E', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</div>
                   ))}
                 </div>
 
                 {/* Filas */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                   {baterias.map((b, idx) => (
-                    <div key={b._key} style={{ display: 'grid', gridTemplateColumns: '110px 1fr 70px 1fr 32px', gap: 6, padding: '7px 12px', alignItems: 'center', borderBottom: idx < baterias.length - 1 ? '1px solid #f1f5f9' : 'none', background: idx % 2 === 0 ? '#fff' : '#fafafa' }}>
+                    <div key={b._key} style={{ display: 'grid', gridTemplateColumns: '110px 1fr 70px 1fr 32px', gap: 6, padding: '7px 12px', alignItems: 'center', borderBottom: idx < baterias.length - 1 ? '1px solid #F4F5F7' : 'none', background: idx % 2 === 0 ? '#fff' : '#fafafa' }}>
                       {/* Tipo */}
                       <select
                         style={{ ...inputStyle, padding: '5px 8px', fontSize: 12 }}
@@ -467,9 +467,9 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
                       {/* Eliminar */}
                       <button
                         onClick={() => removeBateria(b._key)}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 5, background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', borderRadius: 6 }}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 5, background: 'none', border: 'none', cursor: 'pointer', color: '#C23B3B', borderRadius: 6 }}
                         title="Quitar batería"
-                        onMouseEnter={e => (e.currentTarget.style.background = '#fef2f2')}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#F4F5F7')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                       >
                         <Trash2 size={13} />
@@ -481,7 +481,7 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
             )}
 
             {baterias.length >= 8 && (
-              <div style={{ padding: '7px 14px', background: '#fffbeb', borderTop: '1px solid #fde68a', fontSize: 11, color: '#92400e', fontWeight: 500 }}>
+              <div style={{ padding: '7px 14px', background: '#F4F5F7', borderTop: '1px solid #E6E8EB', fontSize: 11, color: '#7A4B0C', fontWeight: 500 }}>
                 Límite de 8 baterías alcanzado.
               </div>
             )}
@@ -489,7 +489,7 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
         )}
 
         {error && (
-          <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>
+          <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 13, color: '#C23B3B' }}>
             {error}
           </div>
         )}

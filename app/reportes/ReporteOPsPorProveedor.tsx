@@ -13,8 +13,8 @@ const fmtF = (s: string | null | undefined) =>
 
 const STATUS_OP  = ['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente', 'Pagada', 'Rechazada', 'Sustituida', 'Cancelada'] as const
 const STATUS_CLR: Record<string, string> = {
-  'Pendiente Auth': '#7c3aed', 'Pendiente Auth Finanzas': '#6d28d9', Pendiente: '#d97706',
-  Pagada: '#15803d', Rechazada: '#dc2626', Sustituida: '#64748b', Cancelada: '#64748b',
+  'Pendiente Auth': '#6B4E79', 'Pendiente Auth Finanzas': '#5C4268', Pendiente: '#B5761A',
+  Pagada: '#1F7A50', Rechazada: '#C23B3B', Sustituida: '#62666E', Cancelada: '#62666E',
 }
 
 type OP = {
@@ -178,7 +178,7 @@ export default function ReporteOPsPorProveedor() {
         <button className="btn-ghost" onClick={fetchData} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <RefreshCw size={13} /> Actualizar
         </button>
-        <button onClick={exportExcel} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 13px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#15803d', color: '#fff', cursor: 'pointer' }}>
+        <button onClick={exportExcel} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 13px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#1F7A50', color: '#fff', cursor: 'pointer' }}>
           <FileSpreadsheet size={13} /> Excel
         </button>
       </div>
@@ -186,21 +186,21 @@ export default function ReporteOPsPorProveedor() {
       {/* KPIs */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
         {[
-          { label: 'Proveedores',     value: grupos.length,          color: '#2563eb', bg: '#eff6ff' },
-          { label: 'Total OPs',       value: opsFiltradas.length,    color: '#7c3aed', bg: '#f5f3ff' },
-          { label: 'Monto Total',     value: fmt(totalGlobal),       color: '#0f766e', bg: '#f0fdfa' },
-          { label: 'Pagado',          value: fmt(pagadoGlobal),      color: '#15803d', bg: '#f0fdf4' },
-          { label: 'Saldo Pendiente', value: fmt(saldoGlobal),       color: '#d97706', bg: '#fffbeb' },
+          { label: 'Proveedores',     value: grupos.length,          color: '#1C1D21', bg: '#F4F5F7' },
+          { label: 'Total OPs',       value: opsFiltradas.length,    color: '#6B4E79', bg: '#F4F5F7' },
+          { label: 'Monto Total',     value: fmt(totalGlobal),       color: '#126B63', bg: '#F4F5F7' },
+          { label: 'Pagado',          value: fmt(pagadoGlobal),      color: '#1F7A50', bg: '#F4F5F7' },
+          { label: 'Saldo Pendiente', value: fmt(saldoGlobal),       color: '#B5761A', bg: '#F4F5F7' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ flex: '1 1 140px', maxWidth: 220, padding: '12px 16px', background: k.bg, border: `1px solid ${k.color}22` }}>
-            <div style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>{k.label}</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: k.color }}>{k.value}</div>
+          <div key={k.label} className="card" style={{ flex: '1 1 140px', maxWidth: 220, padding: '12px 16px', background: '#fff', border: '1px solid #E6E8EB' }}>
+            <div style={{ fontSize: 10, color: '#62666E', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{k.value}</div>
           </div>
         ))}
       </div>
 
       {loading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Cargando…</div>
+        <div style={{ padding: 40, textAlign: 'center', color: '#7A7E87' }}>Cargando…</div>
       ) : (
         <>
           {/* Controles expandir */}
@@ -213,12 +213,12 @@ export default function ReporteOPsPorProveedor() {
           <div id="reporte-print-area">
             <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
-                <tr style={{ background: '#f8fafc' }}>
-                  <th style={{ textAlign: 'left',  padding: '8px 10px', borderBottom: '2px solid #e2e8f0', fontSize: 10, color: '#64748b', textTransform: 'uppercase' }}>Proveedor</th>
-                  <th style={{ textAlign: 'center', padding: '8px 10px', borderBottom: '2px solid #e2e8f0', fontSize: 10, color: '#64748b', textTransform: 'uppercase' }}>OPs</th>
-                  <th style={{ textAlign: 'right',  padding: '8px 10px', borderBottom: '2px solid #e2e8f0', fontSize: 10, color: '#64748b', textTransform: 'uppercase' }}>Total</th>
-                  <th style={{ textAlign: 'right',  padding: '8px 10px', borderBottom: '2px solid #e2e8f0', fontSize: 10, color: '#64748b', textTransform: 'uppercase' }}>Pagado</th>
-                  <th style={{ textAlign: 'right',  padding: '8px 10px', borderBottom: '2px solid #e2e8f0', fontSize: 10, color: '#64748b', textTransform: 'uppercase' }}>Saldo</th>
+                <tr style={{ background: '#F8F9FA' }}>
+                  <th style={{ textAlign: 'left',  padding: '8px 10px', borderBottom: '2px solid #E6E8EB', fontSize: 10, color: '#62666E', textTransform: 'uppercase' }}>Proveedor</th>
+                  <th style={{ textAlign: 'center', padding: '8px 10px', borderBottom: '2px solid #E6E8EB', fontSize: 10, color: '#62666E', textTransform: 'uppercase' }}>OPs</th>
+                  <th style={{ textAlign: 'right',  padding: '8px 10px', borderBottom: '2px solid #E6E8EB', fontSize: 10, color: '#62666E', textTransform: 'uppercase' }}>Total</th>
+                  <th style={{ textAlign: 'right',  padding: '8px 10px', borderBottom: '2px solid #E6E8EB', fontSize: 10, color: '#62666E', textTransform: 'uppercase' }}>Pagado</th>
+                  <th style={{ textAlign: 'right',  padding: '8px 10px', borderBottom: '2px solid #E6E8EB', fontSize: 10, color: '#62666E', textTransform: 'uppercase' }}>Saldo</th>
                 </tr>
               </thead>
               <tbody>
@@ -233,18 +233,18 @@ export default function ReporteOPsPorProveedor() {
                       {/* Fila cabecera proveedor */}
                       <tr key={`prov-${provId}`}
                         onClick={() => toggle(provId)}
-                        style={{ background: '#f8fafc', cursor: 'pointer', borderTop: '2px solid #e2e8f0' }}>
-                        <td style={{ padding: '10px 10px', fontWeight: 700, color: '#1e293b' }}>
+                        style={{ background: '#F8F9FA', cursor: 'pointer', borderTop: '2px solid #E6E8EB' }}>
+                        <td style={{ padding: '10px 10px', fontWeight: 700, color: '#26282D' }}>
                           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             {isOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
                             {g.prov?.nombre ?? 'Sin proveedor'}
-                            {g.prov?.rfc && <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 400, fontFamily: 'monospace' }}>{g.prov.rfc}</span>}
+                            {g.prov?.rfc && <span style={{ fontSize: 10, color: '#7A7E87', fontWeight: 400, fontVariantNumeric: 'tabular-nums' }}>{g.prov.rfc}</span>}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 10px', textAlign: 'center', color: '#475569', fontWeight: 600 }}>{g.ops.length}</td>
+                        <td style={{ padding: '10px 10px', textAlign: 'center', color: '#4A4D54', fontWeight: 600 }}>{g.ops.length}</td>
                         <td style={{ padding: '10px 10px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(total)}</td>
-                        <td style={{ padding: '10px 10px', textAlign: 'right', color: '#15803d', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmt(pagado)}</td>
-                        <td style={{ padding: '10px 10px', textAlign: 'right', color: saldo > 0 ? '#d97706' : '#15803d', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(saldo)}</td>
+                        <td style={{ padding: '10px 10px', textAlign: 'right', color: '#1F7A50', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmt(pagado)}</td>
+                        <td style={{ padding: '10px 10px', textAlign: 'right', color: saldo > 0 ? '#B5761A' : '#1F7A50', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(saldo)}</td>
                       </tr>
 
                       {/* Detalle OPs */}
@@ -253,34 +253,34 @@ export default function ReporteOPsPorProveedor() {
                         const hoy = new Date().toISOString().slice(0, 10)
                         const vencida = op.fecha_vencimiento && op.fecha_vencimiento < hoy && !['Pagada', 'Cancelada', 'Rechazada', 'Sustituida'].includes(op.status)
                         return (
-                          <tr key={op.id} style={{ borderTop: '1px solid #f1f5f9', background: '#fff' }}>
+                          <tr key={op.id} style={{ borderTop: '1px solid #F4F5F7', background: '#fff' }}>
                             <td style={{ padding: '7px 10px 7px 30px' }}>
-                              <div style={{ fontWeight: 600, color: '#1e293b', fontSize: 12 }}>{op.folio}</div>
-                              <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>
+                              <div style={{ fontWeight: 600, color: '#26282D', fontSize: 12 }}>{op.folio}</div>
+                              <div style={{ fontSize: 11, color: '#62666E', marginTop: 1 }}>
                                 {op.concepto ?? '—'}
-                                {op.id_tipo_gasto_fk && <span style={{ marginLeft: 8, padding: '1px 6px', borderRadius: 8, background: '#f1f5f9', color: '#475569', fontSize: 10 }}>{catTG.nombre(op.id_tipo_gasto_fk)}</span>}
+                                {op.id_tipo_gasto_fk && <span style={{ marginLeft: 8, padding: '1px 6px', borderRadius: 8, background: '#F4F5F7', color: '#4A4D54', fontSize: 10 }}>{catTG.nombre(op.id_tipo_gasto_fk)}</span>}
                               </div>
-                              <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 1 }}>
+                              <div style={{ fontSize: 10, color: '#7A7E87', marginTop: 1 }}>
                                 {op.id_centro_costo_fk && ccMap[op.id_centro_costo_fk] ? ccMap[op.id_centro_costo_fk] : ''}
                                 {op.id_area_fk && areaMap[op.id_area_fk] ? ` / ${areaMap[op.id_area_fk]}` : ''}
                               </div>
                             </td>
                             <td style={{ padding: '7px 10px', textAlign: 'center', verticalAlign: 'top' }}>
-                              <div style={{ fontSize: 11, color: '#64748b' }}>{fmtF(op.fecha_op)}</div>
+                              <div style={{ fontSize: 11, color: '#62666E' }}>{fmtF(op.fecha_op)}</div>
                               {op.fecha_vencimiento && (
-                                <div style={{ fontSize: 10, color: vencida ? '#dc2626' : '#94a3b8', fontWeight: vencida ? 700 : 400, marginTop: 1 }}>
-                                  Vence: {fmtF(op.fecha_vencimiento)}{vencida ? ' ⚠' : ''}
+                                <div style={{ fontSize: 10, color: vencida ? '#C23B3B' : '#7A7E87', fontWeight: vencida ? 700 : 400, marginTop: 1 }}>
+                                  Vence: {fmtF(op.fecha_vencimiento)}{vencida ? ' ' : ''}
                                 </div>
                               )}
                               <div style={{ marginTop: 3 }}>
-                                <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 10, background: `${STATUS_CLR[op.status]}20`, color: STATUS_CLR[op.status] }}>
+                                <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 10, background: STATUS_CLR[op.status], color: '#fff'}}>
                                   {op.status}
                                 </span>
                               </div>
                             </td>
                             <td style={{ padding: '7px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', verticalAlign: 'top' }}>{fmt(op.monto)}</td>
-                            <td style={{ padding: '7px 10px', textAlign: 'right', color: '#15803d', fontVariantNumeric: 'tabular-nums', verticalAlign: 'top' }}>{opPagado > 0 ? fmt(opPagado) : '—'}</td>
-                            <td style={{ padding: '7px 10px', textAlign: 'right', color: (op.saldo ?? 0) > 0 ? '#d97706' : '#15803d', fontVariantNumeric: 'tabular-nums', verticalAlign: 'top' }}>{fmt(op.saldo ?? op.monto)}</td>
+                            <td style={{ padding: '7px 10px', textAlign: 'right', color: '#1F7A50', fontVariantNumeric: 'tabular-nums', verticalAlign: 'top' }}>{opPagado > 0 ? fmt(opPagado) : '—'}</td>
+                            <td style={{ padding: '7px 10px', textAlign: 'right', color: (op.saldo ?? 0) > 0 ? '#B5761A' : '#1F7A50', fontVariantNumeric: 'tabular-nums', verticalAlign: 'top' }}>{fmt(op.saldo ?? op.monto)}</td>
                           </tr>
                         )
                       })}
@@ -289,18 +289,18 @@ export default function ReporteOPsPorProveedor() {
                 })}
 
                 {/* Total general */}
-                <tr style={{ background: '#1e293b', borderTop: '2px solid #1e293b' }}>
+                <tr style={{ background: '#26282D', borderTop: '2px solid #26282D' }}>
                   <td style={{ padding: '10px 10px', color: '#fff', fontWeight: 700 }}>Total General — {grupos.length} proveedores · {opsFiltradas.length} OPs</td>
                   <td />
                   <td style={{ padding: '10px 10px', textAlign: 'right', color: '#fff', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(totalGlobal)}</td>
-                  <td style={{ padding: '10px 10px', textAlign: 'right', color: '#86efac', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(pagadoGlobal)}</td>
-                  <td style={{ padding: '10px 10px', textAlign: 'right', color: '#fde68a', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(saldoGlobal)}</td>
+                  <td style={{ padding: '10px 10px', textAlign: 'right', color: '#7CC9A3', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(pagadoGlobal)}</td>
+                  <td style={{ padding: '10px 10px', textAlign: 'right', color: '#F0D9A8', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(saldoGlobal)}</td>
                 </tr>
               </tbody>
             </table>
 
             {grupos.length === 0 && (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Sin datos para los filtros seleccionados.</div>
+              <div style={{ padding: '40px', textAlign: 'center', color: '#7A7E87' }}>Sin datos para los filtros seleccionados.</div>
             )}
           </div>
         </>

@@ -18,8 +18,8 @@ type Props = {
   onSaved: () => void
 }
 
-const inputStyle = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }
-const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }
+const inputStyle = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }
+const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }
 const nc = (s: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null }) =>
   [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')
 
@@ -109,9 +109,9 @@ export default function CambiarTitularModal({
       maxWidth={520}
       onClose={onClose}
       footer={<>
-        <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cancelar</button>
+        <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', cursor: 'pointer' }}>Cancelar</button>
         <button onClick={handleSave} disabled={saving || !socioSelec}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: 'pointer', opacity: (saving || !socioSelec) ? 0.6 : 1 }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#6B4E79', color: '#fff', cursor: 'pointer', opacity: (saving || !socioSelec) ? 0.6 : 1 }}>
           {saving ? <Loader size={14} /> : <ArrowRightLeft size={14} />}
           Transferir Titularidad
         </button>
@@ -119,7 +119,7 @@ export default function CambiarTitularModal({
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-        <div style={{ padding: '10px 14px', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, fontSize: 12, color: '#5b21b6', lineHeight: 1.5 }}>
+        <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #4E3758', borderRadius: 8, fontSize: 12, color: '#4E3758', lineHeight: 1.5 }}>
           El carrito, el cajón y la pensión se conservan sin cambios — solo cambia el socio titular.
           Las cuotas ya generadas (pagadas o pendientes) quedan a nombre de <strong>{nombreSocioActual}</strong>.
           Las cuotas que se generen de aquí en adelante se cargarán al nuevo titular.
@@ -128,19 +128,19 @@ export default function CambiarTitularModal({
         <div>
           <label style={labelStyle}>Nuevo Socio Titular *</label>
           {socioSelec ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#5b21b6' }}>{nc(socioSelec)}</div>
-                {socioSelec.numero_socio && <div style={{ fontSize: 11, color: '#6b7280' }}>#{socioSelec.numero_socio}</div>}
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#4E3758' }}>{nc(socioSelec)}</div>
+                {socioSelec.numero_socio && <div style={{ fontSize: 11, color: '#62666E' }}>#{socioSelec.numero_socio}</div>}
               </div>
-              <button onClick={() => { setSocioSelec(null); setFamiliarId(null) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+              <button onClick={() => { setSocioSelec(null); setFamiliarId(null) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87' }}>
                 <X size={14} />
               </button>
             </div>
           ) : (
             <div style={{ position: 'relative' }}>
-              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              {buscando && <Loader size={12} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />}
+              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
+              {buscando && <Loader size={12} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />}
               <input
                 style={{ ...inputStyle, paddingLeft: 30 }}
                 placeholder="Buscar socio…"
@@ -149,15 +149,15 @@ export default function CambiarTitularModal({
                 autoFocus
               />
               {socioResults.length > 0 && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4 }}>
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4 }}>
                   {socioResults.map(s => (
                     <button key={s.id}
                       onClick={() => { setSocioSelec(s); setSocioSearch(''); setSocioResults([]) }}
-                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', padding: '9px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #f1f5f9' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', padding: '9px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #F4F5F7' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{nc(s)}</span>
-                      {s.numero_socio && <span style={{ fontSize: 11, color: '#64748b' }}>#{s.numero_socio}</span>}
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>{nc(s)}</span>
+                      {s.numero_socio && <span style={{ fontSize: 11, color: '#62666E' }}>#{s.numero_socio}</span>}
                     </button>
                   ))}
                 </div>
@@ -169,11 +169,11 @@ export default function CambiarTitularModal({
         {socioSelec && (
           <div>
             <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Users size={12} style={{ color: '#7c3aed' }} />
+              <Users size={12} style={{ color: '#62666E' }} />
               Familiar (opcional)
             </label>
             {familiares.length === 0 ? (
-              <div style={{ fontSize: 12, color: '#94a3b8', padding: '8px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: 12, color: '#7A7E87', padding: '8px 12px', background: '#F8F9FA', borderRadius: 8, border: '1px solid #E6E8EB' }}>
                 Este socio no tiene familiares registrados
               </div>
             ) : (
@@ -194,7 +194,7 @@ export default function CambiarTitularModal({
           <input style={inputStyle} value={motivo} onChange={e => setMotivo(e.target.value)} placeholder="Ej. Venta de carrito" />
         </div>
 
-        {error && <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>{error}</div>}
+        {error && <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 13, color: '#C23B3B' }}>{error}</div>}
       </div>
     </ModalShell>
   )

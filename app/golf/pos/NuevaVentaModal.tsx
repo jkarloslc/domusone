@@ -369,16 +369,16 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
         <button className="btn-ghost" onClick={() => abrirTicket(success.id, success.folio_dia, false)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Printer size={14} /> Ver Ticket
         </button>
-        <button className="btn-primary" onClick={() => abrirTicket(success.id, success.folio_dia, true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#059669', border: 'none' }}>
+        <button className="btn-primary" onClick={() => abrirTicket(success.id, success.folio_dia, true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#267F56', border: 'none' }}>
           <Printer size={14} /> Imprimir Ticket
         </button>
       </>}
     >
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>Folio #{String(success.id).padStart(6, '0')} · Día {success.folio_dia}</div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: '#059669', marginBottom: cambio > 0.005 ? 12 : 0 }}>{fmt$(totales.total)}</div>
+        <div style={{ fontSize: 13, color: '#62666E', marginBottom: 6 }}>Folio #{String(success.id).padStart(6, '0')} · Día {success.folio_dia}</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: '#267F56', marginBottom: cambio > 0.005 ? 12 : 0 }}>{fmt$(totales.total)}</div>
         {cambio > 0.005 && (
-          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 16px', fontSize: 14, color: '#92400e', fontWeight: 600, display: 'inline-block' }}>
+          <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 8, padding: '8px 16px', fontSize: 14, color: '#7A4B0C', fontWeight: 600, display: 'inline-block' }}>
             Cambio: {fmt$(cambio)}
           </div>
         )}
@@ -394,24 +394,24 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
         <button className="btn-secondary" onClick={() => { setPrecioVarProducto(null); setPrecioVarInput('') }}>Cancelar</button>
         <button className="btn-primary" onClick={confirmarPrecioVariable}
           disabled={!precioVarInput || parseFloat(precioVarInput) <= 0}
-          style={{ background: '#059669', border: 'none' }}>
+          style={{ background: '#267F56', border: 'none' }}>
           Agregar al carrito
         </button>
       </>}
     >
-      <div style={{ fontSize: 12, color: '#64748b', marginBottom: 14 }}>
+      <div style={{ fontSize: 12, color: '#62666E', marginBottom: 14 }}>
         Ingresa el precio a cobrar al cliente
-        {precioVarProducto.aplica_iva && <span style={{ marginLeft: 6, color: '#059669', fontWeight: 600 }}>(IVA {precioVarProducto.iva_pct}% incluido)</span>}
+        {precioVarProducto.aplica_iva && <span style={{ marginLeft: 6, color: '#267F56', fontWeight: 600 }}>(IVA {precioVarProducto.iva_pct}% incluido)</span>}
       </div>
       <div style={{ position: 'relative' }}>
-        <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 14, fontWeight: 700 }}>$</span>
+        <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87', fontSize: 14, fontWeight: 700 }}>$</span>
         <input
           autoFocus
           type="number" min={0.01} step={0.01}
           value={precioVarInput}
           onChange={e => setPrecioVarInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') confirmarPrecioVariable(); if (e.key === 'Escape') { setPrecioVarProducto(null); setPrecioVarInput('') } }}
-          style={{ width: '100%', padding: '10px 12px 10px 24px', fontSize: 22, fontWeight: 700, border: '2px solid #fbbf24', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', color: '#1e293b', background: '#fffbeb', textAlign: 'right' }}
+          style={{ width: '100%', padding: '10px 12px 10px 24px', fontSize: 22, fontWeight: 700, border: '2px solid #C9CCD3', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', color: '#26282D', background: '#F4F5F7', textAlign: 'right' }}
           placeholder="0.00" />
       </div>
     </ModalShell>
@@ -425,18 +425,18 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
         <button className="btn-secondary" onClick={() => setShowCondonAuth(false)}>Cancelar</button>
         <button className="btn-primary" onClick={handleCondonAuth}
           disabled={condonLoading || !condonEmail || !condonPassword}
-          style={{ background: '#d97706', border: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+          style={{ background: '#B5761A', border: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
           {condonLoading ? <Loader size={15} className="animate-spin" /> : <ShieldCheck size={15} />}
           {condonLoading ? 'Verificando…' : 'Autorizar y Cobrar'}
         </button>
       </>}
     >
-        <div style={{ fontSize: 12, color: '#64748b', textAlign: 'center', marginBottom: 16 }}>
+        <div style={{ fontSize: 12, color: '#62666E', textAlign: 'center', marginBottom: 16 }}>
           La forma de pago <strong>Condonación</strong> requiere autorización de un administrador.
         </div>
 
         <div style={{ marginBottom: 12 }}>
-          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Correo del administrador</label>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', display: 'block', marginBottom: 4 }}>Correo del administrador</label>
           <input
             autoFocus
             type="email"
@@ -444,26 +444,26 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
             onChange={e => setCondonEmail(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleCondonAuth() }}
             placeholder="admin@ejemplo.com"
-            style={{ width: '100%', padding: '9px 12px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '9px 12px', fontSize: 13, border: '1px solid #C9CCD3', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
         <div>
-          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Contraseña</label>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', display: 'block', marginBottom: 4 }}>Contraseña</label>
           <div style={{ position: 'relative' }}>
-            <Lock size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+            <Lock size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
             <input
               type="password"
               value={condonPassword}
               onChange={e => setCondonPassword(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleCondonAuth() }}
               placeholder="••••••••"
-              style={{ width: '100%', padding: '9px 12px 9px 30px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '9px 12px 9px 30px', fontSize: 13, border: '1px solid #C9CCD3', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
             />
           </div>
         </div>
 
         {condonError && (
-          <div style={{ padding: '7px 10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, fontSize: 12, color: '#dc2626', marginTop: 12 }}>
+          <div style={{ padding: '7px 10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 7, fontSize: 12, color: '#C23B3B', marginTop: 12 }}>
             {condonError}
           </div>
         )}
@@ -475,33 +475,33 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
       <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 900, maxHeight: '95vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
 
         {/* Header */}
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', borderRadius: '16px 16px 0 0' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #E6E8EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F8F9FA', borderRadius: '16px 16px 0 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <ShoppingCart size={18} color="#059669" />
+            <ShoppingCart size={18} color="#62666E" />
             <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#1e293b' }}>Nueva Venta</div>
-              <div style={{ fontSize: 11, color: '#64748b' }}>{nombreCentro}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#26282D' }}>Nueva Venta</div>
+              <div style={{ fontSize: 11, color: '#62666E' }}>{nombreCentro}</div>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4 }}><X size={18} /></button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 4 }}><X size={18} /></button>
         </div>
 
         {loading ? (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7A7E87' }}>
             <Loader size={24} />
           </div>
         ) : (
           <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 340px', overflow: 'hidden', minHeight: 0 }}>
 
             {/* ── Panel izquierdo: productos ───────────────── */}
-            <div style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid #e2e8f0', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid #E6E8EB', overflow: 'hidden' }}>
 
               {/* Búsqueda productos */}
-              <div style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid #F4F5F7' }}>
                 <div style={{ position: 'relative' }}>
-                  <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                  <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
                   <input
-                    style={{ width: '100%', padding: '8px 10px 8px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '8px 10px 8px 30px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
                     placeholder="Buscar producto o SKU…"
                     value={prodSearch} onChange={e => setProdSearch(e.target.value)} />
                 </div>
@@ -510,7 +510,7 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
               {/* Grid de productos */}
               <div style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 8, alignContent: 'start' }}>
                 {prodsFiltrados.length === 0 ? (
-                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#94a3b8', padding: '32px 0', fontSize: 13 }}>
+                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#7A7E87', padding: '32px 0', fontSize: 13 }}>
                     Sin productos configurados para este centro.<br />
                     <span style={{ fontSize: 11 }}>Agrégalos en Configuración.</span>
                   </div>
@@ -519,21 +519,21 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
                   return (
                   <button key={p.id} onClick={() => agregarProducto(p)}
                     title={bloqueado ? MENSAJE_BLOQUEO_VENTA_DIRECTA : undefined}
-                    style={{ padding: '10px 8px', border: '1px solid #e2e8f0', borderRadius: 10, background: bloqueado ? '#f8fafc' : '#fff', cursor: 'pointer', textAlign: 'left', transition: 'all 0.1s', opacity: bloqueado ? 0.6 : 1 }}
-                    onMouseEnter={e => { if (bloqueado) return; (e.currentTarget as HTMLElement).style.background = '#f0fdf4'; (e.currentTarget as HTMLElement).style.borderColor = '#a7f3d0' }}
-                    onMouseLeave={e => { if (bloqueado) return; (e.currentTarget as HTMLElement).style.background = '#fff'; (e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0' }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#1e293b', marginBottom: 4, lineHeight: 1.3 }}>{p.nombre}</div>
-                    {p.sku && <div style={{ fontSize: 9, color: '#94a3b8', marginBottom: 4 }}>{p.sku}</div>}
-                    <div style={{ fontSize: 13, fontWeight: 800, color: '#059669' }}>{fmt$(p.precio)}</div>
-                    <div style={{ fontSize: 9, color: '#94a3b8', marginTop: 2 }}>
-                      {p.tipo === 'PRODUCTO' ? '📦 Producto' : '⚡ Servicio'}
+                    style={{ padding: '10px 8px', border: '1px solid #E6E8EB', borderRadius: 10, background: bloqueado ? '#F8F9FA' : '#fff', cursor: 'pointer', textAlign: 'left', transition: 'all 0.1s', opacity: bloqueado ? 0.6 : 1 }}
+                    onMouseEnter={e => { if (bloqueado) return; (e.currentTarget as HTMLElement).style.background = '#F4F5F7'; (e.currentTarget as HTMLElement).style.borderColor = '#E6E8EB' }}
+                    onMouseLeave={e => { if (bloqueado) return; (e.currentTarget as HTMLElement).style.background = '#fff'; (e.currentTarget as HTMLElement).style.borderColor = '#E6E8EB' }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#26282D', marginBottom: 4, lineHeight: 1.3 }}>{p.nombre}</div>
+                    {p.sku && <div style={{ fontSize: 9, color: '#7A7E87', marginBottom: 4 }}>{p.sku}</div>}
+                    <div style={{ fontSize: 13, fontWeight: 800, color: '#267F56' }}>{fmt$(p.precio)}</div>
+                    <div style={{ fontSize: 9, color: '#7A7E87', marginTop: 2 }}>
+                      {p.tipo === 'PRODUCTO' ? 'Producto' : 'Servicio'}
                       {p.aplica_iva ? ` (IVA inc.)` : ''}
                     </div>
                     {p.precio_variable && (
-                      <div style={{ fontSize: 9, fontWeight: 700, color: '#d97706', marginTop: 2 }}>✏ Precio variable</div>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: '#B5761A', marginTop: 2 }}>Precio variable</div>
                     )}
                     {bloqueado && (
-                      <div style={{ fontSize: 9, fontWeight: 700, color: '#dc2626', marginTop: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: '#C23B3B', marginTop: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
                         <Lock size={9} /> Solo desde su módulo
                       </div>
                     )}
@@ -547,32 +547,32 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
             <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
               {/* Cliente — obligatorio, buscar y seleccionar un socio (usar el socio genérico para público en general) */}
-              <div style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', background: '#fafafa' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>Socio *</div>
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid #F4F5F7', background: '#fafafa' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#4A4D54', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>Socio *</div>
                 {socioSelec ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: '#065f46' }}>{nc(socioSelec)}</div>
-                      {socioSelec.numero_socio && <div style={{ fontSize: 10, color: '#6b7280' }}>#{socioSelec.numero_socio}</div>}
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#17603F' }}>{nc(socioSelec)}</div>
+                      {socioSelec.numero_socio && <div style={{ fontSize: 10, color: '#62666E' }}>#{socioSelec.numero_socio}</div>}
                     </div>
-                    <button onClick={() => setSocioSelec(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={13} /></button>
+                    <button onClick={() => setSocioSelec(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87' }}><X size={13} /></button>
                   </div>
                 ) : (
                   <div style={{ position: 'relative' }}>
-                    <Search size={12} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                    {buscandoSocio && <Loader size={11} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />}
+                    <Search size={12} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
+                    {buscandoSocio && <Loader size={11} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />}
                     <input
-                      style={{ width: '100%', padding: '6px 8px 6px 26px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                      style={{ width: '100%', padding: '6px 8px 6px 26px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
                       placeholder="Buscar socio…" value={socioSearch} onChange={e => setSocioSearch(e.target.value)} />
                     {socioResults.length > 0 && (
-                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 2, maxHeight: 160, overflowY: 'auto' }}>
+                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 2, maxHeight: 160, overflowY: 'auto' }}>
                         {socioResults.map(s => (
                           <button key={s.id} onClick={() => { setSocioSelec(s); setSocioSearch(''); setSocioResults([]) }}
-                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #f1f5f9' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #F4F5F7' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: '#1e293b' }}>{nc(s)}</span>
-                            {s.numero_socio && <span style={{ fontSize: 10, color: '#64748b' }}>#{s.numero_socio}</span>}
+                            <span style={{ fontSize: 12, fontWeight: 600, color: '#26282D' }}>{nc(s)}</span>
+                            {s.numero_socio && <span style={{ fontSize: 10, color: '#62666E' }}>#{s.numero_socio}</span>}
                           </button>
                         ))}
                       </div>
@@ -584,35 +584,35 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
               {/* Carrito */}
               <div style={{ flex: 1, overflowY: 'auto', padding: '8px 12px' }}>
                 {lineas.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#94a3b8', padding: '24px 0', fontSize: 12 }}>
+                  <div style={{ textAlign: 'center', color: '#7A7E87', padding: '24px 0', fontSize: 12 }}>
                     Selecciona productos<br />del panel izquierdo
                   </div>
                 ) : lineas.map((l, i) => {
                   const c = calcLinea(l)
                   return (
-                    <div key={i} style={{ padding: '8px 0', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+                    <div key={i} style={{ padding: '8px 0', borderBottom: '1px solid #F4F5F7', display: 'flex', gap: 6, alignItems: 'flex-start' }}>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: '#1e293b' }}>{l.concepto}</div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: '#26282D' }}>{l.concepto}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                          <button onClick={() => cambiarCantidad(i, -1)} style={{ width: 20, height: 20, borderRadius: 4, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Minus size={10} /></button>
+                          <button onClick={() => cambiarCantidad(i, -1)} style={{ width: 20, height: 20, borderRadius: 4, border: '1px solid #E6E8EB', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Minus size={10} /></button>
                           <span style={{ fontSize: 12, fontWeight: 600, minWidth: 20, textAlign: 'center' }}>{l.cantidad}</span>
-                          <button onClick={() => cambiarCantidad(i, 1)} style={{ width: 20, height: 20, borderRadius: 4, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Plus size={10} /></button>
-                          <span style={{ fontSize: 11, color: '#94a3b8' }}>× </span>
+                          <button onClick={() => cambiarCantidad(i, 1)} style={{ width: 20, height: 20, borderRadius: 4, border: '1px solid #E6E8EB', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Plus size={10} /></button>
+                          <span style={{ fontSize: 11, color: '#7A7E87' }}>× </span>
                           {l.precio_variable ? (
                             <input
                               type="number" min={0} step={0.01}
                               value={l.precio_unitario}
                               onChange={e => cambiarPrecio(i, e.target.value)}
-                              style={{ width: 64, padding: '2px 4px', fontSize: 11, border: '1px solid #fbbf24', borderRadius: 4, textAlign: 'right', fontFamily: 'inherit', outline: 'none', background: '#fffbeb' }} />
+                              style={{ width: 64, padding: '2px 4px', fontSize: 11, border: '1px solid #C9CCD3', borderRadius: 4, textAlign: 'right', fontFamily: 'inherit', outline: 'none', background: '#F4F5F7' }} />
                           ) : (
-                            <span style={{ fontSize: 11, fontWeight: 600, color: '#475569', minWidth: 64, textAlign: 'right' }}>{fmt$(l.precio_unitario)}</span>
+                            <span style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', minWidth: 64, textAlign: 'right' }}>{fmt$(l.precio_unitario)}</span>
                           )}
                         </div>
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{fmt$(c.total)}</div>
-                        {l.aplica_iva && c.iva > 0 && <div style={{ fontSize: 9, color: '#94a3b8' }}>IVA inc. {fmt$(c.iva)}</div>}
-                        <button onClick={() => quitarLinea(i)} style={{ marginTop: 2, background: 'none', border: 'none', cursor: 'pointer', color: '#fca5a5' }}><Trash2 size={12} /></button>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#26282D' }}>{fmt$(c.total)}</div>
+                        {l.aplica_iva && c.iva > 0 && <div style={{ fontSize: 9, color: '#7A7E87' }}>IVA inc. {fmt$(c.iva)}</div>}
+                        <button onClick={() => quitarLinea(i)} style={{ marginTop: 2, background: 'none', border: 'none', cursor: 'pointer', color: '#C23B3B' }}><Trash2 size={12} /></button>
                       </div>
                     </div>
                   )
@@ -620,20 +620,20 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
               </div>
 
               {/* Totales + Pago */}
-              <div style={{ padding: '10px 12px', borderTop: '1px solid #e2e8f0', background: '#fafafa' }}>
+              <div style={{ padding: '10px 12px', borderTop: '1px solid #E6E8EB', background: '#fafafa' }}>
                 {/* Resumen */}
                 <div style={{ marginBottom: 8 }}>
                   {totales.iva > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#64748b', marginBottom: 2 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#62666E', marginBottom: 2 }}>
                       <span>Subtotal</span><span>{fmt$(totales.subtotal)}</span>
                     </div>
                   )}
                   {totales.iva > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#64748b', marginBottom: 2 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#62666E', marginBottom: 2 }}>
                       <span>IVA</span><span>{fmt$(totales.iva)}</span>
                     </div>
                   )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18, fontWeight: 800, color: '#059669', marginTop: 4 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18, fontWeight: 800, color: '#267F56', marginTop: 4 }}>
                     <span>TOTAL</span><span>{fmt$(totales.total)}</span>
                   </div>
                 </div>
@@ -642,29 +642,29 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
                 <div style={{ marginBottom: 6 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px', gap: 6, marginBottom: 4 }}>
                     <select value={forma1} onChange={e => setForma1(Number(e.target.value))}
-                      style={{ padding: '6px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
+                      style={{ padding: '6px 8px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 6, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
                       <option value={0}>— Selecciona —</option>
                       {formasPago.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
                     </select>
                     <input type="number" min={0} step={0.01} value={monto1} onChange={e => setMonto1(e.target.value)}
-                      style={{ padding: '6px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', fontFamily: 'inherit', outline: 'none', textAlign: 'right' }}
+                      style={{ padding: '6px 8px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 6, background: '#fff', fontFamily: 'inherit', outline: 'none', textAlign: 'right' }}
                       placeholder="Monto" />
                   </div>
                   {dosFormas ? (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 24px', gap: 6 }}>
                       <select value={forma2} onChange={e => setForma2(Number(e.target.value))}
-                        style={{ padding: '6px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
+                        style={{ padding: '6px 8px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 6, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
                         <option value={0}>— Forma 2 —</option>
                         {formasPago.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
                       </select>
                       <input type="number" min={0} step={0.01} value={monto2} onChange={e => setMonto2(e.target.value)}
-                        style={{ padding: '6px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', fontFamily: 'inherit', outline: 'none', textAlign: 'right' }}
+                        style={{ padding: '6px 8px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 6, background: '#fff', fontFamily: 'inherit', outline: 'none', textAlign: 'right' }}
                         placeholder="Monto" />
-                      <button onClick={() => { setDosFormas(false); setForma2(0); setMonto2('') }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={14} /></button>
+                      <button onClick={() => { setDosFormas(false); setForma2(0); setMonto2('') }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87' }}><X size={14} /></button>
                     </div>
                   ) : (
                     <button onClick={() => setDosFormas(true)}
-                      style={{ fontSize: 11, color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}>
+                      style={{ fontSize: 11, color: '#1C1D21', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}>
                       + Agregar segunda forma de pago
                     </button>
                   )}
@@ -672,15 +672,15 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
 
                 {/* Cambio */}
                 {cambio > 0.005 && (
-                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '4px 8px', fontSize: 12, color: '#92400e', fontWeight: 600, marginBottom: 6, textAlign: 'center' }}>
+                  <div style={{ background: '#B5761A', border: '1px solid #B5761A', borderRadius: 6, padding: '4px 8px', fontSize: 12, color: '#fff', fontWeight: 600, marginBottom: 6, textAlign: 'center' }}>
                     Cambio: {fmt$(cambio)}
                   </div>
                 )}
 
-                {error && <div style={{ padding: '6px 8px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, fontSize: 11, color: '#dc2626', marginBottom: 6 }}>{error}</div>}
+                {error && <div style={{ padding: '6px 8px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, fontSize: 11, color: '#C23B3B', marginBottom: 6 }}>{error}</div>}
 
                 <button onClick={handleCobrar} disabled={saving || !canSave}
-                  style={{ width: '100%', padding: '10px', fontSize: 14, fontWeight: 700, border: 'none', borderRadius: 8, background: requiereCondonAuth ? '#d97706' : '#059669', color: '#fff', cursor: canSave ? 'pointer' : 'default', opacity: canSave ? 1 : 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  style={{ width: '100%', padding: '10px', fontSize: 14, fontWeight: 700, border: 'none', borderRadius: 8, background: requiereCondonAuth ? '#B5761A' : '#267F56', color: '#fff', cursor: canSave ? 'pointer' : 'default', opacity: canSave ? 1 : 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                   {saving ? <Loader size={15} /> : requiereCondonAuth ? <ShieldCheck size={15} /> : <ShoppingCart size={15} />}
                   {saving ? 'Registrando…' : requiereCondonAuth ? 'Cobrar (requiere auth)' : 'Cobrar'}
                 </button>

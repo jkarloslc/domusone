@@ -71,30 +71,30 @@ export default function ReporteGolfAuditoriaSlots() {
   const ocupados = rows.filter(r => r.pension).length
   const fechaHoy = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
-  const thStyle: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }
+  const thStyle: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#4A4D54', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }
 
   return (
     <div>
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 320 }}>
-          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Cajón, socio, carrito o placa…"
-            style={{ width: '100%', padding: '8px 12px 8px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '8px 12px 8px 30px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
-        <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', gap: 0, border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
           {([
-            { key: 'todos',       label: 'Todos',       color: '#0d9488' },
-            { key: 'ocupados',    label: 'Ocupados',    color: '#dc2626' },
-            { key: 'disponibles', label: 'Disponibles', color: '#15803d' },
+            { key: 'todos',       label: 'Todos',       color: '#178A80' },
+            { key: 'ocupados',    label: 'Ocupados',    color: '#C23B3B' },
+            { key: 'disponibles', label: 'Disponibles', color: '#1F7A50' },
           ] as const).map(f => (
             <button key={f.key} onClick={() => setFiltro(f.key)} style={{
               padding: '8px 14px', fontSize: 12, fontWeight: filtro === f.key ? 600 : 400,
               background: filtro === f.key ? f.color : '#fff',
-              color: filtro === f.key ? '#fff' : '#94a3b8',
+              color: filtro === f.key ? '#fff' : '#7A7E87',
               border: 'none', cursor: 'pointer', fontFamily: 'inherit',
             }}>
               {f.label}
@@ -102,7 +102,7 @@ export default function ReporteGolfAuditoriaSlots() {
           ))}
         </div>
         <button onClick={fetchData}
-          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', cursor: 'pointer' }}>
           <RefreshCw size={13} /> Actualizar
         </button>
       </div>
@@ -110,16 +110,16 @@ export default function ReporteGolfAuditoriaSlots() {
       {/* KPIs */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
         {[
-          { label: 'Cajones activos',        value: rows.length,            color: '#0d9488', bg: '#f0fdfa' },
-          { label: 'Ocupados (sistema)',     value: ocupados,               color: '#dc2626', bg: '#fef2f2' },
-          { label: 'Disponibles (sistema)',  value: rows.length - ocupados, color: '#15803d', bg: '#f0fdf4' },
+          { label: 'Cajones activos',        value: rows.length,            color: '#178A80', bg: '#F4F5F7' },
+          { label: 'Ocupados (sistema)',     value: ocupados,               color: '#C23B3B', bg: '#F4F5F7' },
+          { label: 'Disponibles (sistema)',  value: rows.length - ocupados, color: '#1F7A50', bg: '#F4F5F7' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '14px 20px', background: k.bg, border: `1px solid ${k.color}22`, minWidth: 160 }}>
+          <div key={k.label} className="card" style={{ padding: '14px 20px', background: '#fff', border: '1px solid #E6E8EB', minWidth: 160 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
               <ClipboardCheck size={14} style={{ color: k.color }} />
-              <span style={{ fontSize: 11, color: '#64748b' }}>{k.label}</span>
+              <span style={{ fontSize: 11, color: '#62666E' }}>{k.label}</span>
             </div>
-            <div style={{ fontSize: 30, fontWeight: 700, color: k.color, lineHeight: 1 }}>{loading ? '—' : k.value}</div>
+            <div style={{ fontSize: 30, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)', lineHeight: 1 }}>{loading ? '—' : k.value}</div>
           </div>
         ))}
       </div>
@@ -129,31 +129,31 @@ export default function ReporteGolfAuditoriaSlots() {
       <div id="reporte-print-area">
         {/* Header impresión */}
         <div className="print-only" style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#1e293b' }}>Auditoría de Slots / Cajones — Sistema vs Físico</div>
-          <div style={{ fontSize: 12, color: '#64748b', textTransform: 'capitalize' }}>{fechaHoy} · {filtered.length} cajones · Marcar en campo lo encontrado físicamente</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#26282D' }}>Auditoría de Slots / Cajones — Sistema vs Físico</div>
+          <div style={{ fontSize: 12, color: '#62666E', textTransform: 'capitalize' }}>{fechaHoy} · {filtered.length} cajones · Marcar en campo lo encontrado físicamente</div>
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>Cargando…</div>
+          <div style={{ textAlign: 'center', padding: '40px', color: '#7A7E87' }}>Cargando…</div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '48px 20px', background: '#f8fafc', borderRadius: 12, border: '1px dashed #e2e8f0' }}>
-            <div style={{ fontSize: 14, fontWeight: 500, color: '#475569' }}>Sin cajones para los filtros seleccionados</div>
+          <div style={{ textAlign: 'center', padding: '48px 20px', background: '#F8F9FA', borderRadius: 12, border: '1px dashed #E6E8EB' }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: '#4A4D54' }}>Sin cajones para los filtros seleccionados</div>
           </div>
         ) : (
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ overflowX: 'auto' }}>
               <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ borderBottom: '2px solid #e2e8f0', background: '#f8fafc' }}>
+                  <tr style={{ borderBottom: '2px solid #E6E8EB', background: '#F8F9FA' }}>
                     <th style={thStyle}>#</th>
                     <th style={thStyle}>Cajón</th>
                     <th style={thStyle}>Sistema</th>
                     <th style={thStyle}>Socio (sistema)</th>
                     <th style={thStyle}>Carrito (sistema)</th>
-                    <th style={{ ...thStyle, textAlign: 'center', background: '#fffbeb' }}>Físico: Ocupado</th>
-                    <th style={{ ...thStyle, textAlign: 'center', background: '#fffbeb' }}>Físico: Vacío</th>
-                    <th style={{ ...thStyle, textAlign: 'center', background: '#fffbeb' }}>¿Coincide?</th>
-                    <th style={{ ...thStyle, background: '#fffbeb', minWidth: 160 }}>Observaciones</th>
+                    <th style={{ ...thStyle, textAlign: 'center', background: '#F4F5F7' }}>Físico: Ocupado</th>
+                    <th style={{ ...thStyle, textAlign: 'center', background: '#F4F5F7' }}>Físico: Vacío</th>
+                    <th style={{ ...thStyle, textAlign: 'center', background: '#F4F5F7' }}>¿Coincide?</th>
+                    <th style={{ ...thStyle, background: '#F4F5F7', minWidth: 160 }}>Observaciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -162,35 +162,35 @@ export default function ReporteGolfAuditoriaSlots() {
                     const car = r.pension?.cat_carritos
                     const carDesc = car ? [car.marca, car.modelo].filter(Boolean).join(' ') : ''
                     return (
-                      <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '9px 12px', color: '#94a3b8', fontSize: 11 }}>{idx + 1}</td>
-                        <td style={{ padding: '9px 12px', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap' }}>Cajón {r.numero}</td>
+                      <tr key={r.id} style={{ borderBottom: '1px solid #F4F5F7' }}>
+                        <td style={{ padding: '9px 12px', color: '#7A7E87', fontSize: 11 }}>{idx + 1}</td>
+                        <td style={{ padding: '9px 12px', fontWeight: 700, color: '#26282D', whiteSpace: 'nowrap' }}>Cajón {r.numero}</td>
                         <td style={{ padding: '9px 12px', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: ocupado ? '#fee2e2' : '#dcfce7', color: ocupado ? '#dc2626' : '#15803d' }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: ocupado ? '#C23B3B' : '#1F7A50', color: '#fff' }}>
                             {ocupado ? 'Ocupado' : 'Disponible'}
                           </span>
                         </td>
                         <td style={{ padding: '9px 12px' }}>
                           {ocupado ? (
                             <>
-                              <div style={{ fontWeight: 500, color: '#1e293b' }}>{nc(r.pension!.cat_socios)}</div>
-                              {r.pension!.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: '#94a3b8' }}>#{r.pension!.cat_socios.numero_socio}</div>}
+                              <div style={{ fontWeight: 500, color: '#26282D' }}>{nc(r.pension!.cat_socios)}</div>
+                              {r.pension!.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: '#7A7E87' }}>#{r.pension!.cat_socios.numero_socio}</div>}
                             </>
-                          ) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                          ) : <span style={{ color: '#C9CCD3' }}>—</span>}
                         </td>
-                        <td style={{ padding: '9px 12px', fontSize: 12, color: '#475569' }}>
+                        <td style={{ padding: '9px 12px', fontSize: 12, color: '#4A4D54' }}>
                           {ocupado ? (
                             <>
                               <div>{carDesc || '—'}</div>
-                              {car?.placa && <div style={{ fontSize: 11, color: '#94a3b8' }}>Placa {car.placa}</div>}
+                              {car?.placa && <div style={{ fontSize: 11, color: '#7A7E87' }}>Placa {car.placa}</div>}
                             </>
-                          ) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                          ) : <span style={{ color: '#C9CCD3' }}>—</span>}
                         </td>
-                        <td style={{ padding: '9px 12px', textAlign: 'center', fontSize: 16, color: '#94a3b8' }}>☐</td>
-                        <td style={{ padding: '9px 12px', textAlign: 'center', fontSize: 16, color: '#94a3b8' }}>☐</td>
-                        <td style={{ padding: '9px 12px', textAlign: 'center', fontSize: 12, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sí ☐ &nbsp; No ☐</td>
+                        <td style={{ padding: '9px 12px', textAlign: 'center', fontSize: 16, color: '#7A7E87' }}>☐</td>
+                        <td style={{ padding: '9px 12px', textAlign: 'center', fontSize: 16, color: '#7A7E87' }}>☐</td>
+                        <td style={{ padding: '9px 12px', textAlign: 'center', fontSize: 12, color: '#7A7E87', whiteSpace: 'nowrap' }}>Sí ☐ &nbsp; No ☐</td>
                         <td style={{ padding: '9px 12px' }}>
-                          <div style={{ borderBottom: '1px solid #cbd5e1', height: 16, minWidth: 150 }} />
+                          <div style={{ borderBottom: '1px solid #C9CCD3', height: 16, minWidth: 150 }} />
                         </td>
                       </tr>
                     )
@@ -203,10 +203,10 @@ export default function ReporteGolfAuditoriaSlots() {
 
         {/* Firmas — solo impresión */}
         <div className="print-only" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, marginTop: 56, pageBreakInside: 'avoid' }}>
-          <div style={{ borderTop: '1px solid #1e293b', paddingTop: 6, fontSize: 11, color: '#64748b', textAlign: 'center' }}>
+          <div style={{ borderTop: '1px solid #26282D', paddingTop: 6, fontSize: 11, color: '#62666E', textAlign: 'center' }}>
             Realizó (nombre y firma)
           </div>
-          <div style={{ borderTop: '1px solid #1e293b', paddingTop: 6, fontSize: 11, color: '#64748b', textAlign: 'center' }}>
+          <div style={{ borderTop: '1px solid #26282D', paddingTop: 6, fontSize: 11, color: '#62666E', textAlign: 'center' }}>
             Supervisó (nombre y firma)
           </div>
         </div>

@@ -213,16 +213,16 @@ export default function ReporteGolfCuadreFormasPago() {
   }
 
   const selStyle: React.CSSProperties = {
-    height: 32, padding: '0 10px', border: '1px solid #e2e8f0',
+    height: 32, padding: '0 10px', border: '1px solid #E6E8EB',
     borderRadius: 6, fontSize: 13, background: '#fff',
     fontFamily: 'var(--font-body)', color: 'var(--text-primary)',
   }
   const inputStyle: React.CSSProperties = { ...selStyle, width: 130 }
 
-  const GOLD = '#b8952a'
-  const GOLD_PALE = '#fefce8'
-  const GOLD_BORDER = '#fde68a'
-  const GOLD_DARK = '#92400e'
+  const GOLD = '#A8821A'
+  const GOLD_PALE = '#F4F5F7'
+  const GOLD_BORDER = '#E6E8EB'
+  const GOLD_DARK = '#7A4B0C'
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'resumen', label: 'Resumen',                     icon: <PieChart  size={13} /> },
@@ -245,10 +245,10 @@ export default function ReporteGolfCuadreFormasPago() {
         textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
         {title}
       </div>
-      <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+      <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
-            <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+            <tr style={{ background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
               {headers.map((h, i) => (
                 <th key={h} style={{ padding: '8px 12px',
                   textAlign: i === 0 ? 'left' : 'right',
@@ -261,7 +261,7 @@ export default function ReporteGolfCuadreFormasPago() {
           </thead>
           <tbody>
             {rows.map((row, ri) => (
-              <tr key={ri} style={{ borderBottom: '1px solid #f1f5f9', background: ri % 2 === 0 ? '#fff' : '#fafafa' }}>
+              <tr key={ri} style={{ borderBottom: '1px solid #F4F5F7', background: ri % 2 === 0 ? '#fff' : '#fafafa' }}>
                 {row.map((cell, ci) => (
                   <td key={ci} style={{ padding: '8px 12px', textAlign: ci === 0 ? 'left' : 'right',
                     fontVariantNumeric: 'tabular-nums' }}>
@@ -328,21 +328,21 @@ export default function ReporteGolfCuadreFormasPago() {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
         {[
           { label: 'Total Cobrado',        value: fmt(totalPagado),    color: GOLD,          bg: GOLD_PALE },
-          { label: 'Ventas',               value: numVentas.toString(), color: '#7c3aed',    bg: '#f5f3ff' },
-          { label: 'Pendiente de Corte',   value: fmt(totalPendiente), color: '#d97706',     bg: '#fffbeb' },
-          { label: `Ya Cortado`,           value: fmt(totalCortado),   color: '#15803d',     bg: '#f0fdf4' },
-          { label: '# Ventas Pendientes',  value: numPendientes.toString(), color: '#d97706', bg: '#fffbeb' },
+          { label: 'Ventas',               value: numVentas.toString(), color: '#6B4E79',    bg: '#F4F5F7' },
+          { label: 'Pendiente de Corte',   value: fmt(totalPendiente), color: '#B5761A',     bg: '#F4F5F7' },
+          { label: `Ya Cortado`,           value: fmt(totalCortado),   color: '#1F7A50',     bg: '#F4F5F7' },
+          { label: '# Ventas Pendientes',  value: numPendientes.toString(), color: '#B5761A', bg: '#F4F5F7' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '14px 20px', background: k.bg, flex: '1 1 150px', maxWidth: 220 }}>
-            <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700,
-              color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{k.label}</div>
+          <div key={k.label} className="card" style={{ padding: '14px 20px', background: '#fff', flex: '1 1 150px', maxWidth: 220 }}>
+            <div style={{ fontSize: 22, fontWeight: 700,
+              color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
           </div>
         ))}
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 16, gap: 2 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', marginBottom: 16, gap: 2 }}>
         {tabs.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px',
@@ -419,12 +419,12 @@ export default function ReporteGolfCuadreFormasPago() {
           <div style={{ overflow: 'auto' }}>
             <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 600 }}>
               <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <tr style={{ background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
                   <th style={{ padding: '9px 14px', textAlign: 'left', position: 'sticky', left: 0,
-                    background: '#f1f5f9', zIndex: 2, fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)',
+                    background: '#F4F5F7', zIndex: 2, fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)',
                     textTransform: 'uppercase', letterSpacing: '0.05em' }}>Centro de Venta</th>
                   {matriz.columnas.map(c => (
-                    <th key={c} style={{ padding: '9px 14px', textAlign: 'right', minWidth: 130, color: '#7c3aed',
+                    <th key={c} style={{ padding: '9px 14px', textAlign: 'right', minWidth: 130, color: '#6B4E79',
                       fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{c}</th>
                   ))}
                   <th style={{ padding: '9px 14px', textAlign: 'right', background: GOLD_PALE, color: GOLD_DARK,
@@ -433,7 +433,7 @@ export default function ReporteGolfCuadreFormasPago() {
               </thead>
               <tbody>
                 {matriz.filas.map((f, i) => (
-                  <tr key={f.nombre} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                  <tr key={f.nombre} style={{ borderBottom: '1px solid #F4F5F7', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                     <td style={{ padding: '9px 14px', fontWeight: 600, color: GOLD, position: 'sticky', left: 0,
                       background: i % 2 === 0 ? '#fff' : '#fafafa', zIndex: 1 }}>{f.nombre}</td>
                     {matriz.columnas.map(c => {
@@ -455,7 +455,7 @@ export default function ReporteGolfCuadreFormasPago() {
                   <td style={{ padding: '9px 14px', fontWeight: 700, color: GOLD_DARK, position: 'sticky', left: 0,
                     background: GOLD_PALE, zIndex: 1 }}>Total Forma</td>
                   {matriz.columnas.map(c => (
-                    <td key={c} style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: '#7c3aed',
+                    <td key={c} style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: '#6B4E79',
                       fontVariantNumeric: 'tabular-nums' }}>{fmt(matriz.totalesCol[c] ?? 0)}</td>
                   ))}
                   <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, fontSize: 14, color: GOLD,
@@ -471,7 +471,7 @@ export default function ReporteGolfCuadreFormasPago() {
           <div style={{ overflowX: 'auto' }}>
             <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <tr style={{ background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
                   {['Fecha', 'Centro', 'Folio', 'Cliente', 'Forma de Pago', 'Monto', 'Estado'].map(h => (
                     <th key={h} style={{ padding: '9px 12px',
                       textAlign: h === 'Monto' ? 'right' : h === 'Estado' ? 'center' : 'left',
@@ -484,7 +484,7 @@ export default function ReporteGolfCuadreFormasPago() {
               </thead>
               <tbody>
                 {enrichedPagos.map((p, i) => (
-                  <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                  <tr key={p.id} style={{ borderBottom: '1px solid #F4F5F7', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                     <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontSize: 12 }}>{fmtF(p.fecha)}</td>
                     <td style={{ padding: '8px 12px', fontSize: 12, whiteSpace: 'nowrap' }}>{p.centro_nombre}</td>
                     <td style={{ padding: '8px 12px', textAlign: 'center', fontSize: 12, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>#{String(p.folio).padStart(5, '0')}</td>
@@ -493,7 +493,7 @@ export default function ReporteGolfCuadreFormasPago() {
                     <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: GOLD, fontVariantNumeric: 'tabular-nums' }}>{fmt(p.monto ?? 0)}</td>
                     <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                       <span style={{ padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600,
-                        background: p.cortada ? '#f0fdf4' : '#fffbeb', color: p.cortada ? '#15803d' : '#d97706' }}>
+                        background: p.cortada ? '#1F7A50' : '#B5761A', color: '#fff' }}>
                         {p.cortada ? 'Cortada' : 'Pendiente'}
                       </span>
                     </td>

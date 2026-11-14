@@ -141,10 +141,10 @@ export default function IncidenciasPage() {
       {/* Stats clickeables */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { label: 'Abiertas',    value: abiertas,  color: '#f87171', status: 'Abierta' },
-          { label: 'En Proceso',  value: enProceso, color: '#60a5fa', status: 'En Proceso' },
-          { label: 'En Espera',   value: enEspera,  color: '#9ca3af', status: 'En Espera' },
-          { label: 'Cerradas',    value: cerradas,  color: '#4ade80', status: 'Cerrada' },
+          { label: 'Abiertas',    value: abiertas,  color: '#C23B3B', status: 'Abierta' },
+          { label: 'En Proceso',  value: enProceso, color: '#9A9EA7', status: 'En Proceso' },
+          { label: 'En Espera',   value: enEspera,  color: '#7A7E87', status: 'En Espera' },
+          { label: 'Cerradas',    value: cerradas,  color: '#1F7A50', status: 'Cerrada' },
         ].map(s => (
           <div key={s.label} className="card card-hover"
             style={{ padding: '12px 18px', minWidth: 100, cursor: 'pointer', borderColor: filterStatus === s.status ? 'var(--border-hover)' : undefined }}
@@ -205,7 +205,7 @@ export default function IncidenciasPage() {
                 </td></tr>
               ) : incidencias.map(inc => (
                 <tr key={inc.id}>
-                  <td style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-muted)' }}>#{inc.id}</td>
+                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--text-muted)' }}>#{inc.id}</td>
                   <td style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--gold-light)' }}>
                     {(inc as any).lotes?.cve_lote ?? (inc.id_lote_fk ? `#${inc.id_lote_fk}` : '—')}
                   </td>
@@ -229,7 +229,7 @@ export default function IncidenciasPage() {
                   </td>
                   <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
                     {inc.fecha_cierre
-                      ? <span style={{ color: '#4ade80', display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle size={11} />{fmtFecha(inc.fecha_cierre)}</span>
+                      ? <span style={{ color: '#1F7A50', display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle size={11} />{fmtFecha(inc.fecha_cierre)}</span>
                       : <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={11} />Pendiente</span>
                     }
                   </td>
@@ -368,7 +368,7 @@ function IncidenciaModal({ incidencia, tipos, origenes, onClose, onSaved }: { in
     >
 
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto', maxHeight: 'calc(90vh - 130px)' }}>
-          {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 13 }}>{error}</div>}
+          {error && <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
 
           {/* Lote */}
           <div>
@@ -456,7 +456,7 @@ function IncidenciaModal({ incidencia, tipos, origenes, onClose, onSaved }: { in
             <div>
               <label className="label">Fecha de Cierre</label>
               <input className="input" type="date" value={form.fecha_cierre} onChange={set('fecha_cierre')}
-                style={{ color: form.fecha_cierre ? '#4ade80' : undefined }} />
+                style={{ color: form.fecha_cierre ? '#1F7A50' : undefined }} />
             </div>
           </div>
 
@@ -584,9 +584,9 @@ function IncidenciaDetail({ incidencia: inc, onClose, onEdit, onRefresh }: {
 
           {/* Cierre */}
           {inc.status === 'Cerrada' && inc.fecha_cierre && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 6 }}>
-              <CheckCircle size={14} style={{ color: '#4ade80' }} />
-              <span style={{ fontSize: 12, color: '#4ade80' }}>Cerrada el {fmtFecha(inc.fecha_cierre)}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 6 }}>
+              <CheckCircle size={14} style={{ color: '#1F7A50' }} />
+              <span style={{ fontSize: 12, color: '#1F7A50' }}>Cerrada el {fmtFecha(inc.fecha_cierre)}</span>
             </div>
           )}
 
@@ -599,11 +599,11 @@ function IncidenciaDetail({ incidencia: inc, onClose, onEdit, onRefresh }: {
             {localOtFk && otFolio ? (
               /* Ya tiene OT vinculada */
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '12px 14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8 }}>
+                padding: '12px 14px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Wrench size={15} style={{ color: 'var(--blue)' }} />
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', fontFamily: 'monospace' }}>{otFolio}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>{otFolio}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Orden de trabajo vinculada</div>
                   </div>
                 </div>
@@ -616,7 +616,7 @@ function IncidenciaDetail({ incidencia: inc, onClose, onEdit, onRefresh }: {
                   </a>
                   <button onClick={desvincularOT}
                     style={{ fontSize: 11, padding: '5px 10px', borderRadius: 6, background: 'none',
-                      border: '1px solid #fecaca', color: '#dc2626', cursor: 'pointer',
+                      border: '1px solid #E6E8EB', color: '#C23B3B', cursor: 'pointer',
                       fontFamily: 'var(--font-body)' }}>
                     Desvincular
                   </button>
@@ -624,7 +624,7 @@ function IncidenciaDetail({ incidencia: inc, onClose, onEdit, onRefresh }: {
               </div>
             ) : (
               /* Sin OT — ofrecer generar */
-              <div style={{ padding: '12px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+              <div style={{ padding: '12px 14px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8 }}>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>
                   Esta incidencia no tiene una Orden de Trabajo asociada. Si requiere intervención operativa, genera una OT pre-llenada con los datos de esta incidencia.
                 </p>

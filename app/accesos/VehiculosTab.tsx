@@ -91,8 +91,8 @@ export default function VehiculosTab() {
                 <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin vehículos registrados</td></tr>
               ) : vehiculosPag.map(v => (
                 <tr key={v.id}>
-                  <td style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--gold-light)' }}>{v.placas ?? '—'}</td>
-                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)' }}>
+                  <td style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: 'var(--gold-light)' }}>{v.placas ?? '—'}</td>
+                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--text-secondary)' }}>
                     {(v as any).tag
                       ? <span style={{ background: 'var(--blue-subtle)', color: 'var(--blue-dark)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>{(v as any).tag}</span>
                       : <span style={{ color: 'var(--text-muted)' }}>—</span>
@@ -103,7 +103,7 @@ export default function VehiculosTab() {
                     {[marcaMap[(v as any).id_marca_fk], v.modelo].filter(Boolean).join(' ') || '—'}
                   </td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{v.color ?? '—'}</td>
-                  <td style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-muted)' }}>{v.num_serie ?? '—'}</td>
+                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--text-muted)' }}>{v.num_serie ?? '—'}</td>
                   <td><span className={`badge ${v.activo ? 'badge-vendido' : 'badge-bloqueado'}`}>{v.activo ? 'Activo' : 'Inactivo'}</span></td>
                   <td>
                     <div style={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
@@ -161,8 +161,8 @@ function VehiculoModal({ vehiculo, marcas, onClose, onSaved }: { vehiculo: Vehic
     >
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div><label className="label">Placas</label><input className="input" value={form.placas} onChange={set('placas')} style={{ textTransform: 'uppercase', fontFamily: 'monospace' }} /></div>
-            <div><label className="label">TAG</label><input className="input" value={form.tag} onChange={set('tag')} style={{ textTransform: 'uppercase', fontFamily: 'monospace' }} placeholder="Ej: 1234" /></div>
+            <div><label className="label">Placas</label><input className="input" value={form.placas} onChange={set('placas')} style={{ textTransform: 'uppercase', fontVariantNumeric: 'tabular-nums' }} /></div>
+            <div><label className="label">TAG</label><input className="input" value={form.tag} onChange={set('tag')} style={{ textTransform: 'uppercase', fontVariantNumeric: 'tabular-nums' }} placeholder="Ej: 1234" /></div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div><label className="label">Tipo</label>
@@ -182,7 +182,7 @@ function VehiculoModal({ vehiculo, marcas, onClose, onSaved }: { vehiculo: Vehic
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div><label className="label">Color</label><input className="input" value={form.color} onChange={set('color')} /></div>
-            <div><label className="label">No. Serie</label><input className="input" value={form.num_serie} onChange={set('num_serie')} style={{ fontFamily: 'monospace', fontSize: 11 }} /></div>
+            <div><label className="label">No. Serie</label><input className="input" value={form.num_serie} onChange={set('num_serie')} style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11 }} /></div>
           </div>
         </div>
     </ModalShell>
@@ -242,7 +242,7 @@ function AutorizarVehiculoModal({ vehiculo, onClose }: { vehiculo: Vehiculo; onC
               {autorizados.map((a: any) => (
                 <div key={a.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--surface-700)', borderRadius: 6, marginBottom: 6 }}>
                   <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, color: 'var(--gold-light)' }}>{a.loteLabel ?? `#${a.id_lote_fk}`}</span>
-                  <button className="btn-ghost" style={{ padding: '3px 8px', fontSize: 11, color: '#f87171' }} onClick={() => handleRevocar(a.id)}>Revocar</button>
+                  <button className="btn-ghost" style={{ padding: '3px 8px', fontSize: 11, color: '#C23B3B' }} onClick={() => handleRevocar(a.id)}>Revocar</button>
                 </div>
               ))}
             </div>

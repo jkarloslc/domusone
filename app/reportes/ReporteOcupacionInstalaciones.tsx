@@ -99,7 +99,7 @@ export default function ReporteOcupacionInstalaciones() {
   const thSt: React.CSSProperties = { padding: '7px 10px', textAlign: 'left', fontWeight: 700, fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.05em', whiteSpace: 'nowrap' }
   const tdSt: React.CSSProperties = { padding: '7px 10px', fontSize: 12 }
   const lbl: React.CSSProperties = { fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }
-  const colorPct = (p: number) => p >= 70 ? '#dc2626' : p >= 40 ? '#d97706' : '#16a34a'
+  const colorPct = (p: number) => p >= 70 ? '#C23B3B' : p >= 40 ? '#B5761A' : '#267F56'
 
   return (
     <div>
@@ -137,10 +137,10 @@ export default function ReporteOcupacionInstalaciones() {
         <div id="reporte-print-area">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
             {[
-              { label: 'Instalaciones', value: String(resumen.length), color: '#0f766e' },
-              { label: 'Días del período', value: String(totalDias), color: '#475569' },
+              { label: 'Instalaciones', value: String(resumen.length), color: '#126B63' },
+              { label: 'Días del período', value: String(totalDias), color: '#4A4D54' },
               { label: 'Ocupación promedio', value: ocupProm.toFixed(1) + '%', color: colorPct(ocupProm) },
-              { label: 'Ocupaciones', value: String(detalle.length), color: '#9333ea' },
+              { label: 'Ocupaciones', value: String(detalle.length), color: '#6B4E79' },
             ].map(k => (
               <div key={k.label} className="card" style={{ padding: '12px 14px', minWidth: 0 }}>
                 <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>{k.label}</div>
@@ -171,7 +171,7 @@ export default function ReporteOcupacionInstalaciones() {
                     <td style={{ ...tdSt, textAlign: 'right' }}>{r.bloqueos}</td>
                     <td style={{ ...tdSt, textAlign: 'right' }}>{r.diasEvento}</td>
                     <td style={{ ...tdSt, textAlign: 'right' }}>{r.diasBloqueo}</td>
-                    <td style={{ ...tdSt, textAlign: 'right', color: r.empalmes ? '#dc2626' : 'var(--text-muted)', fontWeight: r.empalmes ? 700 : 400 }}>{r.empalmes || '—'}</td>
+                    <td style={{ ...tdSt, textAlign: 'right', color: r.empalmes ? '#C23B3B' : 'var(--text-muted)', fontWeight: r.empalmes ? 700 : 400 }}>{r.empalmes || '—'}</td>
                     <td style={{ ...tdSt, textAlign: 'right', fontWeight: 600 }}>{r.diasOcupados} / {totalDias}</td>
                     <td style={{ ...tdSt, textAlign: 'right', fontWeight: 700, color: colorPct(r.pct) }}>{r.pct.toFixed(1)}%</td>
                   </tr>

@@ -27,9 +27,9 @@ type Fila = { id: number; nombre: string; nCab: number; meses: Record<Metrica, n
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 const METRICAS: { id: Metrica; label: string; color: string }[] = [
-  { id: 'pagado',  label: 'Pagado',            color: '#16a34a' },
-  { id: 'vencido', label: 'Vencido por pagar', color: '#dc2626' },
-  { id: 'cargo',   label: 'Cargos del mes',    color: '#2563eb' },
+  { id: 'pagado',  label: 'Pagado',            color: '#267F56' },
+  { id: 'vencido', label: 'Vencido por pagar', color: '#C23B3B' },
+  { id: 'cargo',   label: 'Cargos del mes',    color: '#1C1D21' },
 ]
 const fmtNombre = (a: Arrendatario) =>
   a.tipo_persona === 'Moral' && a.razon_social ? a.razon_social : [a.nombre, a.apellido_paterno].filter(Boolean).join(' ')
@@ -137,7 +137,7 @@ export default function ReporteHipicoArrendatariosMensual() {
         )}
       </div>
 
-      {error && <div className="card" style={{ padding: 16, color: '#dc2626', fontSize: 13, marginBottom: 16 }}>{error}</div>}
+      {error && <div className="card" style={{ padding: 16, color: '#C23B3B', fontSize: 13, marginBottom: 16 }}>{error}</div>}
       {(!buscado || loading) && !error && (
         <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 14 }}>Consultando…</div>
       )}
@@ -170,7 +170,7 @@ export default function ReporteHipicoArrendatariosMensual() {
                     return (
                       <tr key={f.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                         <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', position: 'sticky', left: 0, background: stickyBg }}>{f.nombre}</td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', color: '#92400e', fontWeight: 700 }}>{f.nCab}</td>
+                        <td style={{ padding: '8px 10px', textAlign: 'right', color: '#7A4B0C', fontWeight: 700 }}>{f.nCab}</td>
                         {f.meses[metrica].map((v, m) => (
                           <td key={m} style={{ padding: '8px 10px', textAlign: 'right', color: v ? color : 'var(--text-muted)', fontWeight: v ? 600 : 400 }}>{fmt$(v)}</td>
                         ))}
@@ -180,7 +180,7 @@ export default function ReporteHipicoArrendatariosMensual() {
                   })}
                   <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
                     <td style={{ padding: '8px 10px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', position: 'sticky', left: 0, background: 'var(--surface-700)' }}>TOTAL</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 700, color: '#92400e' }}>{visibles.reduce((s, f) => s + f.nCab, 0)}</td>
+                    <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 700, color: '#7A4B0C' }}>{visibles.reduce((s, f) => s + f.nCab, 0)}</td>
                     {totMes.map((v, m) => <td key={m} style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 700, color }}>{fmt$(v)}</td>)}
                     <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 700, color }}>{fmt$(totGral)}</td>
                   </tr>

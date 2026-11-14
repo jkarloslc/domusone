@@ -91,7 +91,7 @@ export default function RecibosTab() {
           <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Recibos en pantalla</div>
         </div>
         <div className="card" style={{ padding: '10px 18px' }}>
-          <div style={{ fontSize: 18, fontFamily: 'var(--font-display)', fontWeight: 600, color: '#15803d' }}>{fmt(sumActivos)}</div>
+          <div style={{ fontSize: 18, fontFamily: 'var(--font-display)', fontWeight: 600, color: '#1F7A50' }}>{fmt(sumActivos)}</div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Total activos</div>
         </div>
       </div>
@@ -116,11 +116,11 @@ export default function RecibosTab() {
             : recibos.length === 0 ? <tr><td colSpan={9} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Sin recibos</td></tr>
             : recibos.map((r: any) => (
               <tr key={r.id} style={{ opacity: r.activo ? 1 : 0.5 }}>
-                <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio ?? `#${r.id}`}</td>
+                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio ?? `#${r.id}`}</td>
                 <td style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--text-secondary)' }}>{loteMap[r.id_lote_fk] ?? `#${r.id_lote_fk}`}</td>
                 <td style={{ fontSize: 13, color: 'var(--text-secondary)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.propietario ?? '—'}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{r.fecha_recibo ? new Date(r.fecha_recibo + 'T12:00:00').toLocaleDateString('es-MX') : '—'}</td>
-                <td style={{ fontSize: 12, color: r.fecha_pago ? '#15803d' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>{r.fecha_pago ? new Date(r.fecha_pago + 'T12:00:00').toLocaleDateString('es-MX') : 'Pendiente'}</td>
+                <td style={{ fontSize: 12, color: r.fecha_pago ? '#1F7A50' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>{r.fecha_pago ? new Date(r.fecha_pago + 'T12:00:00').toLocaleDateString('es-MX') : 'Pendiente'}</td>
                 <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{fmt(r.monto)}</td>
                 <td><span className={`badge ${r.activo ? 'badge-vendido' : 'badge-bloqueado'}`}>{r.activo ? 'Activo' : 'Cancelado'}</span></td>
                 <td>
@@ -131,7 +131,7 @@ export default function RecibosTab() {
                     </button>
                   )}
                   {r.folio_fiscal && (
-                    <span style={{ fontSize: 10, color: '#15803d', display: 'flex', alignItems: 'center', gap: 3 }}>
+                    <span style={{ fontSize: 10, color: '#1F7A50', display: 'flex', alignItems: 'center', gap: 3 }}>
                       ✓ Facturado
                     </span>
                   )}

@@ -133,7 +133,7 @@ export default function ReportePagosAplicados() {
   }
 
   const selStyle: React.CSSProperties = {
-    height: 32, padding: '0 10px', border: '1px solid #e2e8f0',
+    height: 32, padding: '0 10px', border: '1px solid #E6E8EB',
     borderRadius: 6, fontSize: 13, background: '#fff',
     fontFamily: 'var(--font-body)', color: 'var(--text-primary)',
   }
@@ -179,13 +179,13 @@ export default function ReportePagosAplicados() {
       {/* KPIs */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
         {[
-          { label: 'Total Pagado',     value: fmt(totalPagado),        color: '#0f766e', bg: '#f0fdfa' },
+          { label: 'Total Pagado',     value: fmt(totalPagado),        color: '#126B63', bg: '#F4F5F7' },
           { label: 'Pagos Registrados', value: filtered.length.toString(), color: 'var(--blue)', bg: 'var(--blue-pale)' },
-          { label: 'Proveedores',      value: numProveedores.toString(), color: '#7c3aed', bg: '#f5f3ff' },
+          { label: 'Proveedores',      value: numProveedores.toString(), color: '#6B4E79', bg: '#F4F5F7' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '14px 20px', background: k.bg, flex: '1 1 160px', maxWidth: 240 }}>
-            <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{k.label}</div>
+          <div key={k.label} className="card" style={{ padding: '14px 20px', background: '#fff', flex: '1 1 160px', maxWidth: 240 }}>
+            <div style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)',  }}>{k.value}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
           </div>
         ))}
       </div>
@@ -209,7 +209,7 @@ export default function ReportePagosAplicados() {
           <div style={{ overflowX: 'auto' }}>
             <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <tr style={{ background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
                   {['Fecha', 'Folio OP', 'Fecha OP', 'Concepto', 'Proveedor', 'Forma Pago', 'Referencia', 'Cuenta Bancaria', 'Monto', ...(puedeCambiarFecha ? ['Acciones'] : [])].map(h => (
                     <th key={h} className={h === 'Acciones' ? 'col-acciones' : undefined} style={{ padding: '9px 12px', textAlign: h === 'Monto' ? 'right' : 'left',
                       fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)',
@@ -221,7 +221,7 @@ export default function ReportePagosAplicados() {
               </thead>
               <tbody>
                 {filtered.map((a, i) => (
-                  <tr key={a.id} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                  <tr key={a.id} style={{ borderBottom: '1px solid #F4F5F7', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                     <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontSize: 12 }}>{fmtF(a.fecha_abono)}</td>
                     <td style={{ padding: '8px 12px', fontWeight: 600, whiteSpace: 'nowrap' }}>{a.folio}</td>
                     <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontSize: 12 }}>{fmtF(a.fecha_op)}</td>
@@ -234,7 +234,7 @@ export default function ReportePagosAplicados() {
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={a.referencia ?? ''}>{a.referencia ?? '—'}</td>
                     <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: 12 }}>{a.cuenta_nombre}</td>
                     <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600,
-                      color: '#0f766e', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                      color: '#126B63', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
                       {fmt(a.monto ?? 0)}
                     </td>
                     {puedeCambiarFecha && (
@@ -249,10 +249,10 @@ export default function ReportePagosAplicados() {
                 ))}
               </tbody>
               <tfoot>
-                <tr style={{ background: '#f0fdfa', borderTop: '2px solid #99f6e4' }}>
-                  <td colSpan={8} style={{ padding: '9px 12px', fontWeight: 700, fontSize: 13, color: '#0f766e' }}>Total</td>
+                <tr style={{ background: '#F4F5F7', borderTop: '2px solid #E6E8EB' }}>
+                  <td colSpan={8} style={{ padding: '9px 12px', fontWeight: 700, fontSize: 13, color: '#126B63' }}>Total</td>
                   <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, fontSize: 14,
-                    color: '#0f766e', fontVariantNumeric: 'tabular-nums' }}>
+                    color: '#126B63', fontVariantNumeric: 'tabular-nums' }}>
                     {fmt(totalPagado)}
                   </td>
                   {puedeCambiarFecha && <td className="col-acciones" />}
@@ -281,7 +281,7 @@ export default function ReportePagosAplicados() {
             Se actualiza la fecha del pago, del movimiento bancario y de la OP. Montos y saldos no cambian.
             {fechaEdit.abono.id_remesa_fk && <strong> Este pago es parte de una remesa: la fecha cambia para todas sus OPs.</strong>}
           </div>
-          {errorFecha && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12, marginBottom: 10 }}>{errorFecha}</div>}
+          {errorFecha && <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12, marginBottom: 10 }}>{errorFecha}</div>}
           <div style={{ display: 'grid', gap: 10 }}>
             <div>
               <label className="label">Fecha de pago *</label>

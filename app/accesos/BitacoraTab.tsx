@@ -67,8 +67,8 @@ export default function BitacoraTab() {
         <div style={{ display: 'flex', gap: 10 }}>
           {[
             { label: 'Registros hoy', value: total,    color: 'var(--text-primary)' },
-            { label: 'Entradas',      value: entradas, color: '#4ade80' },
-            { label: 'Salidas',       value: salidas,  color: '#60a5fa' },
+            { label: 'Entradas',      value: entradas, color: '#1F7A50' },
+            { label: 'Salidas',       value: salidas,  color: '#9A9EA7' },
           ].map(s => (
             <div key={s.label} className="card" style={{ padding: '10px 16px', minWidth: 100 }}>
               <div style={{ fontSize: 20, fontFamily: 'var(--font-display)', color: s.color }}>{s.value}</div>
@@ -226,7 +226,7 @@ function RegistrarAccesoModal({ onClose, onSaved }: { onClose: () => void; onSav
               <button key={t} onClick={() => setForm(f => ({ ...f, tipo: t }))} style={{
                 padding: '10px', borderRadius: 6, cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 14,
                 border: `1px solid ${form.tipo === t ? 'var(--gold)' : 'var(--border)'}`,
-                background: form.tipo === t ? 'rgba(196,128,31,0.12)' : 'var(--surface-900)',
+                background: form.tipo === t ? '#E6E8EB' : 'var(--surface-900)',
                 color: form.tipo === t ? 'var(--gold-light)' : 'var(--text-secondary)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               }}>

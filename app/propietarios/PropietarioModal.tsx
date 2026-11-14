@@ -187,13 +187,13 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
         </div>
       }
     >
-      {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 13, marginBottom: 16 }}>{error}</div>}
+      {error && <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13, marginBottom: 16 }}>{error}</div>}
 
           {/* TAB 0 — Datos Personales */}
           {tab === 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <Row2>
-                <Field label="Clave"><input className="input" value={form.clave} onChange={set('clave')} placeholder="Clave del propietario" style={{ fontFamily: 'monospace' }} /></Field>
+                <Field label="Clave"><input className="input" value={form.clave} onChange={set('clave')} placeholder="Clave del propietario" style={{ fontVariantNumeric: 'tabular-nums' }} /></Field>
                 <Field label="Tipo de Persona">
                   <select className="select" value={form.tipo_persona} onChange={set('tipo_persona')}>
                     <option>Física</option>
@@ -299,17 +299,17 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
           {/* TAB 2 — Fiscal */}
           {tab === 2 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ padding: '10px 14px', background: '#faf5ff', border: '1px solid #ddd6fe', borderRadius: 8, fontSize: 12, color: '#6d28d9' }}>
+              <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #5C4268', borderRadius: 8, fontSize: 12, color: '#5C4268' }}>
                 Estos datos se usan para pre-llenar la factura CFDI. El RFC y Razón Social deben coincidir con la constancia de situación fiscal.
               </div>
               <Row2>
                 <Field label="RFC">
                   <input className="input" value={form.rfc} onChange={set('rfc')}
-                    placeholder="XAXX010101000" style={{ fontFamily: 'monospace', textTransform: 'uppercase' }} />
+                    placeholder="XAXX010101000" style={{ fontVariantNumeric: 'tabular-nums', textTransform: 'uppercase' }} />
                 </Field>
                 <Field label="CURP">
                   <input className="input" value={form.curp} onChange={set('curp')}
-                    placeholder="XAXX010101HXXXXXX00" style={{ fontFamily: 'monospace', textTransform: 'uppercase' }} />
+                    placeholder="XAXX010101HXXXXXX00" style={{ fontVariantNumeric: 'tabular-nums', textTransform: 'uppercase' }} />
                 </Field>
               </Row2>
               <Row2>

@@ -273,7 +273,7 @@ function AutorizarModal({ visitante, onClose }: { visitante: Visitante; onClose:
                     <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, color: 'var(--gold-light)' }}>{(a as any).loteLabel ?? `#${a.id_lote_fk}`}</span>
                     <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>{a.tipo_pase}</span>
                   </div>
-                  <button className="btn-ghost" style={{ padding: '3px 8px', fontSize: 11, color: '#f87171' }} onClick={() => handleRevocar(a.id)}>Revocar</button>
+                  <button className="btn-ghost" style={{ padding: '3px 8px', fontSize: 11, color: '#C23B3B' }} onClick={() => handleRevocar(a.id)}>Revocar</button>
                 </div>
               ))}
             </div>

@@ -72,7 +72,7 @@ export default function UsuariosPage() {
   if (authUser?.rol !== 'superadmin') {
     return (
       <div style={{ padding: '32px 36px' }}>
-        <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>🔒 Acceso exclusivo para Super Administrador</div>
+        <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Acceso exclusivo para Super Administrador</div>
       </div>
     )
   }
@@ -118,8 +118,8 @@ export default function UsuariosPage() {
                 </td>
                 <td>
                   {u.activo
-                    ? <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#15803d' }}><CheckCircle size={12} /> Activo</span>
-                    : <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#dc2626' }}><XCircle size={12} /> Inactivo</span>
+                    ? <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#1F7A50' }}><CheckCircle size={12} /> Activo</span>
+                    : <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#C23B3B' }}><XCircle size={12} /> Inactivo</span>
                   }
                 </td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
@@ -197,16 +197,16 @@ function UsuarioModal({ usuario, onClose, onSaved }: { usuario: Usuario | null; 
     >
 
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+          {error && <div style={{ padding: '10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
 
           {isNew && (
-            <div style={{ padding: '12px 14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, fontSize: 12, color: '#1d4ed8' }}>
+            <div style={{ padding: '12px 14px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8, fontSize: 12, color: '#26282D' }}>
               <strong>Para crear un nuevo usuario:</strong><br />
               1. Ve a Supabase → Authentication → Users → Add user<br />
               2. Crea el usuario con email y contraseña<br />
               3. Copia el UUID generado<br />
               4. Ejecuta en SQL Editor:<br />
-              <code style={{ display: 'block', marginTop: 6, padding: '6px 8px', background: '#dbeafe', borderRadius: 4, fontSize: 11 }}>
+              <code style={{ display: 'block', marginTop: 6, padding: '6px 8px', background: '#E6E8EB', borderRadius: 4, fontSize: 11 }}>
                 INSERT INTO cfg.usuarios (id, nombre, rol, activo)<br />
                 VALUES ('UUID', 'Nombre', 'rol', true);
               </code>

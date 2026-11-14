@@ -178,12 +178,12 @@ export default function ReciboDetail({ recibo: r, onClose, onCanceled }: Props) 
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             {r.activo && (
-              <button className="btn-ghost" style={{ color: '#f87171' }} onClick={() => setShowCancel(true)}>
+              <button className="btn-ghost" style={{ color: '#C23B3B' }} onClick={() => setShowCancel(true)}>
                 <Ban size={13} /> Cancelar
               </button>
             )}
             {!r.activo && authUser?.rol === 'superadmin' && (
-              <button className="btn-ghost" style={{ color: '#15803d' }} onClick={handleReabrir} disabled={reabriendo}>
+              <button className="btn-ghost" style={{ color: '#1F7A50' }} onClick={handleReabrir} disabled={reabriendo}>
                 {reabriendo ? <Loader size={13} className="animate-spin" /> : <RotateCcw size={13} />} Reabrir
               </button>
             )}
@@ -195,8 +195,8 @@ export default function ReciboDetail({ recibo: r, onClose, onCanceled }: Props) 
 
           {/* Cancelación */}
           {!r.activo && r.motivo_cancelacion && (
-            <div style={{ padding: '12px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6 }}>
-              <div style={{ fontSize: 11, color: '#f87171', fontWeight: 600, marginBottom: 4 }}>RECIBO CANCELADO</div>
+            <div style={{ padding: '12px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 6 }}>
+              <div style={{ fontSize: 11, color: '#C23B3B', fontWeight: 600, marginBottom: 4 }}>RECIBO CANCELADO</div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Motivo: {r.motivo_cancelacion}</div>
               {r.fecha_cancela && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{fmtFecha(r.fecha_cancela.split('T')[0])}</div>}
             </div>
@@ -262,7 +262,7 @@ export default function ReciboDetail({ recibo: r, onClose, onCanceled }: Props) 
                   </div>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                     {p.fecha && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtFecha(p.fecha)}</span>}
-                    <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#4ade80' }}>{fmt(p.monto)}</span>
+                    <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#1F7A50' }}>{fmt(p.monto)}</span>
                   </div>
                 </div>
               ))}
@@ -271,14 +271,14 @@ export default function ReciboDetail({ recibo: r, onClose, onCanceled }: Props) 
 
           {/* Formulario cancelación */}
           {showCancel && (
-            <div style={{ padding: '14px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8 }}>
-              <div style={{ fontSize: 12, color: '#f87171', fontWeight: 600, marginBottom: 8 }}>Cancelar Recibo</div>
+            <div style={{ padding: '14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
+              <div style={{ fontSize: 12, color: '#C23B3B', fontWeight: 600, marginBottom: 8 }}>Cancelar Recibo</div>
               <label className="label">Motivo de cancelación *</label>
               <textarea className="input" rows={2} value={motivo} onChange={e => setMotivo(e.target.value)}
                 placeholder="Describe el motivo de la cancelación…" style={{ resize: 'vertical', marginBottom: 10 }} />
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button className="btn-secondary" onClick={() => setShowCancel(false)}>Cancelar</button>
-                <button className="btn-primary" style={{ background: '#ef4444' }} onClick={handleCancel} disabled={canceling || !motivo.trim()}>
+                <button className="btn-primary" style={{ background: '#D05252' }} onClick={handleCancel} disabled={canceling || !motivo.trim()}>
                   {canceling ? <><span style={{ display: 'inline-block', width: 12, height: 12, border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} /></> : <Ban size={13} />}
                   Confirmar Cancelación
                 </button>

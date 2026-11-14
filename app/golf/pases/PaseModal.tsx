@@ -21,10 +21,10 @@ type Props = {
 }
 
 const inputStyle = {
-  width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0',
-  borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none',
+  width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB',
+  borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none',
 }
-const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }
+const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }
 
 const nombreCompleto = (s: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null }) =>
   [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')
@@ -168,14 +168,14 @@ export default function PaseModal({
         <button className="btn-ghost" onClick={() => abrirTicket(false)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Printer size={14} /> Ver Comprobante
         </button>
-        <button className="btn-primary" onClick={() => abrirTicket(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#d97706', border: 'none' }}>
+        <button className="btn-primary" onClick={() => abrirTicket(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#B5761A', border: 'none' }}>
           <Printer size={14} /> Imprimir Comprobante
         </button>
       </>}
     >
       <div style={{ textAlign: 'center' }}>
-        {socioSelec && <div style={{ fontSize: 13, color: '#1e293b', fontWeight: 600, marginBottom: 6 }}>{nombreCompleto(socioSelec)}</div>}
-        <div style={{ fontSize: 12, color: '#94a3b8' }}>Folio #{String(success.id).padStart(6, '0')}</div>
+        {socioSelec && <div style={{ fontSize: 13, color: '#26282D', fontWeight: 600, marginBottom: 6 }}>{nombreCompleto(socioSelec)}</div>}
+        <div style={{ fontSize: 12, color: '#7A7E87' }}>Folio #{String(success.id).padStart(6, '0')}</div>
       </div>
     </ModalShell>
   )
@@ -189,7 +189,7 @@ export default function PaseModal({
       footer={<>
         <button className="btn-ghost" onClick={onClose}>Cancelar</button>
         <button onClick={handleSave} disabled={saving}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#d97706', color: '#fff', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#B5761A', color: '#fff', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
           {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
           Asignar Pases
         </button>
@@ -201,22 +201,22 @@ export default function PaseModal({
         <div>
           <label style={labelStyle}>Socio *</label>
           {socioSelec ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#92400e' }}>{nombreCompleto(socioSelec)}</div>
-                <div style={{ fontSize: 11, color: '#78716c', marginTop: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#7A4B0C' }}>{nombreCompleto(socioSelec)}</div>
+                <div style={{ fontSize: 11, color: '#62666E', marginTop: 1 }}>
                   {socioSelec.numero_socio && `#${socioSelec.numero_socio} · `}
                   {socioSelec.cat_categorias_socios?.nombre}
                 </div>
               </div>
               {!socioInicial && (
-                <button onClick={() => setSocioSelec(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={14} /></button>
+                <button onClick={() => setSocioSelec(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87' }}><X size={14} /></button>
               )}
             </div>
           ) : (
             <div style={{ position: 'relative' }}>
-              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              {buscando && <Loader size={12} className="animate-spin" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />}
+              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
+              {buscando && <Loader size={12} className="animate-spin" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />}
               <input
                 style={{ ...inputStyle, paddingLeft: 30 }}
                 placeholder="Buscar socio por nombre o número…"
@@ -225,14 +225,14 @@ export default function PaseModal({
                 autoFocus={!socioInicial}
               />
               {socioResults.length > 0 && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4 }}>
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4 }}>
                   {socioResults.map(s => (
                     <button key={s.id} onClick={() => seleccionarSocio(s)}
-                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', padding: '9px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #f1f5f9' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', padding: '9px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #F4F5F7' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{nombreCompleto(s)}</span>
-                      <span style={{ fontSize: 11, color: '#64748b' }}>{s.numero_socio && `#${s.numero_socio} · `}{s.cat_categorias_socios?.nombre}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>{nombreCompleto(s)}</span>
+                      <span style={{ fontSize: 11, color: '#62666E' }}>{s.numero_socio && `#${s.numero_socio} · `}{s.cat_categorias_socios?.nombre}</span>
                     </button>
                   ))}
                 </div>
@@ -286,7 +286,7 @@ export default function PaseModal({
         </div>
 
         {error && (
-          <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>
+          <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 13, color: '#C23B3B' }}>
             {error}
           </div>
         )}

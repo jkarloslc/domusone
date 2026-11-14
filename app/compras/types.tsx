@@ -46,41 +46,41 @@ export const folioGen = (prefijo: string, num: number) =>
 
 // Status colors
 export const STATUS_COMP: Record<string, { bg: string; color: string; border: string }> = {
-  'Borrador':         { bg: '#f8fafc', color: '#64748b', border: '#e2e8f0' },
-  'Enviada':          { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
-  'Aprobada':         { bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
-  'Rechazada':        { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
-  'Sustituida':       { bg: '#f1f5f9', color: '#64748b', border: '#cbd5e1' },
-  'En Proceso':       { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
-  'Cerrada':          { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' },
-  'Cancelada':        { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
-  'Abierta':          { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
-  'Pendiente Auth':   { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
-  'Pendiente Auth Finanzas': { bg: '#f5f3ff', color: '#7c3aed', border: '#ddd6fe' },
-  'Autorizada':       { bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
-  'Enviada al Prov':  { bg: '#f0fdf4', color: '#0891b2', border: '#bae6fd' },
-  'Recibida Parcial': { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
-  'Solicitada':       { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
-  'Pendiente':        { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
-  'Pagada':           { bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
-  'Abonada':          { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
-  'Recibida':         { bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
+  'Borrador':         { bg: '#F8F9FA', color: '#62666E', border: '#E6E8EB' },
+  'Enviada':          { bg: '#F4F5F7', color: '#1C1D21', border: '#C9CCD3' },
+  'Aprobada':         { bg: '#F4F5F7', color: '#1F7A50', border: '#E6E8EB' },
+  'Rechazada':        { bg: '#F4F5F7', color: '#C23B3B', border: '#E6E8EB' },
+  'Sustituida':       { bg: '#F4F5F7', color: '#62666E', border: '#C9CCD3' },
+  'En Proceso':       { bg: '#F4F5F7', color: '#B5761A', border: '#E6E8EB' },
+  'Cerrada':          { bg: '#F4F5F7', color: '#4A4D54', border: '#C9CCD3' },
+  'Cancelada':        { bg: '#F4F5F7', color: '#C23B3B', border: '#E6E8EB' },
+  'Abierta':          { bg: '#F4F5F7', color: '#1C1D21', border: '#C9CCD3' },
+  'Pendiente Auth':   { bg: '#F4F5F7', color: '#B5761A', border: '#E6E8EB' },
+  'Pendiente Auth Finanzas': { bg: '#F4F5F7', color: '#6B4E79', border: '#E6E8EB' },
+  'Autorizada':       { bg: '#F4F5F7', color: '#1F7A50', border: '#E6E8EB' },
+  'Enviada al Prov':  { bg: '#F4F5F7', color: '#32789A', border: '#E6E8EB' },
+  'Recibida Parcial': { bg: '#F4F5F7', color: '#B5761A', border: '#E6E8EB' },
+  'Solicitada':       { bg: '#F4F5F7', color: '#1C1D21', border: '#C9CCD3' },
+  'Pendiente':        { bg: '#F4F5F7', color: '#B5761A', border: '#E6E8EB' },
+  'Pagada':           { bg: '#F4F5F7', color: '#1F7A50', border: '#E6E8EB' },
+  'Abonada':          { bg: '#F4F5F7', color: '#1C1D21', border: '#C9CCD3' },
+  'Recibida':         { bg: '#F4F5F7', color: '#1F7A50', border: '#E6E8EB' },
 }
 
 export const StatusBadge = ({ status }: { status: string }) => {
   const s = STATUS_COMP[status] ?? STATUS_COMP['Borrador']
   return (
     <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-      background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
+      background: s.color, color: '#fff', border: `1px solid ${s.color}` }}>
       {status}
     </span>
   )
 }
 
 export const PRIORIDAD_COLOR: Record<string, string> = {
-  'Normal':   '#64748b',
-  'Urgente':  '#d97706',
-  'Crítica':  '#dc2626',
+  'Normal':   '#62666E',
+  'Urgente':  '#B5761A',
+  'Crítica':  '#C23B3B',
 }
 
 export const UNIDADES = ['PZA', 'KG', 'LT', 'MT', 'M2', 'M3', 'CAJA', 'PAQ', 'ROLLO', 'BULTO', 'TONELADA', 'GALÓN', 'SERVICIO']

@@ -68,24 +68,17 @@ export default function FacturasPage() {
         </>}
       />
 
-      {/* Banner PAC */}
-      <div style={{ padding: '12px 16px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ fontSize: 18 }}>🧪</span>
-        <span style={{ fontSize: 13, color: '#1e40af' }}>
-          <strong>Facturama Sandbox activo.</strong> Los CFDIs generados son de prueba y no tienen validez fiscal. Para producción: cambia la URL en <code style={{ fontSize: 12, background: '#dbeafe', padding: '1px 4px', borderRadius: 3 }}>app/api/pac/timbrar/route.ts</code> a <code style={{ fontSize: 12, background: '#dbeafe', padding: '1px 4px', borderRadius: 3 }}>api.facturama.mx</code>.
-        </span>
-      </div>
 
       {/* Stats */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { label: 'Vigentes',   value: vigentes,           color: '#15803d', bg: '#f0fdf4' },
-          { label: 'Canceladas', value: canceladas,         color: '#dc2626', bg: '#fef2f2' },
+          { label: 'Vigentes',   value: vigentes,           color: '#1F7A50', bg: '#F4F5F7' },
+          { label: 'Canceladas', value: canceladas,         color: '#C23B3B', bg: '#F4F5F7' },
           { label: 'Total mes',  value: fmt(totalMonto),    color: 'var(--blue)', bg: 'var(--blue-pale)' },
         ].map(s => (
-          <div key={s.label} className="card" style={{ padding: '12px 18px', background: s.bg, minWidth: 130 }}>
-            <div style={{ fontSize: 18, fontFamily: 'var(--font-display)', fontWeight: 600, color: s.color }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.label}</div>
+          <div key={s.label} className="card" style={{ padding: '12px 18px', background: '#fff', minWidth: 130 }}>
+            <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-primary)' }}>{s.value}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: s.color, marginRight: 6, verticalAlign: 'middle' }} />{s.label}</div>
           </div>
         ))}
       </div>
@@ -133,11 +126,11 @@ export default function FacturasPage() {
             ) : facturas.map(f => (
               <tr key={f.id} style={{ opacity: f.status === 'Cancelada' ? 0.5 : 1 }}>
                 <td>
-                  <div style={{ fontWeight: 600, color: 'var(--blue)', fontFamily: 'monospace', fontSize: 12 }}>
+                  <div style={{ fontWeight: 600, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>
                     {f.serie}{f.folio_interno}
                   </div>
                 </td>
-                <td style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <td style={{ fontSize: 11, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {f.folio_fiscal ?? '— pendiente —'}
                 </td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
@@ -146,7 +139,7 @@ export default function FacturasPage() {
                 <td style={{ fontSize: 13, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {f.razon_social_receptor ?? '—'}
                 </td>
-                <td style={{ fontSize: 12, fontFamily: 'monospace', color: 'var(--text-secondary)' }}>
+                <td style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
                   {f.rfc_receptor ?? '—'}
                 </td>
                 <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
@@ -155,9 +148,9 @@ export default function FacturasPage() {
                 <td>
                   <span style={{
                     fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                    background: f.status === 'Vigente' ? '#f0fdf4' : f.status === 'Cancelada' ? '#fef2f2' : '#fffbeb',
-                    color:      f.status === 'Vigente' ? '#15803d' : f.status === 'Cancelada' ? '#dc2626' : '#d97706',
-                    border:     `1px solid ${f.status === 'Vigente' ? '#bbf7d0' : f.status === 'Cancelada' ? '#fecaca' : '#fde68a'}`,
+                    background: f.status === 'Vigente' ? '#1F7A50' : f.status === 'Cancelada' ? '#C23B3B' : '#B5761A',
+                    color:      '#fff',
+                    border:     `1px solid ${f.status === 'Vigente' ? '#1F7A50' : f.status === 'Cancelada' ? '#C23B3B' : '#B5761A'}`,
                   }}>
                     {f.status}
                   </span>

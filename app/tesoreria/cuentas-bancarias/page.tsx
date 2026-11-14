@@ -69,8 +69,8 @@ export default function CuentasBancariasPage() {
 
       {/* KPIs */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-        <KpiCard label="Saldo total activo" value={fmt(totalSaldo)} color="#0f766e" icon={TrendingUp} />
-        <KpiCard label="Cuentas activas" value={activos} color="#15803d" icon={CheckCircle} />
+        <KpiCard label="Saldo total activo" value={fmt(totalSaldo)} color="#126B63" icon={TrendingUp} />
+        <KpiCard label="Cuentas activas" value={activos} color="#1F7A50" icon={CheckCircle} />
       </div>
 
       {/* Tabla */}
@@ -100,10 +100,10 @@ export default function CuentasBancariasPage() {
             ) : cuentas.map(c => (
               <tr key={c.id} style={{ opacity: c.activo ? 1 : 0.45 }}>
                 <td style={{ fontWeight: 600, fontSize: 14 }}>{c.banco}</td>
-                <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)' }}>{c.numero_cuenta ?? '—'}</td>
-                <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)' }}>{c.clabe ?? '—'}</td>
+                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--text-secondary)' }}>{c.numero_cuenta ?? '—'}</td>
+                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--text-secondary)' }}>{c.clabe ?? '—'}</td>
                 <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums',
-                  color: (c.saldo ?? 0) < 0 ? '#dc2626' : '#0f766e', fontSize: 14 }}>
+                  color: (c.saldo ?? 0) < 0 ? '#C23B3B' : '#126B63', fontSize: 14 }}>
                   {fmt(c.saldo ?? 0)}
                 </td>
                 <td style={{ fontSize: 12, color: 'var(--text-muted)', maxWidth: 200,
@@ -115,13 +115,13 @@ export default function CuentasBancariasPage() {
                     disabled={!canWrite('tesoreria')}
                     style={{ background: 'none', border: 'none', cursor: canWrite('tesoreria') ? 'pointer' : 'default', display: 'flex', margin: '0 auto', opacity: canWrite('tesoreria') ? 1 : 0.5 }}>
                     {c.activo
-                      ? <ToggleRight size={20} style={{ color: '#15803d' }} />
-                      : <ToggleLeft  size={20} style={{ color: '#cbd5e1' }} />}
+                      ? <ToggleRight size={20} style={{ color: '#1F7A50' }} />
+                      : <ToggleLeft  size={20} style={{ color: '#C9CCD3' }} />}
                   </button>
                 </td>
                 <td>
                   <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
-                    <button className="btn-ghost" style={{ padding: '4px 6px', color: '#0f766e' }}
+                    <button className="btn-ghost" style={{ padding: '4px 6px', color: '#126B63' }}
                       onClick={() => setDetail(c)}>
                       <Eye size={13} />
                     </button>
@@ -132,7 +132,7 @@ export default function CuentasBancariasPage() {
                       </button>
                     )}
                     {canDelete() && (
-                      <button className="btn-ghost" style={{ padding: '4px 6px', color: '#dc2626' }}
+                      <button className="btn-ghost" style={{ padding: '4px 6px', color: '#C23B3B' }}
                         onClick={() => handleDelete(c.id)}>
                         <Trash2 size={13} />
                       </button>
@@ -214,7 +214,7 @@ function CuentaModal({ row, onClose, onSaved }: { row: any | null; onClose: () =
 
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {error && (
-            <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>
+            <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>
               {error}
             </div>
           )}
@@ -225,11 +225,11 @@ function CuentaModal({ row, onClose, onSaved }: { row: any | null; onClose: () =
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
               <label className="label">No. de Cuenta</label>
-              <input className="input" value={form.numero_cuenta} onChange={set('numero_cuenta')} style={{ fontFamily: 'monospace' }} />
+              <input className="input" value={form.numero_cuenta} onChange={set('numero_cuenta')} style={{ fontVariantNumeric: 'tabular-nums' }} />
             </div>
             <div>
               <label className="label">CLABE</label>
-              <input className="input" value={form.clabe} onChange={set('clabe')} style={{ fontFamily: 'monospace' }} maxLength={18} />
+              <input className="input" value={form.clabe} onChange={set('clabe')} style={{ fontVariantNumeric: 'tabular-nums' }} maxLength={18} />
             </div>
           </div>
           <div>
@@ -344,20 +344,20 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
       </>}
     >
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #E6E8EB' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: '#0f766e18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Building2 size={15} style={{ color: '#0f766e' }} />
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: '#126B6318', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Building2 size={15} style={{ color: '#62666E' }} />
               </div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>{cuenta.banco}</h2>
             </div>
             <div style={{ display: 'flex', gap: 16, marginLeft: 42, flexWrap: 'wrap' }}>
               {cuenta.numero_cuenta && (
-                <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace' }}>No. {cuenta.numero_cuenta}</span>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>No. {cuenta.numero_cuenta}</span>
               )}
               {cuenta.clabe && (
-                <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace' }}>CLABE: {cuenta.clabe}</span>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>CLABE: {cuenta.clabe}</span>
               )}
             </div>
           </div>
@@ -365,15 +365,15 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
         </div>
 
         {/* KPIs */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: '1px solid #f1f5f9' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: '1px solid #F4F5F7' }}>
           {[
-            { label: 'Saldo Actual',   value: fmt(saldoActual), color: '#0f766e', icon: TrendingUp },
-            { label: 'Cargos período', value: fmt(totalCargos), color: '#dc2626', icon: ArrowDownCircle },
-            { label: 'Abonos período', value: fmt(totalAbonos), color: '#15803d', icon: ArrowUpCircle },
+            { label: 'Saldo Actual',   value: fmt(saldoActual), color: '#126B63', icon: TrendingUp },
+            { label: 'Cargos período', value: fmt(totalCargos), color: '#C23B3B', icon: ArrowDownCircle },
+            { label: 'Abonos período', value: fmt(totalAbonos), color: '#1F7A50', icon: ArrowUpCircle },
           ].map((s, i) => {
             const SIcon = s.icon
             return (
-              <div key={s.label} style={{ padding: '14px 20px', textAlign: 'center', borderRight: i < 2 ? '1px solid #f1f5f9' : 'none' }}>
+              <div key={s.label} style={{ padding: '14px 20px', textAlign: 'center', borderRight: i < 2 ? '1px solid #F4F5F7' : 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 2 }}>
                   <SIcon size={14} style={{ color: s.color }} />
                   <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.label}</span>
@@ -385,7 +385,7 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
         </div>
 
         {/* Filtros + botón Abono */}
-        <div style={{ display: 'flex', gap: 10, padding: '12px 24px', borderBottom: '1px solid #f1f5f9', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 10, padding: '12px 24px', borderBottom: '1px solid #F4F5F7', alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em' }}>Período:</span>
           <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)} style={{ width: 145 }} />
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>a</span>
@@ -401,8 +401,8 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
               <button
                 onClick={() => { setShowAbono(s => !s); setErrorAbono('') }}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', fontSize: 12, fontWeight: 600,
-                  background: showAbono ? '#f0fdf4' : '#15803d', color: showAbono ? '#15803d' : '#fff',
-                  border: '1px solid #15803d', borderRadius: 8, cursor: 'pointer', transition: 'all 0.15s' }}>
+                  background: showAbono ? '#F4F5F7' : '#1F7A50', color: showAbono ? '#1F7A50' : '#fff',
+                  border: '1px solid #1F7A50', borderRadius: 8, cursor: 'pointer', transition: 'all 0.15s' }}>
                 <ArrowUpCircle size={13} />
                 {showAbono ? 'Cancelar' : 'Registrar Abono'}
               </button>
@@ -412,12 +412,12 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
 
         {/* Formulario de abono */}
         {showAbono && (
-          <div style={{ padding: '16px 24px', background: '#f0fdf4', borderBottom: '1px solid #bbf7d0' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#15803d', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ padding: '16px 24px', background: '#F4F5F7', borderBottom: '1px solid #E6E8EB' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#1F7A50', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
               <ArrowUpCircle size={13} /> Registrar Abono — Los cargos solo se generan desde una Orden de Pago
             </div>
             {errorAbono && (
-              <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12, marginBottom: 10 }}>
+              <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12, marginBottom: 10 }}>
                 {errorAbono}
               </div>
             )}
@@ -439,13 +439,13 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
               <div>
                 <label className="label">Referencia</label>
                 <input className="input" placeholder="No. de transferencia, cheque…"
-                  style={{ fontFamily: 'monospace' }} value={formAbono.referencia} onChange={setFA('referencia')} />
+                  style={{ fontVariantNumeric: 'tabular-nums' }} value={formAbono.referencia} onChange={setFA('referencia')} />
               </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
               <button onClick={handleAbono} disabled={savingAbono}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', fontSize: 13, fontWeight: 600,
-                  background: '#15803d', color: '#fff', border: 'none', borderRadius: 8,
+                  background: '#1F7A50', color: '#fff', border: 'none', borderRadius: 8,
                   cursor: savingAbono ? 'not-allowed' : 'pointer', opacity: savingAbono ? 0.7 : 1 }}>
                 {savingAbono ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
                 {savingAbono ? 'Guardando…' : 'Confirmar Abono'}
@@ -484,17 +484,17 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
                   <tr key={m.id}>
                     <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{fmtD(m.fecha_movimiento)}</td>
                     <td style={{ fontSize: 12, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.concepto ?? '—'}</td>
-                    <td style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--text-muted)' }}>{m.referencia ?? '—'}</td>
+                    <td style={{ fontSize: 11, fontVariantNumeric: 'tabular-nums', color: 'var(--text-muted)' }}>{m.referencia ?? '—'}</td>
                     <td style={{ textAlign: 'center' }}>
                       <span style={{
                         fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600,
-                        background: m.tipo === 'Cargo' ? '#fef2f2' : '#f0fdf4',
-                        color:      m.tipo === 'Cargo' ? '#dc2626'  : '#15803d',
-                        border:     `1px solid ${m.tipo === 'Cargo' ? '#fecaca' : '#bbf7d0'}`,
+                        background: m.tipo === 'Cargo' ? '#C23B3B' : '#1F7A50',
+                        color:      '#fff',
+                        border:     `1px solid ${m.tipo === 'Cargo' ? '#C23B3B' : '#1F7A50'}`,
                       }}>{m.tipo}</span>
                     </td>
                     <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums',
-                      color: m.tipo === 'Cargo' ? '#dc2626' : '#15803d', fontSize: 13 }}>
+                      color: m.tipo === 'Cargo' ? '#C23B3B' : '#1F7A50', fontSize: 13 }}>
                       {m.tipo === 'Cargo' ? '−' : '+'}{fmt(m.monto ?? 0)}
                     </td>
                     <td style={{ textAlign: 'right', fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>

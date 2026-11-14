@@ -211,15 +211,15 @@ export default function ReporteCXPporCC() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
         <div className="card" style={{ padding: '12px 16px' }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#dc2626', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSaldo)}</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#C23B3B', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSaldo)}</div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Saldo total por pagar</div>
         </div>
         <div className="card" style={{ padding: '12px 16px' }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#7f1d1d', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalVencido)}</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#8C2A2A', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalVencido)}</div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>De ese saldo, vencido a hoy</div>
         </div>
         <div className="card" style={{ padding: '12px 16px' }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#7c3aed' }}>{totalDocs}</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#6B4E79' }}>{totalDocs}</div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Partidas con saldo</div>
         </div>
       </div>
@@ -252,12 +252,12 @@ export default function ReporteCXPporCC() {
                 const ccOpen = expandedCC.has(ck)
                 return (
                   <Fragment key={`cc-${ck}`}>
-                    <tr style={{ background: '#eff6ff', cursor: 'pointer' }} onClick={() => toggle(expandedCC, setExpandedCC, ck)}>
+                    <tr style={{ background: '#F4F5F7', cursor: 'pointer' }} onClick={() => toggle(expandedCC, setExpandedCC, ck)}>
                       <td colSpan={6} style={{ padding: '10px 12px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           {ccOpen ? <ChevronDown size={14} style={{ color: 'var(--blue)' }}/> : <ChevronRight size={14} style={{ color: 'var(--blue)' }}/>}
                           <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--blue)' }}>{cc.nombre}</span>
-                          <span style={{ fontSize: 11, color: 'var(--text-muted)', background: '#dbeafe', padding: '1px 8px', borderRadius: 20 }}>{cc.docs}</span>
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)', background: '#E6E8EB', padding: '1px 8px', borderRadius: 20 }}>{cc.docs}</span>
                         </div>
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>{fmt(cc.saldo)}</td>
@@ -267,31 +267,31 @@ export default function ReporteCXPporCC() {
                       const arOpen = expandedArea.has(ak)
                       return (
                         <Fragment key={`ar-${ak}`}>
-                          <tr style={{ background: '#f8fafc', cursor: 'pointer' }} onClick={() => toggle(expandedArea, setExpandedArea, ak)}>
+                          <tr style={{ background: '#F8F9FA', cursor: 'pointer' }} onClick={() => toggle(expandedArea, setExpandedArea, ak)}>
                             <td colSpan={6} style={{ padding: '7px 12px 7px 32px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                {arOpen ? <ChevronDown size={12} style={{ color: '#7c3aed' }}/> : <ChevronRight size={12} style={{ color: '#7c3aed' }}/>}
-                                <span style={{ fontSize: 13, fontWeight: 600, color: '#7c3aed' }}>{ar.nombre}</span>
-                                <span style={{ fontSize: 10, color: 'var(--text-muted)', background: '#ede9fe', padding: '1px 7px', borderRadius: 20 }}>{ar.docs}</span>
+                                {arOpen ? <ChevronDown size={12} style={{ color: '#62666E' }}/> : <ChevronRight size={12} style={{ color: '#62666E' }}/>}
+                                <span style={{ fontSize: 13, fontWeight: 600, color: '#6B4E79' }}>{ar.nombre}</span>
+                                <span style={{ fontSize: 10, color: '#4A4D54', background: '#E6E8EB', padding: '1px 7px', borderRadius: 20 }}>{ar.docs}</span>
                               </div>
                             </td>
-                            <td style={{ textAlign: 'right', fontWeight: 600, color: '#7c3aed', fontVariantNumeric: 'tabular-nums' }}>{fmt(ar.saldo)}</td>
+                            <td style={{ textAlign: 'right', fontWeight: 600, color: '#6B4E79', fontVariantNumeric: 'tabular-nums' }}>{fmt(ar.saldo)}</td>
                           </tr>
                           {arOpen && Object.entries(ar.frentes).sort((a, b) => b[1].saldo - a[1].saldo).map(([fk, fr]) => (
                             <Fragment key={`fr-${ak}:${fk}`}>
-                              <tr style={{ background: '#fffbeb' }}>
-                                <td colSpan={6} style={{ padding: '5px 12px 5px 52px', fontSize: 12, fontWeight: 600, color: '#b45309' }}>
+                              <tr style={{ background: '#F4F5F7' }}>
+                                <td colSpan={6} style={{ padding: '5px 12px 5px 52px', fontSize: 12, fontWeight: 600, color: '#96600F' }}>
                                   {fr.nombre} <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>({fr.ops.length})</span>
                                 </td>
-                                <td style={{ textAlign: 'right', fontSize: 12, fontWeight: 600, color: '#b45309', fontVariantNumeric: 'tabular-nums' }}>{fmt(fr.saldo)}</td>
+                                <td style={{ textAlign: 'right', fontSize: 12, fontWeight: 600, color: '#96600F', fontVariantNumeric: 'tabular-nums' }}>{fmt(fr.saldo)}</td>
                               </tr>
                               {fr.ops.map(op => (
                                 <tr key={`op-${op.id}${op._detIdx != null ? `-${op._detIdx}` : ''}`}>
-                                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600, paddingLeft: 72 }}>{op.folio}</td>
+                                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600, paddingLeft: 72 }}>{op.folio}</td>
                                   <td style={{ fontSize: 12 }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? `#${op.id_proveedor_fk}`) : '—'}</td>
                                   <td style={{ fontSize: 12, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
                                   <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{fmtF(op.fecha_op)}</td>
-                                  <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: vencido(op.fecha_vencimiento) ? '#dc2626' : 'var(--text-secondary)', fontWeight: vencido(op.fecha_vencimiento) ? 600 : 400 }}>{fmtF(op.fecha_vencimiento)}</td>
+                                  <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: vencido(op.fecha_vencimiento) ? '#C23B3B' : 'var(--text-secondary)', fontWeight: vencido(op.fecha_vencimiento) ? 600 : 400 }}>{fmtF(op.fecha_vencimiento)}</td>
                                   <td style={{ fontSize: 12 }}>{op.status}</td>
                                   <td style={{ textAlign: 'right', fontSize: 12, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmt(saldoDe(op))}</td>
                                 </tr>

@@ -180,15 +180,15 @@ export default function ArrendatariosPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(120px, 1fr))', gap: 10, marginBottom: 18 }}>
         {[
-          { label: 'Total', value: total, color: '#1d4ed8', bg: '#eff6ff' },
-          { label: 'Activos', value: kpis.activos, color: '#15803d', bg: '#f0fdf4' },
-          { label: 'Inactivos', value: kpis.inactivos, color: '#dc2626', bg: '#fef2f2' },
-          { label: 'Persona Física', value: kpis.fisicas, color: '#7c3aed', bg: '#f5f3ff' },
-          { label: 'Persona Moral', value: kpis.morales, color: '#a16207', bg: '#fefce8' },
+          { label: 'Total', value: total, color: '#26282D', bg: '#F4F5F7' },
+          { label: 'Activos', value: kpis.activos, color: '#1F7A50', bg: '#F4F5F7' },
+          { label: 'Inactivos', value: kpis.inactivos, color: '#C23B3B', bg: '#F4F5F7' },
+          { label: 'Persona Física', value: kpis.fisicas, color: '#6B4E79', bg: '#F4F5F7' },
+          { label: 'Persona Moral', value: kpis.morales, color: '#8A6A12', bg: '#F4F5F7' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '12px 14px', background: k.bg }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>{k.label}</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: k.color }}>{k.value}</div>
+          <div key={k.label} className="card" style={{ padding: '12px 14px', background: '#fff' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{k.value}</div>
           </div>
         ))}
       </div>
@@ -234,22 +234,22 @@ export default function ArrendatariosPage() {
             ) : items.map((a, i) => (
               <tr key={a.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                 <td style={{ padding: '10px 14px', fontWeight: 500, color: 'var(--text-primary)' }}>{fmtNombre(a)}</td>
-                <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 12 }}>{a.rfc ?? '—'}</td>
+                <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{a.rfc ?? '—'}</td>
                 <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>{a.telefono ?? '—'}</td>
                 <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>{a.email ?? '—'}</td>
                 <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12 }}>{a.tipo_persona}</td>
                 <td style={{ padding: '10px 14px' }}>
                   <span style={{
                     fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600,
-                    background: a.activo ? '#dcfce7' : '#fee2e2',
-                    color: a.activo ? '#16a34a' : '#dc2626',
+                    background: a.activo ? '#1F7A50' : '#C23B3B',
+                    color: '#fff',
                   }}>{a.activo ? 'Activo' : 'Inactivo'}</span>
                 </td>
                 <td style={{ padding: '10px 14px' }}>
                   <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                     <button className="btn-ghost" style={{ padding: '4px 8px' }} onClick={() => setDetailItem(a)}><Eye size={13} /></button>
                     {puedeEscribir && <button className="btn-ghost" style={{ padding: '4px 8px' }} onClick={() => openEdit(a)}><Edit2 size={13} /></button>}
-                    {puedeEliminar && <button className="btn-ghost" style={{ padding: '4px 8px', color: '#dc2626' }} disabled={deleting === a.id} onClick={() => handleDelete(a.id)}><Trash2 size={13} /></button>}
+                    {puedeEliminar && <button className="btn-ghost" style={{ padding: '4px 8px', color: '#C23B3B' }} disabled={deleting === a.id} onClick={() => handleDelete(a.id)}><Trash2 size={13} /></button>}
                   </div>
                 </td>
               </tr>
@@ -340,7 +340,7 @@ export default function ArrendatariosPage() {
               <label htmlFor="activo-arr" style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Activo</label>
             </div>
 
-            {err && <div style={{ gridColumn: 'span 2', fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{err}</div>}
+            {err && <div style={{ gridColumn: 'span 2', fontSize: 12, color: '#C23B3B', background: '#F4F5F7', padding: '8px 12px', borderRadius: 6 }}>{err}</div>}
           </div>
         </ModalShell>
       )}

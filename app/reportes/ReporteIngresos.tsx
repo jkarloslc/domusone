@@ -165,7 +165,7 @@ export default function ReporteIngresos() {
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         <div className="card" style={{ padding: '14px 20px', flex: '1 1 160px' }}>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total Ingresos</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: '#059669' }}>{fmt(totalGeneral)}</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: '#267F56' }}>{fmt(totalGeneral)}</div>
         </div>
         <div className="card" style={{ padding: '14px 20px', flex: '1 1 120px' }}>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Recibos</div>
@@ -181,12 +181,12 @@ export default function ReporteIngresos() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 0 }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '2px solid #E6E8EB', paddingBottom: 0 }}>
         {([['agrupador', 'Por Agrupador de Ingreso'], ['centro', 'Por Centro de Ingreso']] as const).map(([key, label]) => (
           <button key={key} onClick={() => { setTab(key); setExpanded(new Set()) }}
             style={{
               padding: '8px 18px', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600,
-              background: 'transparent', borderBottom: tab === key ? '2px solid var(--blue)' : '2px solid transparent',
+              background: 'transparent', borderBottom: tab === key ? '2px solid #19D3C5' : '2px solid transparent',
               color: tab === key ? 'var(--blue)' : 'var(--text-secondary)', marginBottom: -2,
             }}>{label}</button>
         ))}
@@ -209,7 +209,7 @@ export default function ReporteIngresos() {
         <div id="reporte-print-area" className="card" style={{ overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+              <tr style={{ background: '#F8F9FA', borderBottom: '2px solid #E6E8EB' }}>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                   {tab === 'agrupador' ? 'Agrupador / Folio' : 'Centro / Folio'}
                 </th>
@@ -226,7 +226,7 @@ export default function ReporteIngresos() {
                   <>
                     {/* Fila de grupo */}
                     <tr key={`grp-${g.key}`} onClick={() => toggle(g.key)}
-                      style={{ background: '#f1f5f9', cursor: 'pointer', borderBottom: '1px solid #e2e8f0' }}>
+                      style={{ background: '#F4F5F7', cursor: 'pointer', borderBottom: '1px solid #E6E8EB' }}>
                       <td style={{ padding: '10px 14px', fontWeight: 700 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           {expanded.has(g.key)
@@ -240,14 +240,14 @@ export default function ReporteIngresos() {
                         </div>
                       </td>
                       <td colSpan={3} />
-                      <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: '#059669' }}>
+                      <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: '#267F56' }}>
                         {fmt(g.total)}
                       </td>
                     </tr>
                     {/* Detalle recibos */}
                     {expanded.has(g.key) && g.items.map(r => (
-                      <tr key={`r-${r.id}`} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '8px 14px 8px 38px', fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)' }}>
+                      <tr key={`r-${r.id}`} style={{ borderBottom: '1px solid #F4F5F7' }}>
+                        <td style={{ padding: '8px 14px 8px 38px', fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)' }}>
                           {r.folio ?? `ING-${r.id}`}
                           {tab === 'agrupador' && r.id_centro_ingreso_fk && (
                             <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'inherit', marginLeft: 6 }}>
@@ -267,11 +267,11 @@ export default function ReporteIngresos() {
                 )
               })}
               {/* Total general */}
-              <tr style={{ background: '#0f172a', borderTop: '2px solid #334155' }}>
-                <td colSpan={4} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#f8fafc' }}>
+              <tr style={{ background: '#1C1D21', borderTop: '2px solid #33363C' }}>
+                <td colSpan={4} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#F8F9FA' }}>
                   Total General · {recibos.length} recibos
                 </td>
-                <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 14, color: '#6ee7b7' }}>
+                <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 14, color: '#7CC9A3' }}>
                   {fmt(totalGeneral)}
                 </td>
               </tr>

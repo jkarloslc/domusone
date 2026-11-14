@@ -24,15 +24,15 @@ type DiaResumen = {
 }
 
 const CAMPO_CFG: Record<Status, { label: string; color: string; bg: string; icon: React.ComponentType<any> }> = {
-  abierto: { label: 'Abierto',              color: '#16a34a', bg: '#dcfce7', icon: CheckCircle2 },
-  cerrado: { label: 'Cerrado',              color: '#dc2626', bg: '#fee2e2', icon: XCircle },
-  parcial: { label: 'Abierto Parcialmente', color: '#d97706', bg: '#fef3c7', icon: AlertCircle },
+  abierto: { label: 'Abierto',              color: '#267F56', bg: '#E6E8EB', icon: CheckCircle2 },
+  cerrado: { label: 'Cerrado',              color: '#C23B3B', bg: '#E6E8EB', icon: XCircle },
+  parcial: { label: 'Abierto Parcialmente', color: '#B5761A', bg: '#E6E8EB', icon: AlertCircle },
 }
 
 const CAMINOS_CFG: Record<Status, { label: string; color: string; bg: string }> = {
-  abierto: { label: 'Caminos Abiertos', color: '#0891b2', bg: '#e0f7fa' },
-  cerrado: { label: 'Caminos Cerrados', color: '#7c3aed', bg: '#f5f3ff' },
-  parcial: { label: 'Caminos Parcial',  color: '#b45309', bg: '#fef3c7' },
+  abierto: { label: 'Caminos Abiertos', color: '#32789A', bg: '#E6E8EB' },
+  cerrado: { label: 'Caminos Cerrados', color: '#6B4E79', bg: '#F4F5F7' },
+  parcial: { label: 'Caminos Parcial',  color: '#96600F', bg: '#E6E8EB' },
 }
 
 // Combina el/los registros de un mismo día en un solo status por dimensión.
@@ -112,65 +112,65 @@ export default function ReporteEstatusCampo() {
       {/* Filtros */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24, alignItems: 'flex-end' }}>
         <div>
-          <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Fecha desde</label>
+          <label style={{ fontSize: 12, fontWeight: 600, color: '#33363C', display: 'block', marginBottom: 4 }}>Fecha desde</label>
           <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)}
-            style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13 }} />
+            style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid #E6E8EB', fontSize: 13 }} />
         </div>
         <div>
-          <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Fecha hasta</label>
+          <label style={{ fontSize: 12, fontWeight: 600, color: '#33363C', display: 'block', marginBottom: 4 }}>Fecha hasta</label>
           <input type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)}
-            style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13 }} />
+            style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid #E6E8EB', fontSize: 13 }} />
         </div>
       </div>
 
       <div id="reporte-print-area">
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>Cargando datos…</div>
+          <div style={{ textAlign: 'center', padding: '60px 0', color: '#7A7E87' }}>Cargando datos…</div>
         ) : (
           <>
             {/* KPIs */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginBottom: 28 }}>
               {[
-                { label: 'Total Días del Periodo', value: String(totalDias), color: '#64748b', bg: '#f8fafc', icon: CalendarDays },
-                { label: 'Días Abierto',           value: `${diasAbierto} (${pct(diasAbierto)})`, color: '#16a34a', bg: '#dcfce7', icon: CheckCircle2 },
-                { label: 'Días Cerrado',           value: `${diasCerrado} (${pct(diasCerrado)})`, color: '#dc2626', bg: '#fee2e2', icon: XCircle },
-                { label: 'Días Abierto Parcial.',  value: `${diasParcial} (${pct(diasParcial)})`, color: '#d97706', bg: '#fef3c7', icon: AlertCircle },
-                { label: 'Días Caminos Cerrados',  value: `${diasCaminosCerrados} (${pct(diasCaminosCerrados)})`, color: '#7c3aed', bg: '#f5f3ff', icon: Route },
+                { label: 'Total Días del Periodo', value: String(totalDias), color: '#62666E', bg: '#F8F9FA', icon: CalendarDays },
+                { label: 'Días Abierto',           value: `${diasAbierto} (${pct(diasAbierto)})`, color: '#267F56', bg: '#E6E8EB', icon: CheckCircle2 },
+                { label: 'Días Cerrado',           value: `${diasCerrado} (${pct(diasCerrado)})`, color: '#C23B3B', bg: '#E6E8EB', icon: XCircle },
+                { label: 'Días Abierto Parcial.',  value: `${diasParcial} (${pct(diasParcial)})`, color: '#B5761A', bg: '#E6E8EB', icon: AlertCircle },
+                { label: 'Días Caminos Cerrados',  value: `${diasCaminosCerrados} (${pct(diasCaminosCerrados)})`, color: '#6B4E79', bg: '#F4F5F7', icon: Route },
               ].map(k => {
                 const Icon = k.icon
                 return (
-                  <div key={k.label} style={{ flex: '1 1 160px', maxWidth: 220, background: k.bg, borderRadius: 14, padding: '16px 18px', border: `1.5px solid ${k.color}22` }}>
+                  <div key={k.label} style={{ flex: '1 1 160px', maxWidth: 220, background: '#fff', borderRadius: 12, padding: '16px 18px', border: '1px solid #E6E8EB' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                       <Icon size={14} style={{ color: k.color }} />
-                      <span style={{ fontSize: 11, color: k.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{k.label}</span>
+                      <span style={{ fontSize: 11, color: '#62666E', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{k.label}</span>
                     </div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: '#1e293b' }}>{k.value}</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: '#26282D' }}>{k.value}</div>
                   </div>
                 )
               })}
             </div>
 
-            <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontSize: 12, color: '#7A7E87', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
               <CloudRain size={13} />
               Los días sin registro capturado se asumen como operación normal (Abierto / Caminos Abiertos).
             </div>
 
             {/* Detalle diario — solo días con registro */}
             <div>
-              <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', marginBottom: 12 }}>Detalle de Días con Registro</h3>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: '#26282D', marginBottom: 12 }}>Detalle de Días con Registro</h3>
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
                 <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
-                    <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                    <tr style={{ background: '#F8F9FA', borderBottom: '2px solid #E6E8EB' }}>
                       {['Fecha', 'Status Campo (día)', 'Status Caminos (día)', 'Registros del día'].map(h => (
-                        <th key={h} style={{ padding: '11px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748b' }}>{h}</th>
+                        <th key={h} style={{ padding: '11px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#62666E' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {diasConRegistro.length === 0 ? (
-                      <tr><td colSpan={4} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>
+                      <tr><td colSpan={4} style={{ textAlign: 'center', padding: 40, color: '#7A7E87' }}>
                         Sin registros capturados en el período seleccionado.
                       </td></tr>
                     ) : diasConRegistro.map(d => {
@@ -178,22 +178,22 @@ export default function ReporteEstatusCampo() {
                       const cCaminos = CAMINOS_CFG[d.statusCaminos]
                       const IconCampo = cCampo.icon
                       return (
-                        <tr key={d.fecha} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '11px 14px', fontWeight: 700, color: '#1e293b', verticalAlign: 'top' }}>{d.fecha}</td>
+                        <tr key={d.fecha} style={{ borderBottom: '1px solid #F4F5F7' }}>
+                          <td style={{ padding: '11px 14px', fontWeight: 700, color: '#26282D', verticalAlign: 'top' }}>{d.fecha}</td>
                           <td style={{ padding: '11px 14px', verticalAlign: 'top' }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 20, fontSize: 11.5, fontWeight: 700, color: cCampo.color, background: cCampo.bg }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 20, fontSize: 11.5, fontWeight: 700, color: '#fff', background: cCampo.color}}>
                               <IconCampo size={12} /> {cCampo.label}
                             </span>
                           </td>
                           <td style={{ padding: '11px 14px', verticalAlign: 'top' }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 20, fontSize: 11.5, fontWeight: 700, color: cCaminos.color, background: cCaminos.bg }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 20, fontSize: 11.5, fontWeight: 700, color: '#fff', background: cCaminos.color}}>
                               <Route size={12} /> {cCaminos.label}
                             </span>
                           </td>
-                          <td style={{ padding: '11px 14px', color: '#64748b', fontSize: 12 }}>
+                          <td style={{ padding: '11px 14px', color: '#62666E', fontSize: 12 }}>
                             {d.entradas.map(e => (
                               <div key={e.id} style={{ marginBottom: 4 }}>
-                                <span style={{ fontWeight: 600, color: '#475569' }}>{e.franja ?? 'Todo el día'}</span>
+                                <span style={{ fontWeight: 600, color: '#4A4D54' }}>{e.franja ?? 'Todo el día'}</span>
                                 {' — '}
                                 {CAMPO_CFG[e.status_campo].label} / {CAMINOS_CFG[e.status_caminos].label}
                                 {e.motivo && <> · {e.motivo}</>}

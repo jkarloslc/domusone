@@ -121,19 +121,19 @@ export default function ReporteEstadoCuenta() {
           <div id="reporte-print-area" className="card" style={{ overflow: 'hidden' }}>
 
             {/* Encabezado de cuenta */}
-            <div style={{ padding: '20px 24px', borderBottom: '2px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ padding: '20px 24px', borderBottom: '2px solid #E6E8EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: '#0f766e18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Building2 size={18} style={{ color: '#0f766e' }} />
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: '#126B6318', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Building2 size={18} style={{ color: '#62666E' }} />
                 </div>
                 <div>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700 }}>{cuentaInfo.banco}</div>
                   <div style={{ display: 'flex', gap: 16, marginTop: 2, flexWrap: 'wrap' }}>
                     {cuentaInfo.numero_cuenta && (
-                      <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace' }}>No. {cuentaInfo.numero_cuenta}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>No. {cuentaInfo.numero_cuenta}</span>
                     )}
                     {cuentaInfo.clabe && (
-                      <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace' }}>CLABE: {cuentaInfo.clabe}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>CLABE: {cuentaInfo.clabe}</span>
                     )}
                   </div>
                 </div>
@@ -145,17 +145,17 @@ export default function ReporteEstadoCuenta() {
             </div>
 
             {/* Resumen de 4 tarjetas */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderBottom: '1px solid #f1f5f9' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderBottom: '1px solid #F4F5F7' }}>
               {[
-                { label: 'Saldo Inicial',  value: saldoInicial, color: '#475569' },
-                { label: 'Total Abonos',   value: totalAbonos,  color: '#15803d' },
-                { label: 'Total Cargos',   value: totalCargos,  color: '#dc2626' },
-                { label: 'Saldo Final',    value: saldoFinal,   color: '#0f766e' },
+                { label: 'Saldo Inicial',  value: saldoInicial, color: '#4A4D54' },
+                { label: 'Total Abonos',   value: totalAbonos,  color: '#1F7A50' },
+                { label: 'Total Cargos',   value: totalCargos,  color: '#C23B3B' },
+                { label: 'Saldo Final',    value: saldoFinal,   color: '#126B63' },
               ].map((s, i) => (
                 <div key={s.label} style={{
                   padding: '16px 20px', textAlign: 'center',
-                  borderRight: i < 3 ? '1px solid #f1f5f9' : 'none',
-                  background: i === 3 ? '#f0fdf4' : 'transparent',
+                  borderRight: i < 3 ? '1px solid #F4F5F7' : 'none',
+                  background: i === 3 ? '#F4F5F7' : 'transparent',
                 }}>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{s.label}</div>
                   <div style={{ fontSize: 20, fontWeight: 700, color: s.color, fontVariantNumeric: 'tabular-nums' }}>
@@ -186,14 +186,14 @@ export default function ReporteEstadoCuenta() {
                 </thead>
                 <tbody>
                   {/* Fila de saldo inicial */}
-                  <tr style={{ background: '#f8fafc' }}>
+                  <tr style={{ background: '#F8F9FA' }}>
                     <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtD(filtroDe)}</td>
                     <td style={{ fontSize: 12, fontStyle: 'italic', color: 'var(--text-muted)' }}>Saldo al inicio del período</td>
                     <td>—</td>
                     <td></td>
                     <td></td>
                     <td></td>
-                    <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
+                    <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: '#4A4D54' }}>
                       {fmt(saldoInicial)}
                     </td>
                     <td></td>
@@ -206,31 +206,31 @@ export default function ReporteEstadoCuenta() {
                       <td style={{ fontSize: 12, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {m.concepto ?? '—'}
                       </td>
-                      <td style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--text-muted)' }}>
+                      <td style={{ fontSize: 11, fontVariantNumeric: 'tabular-nums', color: 'var(--text-muted)' }}>
                         {m.referencia ?? '—'}
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <span style={{
                           fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 600,
-                          background: m.tipo === 'Cargo' ? '#fef2f2' : '#f0fdf4',
-                          color:      m.tipo === 'Cargo' ? '#dc2626'  : '#15803d',
-                          border:     `1px solid ${m.tipo === 'Cargo' ? '#fecaca' : '#bbf7d0'}`,
+                          background: m.tipo === 'Cargo' ? '#C23B3B' : '#1F7A50',
+                          color:      '#fff',
+                          border:     `1px solid ${m.tipo === 'Cargo' ? '#C23B3B' : '#1F7A50'}`,
                         }}>
                           {m.tipo}
                         </span>
                       </td>
                       <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 13,
                         fontWeight: m.tipo === 'Cargo' ? 700 : 400,
-                        color: m.tipo === 'Cargo' ? '#dc2626' : 'var(--text-muted)' }}>
+                        color: m.tipo === 'Cargo' ? '#C23B3B' : 'var(--text-muted)' }}>
                         {m.tipo === 'Cargo' ? fmt(m.monto ?? 0) : '—'}
                       </td>
                       <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 13,
                         fontWeight: m.tipo === 'Abono' ? 700 : 400,
-                        color: m.tipo === 'Abono' ? '#15803d' : 'var(--text-muted)' }}>
+                        color: m.tipo === 'Abono' ? '#1F7A50' : 'var(--text-muted)' }}>
                         {m.tipo === 'Abono' ? fmt(m.monto ?? 0) : '—'}
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums',
-                        color: (m.saldo_despues ?? 0) < 0 ? '#dc2626' : '#0f172a' }}>
+                        color: (m.saldo_despues ?? 0) < 0 ? '#C23B3B' : '#1C1D21' }}>
                         {m.saldo_despues != null ? fmt(m.saldo_despues) : '—'}
                       </td>
                       <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{m.created_by ?? '—'}</td>
@@ -238,15 +238,15 @@ export default function ReporteEstadoCuenta() {
                   ))}
 
                   {/* Fila de totales */}
-                  <tr style={{ background: '#f0fdf4', fontWeight: 700, borderTop: '2px solid #e2e8f0' }}>
-                    <td colSpan={4} style={{ fontSize: 12, color: '#0f766e' }}>Totales del período</td>
-                    <td style={{ textAlign: 'right', color: '#dc2626', fontVariantNumeric: 'tabular-nums' }}>
+                  <tr style={{ background: '#F4F5F7', fontWeight: 700, borderTop: '2px solid #E6E8EB' }}>
+                    <td colSpan={4} style={{ fontSize: 12, color: '#126B63' }}>Totales del período</td>
+                    <td style={{ textAlign: 'right', color: '#C23B3B', fontVariantNumeric: 'tabular-nums' }}>
                       {fmt(totalCargos)}
                     </td>
-                    <td style={{ textAlign: 'right', color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>
+                    <td style={{ textAlign: 'right', color: '#1F7A50', fontVariantNumeric: 'tabular-nums' }}>
                       {fmt(totalAbonos)}
                     </td>
-                    <td style={{ textAlign: 'right', color: '#0f766e', fontVariantNumeric: 'tabular-nums' }}>
+                    <td style={{ textAlign: 'right', color: '#126B63', fontVariantNumeric: 'tabular-nums' }}>
                       {fmt(saldoFinal)}
                     </td>
                     <td></td>

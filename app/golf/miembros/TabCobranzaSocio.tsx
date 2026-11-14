@@ -32,9 +32,9 @@ const TIPOS_LABEL: Record<string, string> = {
 }
 
 const STATUS_CFG: Record<string, { bg: string; color: string; label: string }> = {
-  PENDIENTE:    { bg: '#fffbeb', color: '#d97706', label: 'Pendiente'    },
-  PAGO_PARCIAL: { bg: '#fff7ed', color: '#ea580c', label: 'Pago Parcial' },
-  PAGADO:       { bg: '#f0fdf4', color: '#15803d', label: 'Pagado'       },
+  PENDIENTE:    { bg: '#F4F5F7', color: '#B5761A', label: 'Pendiente'    },
+  PAGO_PARCIAL: { bg: '#F4F5F7', color: '#C8642A', label: 'Pago Parcial' },
+  PAGADO:       { bg: '#F4F5F7', color: '#1F7A50', label: 'Pagado'       },
 }
 
 type FiltroStatus = 'TODOS' | 'PENDIENTE' | 'PAGADO'
@@ -92,51 +92,51 @@ export default function TabCobranzaSocio({ socioId, nombreSocio, onRefresh }: Pr
   const renderGrid = (grupo: typeof grupos[number]) => (
     <div key={grupo.label} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>
-          {grupo.label} <span style={{ fontWeight: 500, color: '#94a3b8' }}>({grupo.cuotas.length})</span>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#4A4D54' }}>
+          {grupo.label} <span style={{ fontWeight: 500, color: '#7A7E87' }}>({grupo.cuotas.length})</span>
         </div>
         {puedeEscribir && grupo.pendientes.length > 0 && (
           <button onClick={() => setCuotasACobrar(grupo.pendientes)}
-            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', fontSize: 11, fontWeight: 700, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer' }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', fontSize: 11, fontWeight: 700, border: 'none', borderRadius: 8, background: '#267F56', color: '#fff', cursor: 'pointer' }}>
             <Receipt size={12} /> Cobrar ({grupo.pendientes.length})
           </button>
         )}
       </div>
 
       {grupo.cuotas.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '20px', background: '#f8fafc', borderRadius: 10, border: '1px dashed #e2e8f0' }}>
-          <div style={{ fontSize: 12, color: '#94a3b8' }}>
+        <div style={{ textAlign: 'center', padding: '20px', background: '#F8F9FA', borderRadius: 10, border: '1px dashed #E6E8EB' }}>
+          <div style={{ fontSize: 12, color: '#7A7E87' }}>
             {filtro === 'PENDIENTE' ? 'Sin cuotas pendientes' : filtro === 'PAGADO' ? 'Sin cuotas pagadas' : 'Sin cuotas registradas'}
           </div>
         </div>
       ) : (
-        <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ border: '1px solid #E6E8EB', borderRadius: 10, overflow: 'hidden' }}>
           {grupo.cuotas.map((c, i) => {
             const venc = vencida(c.fecha_vencimiento)
             const isPend = c.status === 'PENDIENTE' || c.status === 'PAGO_PARCIAL'
             const saldo = c.saldo ?? c.monto_final
-            const sc = STATUS_CFG[c.status] ?? { bg: '#f1f5f9', color: '#64748b', label: c.status }
+            const sc = STATUS_CFG[c.status] ?? { bg: '#F4F5F7', color: '#62666E', label: c.status }
             return (
               <div key={c.id} style={{
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: '10px 14px',
-                borderBottom: i < grupo.cuotas.length - 1 ? '1px solid #f1f5f9' : 'none',
-                background: venc && isPend ? '#fff5f5' : '#fff',
+                borderBottom: i < grupo.cuotas.length - 1 ? '1px solid #F4F5F7' : 'none',
+                background: venc && isPend ? '#F4F5F7' : '#fff',
               }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>{c.concepto}</div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: '#26282D' }}>{c.concepto}</div>
+                  <div style={{ fontSize: 11, color: '#7A7E87', marginTop: 2, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {c.periodo && <span>{c.periodo}</span>}
-                    <span style={{ padding: '1px 6px', borderRadius: 20, background: '#f1f5f9', color: '#475569', fontWeight: 600 }}>
+                    <span style={{ padding: '1px 6px', borderRadius: 20, background: '#F4F5F7', color: '#4A4D54', fontWeight: 600 }}>
                       {TIPOS_LABEL[c.tipo] ?? c.tipo}
                     </span>
                     {c.fecha_vencimiento && (
-                      <span style={{ color: venc && isPend ? '#dc2626' : '#94a3b8' }}>
-                        {venc && isPend ? '⚠ Vencida' : 'Vence'} {new Date(c.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      <span style={{ color: venc && isPend ? '#C23B3B' : '#7A7E87' }}>
+                        {venc && isPend ? 'Vencida' : 'Vence'} {new Date(c.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </span>
                     )}
                     {c.status === 'PAGADO' && c.fecha_pago && (
-                      <span style={{ color: '#15803d' }}>
+                      <span style={{ color: '#1F7A50' }}>
                         Pagado {new Date(c.fecha_pago + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
                         {c.forma_pago ? ` · ${c.forma_pago}` : ''}
                       </span>
@@ -145,17 +145,17 @@ export default function TabCobranzaSocio({ socioId, nombreSocio, onRefresh }: Pr
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: sc.bg, color: sc.color, whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: sc.color, color: '#fff', whiteSpace: 'nowrap' }}>
                     {sc.label}
                   </span>
                   <div style={{ textAlign: 'right', minWidth: 80 }}>
                     {c.status === 'PAGO_PARCIAL' && c.monto_final !== saldo && (
-                      <div style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through' }}>{fmt$(c.monto_final)}</div>
+                      <div style={{ fontSize: 10, color: '#7A7E87', textDecoration: 'line-through' }}>{fmt$(c.monto_final)}</div>
                     )}
                     {c.status === 'PENDIENTE' && c.descuento > 0 && (
-                      <div style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through' }}>{fmt$(c.monto_original)}</div>
+                      <div style={{ fontSize: 10, color: '#7A7E87', textDecoration: 'line-through' }}>{fmt$(c.monto_original)}</div>
                     )}
-                    <div style={{ fontSize: 14, fontWeight: 700, color: venc && isPend ? '#dc2626' : c.status === 'PAGADO' ? '#15803d' : c.status === 'PAGO_PARCIAL' ? '#ea580c' : '#1e293b' }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: venc && isPend ? '#C23B3B' : c.status === 'PAGADO' ? '#1F7A50' : c.status === 'PAGO_PARCIAL' ? '#C8642A' : '#26282D' }}>
                       {fmt$(isPend ? saldo : c.monto_final)}
                     </div>
                   </div>
@@ -174,24 +174,24 @@ export default function TabCobranzaSocio({ socioId, nombreSocio, onRefresh }: Pr
 
         {/* KPIs mini */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <div style={{ flex: '1 1 110px', padding: '10px 14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
-            <div style={{ fontSize: 10, color: '#92400e', fontWeight: 700, textTransform: 'uppercase', marginBottom: 3 }}>Por cobrar</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: montoPendiente > 0 ? '#d97706' : '#15803d' }}>{fmt$(montoPendiente)}</div>
-            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{pendientes.length} cuota{pendientes.length !== 1 ? 's' : ''}</div>
+          <div style={{ flex: '1 1 110px', padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
+            <div style={{ fontSize: 10, color: '#7A4B0C', fontWeight: 700, textTransform: 'uppercase', marginBottom: 3 }}>Por cobrar</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: montoPendiente > 0 ? '#B5761A' : '#1F7A50' }}>{fmt$(montoPendiente)}</div>
+            <div style={{ fontSize: 11, color: '#7A7E87', marginTop: 1 }}>{pendientes.length} cuota{pendientes.length !== 1 ? 's' : ''}</div>
           </div>
           {montoVencido > 0 && (
-            <div style={{ flex: '1 1 110px', padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8 }}>
-              <div style={{ fontSize: 10, color: '#dc2626', fontWeight: 700, textTransform: 'uppercase', marginBottom: 3 }}>Vencido</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: '#dc2626' }}>{fmt$(montoVencido)}</div>
-              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{pendientes.filter(c => vencida(c.fecha_vencimiento)).length} vencida{pendientes.filter(c => vencida(c.fecha_vencimiento)).length !== 1 ? 's' : ''}</div>
+            <div style={{ flex: '1 1 110px', padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
+              <div style={{ fontSize: 10, color: '#C23B3B', fontWeight: 700, textTransform: 'uppercase', marginBottom: 3 }}>Vencido</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#C23B3B' }}>{fmt$(montoVencido)}</div>
+              <div style={{ fontSize: 11, color: '#7A7E87', marginTop: 1 }}>{pendientes.filter(c => vencida(c.fecha_vencimiento)).length} vencida{pendientes.filter(c => vencida(c.fecha_vencimiento)).length !== 1 ? 's' : ''}</div>
             </div>
           )}
-          <div style={{ flex: '1 1 110px', padding: '10px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8 }}>
-            <div style={{ fontSize: 10, color: '#15803d', fontWeight: 700, textTransform: 'uppercase', marginBottom: 3 }}>Pagado total</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#15803d' }}>
+          <div style={{ flex: '1 1 110px', padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
+            <div style={{ fontSize: 10, color: '#1F7A50', fontWeight: 700, textTransform: 'uppercase', marginBottom: 3 }}>Pagado total</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#1F7A50' }}>
               {fmt$(pagadas.reduce((a, c) => a + c.monto_final, 0))}
             </div>
-            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{pagadas.length} cuota{pagadas.length !== 1 ? 's' : ''}</div>
+            <div style={{ fontSize: 11, color: '#7A7E87', marginTop: 1 }}>{pagadas.length} cuota{pagadas.length !== 1 ? 's' : ''}</div>
           </div>
         </div>
 
@@ -204,14 +204,14 @@ export default function TabCobranzaSocio({ socioId, nombreSocio, onRefresh }: Pr
               const active = filtro === f
               return (
                 <button key={f} onClick={() => setFiltro(f)}
-                  style={{ padding: '4px 12px', fontSize: 11, fontWeight: 600, borderRadius: 20, cursor: 'pointer', border: '1px solid', borderColor: active ? '#059669' : '#e2e8f0', background: active ? '#ecfdf5' : '#fff', color: active ? '#15803d' : '#64748b' }}>
+                  style={{ padding: '4px 12px', fontSize: 11, fontWeight: 600, borderRadius: 20, cursor: 'pointer', border: '1px solid', borderColor: active ? '#267F56' : '#E6E8EB', background: active ? '#1F7A50' : '#fff', color: active ? '#fff' : '#62666E' }}>
                   {f === 'TODOS' ? 'Todas' : f === 'PENDIENTE' ? 'Pendientes' : 'Pagadas'} ({counts})
                 </button>
               )
             })}
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={fetchCuotas} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', fontSize: 11, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#64748b', cursor: 'pointer' }}>
+            <button onClick={fetchCuotas} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', fontSize: 11, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#62666E', cursor: 'pointer' }}>
               <RefreshCw size={11} /> Actualizar
             </button>
           </div>
@@ -219,11 +219,11 @@ export default function TabCobranzaSocio({ socioId, nombreSocio, onRefresh }: Pr
 
         {/* Grids de cuotas por tipo */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '28px', color: '#94a3b8', fontSize: 13 }}>Cargando…</div>
+          <div style={{ textAlign: 'center', padding: '28px', color: '#7A7E87', fontSize: 13 }}>Cargando…</div>
         ) : cuotas.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '32px 20px', background: '#f8fafc', borderRadius: 10, border: '1px dashed #e2e8f0' }}>
-            <CreditCard size={28} style={{ color: '#cbd5e1', margin: '0 auto 8px', display: 'block' }} />
-            <div style={{ fontSize: 13, fontWeight: 500, color: '#475569', marginBottom: 4 }}>Sin cuotas registradas</div>
+          <div style={{ textAlign: 'center', padding: '32px 20px', background: '#F8F9FA', borderRadius: 10, border: '1px dashed #E6E8EB' }}>
+            <CreditCard size={28} style={{ color: '#C9CCD3', margin: '0 auto 8px', display: 'block' }} />
+            <div style={{ fontSize: 13, fontWeight: 500, color: '#4A4D54', marginBottom: 4 }}>Sin cuotas registradas</div>
           </div>
         ) : (
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>

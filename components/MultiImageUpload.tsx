@@ -52,10 +52,10 @@ export default function MultiImageUpload({ values, onChange, folder, label, max 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
           {values.map((url, i) => (
             <div key={i} style={{ position: 'relative', width: 80, height: 80 }}>
-              <img src={url} alt={`img-${i}`} style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 7, border: '1px solid #e2e8f0' }} />
+              <img src={url} alt={`img-${i}`} style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 7, border: '1px solid #E6E8EB' }} />
               <div style={{ position: 'absolute', top: 2, right: 2, display: 'flex', gap: 2 }}>
                 <a href={url} target="_blank" rel="noopener noreferrer"
-                  style={{ width: 18, height: 18, borderRadius: 4, background: 'rgba(37,99,235,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  style={{ width: 18, height: 18, borderRadius: 4, background: 'rgba(28,29,33,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <ExternalLink size={10} style={{ color: '#fff' }} />
                 </a>
                 <button onClick={() => handleRemove(url)}
@@ -72,12 +72,12 @@ export default function MultiImageUpload({ values, onChange, folder, label, max 
       {values.length < max && (
         <label style={{ cursor: uploading ? 'not-allowed' : 'pointer', display: 'block' }}>
           <input type="file" accept="image/*" multiple onChange={handleUpload} disabled={uploading} style={{ display: 'none' }} />
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 7, fontSize: 12, border: '1px dashed #94a3b8', background: '#fff', color: 'var(--blue)', fontFamily: 'var(--font-body)', fontWeight: 500 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 7, fontSize: 12, border: '1px dashed #7A7E87', background: '#fff', color: 'var(--blue)', fontFamily: 'var(--font-body)', fontWeight: 500 }}>
             {uploading ? <><Loader size={13} className="animate-spin" /> Subiendo…</> : <><Upload size={13} /> Agregar imágenes ({values.length}/{max})</>}
           </div>
         </label>
       )}
-      {error && <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4 }}>{error}</div>}
+      {error && <div style={{ fontSize: 11, color: '#C23B3B', marginTop: 4 }}>{error}</div>}
     </div>
   )
 }

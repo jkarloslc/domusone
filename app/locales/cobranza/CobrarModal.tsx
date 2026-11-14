@@ -169,7 +169,7 @@ export async function printReciboLoc(reciboId: number, folio: string, nombreArre
 
   const logoHtml = orgLogo
     ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-    : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+    : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
 
   const det   = (detData   ?? []) as { concepto: string; periodo: string | null; monto_final: number }[]
   const pagos = (pagosData ?? []) as { forma_nombre: string; monto: number; referencia: string | null }[]
@@ -190,26 +190,26 @@ export async function printReciboLoc(reciboId: number, folio: string, nombreArre
     <meta charset="utf-8"/><title>Recibo Locales ${folio}</title>
     <style>
       *{box-sizing:border-box;margin:0;padding:0}
-      body{font-family:Arial,sans-serif;font-size:12px;color:#1e293b;padding:32px}
-      .org-header{display:flex;align-items:center;gap:16px;padding-bottom:14px;border-bottom:2px solid #0f766e;margin-bottom:18px}
-      .org-nombre{font-size:18px;font-weight:700;color:#0f766e}
-      .org-sub{font-size:11px;color:#64748b}
-      .doc-title{font-size:14px;font-weight:600;color:#0f766e;margin-bottom:2px}
-      .section-title{font-size:10px;font-weight:700;color:#0f766e;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;border-bottom:1px solid #99f6e4;padding-bottom:4px;margin-top:16px}
+      body{font-family:Arial,sans-serif;font-size:12px;color:#26282D;padding:32px}
+      .org-header{display:flex;align-items:center;gap:16px;padding-bottom:14px;border-bottom:2px solid #126B63;margin-bottom:18px}
+      .org-nombre{font-size:18px;font-weight:700;color:#126B63}
+      .org-sub{font-size:11px;color:#62666E}
+      .doc-title{font-size:14px;font-weight:600;color:#126B63;margin-bottom:2px}
+      .section-title{font-size:10px;font-weight:700;color:#126B63;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;border-bottom:1px solid #E6E8EB;padding-bottom:4px;margin-top:16px}
       table{width:100%;border-collapse:collapse;margin-bottom:16px}
-      th{padding:7px 10px;background:#f0fdfa;color:#0f766e;font-size:10px;text-align:left;text-transform:uppercase;letter-spacing:.05em;border:1px solid #99f6e4}
-      td{padding:8px 10px;border-bottom:1px solid #99f6e4;font-size:12px}
+      th{padding:7px 10px;background:#F4F5F7;color:#126B63;font-size:10px;text-align:left;text-transform:uppercase;letter-spacing:.05em;border:1px solid #E6E8EB}
+      td{padding:8px 10px;border-bottom:1px solid #E6E8EB;font-size:12px}
       tr:last-child td{border-bottom:none}
       .right{text-align:right}
       .totales{margin-left:auto;width:220px}
       .totales-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px}
-      .totales-row.total{font-weight:700;font-size:16px;border-top:2px solid #0f766e;padding-top:8px;margin-top:4px;color:#0f766e}
-      .pago-box{background:#f0fdfa;border:1px solid #99f6e4;border-radius:8px;padding:12px 16px;margin-bottom:20px;display:flex;flex-direction:column;gap:8px}
+      .totales-row.total{font-weight:700;font-size:16px;border-top:2px solid #126B63;padding-top:8px;margin-top:4px;color:#126B63}
+      .pago-box{background:#F4F5F7;border:1px solid #E6E8EB;border-radius:8px;padding:12px 16px;margin-bottom:20px;display:flex;flex-direction:column;gap:8px}
       .pago-row{display:flex;justify-content:space-between;font-size:13px}
-      .pago-label{font-size:10px;color:#0f766e;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+      .pago-label{font-size:10px;color:#126B63;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
       .firma-area{display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-top:52px}
-      .firma-line{border-top:1px solid #1e293b;padding-top:4px;font-size:10px;color:#64748b;text-align:center}
-      .footer{margin-top:32px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:12px}
+      .firma-line{border-top:1px solid #26282D;padding-top:4px;font-size:10px;color:#62666E;text-align:center}
+      .footer{margin-top:32px;font-size:10px;color:#7A7E87;text-align:center;border-top:1px solid #E6E8EB;padding-top:12px}
       @page{margin:1.2cm}
     </style></head><body>
     <div class="org-header">
@@ -220,12 +220,12 @@ export async function printReciboLoc(reciboId: number, folio: string, nombreArre
       </div>
       <div style="margin-left:auto;text-align:right">
         <div class="doc-title">Recibo de Renta de Local / Propiedad</div>
-        <div style="font-size:11px;color:#64748b">Folio: <strong>${folio}</strong></div>
-        <div style="font-size:11px;color:#64748b">${fmtFechaLarga(recibo.fecha_recibo)}</div>
+        <div style="font-size:11px;color:#62666E">Folio: <strong>${folio}</strong></div>
+        <div style="font-size:11px;color:#62666E">${fmtFechaLarga(recibo.fecha_recibo)}</div>
       </div>
     </div>
     <div class="section-title">Datos del Arrendatario</div>
-    <div style="font-size:13px;font-weight:600;color:#1e293b;margin-bottom:14px">${nombreArrendatario}</div>
+    <div style="font-size:13px;font-weight:600;color:#26282D;margin-bottom:14px">${nombreArrendatario}</div>
     <div class="section-title">Cuotas cubiertas</div>
     <table>
       <thead><tr><th>Descripción</th><th>Período</th><th class="right">Importe</th></tr></thead>
@@ -236,9 +236,9 @@ export async function printReciboLoc(reciboId: number, folio: string, nombreArre
     </div>
     <div class="pago-box" style="margin-top:16px">
       <div class="pago-label">Forma${pagos.length > 1 ? 's' : ''} de pago</div>
-      ${pagos.map(p => `<div class="pago-row"><span><strong>${p.forma_nombre}</strong>${p.referencia ? ` · Ref: ${p.referencia}` : ''}</span><span style="font-weight:700;color:#0f766e">$${p.monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span></div>`).join('')}
+      ${pagos.map(p => `<div class="pago-row"><span><strong>${p.forma_nombre}</strong>${p.referencia ? ` · Ref: ${p.referencia}` : ''}</span><span style="font-weight:700;color:#126B63">$${p.monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span></div>`).join('')}
     </div>
-    ${recibo.observaciones ? `<div style="font-size:11px;color:#64748b;padding:8px 12px;background:#f8fafc;border-radius:6px;margin-bottom:16px"><strong>Notas:</strong> ${recibo.observaciones}</div>` : ''}
+    ${recibo.observaciones ? `<div style="font-size:11px;color:#62666E;padding:8px 12px;background:#F8F9FA;border-radius:6px;margin-bottom:16px"><strong>Notas:</strong> ${recibo.observaciones}</div>` : ''}
     <div class="firma-area">
       <div class="firma-line">Firma del Arrendatario</div>
       <div class="firma-line">Recibió / Administración</div>
@@ -581,34 +581,34 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
         footer={<div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}><button className="btn-ghost" onClick={() => { onSaved(); onClose() }}>Cerrar</button></div>}
       >
         <div style={{ textAlign: 'center', padding: '8px 0 16px' }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 4 }}>Cobro registrado</div>
-          <div style={{ fontFamily: 'monospace', fontSize: 20, fontWeight: 700, color: '#0f766e', letterSpacing: 1 }}>{exito.folio}</div>
-          <div style={{ fontSize: 13, color: '#64748b', marginTop: 6 }}>
+          <div style={{ fontSize: 40, color: '#1F7A50', lineHeight: 1, marginBottom: 8 }}>✓</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#26282D', marginBottom: 4 }}>Cobro registrado</div>
+          <div style={{ fontVariantNumeric: 'tabular-nums', fontSize: 20, fontWeight: 700, color: '#126B63', letterSpacing: 1 }}>{exito.folio}</div>
+          <div style={{ fontSize: 13, color: '#62666E', marginTop: 6 }}>
             {nombreArrendatario}
-            {nombrePropiedad && <span style={{ color: '#0f766e' }}> · {nombrePropiedad}</span>}
+            {nombrePropiedad && <span style={{ color: '#126B63' }}> · {nombrePropiedad}</span>}
             {' · '}{fmt$(montoCobrar)}
-            {esParcial && <span style={{ marginLeft: 6, color: '#d97706', fontWeight: 600 }}>PAGO PARCIAL</span>}
+            {esParcial && <span style={{ marginLeft: 6, color: '#B5761A', fontWeight: 600 }}>PAGO PARCIAL</span>}
           </div>
           {esParcial && (
-            <div style={{ marginTop: 8, padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e', textAlign: 'left' }}>
+            <div style={{ marginTop: 8, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 8, fontSize: 12, color: '#7A4B0C', textAlign: 'left' }}>
               Se cobró {fmt$(montoCobrar)} de {fmt$(totalCobro)} adeudado. Saldo pendiente: <strong>{fmt$(saldoRestante)}</strong>.
             </div>
           )}
           {idVentaPos && (
-            <div style={{ fontSize: 12, color: '#15803d', fontWeight: 600, marginTop: 6 }}>Ticket POS #{String(idVentaPos).padStart(6, '0')}</div>
+            <div style={{ fontSize: 12, color: '#1F7A50', fontWeight: 600, marginTop: 6 }}>Ticket POS #{String(idVentaPos).padStart(6, '0')}</div>
           )}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <button onClick={handleImprimir} disabled={imprimiendo}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, border: '1px solid #99f6e4', borderRadius: 10, background: '#f0fdfa', color: '#0f766e', cursor: 'pointer', opacity: imprimiendo ? 0.6 : 1 }}>
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, border: '1px solid #E6E8EB', borderRadius: 10, background: '#F4F5F7', color: '#126B63', cursor: 'pointer', opacity: imprimiendo ? 0.6 : 1 }}>
             <Printer size={16} /> {imprimiendo ? 'Imprimiendo…' : 'Imprimir Recibo'}
           </button>
           <button onClick={handleTicketPOS} disabled={genTicket}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, border: 'none', borderRadius: 10, background: '#0f766e', color: '#fff', cursor: 'pointer', opacity: genTicket ? 0.6 : 1 }}>
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, border: 'none', borderRadius: 10, background: '#126B63', color: '#fff', cursor: 'pointer', opacity: genTicket ? 0.6 : 1 }}>
             <Receipt size={16} /> {genTicket ? 'Generando…' : idVentaPos ? 'Reimprimir Ticket POS' : 'Generar Ticket POS'}
           </button>
-          {ticketErr && <div style={{ fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{ticketErr}</div>}
+          {ticketErr && <div style={{ fontSize: 12, color: '#C23B3B', background: '#F4F5F7', padding: '8px 12px', borderRadius: 6 }}>{ticketErr}</div>}
         </div>
       </ModalShell>
     )
@@ -621,19 +621,19 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%' }}>
           {seleccionados.size > 0 && (
             <div style={{ marginRight: 'auto' }}>
-              <div style={{ fontSize: 11, color: '#64748b' }}>{cuotasSel.length} cuota{cuotasSel.length !== 1 ? 's' : ''} · subtotal {fmt$(subtotalBruto)}</div>
-              {cargoAdicional > 0 && <div style={{ fontSize: 11, color: '#059669' }}>+ cargo adicional {fmt$(cargoAdicional)}</div>}
-              {descExtra > 0 && <div style={{ fontSize: 11, color: '#dc2626' }}>– descuento {fmt$(descExtra)}</div>}
-              <span style={{ fontSize: 15, fontWeight: 700, color: esParcial ? '#d97706' : '#16a34a' }}>
+              <div style={{ fontSize: 11, color: '#62666E' }}>{cuotasSel.length} cuota{cuotasSel.length !== 1 ? 's' : ''} · subtotal {fmt$(subtotalBruto)}</div>
+              {cargoAdicional > 0 && <div style={{ fontSize: 11, color: '#267F56' }}>+ cargo adicional {fmt$(cargoAdicional)}</div>}
+              {descExtra > 0 && <div style={{ fontSize: 11, color: '#C23B3B' }}>– descuento {fmt$(descExtra)}</div>}
+              <span style={{ fontSize: 15, fontWeight: 700, color: esParcial ? '#B5761A' : '#267F56' }}>
                 {fmt$(montoCobrar)}
-                {esParcial && <span style={{ fontSize: 11, color: '#64748b', marginLeft: 6, fontWeight: 400 }}>de {fmt$(totalCobro)}</span>}
+                {esParcial && <span style={{ fontSize: 11, color: '#62666E', marginLeft: 6, fontWeight: 400 }}>de {fmt$(totalCobro)}</span>}
               </span>
             </div>
           )}
           <button className="btn-ghost" onClick={onClose}>Cancelar</button>
           <button className="btn-primary" onClick={handleGuardar}
             disabled={saving || seleccionados.size === 0 || loading}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: esParcial ? '#d97706' : '#0f766e' }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: esParcial ? '#B5761A' : '#126B63' }}>
             {saving ? <Loader size={13} /> : <Save size={13} />}
             {saving ? 'Guardando…' : esParcial ? 'Emitir Recibo Parcial' : 'Emitir Recibo'}
           </button>
@@ -642,10 +642,10 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#0f766e', padding: '8px 12px', background: '#f0fdfa', borderRadius: 8, border: '1px solid #99f6e4' }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#126B63', padding: '8px 12px', background: '#F4F5F7', borderRadius: 8, border: '1px solid #E6E8EB', borderLeft: '3px solid #126B63' }}>
           {nombreArrendatario}
           {nombrePropiedad && (
-            <div style={{ fontSize: 11, fontWeight: 500, color: '#115e59', marginTop: 2 }}>
+            <div style={{ fontSize: 11, fontWeight: 500, color: '#0E4F4A', marginTop: 2 }}>
               Propiedad: {nombrePropiedad}
             </div>
           )}
@@ -657,19 +657,19 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Cuotas pendientes — selecciona las que se liquidan</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               {cuotasAnteriores.length > 0 && (
-                <button onClick={toggleAnteriores} style={{ fontSize: 11, fontWeight: 600, color: todasAnterioresSel ? '#64748b' : '#d97706', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>
+                <button onClick={toggleAnteriores} style={{ fontSize: 11, fontWeight: 600, color: todasAnterioresSel ? '#62666E' : '#B5761A', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>
                   {todasAnterioresSel ? 'Excluir meses anteriores' : `Incluir meses anteriores (+${cuotasAnteriores.length} · ${fmt$(montoAnteriores)})`}
                 </button>
               )}
               {cuotas.length > 1 && (
-                <button onClick={toggleTodas} style={{ fontSize: 11, fontWeight: 600, color: '#0f766e', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>
+                <button onClick={toggleTodas} style={{ fontSize: 11, fontWeight: 600, color: '#126B63', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>
                   {seleccionados.size === cuotas.length ? 'Deseleccionar todas' : 'Seleccionar todas'}
                 </button>
               )}
             </div>
           </div>
           {cuotas.length === 0 ? (
-            <div style={{ fontSize: 12, color: '#16a34a', padding: '12px 0' }}>Sin cuotas pendientes</div>
+            <div style={{ fontSize: 12, color: '#267F56', padding: '12px 0' }}>Sin cuotas pendientes</div>
           ) : (
             <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
               {cuotas.map((c, i) => {
@@ -679,17 +679,17 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
                 return (
                   <div key={c.id} onClick={() => toggle(c.id)}
                     style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer',
-                      background: checked ? 'rgba(15,118,110,0.07)' : (i % 2 === 0 ? 'transparent' : 'var(--surface-800)'),
+                      background: checked ? '#E6E8EB' : 'transparent',
                       borderBottom: i < cuotas.length - 1 ? '1px solid var(--border)' : 'none' }}>
                     <input type="checkbox" checked={checked} onChange={() => toggle(c.id)}
-                      onClick={e => e.stopPropagation()} style={{ accentColor: '#0f766e', flexShrink: 0 }} />
+                      onClick={e => e.stopPropagation()} style={{ accentColor: '#126B63', flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: checked ? 600 : 400 }}>{c.concepto}</div>
                       {c.periodo && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtMes(c.periodo)}</div>}
                     </div>
-                    {esMesActual && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: '#dbeafe', color: '#1d4ed8', fontWeight: 600, whiteSpace: 'nowrap' }}>Mes actual</span>}
-                    {vencido && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: '#fee2e2', color: '#dc2626', fontWeight: 600 }}>Vencida</span>}
-                    <div style={{ fontWeight: 700, color: checked ? '#0f766e' : 'var(--text-primary)', fontSize: 13 }}>{fmt$(c.saldo)}</div>
+                    {esMesActual && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: '#E6E8EB', color: '#26282D', fontWeight: 600, whiteSpace: 'nowrap' }}>Mes actual</span>}
+                    {vencido && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: '#C23B3B', color: '#fff', fontWeight: 600 }}>Vencida</span>}
+                    <div style={{ fontWeight: 700, color: checked ? '#126B63' : 'var(--text-primary)', fontSize: 13 }}>{fmt$(c.saldo)}</div>
                   </div>
                 )
               })}
@@ -705,7 +705,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
               value={cargoAdicionalStr} onChange={e => setCargoAdicionalStr(e.target.value)}
               placeholder="0.00" style={{ width: '100%' }} />
             {cargoAdicional > 0 && (
-              <div style={{ fontSize: 11, color: '#059669', marginTop: 3 }}>+ {fmt$(cargoAdicional)} sobre el total</div>
+              <div style={{ fontSize: 11, color: '#267F56', marginTop: 3 }}>+ {fmt$(cargoAdicional)} sobre el total</div>
             )}
           </div>
           <div>
@@ -714,23 +714,23 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
               value={descuentoExtra} onChange={e => setDescuentoExtra(e.target.value)}
               placeholder="0.00" style={{ width: '100%' }} />
             {descExtra > 0 && (
-              <div style={{ fontSize: 11, color: '#dc2626', marginTop: 3 }}>– {fmt$(descExtra)} sobre el total</div>
+              <div style={{ fontSize: 11, color: '#C23B3B', marginTop: 3 }}>– {fmt$(descExtra)} sobre el total</div>
             )}
           </div>
         </div>
 
         {/* Cobro parcial */}
         {seleccionados.size > 0 && (
-          <div style={{ border: `1px solid ${parcialHabilitado ? '#fde68a' : 'var(--border)'}`, borderRadius: 10, overflow: 'hidden', transition: 'border-color 0.2s' }}>
+          <div style={{ border: `1px solid ${parcialHabilitado ? '#E6E8EB' : 'var(--border)'}`, borderRadius: 10, overflow: 'hidden', transition: 'border-color 0.2s' }}>
             <div
               onClick={toggleParcial}
-              style={{ padding: '10px 14px', background: parcialHabilitado ? '#fffbeb' : 'var(--surface-800)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', borderBottom: parcialHabilitado ? '1px solid #fde68a' : 'none' }}>
+              style={{ padding: '10px 14px', background: parcialHabilitado ? '#F4F5F7' : 'var(--surface-800)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', borderBottom: parcialHabilitado ? '1px solid #E6E8EB' : 'none' }}>
               <div>
-                <span style={{ fontSize: 12, fontWeight: 700, color: parcialHabilitado ? '#92400e' : 'var(--text-secondary)' }}>Cobro parcial</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: parcialHabilitado ? '#7A4B0C' : 'var(--text-secondary)' }}>Cobro parcial</span>
                 {!parcialHabilitado && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>Cobrar menos del total adeudado</span>}
               </div>
               {/* Toggle switch */}
-              <div style={{ width: 40, height: 22, borderRadius: 11, background: parcialHabilitado ? '#d97706' : '#cbd5e1', position: 'relative', flexShrink: 0, transition: 'background 0.2s' }}>
+              <div style={{ width: 40, height: 22, borderRadius: 11, background: parcialHabilitado ? '#B5761A' : '#C9CCD3', position: 'relative', flexShrink: 0, transition: 'background 0.2s' }}>
                 <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: parcialHabilitado ? 20 : 2, transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
               </div>
             </div>
@@ -739,27 +739,27 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
               <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: 11, color: '#92400e', marginBottom: 4, display: 'block', fontWeight: 600 }}>Monto a cobrar ahora</label>
+                    <label style={{ fontSize: 11, color: '#7A4B0C', marginBottom: 4, display: 'block', fontWeight: 600 }}>Monto a cobrar ahora</label>
                     <input
                       // eslint-disable-next-line jsx-a11y/no-autofocus
                       autoFocus
                       className="input" type="number" min={0.01} step={0.01} max={totalCobro}
                       value={montoParcialStr} onChange={e => setMontoParcialStr(e.target.value)}
                       placeholder={`Máx. ${fmt$(totalCobro)}`}
-                      style={{ width: '100%', fontWeight: 700, border: '1px solid #fbbf24' }} />
+                      style={{ width: '100%', fontWeight: 700, border: '1px solid #C9CCD3' }} />
                   </div>
                   <button
                     onClick={() => setMontoParcialStr(totalCobro.toFixed(2))}
-                    style={{ padding: '8px 10px', fontSize: 11, border: '1px solid var(--border)', borderRadius: 8, background: '#fff', color: '#64748b', cursor: 'pointer', flexShrink: 0, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                    style={{ padding: '8px 10px', fontSize: 11, border: '1px solid var(--border)', borderRadius: 8, background: '#fff', color: '#62666E', cursor: 'pointer', flexShrink: 0, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
                     Total
                   </button>
                 </div>
                 {esParcial ? (
-                  <div style={{ padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
-                    ⚠ Saldo pendiente: <strong>{fmt$(saldoRestante)}</strong> · Las cuotas quedarán en PAGO PARCIAL
+                  <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 8, fontSize: 12, color: '#7A4B0C' }}>
+                    Saldo pendiente: <strong>{fmt$(saldoRestante)}</strong> · Las cuotas quedarán en PAGO PARCIAL
                   </div>
                 ) : montoParcialStr ? (
-                  <div style={{ fontSize: 11, color: '#15803d' }}>✓ Cubre el total adeudado</div>
+                  <div style={{ fontSize: 11, color: '#1F7A50' }}>✓ Cubre el total adeudado</div>
                 ) : null}
               </div>
             )}
@@ -771,7 +771,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
           <div style={{ padding: '8px 12px', background: 'var(--surface-800)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>Formas de pago *</span>
             <button onClick={agregarLinea}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#0f766e', background: 'none', border: 'none', cursor: 'pointer' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#126B63', background: 'none', border: 'none', cursor: 'pointer' }}>
               <Plus size={12} /> Agregar
             </button>
           </div>
@@ -794,15 +794,15 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
                 <input className="input" value={p.referencia} placeholder="Referencia…"
                   onChange={e => setPagoLinea(i, { referencia: e.target.value })} />
                 <button onClick={() => quitarLinea(i)}
-                  style={{ padding: 4, background: 'none', border: 'none', cursor: pagos.length > 1 ? 'pointer' : 'default', color: pagos.length > 1 ? '#dc2626' : 'var(--border)' }}>
+                  style={{ padding: 4, background: 'none', border: 'none', cursor: pagos.length > 1 ? 'pointer' : 'default', color: pagos.length > 1 ? '#C23B3B' : 'var(--border)' }}>
                   <Trash2 size={13} />
                 </button>
               </div>
             ))}
           </div>
-          <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border)', background: Math.abs(balance) < 0.01 ? '#f0fdf4' : '#fef2f2', display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-            <span style={{ color: '#64748b' }}>{Math.abs(balance) < 0.01 ? '✓ Suma cuadrada' : balance > 0 ? 'Falta distribuir' : 'Exceso'}</span>
-            <span style={{ fontWeight: 700, color: Math.abs(balance) < 0.01 ? '#15803d' : '#dc2626' }}>
+          <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border)', background: '#F4F5F7', display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+            <span style={{ color: '#62666E' }}>{Math.abs(balance) < 0.01 ? '✓ Suma cuadrada' : balance > 0 ? 'Falta distribuir' : 'Exceso'}</span>
+            <span style={{ fontWeight: 700, color: Math.abs(balance) < 0.01 ? '#1F7A50' : '#C23B3B' }}>
               {Math.abs(balance) < 0.01 ? fmt$(montoCobrar) : fmt$(Math.abs(balance))}
             </span>
           </div>
@@ -822,17 +822,17 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: facturable ? '#f0fdfa' : 'var(--surface-800)', border: `1px solid ${facturable ? '#99f6e4' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer' }}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: facturable ? '#F4F5F7' : 'var(--surface-800)', border: `1px solid ${facturable ? '#E6E8EB' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer' }}
           onClick={() => setFacturable(f => !f)}>
           <input type="checkbox" checked={facturable} onChange={() => setFacturable(f => !f)}
-            onClick={e => e.stopPropagation()} style={{ accentColor: '#0f766e', flexShrink: 0 }} />
+            onClick={e => e.stopPropagation()} style={{ accentColor: '#126B63', flexShrink: 0 }} />
           <div>
-            <div style={{ fontSize: 13, fontWeight: 500, color: facturable ? '#0f766e' : 'var(--text-secondary)' }}>Solicita factura</div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: facturable ? '#126B63' : 'var(--text-secondary)' }}>Solicita factura</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Marca este cobro como facturable para emisión posterior</div>
           </div>
         </div>
 
-        {err && <div style={{ fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{err}</div>}
+        {err && <div style={{ fontSize: 12, color: '#C23B3B', background: '#F4F5F7', padding: '8px 12px', borderRadius: 6 }}>{err}</div>}
       </div>
     </ModalShell>
   )

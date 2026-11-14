@@ -39,8 +39,8 @@ type SocioRow = {
 }
 
 const FORMA_META: Record<Forma, { label: string; color: string; bg: string }> = {
-  ANUAL:   { label: 'Anual (12 meses)', color: '#2563eb', bg: '#dbeafe' },
-  MENSUAL: { label: 'Mensual',            color: '#16a34a', bg: '#dcfce7' },
+  ANUAL:   { label: 'Anual (12 meses)', color: '#1C1D21', bg: '#E6E8EB' },
+  MENSUAL: { label: 'Mensual',            color: '#267F56', bg: '#E6E8EB' },
 }
 
 const MESES_CORTO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
@@ -222,7 +222,7 @@ export default function ReporteGolfFormaPagoMembresia() {
       </div>
 
       {error && (
-        <div className="card" style={{ padding: '14px 18px', marginBottom: 16, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: 13 }}>
+        <div className="card" style={{ padding: '14px 18px', marginBottom: 16, background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', color: '#C23B3B', fontSize: 13 }}>
           {error}
         </div>
       )}
@@ -238,13 +238,13 @@ export default function ReporteGolfFormaPagoMembresia() {
         <div id="reporte-print-area">
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
             {[
-              { label: 'Socios con pagos en el año', value: String(rows.length), color: '#334155', bg: '#f8fafc', sub: fmt$(sumMonto(rows)) },
-              { label: 'Pago anual (12 meses en un recibo)',    value: String(anuales.length),   color: '#2563eb', bg: '#eff6ff', sub: `${fmt$(sumMonto(anuales))} · ${rows.length ? ((anuales.length / rows.length) * 100).toFixed(1) : '0'}% de socios` },
-              { label: 'Pago mensual',               value: String(mensuales.length), color: '#16a34a', bg: '#f0fdf4', sub: `${fmt$(sumMonto(mensuales))} · ${rows.length ? ((mensuales.length / rows.length) * 100).toFixed(1) : '0'}% de socios` },
+              { label: 'Socios con pagos en el año', value: String(rows.length), color: '#33363C', bg: '#F8F9FA', sub: fmt$(sumMonto(rows)) },
+              { label: 'Pago anual (12 meses en un recibo)',    value: String(anuales.length),   color: '#1C1D21', bg: '#F4F5F7', sub: `${fmt$(sumMonto(anuales))} · ${rows.length ? ((anuales.length / rows.length) * 100).toFixed(1) : '0'}% de socios` },
+              { label: 'Pago mensual',               value: String(mensuales.length), color: '#267F56', bg: '#F4F5F7', sub: `${fmt$(sumMonto(mensuales))} · ${rows.length ? ((mensuales.length / rows.length) * 100).toFixed(1) : '0'}% de socios` },
             ].map(k => (
-              <div key={k.label} className="card" style={{ flex: '1 1 200px', padding: '12px 16px', background: k.bg }}>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>{k.label}</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: k.color }}>{k.value}</div>
+              <div key={k.label} className="card" style={{ flex: '1 1 200px', padding: '12px 16px', background: '#fff' }}>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{k.value}</div>
                 <div style={{ fontSize: 10, color: k.color, marginTop: 1 }}>{k.sub}</div>
               </div>
             ))}
@@ -275,11 +275,11 @@ export default function ReporteGolfFormaPagoMembresia() {
                       const fm = FORMA_META[r.forma]
                       return (
                         <tr key={r.idSocio} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
-                          <td style={{ padding: '8px', fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)', fontWeight: 600 }}>{r.numero || '—'}</td>
+                          <td style={{ padding: '8px', fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--blue)', fontWeight: 600 }}>{r.numero || '—'}</td>
                           <td style={{ padding: '8px', color: 'var(--text-primary)' }}>{r.nombre}</td>
                           <td style={{ padding: '8px', color: 'var(--text-muted)', fontSize: 11 }}>{r.categoria}</td>
                           <td style={{ padding: '8px', whiteSpace: 'nowrap' }}>
-                            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: fm.bg, color: fm.color, fontWeight: 700 }}>{fm.label}</span>
+                            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: fm.color, color: '#fff', fontWeight: 700 }}>{fm.label}</span>
                             {r.fechaAnual && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>pagó {fmtFecha(r.fechaAnual)}</div>}
                           </td>
                           {MESES_CORTO.map((_, mi) => (
@@ -288,7 +288,7 @@ export default function ReporteGolfFormaPagoMembresia() {
                             </td>
                           ))}
                           <td style={{ padding: '8px', textAlign: 'center', fontWeight: 600 }}>{r.meses.size}/12</td>
-                          <td style={{ padding: '8px', fontFamily: 'monospace', fontSize: 10, color: 'var(--text-muted)' }}>
+                          <td style={{ padding: '8px', fontVariantNumeric: 'tabular-nums', fontSize: 10, color: 'var(--text-muted)' }}>
                             {textoRecibos(r)}
                           </td>
                           <td style={{ padding: '8px', textAlign: 'right', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmt$(r.monto)}</td>

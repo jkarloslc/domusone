@@ -25,10 +25,10 @@ type RolTipoOp = { id_tipo_gasto_fk: number; modo: string; solo_propios: boolean
 
 const URGENCIAS = ['Crítica', 'Alta', 'Media', 'Baja'] as const
 const URGENCIA_BADGE: Record<string, { color: string; bg: string; border: string }> = {
-  'Crítica': { color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
-  'Alta':    { color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-  'Media':   { color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
-  'Baja':    { color: '#64748b', bg: '#f8fafc', border: '#e2e8f0' },
+  'Crítica': { color: '#C23B3B', bg: '#F4F5F7', border: '#E6E8EB' },
+  'Alta':    { color: '#B5761A', bg: '#F4F5F7', border: '#E6E8EB' },
+  'Media':   { color: '#1C1D21', bg: '#F4F5F7', border: '#C9CCD3' },
+  'Baja':    { color: '#62666E', bg: '#F8F9FA', border: '#E6E8EB' },
 }
 
 export default function OrdenesPagoPage() {
@@ -265,7 +265,7 @@ export default function OrdenesPagoPage() {
           <select className="select" style={{ width: 180 }} value={filterTipoGasto}
             onChange={e => { setFilterTipoGasto(e.target.value); setPage(0) }}>
             <option value="">Todos los tipos</option>
-            <option value="__SIN_TIPO__">⚠ Sin tipo de gasto</option>
+            <option value="__SIN_TIPO__">Sin tipo de gasto</option>
             {catTG.activos
               .filter(t => !tiposExcluidos || !tiposExcluidos.includes(t.id))
               .map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
@@ -318,7 +318,7 @@ export default function OrdenesPagoPage() {
               </td></tr>
             ) : rows.map(r => (
               <tr key={r.id} style={{ opacity: (r.status === 'Cancelada' || r.status === 'Sustituida') ? 0.45 : 1 }}>
-                <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>
+                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>
                   {r.folio}
                   <div style={{ fontFamily: 'inherit', fontSize: 11, fontWeight: 400, color: 'var(--text-muted)', marginTop: 2 }}>
                     {fmtFecha(r.fecha_op ?? r.created_at)}
@@ -334,8 +334,8 @@ export default function OrdenesPagoPage() {
                   )}
                 </td>
                 <td style={{ fontSize: 12 }}>
-                  {r.id_tipo_gasto_fk ? <span style={{ fontSize: 10, color: 'var(--text-muted)', background: '#f1f5f9', padding: '1px 6px', borderRadius: 10 }}>{catTG.nombre(r.id_tipo_gasto_fk)}</span> : <span title="Esta OP no tiene Tipo de Gasto (null). Revisar caso por caso." style={{ fontSize: 10, fontWeight: 600, color: '#b45309', background: '#fffbeb', border: '1px solid #fde68a', padding: '1px 6px', borderRadius: 10, whiteSpace: 'nowrap' }}>⚠ Sin tipo de gasto · revisar</span>}
-                  {!r.id_area_fk && !r.id_oc_fk && <span style={{ fontSize: 9, marginLeft: 6, color: '#7c3aed', background: '#f5f3ff', padding: '1px 5px', borderRadius: 10, fontWeight: 600 }}>distribuido</span>}
+                  {r.id_tipo_gasto_fk ? <span style={{ fontSize: 10, color: 'var(--text-muted)', background: '#F4F5F7', padding: '1px 6px', borderRadius: 10 }}>{catTG.nombre(r.id_tipo_gasto_fk)}</span> : <span title="Esta OP no tiene Tipo de Gasto (null). Revisar caso por caso." style={{ fontSize: 10, fontWeight: 600, color: '#fff', background: '#B5761A', border: '1px solid #B5761A', padding: '1px 6px', borderRadius: 10, whiteSpace: 'nowrap' }}>Sin tipo de gasto · revisar</span>}
+                  {!r.id_area_fk && !r.id_oc_fk && <span style={{ fontSize: 9, marginLeft: 6, color: '#fff', background: '#6B4E79', padding: '1px 5px', borderRadius: 10, fontWeight: 600 }}>distribuido</span>}
                 </td>
                 <td style={{ whiteSpace: 'nowrap' }}>
                   {r.urgencia ? (
@@ -358,10 +358,10 @@ export default function OrdenesPagoPage() {
                 <td>
                   <div style={{ display: 'flex', gap: 3 }}>
                     {r.pdf_factura && (
-                      <span title="PDF Factura" style={{ fontSize: 9, padding: '1px 5px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 4, fontWeight: 600 }}>PDF</span>
+                      <span title="PDF Factura" style={{ fontSize: 9, padding: '1px 5px', background: '#C23B3B', color: '#fff', border: '1px solid #C23B3B', borderRadius: 4, fontWeight: 600 }}>PDF</span>
                     )}
                     {r.xml_factura && (
-                      <span title="XML Factura" style={{ fontSize: 9, padding: '1px 5px', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: 4, fontWeight: 600 }}>XML</span>
+                      <span title="XML Factura" style={{ fontSize: 9, padding: '1px 5px', background: '#1F7A50', color: '#fff', border: '1px solid #1F7A50', borderRadius: 4, fontWeight: 600 }}>XML</span>
                     )}
                   </div>
                 </td>
@@ -383,14 +383,14 @@ export default function OrdenesPagoPage() {
             const sumaPagadoPage = rows.reduce((a, r) => a + (r.monto_pagado ?? 0), 0)
             return (
               <tfoot>
-                <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
+                <tr style={{ background: '#F8F9FA', borderTop: '2px solid #E6E8EB' }}>
                   <td colSpan={5} style={{ padding: '10px 14px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                     Subtotal página ({rows.length} reg.)
                   </td>
                   <td style={{ textAlign: 'right', padding: '10px 14px', fontWeight: 800, fontVariantNumeric: 'tabular-nums', fontSize: 14, color: 'var(--text-primary)' }}>
                     {fmt(sumaMontoPage)}
                     {sumaSaldoPage > 0 && sumaSaldoPage !== sumaMontoPage && (
-                      <div style={{ fontSize: 10, fontWeight: 500, color: '#d97706', marginTop: 1 }}>
+                      <div style={{ fontSize: 10, fontWeight: 500, color: '#B5761A', marginTop: 1 }}>
                         Saldo: {fmt(sumaSaldoPage)}
                       </div>
                     )}
@@ -855,10 +855,10 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <a href={form[campo]} target="_blank" rel="noopener noreferrer"
             style={{ fontSize: 12, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4,
-              padding: '5px 10px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, textDecoration: 'none', flex: 1, justifyContent: 'center' }}>
+              padding: '5px 10px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 6, textDecoration: 'none', flex: 1, justifyContent: 'center' }}>
             <ExternalLink size={11} /> Ver archivo
           </a>
-          <button className="btn-ghost" style={{ padding: '5px 8px', color: '#dc2626' }}
+          <button className="btn-ghost" style={{ padding: '5px 8px', color: '#C23B3B' }}
             onClick={() => setForm(f => ({ ...f, [campo]: '' }))}>
             <Trash2 size={12} />
           </button>
@@ -1144,18 +1144,18 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
         <div style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>¿Esta orden de pago está relacionada con una compra?</p>
           <button onClick={() => setConOC(true)}
-            style={{ padding: '16px', border: '1px solid #bfdbfe', borderRadius: 10, background: '#eff6ff', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
+            style={{ padding: '16px', border: '1px solid #C9CCD3', borderRadius: 10, background: '#F4F5F7', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
             onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--blue)')}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = '#bfdbfe')}>
+            onMouseLeave={e => (e.currentTarget.style.borderColor = '#C9CCD3')}>
             <div style={{ fontWeight: 600, color: 'var(--blue)', marginBottom: 4 }}>✓ Con Orden de Compra</div>
-            <div style={{ fontSize: 12, color: '#64748b' }}>Vincula una o varias OC autorizadas. El monto se calcula automáticamente.</div>
+            <div style={{ fontSize: 12, color: '#62666E' }}>Vincula una o varias OC autorizadas. El monto se calcula automáticamente.</div>
           </button>
           <button onClick={() => setConOC(false)}
-            style={{ padding: '16px', border: '1px solid #e2e8f0', borderRadius: 10, background: '#f8fafc', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = '#94a3b8')}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = '#e2e8f0')}>
-            <div style={{ fontWeight: 600, color: '#475569', marginBottom: 4 }}>◇ Sin Orden de Compra</div>
-            <div style={{ fontSize: 12, color: '#64748b' }}>Servicios, honorarios, arrendamiento u otros gastos que no afectan inventario.</div>
+            style={{ padding: '16px', border: '1px solid #E6E8EB', borderRadius: 10, background: '#F8F9FA', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = '#7A7E87')}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = '#E6E8EB')}>
+            <div style={{ fontWeight: 600, color: '#4A4D54', marginBottom: 4 }}>◇ Sin Orden de Compra</div>
+            <div style={{ fontSize: 12, color: '#62666E' }}>Servicios, honorarios, arrendamiento u otros gastos que no afectan inventario.</div>
           </button>
         </div>
       </ModalShell>
@@ -1173,7 +1173,7 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
 
   return (
     <ModalShell modulo="compras" titulo={isEdit ? 'Editar Orden de Pago' : duplicar ? 'Duplicar Orden de Pago' : 'Nueva Orden de Pago'}
-      subtitulo={duplicar ? `Copia de ${opEdit?.folio ?? 'OP'} — revisa monto, fechas y factura` : !isEdit ? (conOC ? '📦 Con OC vinculada' : '◇ Sin OC — Servicio / Gasto directo') : undefined}
+      subtitulo={duplicar ? `Copia de ${opEdit?.folio ?? 'OP'} — revisa monto, fechas y factura` : !isEdit ? (conOC ? 'Con OC vinculada' : '◇ Sin OC — Servicio / Gasto directo') : undefined}
       onClose={onClose} maxWidth={640}
       footer={<>
         <button className="btn-secondary" onClick={onClose}>Cancelar</button>
@@ -1184,7 +1184,7 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
       </>}
     >
         <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(90vh - 130px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+          {error && <div style={{ padding: '10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
 
           {/* OCs vinculadas */}
           {conOC && (
@@ -1199,15 +1199,15 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
                 </select>
               </div>
               {ocsSelected.length === 0 && (
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '10px', background: '#f8fafc', borderRadius: 7 }}>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '10px', background: '#F8F9FA', borderRadius: 7 }}>
                   Sin OCs seleccionadas. Elige una o más OC autorizadas.
                 </div>
               )}
               {ocsSelected.map(o => (
-                <div key={o.id} style={{ display: 'grid', gridTemplateColumns: '1fr 140px 28px', gap: 8, alignItems: 'center', padding: '8px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, marginBottom: 4 }}>
+                <div key={o.id} style={{ display: 'grid', gridTemplateColumns: '1fr 140px 28px', gap: 8, alignItems: 'center', padding: '8px 10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8, marginBottom: 4 }}>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#15803d' }}>{o.folio}</div>
-                    <div style={{ fontSize: 11, color: '#64748b' }}>OC Total: {fmt(o.total)}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#1F7A50' }}>{o.folio}</div>
+                    <div style={{ fontSize: 11, color: '#62666E' }}>OC Total: {fmt(o.total)}</div>
                   </div>
                   <div>
                     <label className="label">Monto a pagar</label>
@@ -1218,10 +1218,10 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
                 </div>
               ))}
               {ocCCPreview && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, padding: '8px 12px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8, marginTop: 4 }}>
-                  <div><div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '.05em', color: '#94a3b8', marginBottom: 2 }}>Centro de Costo</div><div style={{ fontSize: 12 }}>{ocCCPreview.cc}</div></div>
-                  <div><div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '.05em', color: '#94a3b8', marginBottom: 2 }}>Sección</div><div style={{ fontSize: 12 }}>{ocCCPreview.sec}</div></div>
-                  <div><div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '.05em', color: '#94a3b8', marginBottom: 2 }}>Frente</div><div style={{ fontSize: 12 }}>{ocCCPreview.frente}</div></div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8, marginTop: 4 }}>
+                  <div><div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '.05em', color: '#7A7E87', marginBottom: 2 }}>Centro de Costo</div><div style={{ fontSize: 12 }}>{ocCCPreview.cc}</div></div>
+                  <div><div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '.05em', color: '#7A7E87', marginBottom: 2 }}>Sección</div><div style={{ fontSize: 12 }}>{ocCCPreview.sec}</div></div>
+                  <div><div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '.05em', color: '#7A7E87', marginBottom: 2 }}>Frente</div><div style={{ fontSize: 12 }}>{ocCCPreview.frente}</div></div>
                 </div>
               )}
             </Sec>
@@ -1253,13 +1253,13 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
             {servicioAplica && (() => {
               const esGasLP = claveTG === 'gas_lp'
               const colores = esGasLP
-                ? { bg: '#fff7ed', border: '#fed7aa', text: '#9a3412', textAlt: '#c2410c' }
-                : { bg: '#fffbeb', border: '#fde68a', text: '#92400e', textAlt: '#b45309' }
+                ? { bg: '#F4F5F7', border: '#E6E8EB', text: '#8A4119', textAlt: '#A8501F' }
+                : { bg: '#F4F5F7', border: '#E6E8EB', text: '#7A4B0C', textAlt: '#96600F' }
               return (
                 <div style={{ padding: '10px 12px', background: colores.bg, border: `1px solid ${colores.border}`,
                   borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: colores.text, display: 'flex', alignItems: 'center', gap: 5 }}>
-                    {esGasLP ? '🔥 Servicio de suministro de Gas LP asociado' : '⚡ Servicio de suministro asociado'} {servicioObligatorio && '*'}
+                    {esGasLP ? 'Servicio de suministro de Gas LP asociado' : 'Servicio de suministro asociado'} {servicioObligatorio && '*'}
                   </div>
                   <select className="select" value={form.id_servicio_fk} onChange={setF('id_servicio_fk')}>
                     <option value="">— Seleccionar servicio —</option>
@@ -1297,9 +1297,9 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
                     <button key={m} type="button" onClick={() => cambiarModoDist(m)}
                       style={{
                         flex: 1, padding: '8px 6px', borderRadius: 8, fontSize: 11.5, fontWeight: 600, cursor: 'pointer',
-                        border: modoDist === m ? '1px solid var(--blue)' : '1px solid #e2e8f0',
-                        background: modoDist === m ? '#eff6ff' : '#fff',
-                        color: modoDist === m ? 'var(--blue)' : '#64748b',
+                        border: modoDist === m ? '1px solid var(--blue)' : '1px solid #E6E8EB',
+                        background: modoDist === m ? '#F4F5F7' : '#fff',
+                        color: modoDist === m ? 'var(--blue)' : '#62666E',
                       }}>
                       {label}
                     </button>
@@ -1380,11 +1380,11 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
                   </button>
                 </div>
                 {detLines.length > 0 && (
-                  <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                  <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
                     <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                       <thead>
-                        <tr style={{ background: '#f8fafc' }}>
+                        <tr style={{ background: '#F8F9FA' }}>
                           <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.04em' }}>Descripción</th>
                           {lineasConZona && <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.04em' }}>Zona</th>}
                           <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.04em' }}>Área</th>
@@ -1395,7 +1395,7 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
                       </thead>
                       <tbody>
                         {detLines.map((line, idx) => (
-                          <tr key={line.tempId} style={{ borderTop: idx > 0 ? '1px solid #f1f5f9' : undefined }}>
+                          <tr key={line.tempId} style={{ borderTop: idx > 0 ? '1px solid #F4F5F7' : undefined }}>
                             <td style={{ padding: '4px 6px' }}>
                               <input className="input" style={{ padding: '4px 6px', fontSize: 12 }}
                                 placeholder="Descripción" value={line.descripcion}
@@ -1451,14 +1451,14 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
                                 onChange={e => updateDetLine(line.tempId, 'monto', e.target.value)} />
                             </td>
                             <td style={{ padding: '4px 6px' }}>
-                              <button type="button" className="btn-ghost" style={{ padding: '3px', color: '#dc2626' }}
+                              <button type="button" className="btn-ghost" style={{ padding: '3px', color: '#C23B3B' }}
                                 onClick={() => removeDetLine(line.tempId)}><Trash2 size={11} /></button>
                             </td>
                           </tr>
                         ))}
                       </tbody>
                       <tfoot>
-                        <tr style={{ borderTop: '2px solid #e2e8f0', background: '#f8fafc' }}>
+                        <tr style={{ borderTop: '2px solid #E6E8EB', background: '#F8F9FA' }}>
                           <td colSpan={lineasConZona ? 4 : 3} style={{ padding: '6px 8px', fontSize: 11, color: 'var(--text-muted)' }}>Total distribución</td>
                           <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--blue)' }}>{fmt(detTotal)}</td>
                           <td></td>
@@ -1469,12 +1469,12 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
                   </div>
                 )}
                 {detLines.length === 0 && (
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 10px', background: '#f8fafc', borderRadius: 6, border: '1px dashed #e2e8f0' }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 10px', background: '#F8F9FA', borderRadius: 6, border: '1px dashed #E6E8EB' }}>
                     Agrega al menos una línea para completar la distribución.
                   </div>
                 )}
                 {esPagosPersonal && (
-                  <div style={{ fontSize: 11, color: '#b45309', marginTop: 6 }}>
+                  <div style={{ fontSize: 11, color: '#96600F', marginTop: 6 }}>
                     Pagos a Personal Externo: esta distribución es informativa (de qué CC/Área salió cada colaborador) —
                     el Monto de la OP se captura por separado y no tiene que cuadrar con el total de distribución.
                   </div>
@@ -1491,7 +1491,7 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
                     const excluidos  = rolRestriccionesModal?.filter(r => r.modo === 'DENY').map(r => r.id_tipo_gasto_fk) ?? null
                     if (permitidos && permitidos.length === 1) {
                       return <input className="input" value={catTG.nombre(permitidos[0]) ?? ''} readOnly
-                        style={{ background: '#f8fafc', color: '#64748b', cursor: 'not-allowed' }} />
+                        style={{ background: '#F8F9FA', color: '#62666E', cursor: 'not-allowed' }} />
                     }
                     return (
                       <select className="select" value={form.id_tipo_gasto_fk} onChange={setF('id_tipo_gasto_fk')}>
@@ -1531,7 +1531,7 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
             {!conOC && claveTG === 'combustible' && (
               <div>
                 <label className="label">Vales solicitados a pagar *</label>
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
                   {valesCombDisp.length === 0 ? (
                     <div style={{ padding: '12px', fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
                       Sin vales en status Solicitado disponibles
@@ -1540,13 +1540,13 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
                     <div style={{ maxHeight: 180, overflowY: 'auto' }}>
                       {valesCombDisp.map(v => (
                         <label key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px',
-                          borderBottom: '1px solid #f8fafc', cursor: 'pointer', fontSize: 12 }}>
+                          borderBottom: '1px solid #F8F9FA', cursor: 'pointer', fontSize: 12 }}>
                           <input type="checkbox" checked={valesCombSel.includes(v.id)} onChange={() => toggleValeComb(v.id)} />
-                          <span style={{ fontFamily: 'monospace', color: 'var(--blue)', fontWeight: 600, flexShrink: 0 }}>{v.folio}</span>
+                          <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--blue)', fontWeight: 600, flexShrink: 0 }}>{v.folio}</span>
                           <span style={{ flex: 1, color: 'var(--text-secondary)' }}>
                             {v.tipo_suministro}{v.tipo_combustible ? ` · ${v.tipo_combustible}` : ''} · {centrosCosto.find(c => c.id === v.id_centro_costo_fk)?.nombre ?? ''}{v.periodo ? ` · ${v.periodo}` : ''} · {Number(v.litros_autorizados ?? 0).toLocaleString('es-MX')} L
                           </span>
-                          <span style={{ fontWeight: 600, color: '#059669', flexShrink: 0 }}>
+                          <span style={{ fontWeight: 600, color: '#267F56', flexShrink: 0 }}>
                             {v.monto_autorizado != null ? `$${Number(v.monto_autorizado).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—'}
                           </span>
                         </label>
@@ -1563,7 +1563,7 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
             {!conOC && claveTG === 'perimetrales' && (
               <div>
                 <label className="label">Perimetrales de Vigilancia autorizados a pagar *</label>
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
                   {vigLotesDisp.length === 0 ? (
                     <div style={{ padding: '12px', fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
                       Sin perimetrales en status Autorizado disponibles — captúralos y autorízalos en Fraccionamiento › Vigilancia
@@ -1572,13 +1572,13 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
                     <div style={{ maxHeight: 180, overflowY: 'auto' }}>
                       {vigLotesDisp.map(l => (
                         <label key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px',
-                          borderBottom: '1px solid #f8fafc', cursor: 'pointer', fontSize: 12 }}>
+                          borderBottom: '1px solid #F8F9FA', cursor: 'pointer', fontSize: 12 }}>
                           <input type="checkbox" checked={vigLotesSel.includes(l.id)} onChange={() => toggleVigLote(l.id)} />
-                          <span style={{ fontFamily: 'monospace', color: 'var(--blue)', fontWeight: 600, flexShrink: 0 }}>{l.folio}</span>
+                          <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--blue)', fontWeight: 600, flexShrink: 0 }}>{l.folio}</span>
                           <span style={{ flex: 1, color: 'var(--text-secondary)' }}>
                             {fmtFecha(l.fecha_desde)} – {fmtFecha(l.fecha_hasta)}
                           </span>
-                          <span style={{ fontWeight: 600, color: '#059669', flexShrink: 0 }}>
+                          <span style={{ fontWeight: 600, color: '#267F56', flexShrink: 0 }}>
                             {l.total != null ? `$${Number(l.total).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—'}
                           </span>
                         </label>
@@ -1595,7 +1595,7 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
             {!conOC && claveTG === 'vehiculos' && (
               <div>
                 <label className="label">Bitácoras de Servicio cerradas a pagar *</label>
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
                   {bitacorasDisp.length === 0 ? (
                     <div style={{ padding: '12px', fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
                       Sin bitácoras cerradas disponibles — ciérralas en Mantenimiento › Vehículos y Maquinaria › Bitácora de Servicios
@@ -1604,13 +1604,13 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
                     <div style={{ maxHeight: 180, overflowY: 'auto' }}>
                       {bitacorasDisp.map(b => (
                         <label key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px',
-                          borderBottom: '1px solid #f8fafc', cursor: 'pointer', fontSize: 12 }}>
+                          borderBottom: '1px solid #F8F9FA', cursor: 'pointer', fontSize: 12 }}>
                           <input type="checkbox" checked={bitacorasSel.includes(b.id)} onChange={() => toggleBitacora(b.id)} />
-                          <span style={{ fontFamily: 'monospace', color: 'var(--blue)', fontWeight: 600, flexShrink: 0 }}>{b.folio}</span>
+                          <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--blue)', fontWeight: 600, flexShrink: 0 }}>{b.folio}</span>
                           <span style={{ flex: 1, color: 'var(--text-secondary)' }}>
                             {b.tipo} · {equiposMapModal[b.id_equipo_fk] ?? `#${b.id_equipo_fk}`}{b.fecha_fin ? ` · ${fmtFecha(b.fecha_fin)}` : ''}
                           </span>
-                          <span style={{ fontWeight: 600, color: '#059669', flexShrink: 0 }}>
+                          <span style={{ fontWeight: 600, color: '#267F56', flexShrink: 0 }}>
                             {b.costo_total != null ? `$${Number(b.costo_total).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—'}
                           </span>
                         </label>
@@ -1681,7 +1681,7 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
               </div>
               <div><label className="label">CLABE / Cuenta</label>
                 <input className="input" value={form.cuenta_clabe} onChange={setF('cuenta_clabe')}
-                  style={{ fontFamily: 'monospace' }} placeholder="18 dígitos" />
+                  style={{ fontVariantNumeric: 'tabular-nums' }} placeholder="18 dígitos" />
               </div>
             </div>
           </Sec>
@@ -1703,7 +1703,7 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
           </Sec>
 
           {/* Resumen monto */}
-          <div style={{ padding: '12px 16px', background: 'var(--blue-pale)', border: '1px solid #bfdbfe', borderRadius: 8 }}>
+          <div style={{ padding: '12px 16px', background: 'var(--blue-pale)', border: '1px solid #C9CCD3', borderRadius: 8 }}>
             {!conOC && !isVale && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>
                 <span>Subtotal {fmt(subtotalNum)}</span>
@@ -1815,10 +1815,10 @@ function ConsumoAfterOPModal({ servicioId, opId, montoSugerido, onDone }: {
     >
       <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {saveError && (
-          <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca',
-            borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{saveError}</div>
+          <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B',
+            borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>{saveError}</div>
         )}
-        <div style={{ padding: '10px 12px', background: '#eff6ff', border: '1px solid #bfdbfe',
+        <div style={{ padding: '10px 12px', background: '#F4F5F7', border: '1px solid #C9CCD3',
           borderRadius: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
           La OP fue generada. Registra el consumo de este periodo para continuar — es obligatorio.
         </div>

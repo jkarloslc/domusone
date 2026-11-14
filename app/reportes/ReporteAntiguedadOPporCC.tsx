@@ -8,11 +8,11 @@ import { useZonas, SelectZona } from '@/lib/zonas'
 // Bandas de antigüedad sobre fecha_vencimiento. Se consideran OPs con saldo > 0
 // y status distinto de 'Pagada', 'Cancelada', 'Rechazada' y 'Sustituida'.
 const BANDAS = [
-  { key: 'por-vencer', label: 'Por vencer', color: '#15803d', test: (d: number) => d <= 0 },
-  { key: '0-30',       label: '0-30 días',  color: '#d97706', test: (d: number) => d >= 1  && d <= 30 },
-  { key: '31-60',      label: '31-60 días', color: '#ea580c', test: (d: number) => d >= 31 && d <= 60 },
-  { key: '61-90',      label: '61-90 días', color: '#dc2626', test: (d: number) => d >= 61 && d <= 90 },
-  { key: '+90',        label: '+90 días',   color: '#7f1d1d', test: (d: number) => d >= 91 },
+  { key: 'por-vencer', label: 'Por vencer', color: '#1F7A50', test: (d: number) => d <= 0 },
+  { key: '0-30',       label: '0-30 días',  color: '#B5761A', test: (d: number) => d >= 1  && d <= 30 },
+  { key: '31-60',      label: '31-60 días', color: '#C8642A', test: (d: number) => d >= 31 && d <= 60 },
+  { key: '61-90',      label: '61-90 días', color: '#C23B3B', test: (d: number) => d >= 61 && d <= 90 },
+  { key: '+90',        label: '+90 días',   color: '#8C2A2A', test: (d: number) => d >= 91 },
 ] as const
 
 type BandaKey = typeof BANDAS[number]['key']
@@ -306,11 +306,11 @@ export default function ReporteAntiguedadOPporCC() {
       {/* Totales */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 16 }}>
         <div className="card" style={{ padding: '12px 16px' }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#dc2626', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSaldo)}</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#C23B3B', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSaldo)}</div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Saldo total por pagar</div>
         </div>
         <div className="card" style={{ padding: '12px 16px' }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#7c3aed', fontVariantNumeric: 'tabular-nums' }}>{totalDocs}</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#6B4E79', fontVariantNumeric: 'tabular-nums' }}>{totalDocs}</div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Órdenes de Pago con saldo</div>
         </div>
       </div>
@@ -349,12 +349,12 @@ export default function ReporteAntiguedadOPporCC() {
                 const ccAreasOrd = Object.values(cc.areas).sort((a, b) => b.saldo - a.saldo)
                 return (
                   <Fragment key={`cc-frag-${ccKey}`}>
-                    <tr style={{ background: '#eff6ff', cursor: 'pointer' }} onClick={() => toggleCC(ccKey)}>
+                    <tr style={{ background: '#F4F5F7', cursor: 'pointer' }} onClick={() => toggleCC(ccKey)}>
                       <td colSpan={5} style={{ padding: '10px 12px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           {ccOpen ? <ChevronDown size={14} style={{ color: 'var(--blue)' }}/> : <ChevronRight size={14} style={{ color: 'var(--blue)' }}/>}
                           <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--blue)' }}>{cc.nombre}</span>
-                          <span style={{ fontSize: 11, color: 'var(--text-muted)', background: '#dbeafe', padding: '1px 8px', borderRadius: 20 }}>
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)', background: '#E6E8EB', padding: '1px 8px', borderRadius: 20 }}>
                             {cc.docs} OP{cc.docs !== 1 ? 's' : ''}
                           </span>
                         </div>
@@ -373,12 +373,12 @@ export default function ReporteAntiguedadOPporCC() {
                       const arOpen = expandedArea.has(areaFullKey)
                       return (
                         <Fragment key={`ar-frag-${areaFullKey}`}>
-                          <tr style={{ background: '#f8fafc', cursor: 'pointer' }} onClick={() => toggleArea(areaFullKey)}>
+                          <tr style={{ background: '#F8F9FA', cursor: 'pointer' }} onClick={() => toggleArea(areaFullKey)}>
                             <td colSpan={5} style={{ padding: '7px 12px 7px 32px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                {arOpen ? <ChevronDown size={12} style={{ color: '#7c3aed' }}/> : <ChevronRight size={12} style={{ color: '#7c3aed' }}/>}
-                                <span style={{ fontSize: 13, fontWeight: 600, color: '#7c3aed' }}>{ar.nombre}</span>
-                                <span style={{ fontSize: 10, color: 'var(--text-muted)', background: '#ede9fe', padding: '1px 7px', borderRadius: 20 }}>
+                                {arOpen ? <ChevronDown size={12} style={{ color: '#62666E' }}/> : <ChevronRight size={12} style={{ color: '#62666E' }}/>}
+                                <span style={{ fontSize: 13, fontWeight: 600, color: '#6B4E79' }}>{ar.nombre}</span>
+                                <span style={{ fontSize: 10, color: '#4A4D54', background: '#E6E8EB', padding: '1px 7px', borderRadius: 20 }}>
                                   {ar.docs} OP{ar.docs !== 1 ? 's' : ''}
                                 </span>
                               </div>
@@ -388,17 +388,17 @@ export default function ReporteAntiguedadOPporCC() {
                                 {ar.porBanda[b.key] > 0 ? fmt(ar.porBanda[b.key]) : '—'}
                               </td>
                             ))}
-                            <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#7c3aed' }}>{fmt(ar.saldo)}</td>
+                            <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#6B4E79' }}>{fmt(ar.saldo)}</td>
                           </tr>
 
                           {arOpen && ar.ops.map(op => {
                             const c = bandaColor(op._banda)
                             return (
                               <tr key={`op-${op.id}${op._detIdx != null ? `-${op._detIdx}` : ''}`}>
-                                <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600, paddingLeft: 48 }}>{op.folio}</td>
+                                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600, paddingLeft: 48 }}>{op.folio}</td>
                                 <td style={{ fontSize: 12 }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? `#${op.id_proveedor_fk}`) : '—'}</td>
                                 <td style={{ fontSize: 12, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
-                                <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: op._dias > 0 ? '#dc2626' : 'var(--text-secondary)', fontWeight: op._dias > 0 ? 600 : 400 }}>{fmtF(op.fecha_vencimiento)}</td>
+                                <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: op._dias > 0 ? '#C23B3B' : 'var(--text-secondary)', fontWeight: op._dias > 0 ? 600 : 400 }}>{fmtF(op.fecha_vencimiento)}</td>
                                 <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 12, color: c, fontWeight: 600 }}>
                                   {op._dias <= 0 ? `${Math.abs(op._dias)} p/v` : `+${op._dias}`}
                                 </td>

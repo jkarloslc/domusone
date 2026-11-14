@@ -131,18 +131,18 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
 
   // Color de una celda de variación: ingreso → más real que ppto es bueno; egreso → al revés
   const colorVar = (v: number, tipo: 'ingreso' | 'egreso') =>
-    v === 0 ? '#94a3b8' : (tipo === 'ingreso' ? v > 0 : v < 0) ? '#15803d' : '#dc2626'
+    v === 0 ? '#7A7E87' : (tipo === 'ingreso' ? v > 0 : v < 0) ? '#1F7A50' : '#C23B3B'
 
   const cell = (v: number, tipo: 'ingreso' | 'egreso', bold = false, color?: string): React.CSSProperties => ({
     padding: '6px 10px', ...NUM, fontWeight: bold ? 700 : 400, fontSize: 12,
-    color: color ?? (metrica === 'var' ? colorVar(v, tipo) : v === 0 ? '#cbd5e1' : '#1e293b'),
+    color: color ?? (metrica === 'var' ? colorVar(v, tipo) : v === 0 ? '#C9CCD3' : '#26282D'),
   })
   const show = (v: number) => v === 0 ? '—' : (metrica === 'var' && v > 0 ? '+' : '') + (v < 0 ? '-' : '') + fmtN(Math.abs(v))
 
   const stickyBase: React.CSSProperties = { position: 'sticky', left: 0, zIndex: 1 }
   const thBase: React.CSSProperties = {
-    padding: '8px 10px', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase',
-    letterSpacing: '.04em', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0,
+    padding: '8px 10px', fontSize: 11, fontWeight: 700, color: '#62666E', textTransform: 'uppercase',
+    letterSpacing: '.04em', background: '#F8F9FA', borderBottom: '1px solid #E6E8EB', position: 'sticky', top: 0,
   }
 
   function FilaTotales({ label, rows, tipo, bg, fg }: {
@@ -152,7 +152,7 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
       <tr style={{ background: bg }}>
         <td style={{ ...stickyBase, background: bg, padding: '7px 12px', fontSize: 12, fontWeight: 700, color: fg }}>{label}</td>
         {meses.map(m => { const v = sumaFilas(rows, m); return <td key={m} style={cell(v, tipo, true, metrica === 'var' ? undefined : fg)}>{show(v)}</td> })}
-        <td style={{ ...cell(totalFila(rows), tipo, true, metrica === 'var' ? undefined : fg), borderLeft: '1px solid #e2e8f0' }}>{show(totalFila(rows))}</td>
+        <td style={{ ...cell(totalFila(rows), tipo, true, metrica === 'var' ? undefined : fg), borderLeft: '1px solid #E6E8EB' }}>{show(totalFila(rows))}</td>
       </tr>
     )
   }
@@ -168,37 +168,37 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
         {esArbol ? lineasArbol(rows, tipo).map(r => {
           const t = totalLinea(r)
           const d = r.nodo?.depth ?? 0
-          const bg = d === 0 ? '#fff' : d === 1 ? '#fcfcfd' : '#f8fafc'
+          const bg = d === 0 ? '#fff' : '#F8F9FA'
           return (
-            <tr key={r.key} style={{ borderBottom: '1px solid #f1f5f9', background: bg }}>
+            <tr key={r.key} style={{ borderBottom: '1px solid #F4F5F7', background: bg }}>
               <td style={{ ...stickyBase, background: bg, padding: '6px 12px', minWidth: 260, maxWidth: 360,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {r.nodo && <EtiquetaNodo n={r.nodo} ui={ui} />}
               </td>
               {meses.map(m => { const v = valorLinea(r, m); return <td key={m} style={cell(v, tipo, d === 0)}><Monto v={v} l={r} tipo={tipo} ms={acum ? mesesTodos.filter(k => k <= m) : [m]} /></td> })}
-              <td style={{ ...cell(t, tipo, true), borderLeft: '1px solid #e2e8f0', background: '#f8fafc' }}><Monto v={t} l={r} tipo={tipo} ms={mesSel ? [mesSel] : mesesTodos} /></td>
+              <td style={{ ...cell(t, tipo, true), borderLeft: '1px solid #E6E8EB', background: '#F8F9FA' }}><Monto v={t} l={r} tipo={tipo} ms={mesSel ? [mesSel] : mesesTodos} /></td>
             </tr>
           )
         }) : bandasDe(rows, tipo).map(b => [
           b.label && (
-            <tr key={`b-${b.key}`} style={{ background: '#f8fafc' }}>
-              <td style={{ ...stickyBase, background: '#f8fafc', padding: '6px 12px', fontSize: 12, fontWeight: 700, color: '#475569' }}>{b.label}</td>
-              {meses.map(m => { const v = sumaFilas(b.rows, m); return <td key={m} style={cell(v, tipo, true, metrica === 'var' ? undefined : '#475569')}>{show(v)}</td> })}
-              <td style={{ ...cell(totalFila(b.rows), tipo, true, metrica === 'var' ? undefined : '#475569'), borderLeft: '1px solid #e2e8f0' }}>{show(totalFila(b.rows))}</td>
+            <tr key={`b-${b.key}`} style={{ background: '#F8F9FA' }}>
+              <td style={{ ...stickyBase, background: '#F8F9FA', padding: '6px 12px', fontSize: 12, fontWeight: 700, color: '#4A4D54' }}>{b.label}</td>
+              {meses.map(m => { const v = sumaFilas(b.rows, m); return <td key={m} style={cell(v, tipo, true, metrica === 'var' ? undefined : '#4A4D54')}>{show(v)}</td> })}
+              <td style={{ ...cell(totalFila(b.rows), tipo, true, metrica === 'var' ? undefined : '#4A4D54'), borderLeft: '1px solid #E6E8EB' }}>{show(totalFila(b.rows))}</td>
             </tr>
           ),
           ...lineasDe(b.rows).map(r => {
           const t = totalLinea(r)
           return (
-            <tr key={r.key} style={{ borderBottom: '1px solid #f1f5f9' }}>
-              <td style={{ ...stickyBase, background: '#fff', padding: '6px 12px 6px 22px', fontSize: 12, color: '#334155', minWidth: 220, maxWidth: 280,
+            <tr key={r.key} style={{ borderBottom: '1px solid #F4F5F7' }}>
+              <td style={{ ...stickyBase, background: '#fff', padding: '6px 12px 6px 22px', fontSize: 12, color: '#33363C', minWidth: 220, maxWidth: 280,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.nombre}>{r.nombre}</td>
               {meses.map(m => { const v = valorLinea(r, m); return <td key={m} style={cell(v, tipo)}><Monto v={v} l={r} tipo={tipo} ms={acum ? mesesTodos.filter(k => k <= m) : [m]} /></td> })}
-              <td style={{ ...cell(t, tipo, true), borderLeft: '1px solid #e2e8f0', background: '#f8fafc' }}><Monto v={t} l={r} tipo={tipo} ms={mesSel ? [mesSel] : mesesTodos} /></td>
+              <td style={{ ...cell(t, tipo, true), borderLeft: '1px solid #E6E8EB', background: '#F8F9FA' }}><Monto v={t} l={r} tipo={tipo} ms={mesSel ? [mesSel] : mesesTodos} /></td>
             </tr>
           )
         })])}
-        <FilaTotales label={`Total ${label.replace(/ \(.*\)/, '')}`} rows={rows} tipo={tipo} bg="#f8fafc" fg="#1e293b" />
+        <FilaTotales label={`Total ${label.replace(/ \(.*\)/, '')}`} rows={rows} tipo={tipo} bg="#F8F9FA" fg="#26282D" />
       </>
     )
   }
@@ -210,16 +210,16 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
   function FilaNeto({ label, ing, egr, dark }: { label: string; ing: FilaGrid[]; egr: FilaGrid[]; dark?: boolean }) {
     const neto = (m: number) => sumaFilas(ing, m) - sumaFilas(egr, m)
     const total = totalFila(ing) - totalFila(egr)
-    const bg = dark ? '#1e293b' : '#eef2ff'
-    const colorDe = (v: number) => dark ? (v >= 0 ? '#86efac' : '#fca5a5') : (v >= 0 ? '#15803d' : '#dc2626')
+    const bg = dark ? '#26282D' : '#F4F5F7'
+    const colorDe = (v: number) => dark ? (v >= 0 ? '#7CC9A3' : '#EBB5B5') : (v >= 0 ? '#1F7A50' : '#C23B3B')
     const td = (v: number, extra?: React.CSSProperties): React.CSSProperties =>
-      ({ padding: '7px 10px', ...NUM, fontWeight: 700, fontSize: 12, color: v === 0 ? (dark ? '#64748b' : '#94a3b8') : colorDe(v), ...extra })
+      ({ padding: '7px 10px', ...NUM, fontWeight: 700, fontSize: 12, color: v === 0 ? (dark ? '#62666E' : '#7A7E87') : colorDe(v), ...extra })
     return (
       <tr style={{ background: bg }}>
         <td style={{ ...stickyBase, background: bg, padding: '8px 12px', fontSize: 12, fontWeight: 700, textTransform: 'uppercase',
-          letterSpacing: '.05em', color: dark ? '#f1f5f9' : '#3730a3' }}>{label}</td>
+          letterSpacing: '.05em', color: dark ? '#F4F5F7' : '#1C1D21' }}>{label}</td>
         {meses.map(m => <td key={m} style={td(neto(m))}>{show(neto(m))}</td>)}
-        <td style={td(total, { borderLeft: '1px solid #475569' })}>{show(total)}</td>
+        <td style={td(total, { borderLeft: '1px solid #4A4D54' })}>{show(total)}</td>
       </tr>
     )
   }
@@ -229,7 +229,7 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
   function Monto({ v, l, tipo, ms }: { v: number; l: Linea; tipo: 'ingreso' | 'egreso'; ms: number[] }) {
     // Con Presupuesto o Variación, marca con * los meses cuyo presupuesto es un sustituto.
     const marca = metrica !== 'real' && !!pptoFallback && l.ids.some(id => ms.some(k => pptoFallback(id, k)))
-    const mk = marca ? <span title="Generado sin capturar: se usa el monto de Cobro" style={{ color: '#7c3aed', fontWeight: 700, marginLeft: 2, cursor: 'help' }}>*</span> : null
+    const mk = marca ? <span title="Generado sin capturar: se usa el monto de Cobro" style={{ color: '#6B4E79', fontWeight: 700, marginLeft: 2, cursor: 'help' }}>*</span> : null
     if (!onCelda || metrica !== 'real' || v === 0) return <>{show(v)}{mk}</>
     return (
       <button onClick={() => onCelda({ ids: l.ids, nombre: l.nombre, tipo, meses: ms })}
@@ -294,30 +294,30 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
 
   return (
     <>
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', padding: '10px 14px', borderBottom: '1px solid #e2e8f0' }}>
-        <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px' }}>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', padding: '10px 14px', borderBottom: '1px solid #E6E8EB' }}>
+        <div style={{ display: 'flex', gap: 6, background: '#F4F5F7', borderRadius: 22, padding: '3px 4px' }}>
           {METRICAS.map(({ v, label }) => (
             <button key={v} onClick={() => setMetrica(v)}
               style={{
                 padding: '4px 14px', borderRadius: 18, border: 'none', cursor: 'pointer', fontSize: 12,
                 background: metrica === v ? '#fff' : 'transparent',
-                color: metrica === v ? '#1e293b' : '#64748b',
+                color: metrica === v ? '#26282D' : '#62666E',
                 fontWeight: metrica === v ? 600 : 400,
                 boxShadow: metrica === v ? '0 1px 3px rgba(0,0,0,.1)' : 'none',
               }}>{label}</button>
           ))}
         </div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#64748b', cursor: 'pointer' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#62666E', cursor: 'pointer' }}>
           <input type="checkbox" checked={ocultarVacios} onChange={e => setOcultarVacios(e.target.checked)} />
           Ocultar meses sin movimiento
         </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#64748b', cursor: 'pointer' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#62666E', cursor: 'pointer' }}>
           <input type="checkbox" checked={acum} onChange={e => setAcum(e.target.checked)} />
           Acumulado corrido
         </label>
         {esArbol && <ControlesArbol ui={ui} />}
         {metrica === 'var' && (
-          <span style={{ fontSize: 11, color: '#94a3b8' }}>Variación = Real − Presupuesto</span>
+          <span style={{ fontSize: 11, color: '#7A7E87' }}>Variación = Real − Presupuesto</span>
         )}
         <button className="btn-ghost" onClick={exportarExcel}
           style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '5px 10px' }}>
@@ -330,8 +330,8 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
             <tr>
               <th style={{ ...thBase, ...stickyBase, zIndex: 3, textAlign: 'left', minWidth: 220 }}>Partida</th>
               {meses.map(m => <th key={m} style={{ ...thBase, textAlign: 'right', minWidth: 78,
-                ...(mesSel ? (m === mesSel ? { color: '#1e293b', background: '#e0f2fe' } : { color: '#cbd5e1' }) : {}) }}>{MESES[m - 1]}</th>)}
-              <th style={{ ...thBase, textAlign: 'right', minWidth: 92, borderLeft: '1px solid #e2e8f0' }}>Total</th>
+                ...(mesSel ? (m === mesSel ? { color: '#26282D', background: '#E6E8EB' } : { color: '#C9CCD3' }) : {}) }}>{MESES[m - 1]}</th>)}
+              <th style={{ ...thBase, textAlign: 'right', minWidth: 92, borderLeft: '1px solid #E6E8EB' }}>Total</th>
             </tr>
           </thead>
           <tbody>
@@ -341,8 +341,8 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
               if (ing.length === 0 && egr.length === 0) return null
               return (
                 <FragmentoClas key={clas}>
-                  <Bloque label={LABELS[clas].ingresos} rows={ing} tipo="ingreso" bg="#f0fdf4" fg="#15803d" />
-                  <Bloque label={LABELS[clas].egresos}  rows={egr} tipo="egreso"  bg="#fef2f2" fg="#dc2626" />
+                  <Bloque label={LABELS[clas].ingresos} rows={ing} tipo="ingreso" bg="#F4F5F7" fg="#1F7A50" />
+                  <Bloque label={LABELS[clas].egresos}  rows={egr} tipo="egreso"  bg="#F4F5F7" fg="#C23B3B" />
                   {ing.length > 0 && egr.length > 0 && <FilaNeto label={LABELS[clas].balance} ing={ing} egr={egr} />}
                 </FragmentoClas>
               )

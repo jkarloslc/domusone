@@ -72,11 +72,11 @@ export default function ReporteTransferencias() {
 
   const STATUS = ['Solicitada', 'Autorizada', 'Enviada', 'Completada', 'Rechazada']
   const statusColor = (s: string) =>
-    s === 'Solicitada'  ? '#d97706' :
-    s === 'Autorizada'  ? '#2563eb' :
-    s === 'Enviada'     ? '#7c3aed' :
-    s === 'Completada'  ? '#15803d' :
-    s === 'Rechazada'   ? '#dc2626' : '#64748b'
+    s === 'Solicitada'  ? '#B5761A' :
+    s === 'Autorizada'  ? '#1C1D21' :
+    s === 'Enviada'     ? '#6B4E79' :
+    s === 'Completada'  ? '#1F7A50' :
+    s === 'Rechazada'   ? '#C23B3B' : '#62666E'
 
   const totalDocs = rows.length
   const completadas = rows.filter(r => r.status === 'Completada').length
@@ -115,8 +115,8 @@ export default function ReporteTransferencias() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
         {[
           { label: 'Total transferencias', value: String(totalDocs),   color: 'var(--blue)' },
-          { label: 'Completadas',           value: String(completadas), color: '#15803d' },
-          { label: 'En proceso',            value: String(pendientes),  color: '#d97706' },
+          { label: 'Completadas',           value: String(completadas), color: '#1F7A50' },
+          { label: 'En proceso',            value: String(pendientes),  color: '#B5761A' },
         ].map(k => (
           <div key={k.label} className="card" style={{ padding: '12px 16px' }}>
             <div style={{ fontSize: 22, fontWeight: 700, color: k.color }}>{k.value}</div>
@@ -157,7 +157,7 @@ export default function ReporteTransferencias() {
                   <td style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
                     {expanded.has(r.id) ? '▲' : '▼'}
                   </td>
-                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
+                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
                   <td>
                     <div style={{ fontSize: 13, fontWeight: 500 }}>{r.area_solicitante || '—'}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.solicitante}</div>
@@ -165,14 +165,14 @@ export default function ReporteTransferencias() {
                   <td style={{ fontSize: 13 }}>{almMap[r.id_almacen_origen] ?? `#${r.id_almacen_origen}`}</td>
                   <td style={{ fontSize: 13, fontWeight: 500, color: 'var(--blue)' }}>{almMap[r.id_almacen_destino] ?? `#${r.id_almacen_destino}`}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{fmtF(r.fecha_solicitud ?? r.created_at)}</td>
-                  <td style={{ fontSize: 12, color: r.fecha_transferencia ? '#15803d' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                  <td style={{ fontSize: 12, color: r.fecha_transferencia ? '#1F7A50' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                     {fmtF(r.fecha_transferencia)}
                   </td>
                   <td>
                     <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                      color: statusColor(r.status),
-                      background: statusColor(r.status) + '15',
-                      border: `1px solid ${statusColor(r.status)}40` }}>
+                      color: '#fff',
+                      background: statusColor(r.status),
+                      border: `1px solid ${statusColor(r.status)}` }}>
                       {r.status}
                     </span>
                   </td>
@@ -182,10 +182,10 @@ export default function ReporteTransferencias() {
                 {/* Detalle artículos */}
                 {expanded.has(r.id) && detMap[r.id] && (
                   <tr key={`det-${r.id}`}>
-                    <td colSpan={9} style={{ padding: 0, background: '#f8fafc' }}>
+                    <td colSpan={9} style={{ padding: 0, background: '#F8F9FA' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
-                          <tr style={{ background: '#f1f5f9' }}>
+                          <tr style={{ background: '#F4F5F7' }}>
                             <th style={{ padding: '6px 16px 6px 48px', textAlign: 'left', fontSize: 10, color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Artículo</th>
                             <th style={{ padding: '6px 16px', textAlign: 'right', fontSize: 10, color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Solicitado</th>
                             <th style={{ padding: '6px 16px', textAlign: 'right', fontSize: 10, color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Enviado</th>
@@ -197,16 +197,16 @@ export default function ReporteTransferencias() {
                           {detMap[r.id].map((d, i) => {
                             const art = artsMap[d.id_articulo_fk]
                             return (
-                              <tr key={i} style={{ borderTop: '1px solid #e2e8f0' }}>
+                              <tr key={i} style={{ borderTop: '1px solid #E6E8EB' }}>
                                 <td style={{ padding: '8px 16px 8px 48px' }}>
-                                  <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)' }}>{art?.clave ?? '—'}</span>
+                                  <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--blue)' }}>{art?.clave ?? '—'}</span>
                                   <span style={{ fontSize: 13, marginLeft: 8 }}>{art?.nombre ?? `#${d.id_articulo_fk}`}</span>
                                 </td>
                                 <td style={{ padding: '8px 16px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
                                   {Number(d.cantidad_solicitada).toLocaleString('es-MX', { maximumFractionDigits: 3 })}
                                 </td>
                                 <td style={{ padding: '8px 16px', textAlign: 'right', fontVariantNumeric: 'tabular-nums',
-                                  color: d.cantidad_enviada ? '#15803d' : 'var(--text-muted)', fontWeight: d.cantidad_enviada ? 600 : 400 }}>
+                                  color: d.cantidad_enviada ? '#1F7A50' : 'var(--text-muted)', fontWeight: d.cantidad_enviada ? 600 : 400 }}>
                                   {d.cantidad_enviada != null
                                     ? Number(d.cantidad_enviada).toLocaleString('es-MX', { maximumFractionDigits: 3 })
                                     : '—'}

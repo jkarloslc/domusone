@@ -8,11 +8,11 @@ import PageHeader from '@/components/layout/PageHeader'
 
 // ── Estilos comunes ──────────────────────────────────────────
 const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0',
-  borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none',
+  width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB',
+  borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none',
 }
 const labelStyle: React.CSSProperties = {
-  fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block',
+  fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block',
 }
 const selectStyle: React.CSSProperties = {
   ...inputStyle, cursor: 'pointer',
@@ -70,7 +70,7 @@ function CatalogoTab({ tabla, campos, puedeEscribir }: {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <span style={{ fontSize: 13, color: '#64748b' }}>{items.length} registros</span>
+        <span style={{ fontSize: 13, color: '#62666E' }}>{items.length} registros</span>
         {puedeEscribir && (
           <button className="btn-primary" onClick={openNew} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Plus size={14} /> Nuevo
@@ -78,10 +78,10 @@ function CatalogoTab({ tabla, campos, puedeEscribir }: {
         )}
       </div>
       {showForm && (
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px 20px', marginBottom: 16 }}>
+        <div style={{ background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10, padding: '16px 20px', marginBottom: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#1e293b' }}>{editing ? 'Editar' : 'Nuevo registro'}</span>
-            <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={16} /></button>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#26282D' }}>{editing ? 'Editar' : 'Nuevo registro'}</span>
+            <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87' }}><X size={16} /></button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {campos.map(c => (
@@ -90,7 +90,7 @@ function CatalogoTab({ tabla, campos, puedeEscribir }: {
                 <input style={inputStyle} value={form[c.key] ?? ''} onChange={e => setForm(f => ({ ...f, [c.key]: e.target.value }))} placeholder={c.placeholder} autoFocus={c.key === 'nombre'} />
               </div>
             ))}
-            {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, fontSize: 13, color: '#dc2626' }}>{error}</div>}
+            {error && <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 7, fontSize: 13, color: '#C23B3B' }}>{error}</div>}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button className="btn-ghost" onClick={() => setShowForm(false)}>Cancelar</button>
               <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -103,33 +103,33 @@ function CatalogoTab({ tabla, campos, puedeEscribir }: {
       )}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ padding: '32px', textAlign: 'center', color: '#94a3b8' }}>Cargando…</div>
+          <div style={{ padding: '32px', textAlign: 'center', color: '#7A7E87' }}>Cargando…</div>
         ) : items.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Sin registros. Crea el primero.</div>
+          <div style={{ padding: '40px', textAlign: 'center', color: '#7A7E87' }}>Sin registros. Crea el primero.</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nombre</th>
+              <tr style={{ borderBottom: '1px solid #E6E8EB', background: '#F8F9FA' }}>
+                <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nombre</th>
                 {campos.some(c => c.key === 'descripcion') && (
-                  <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Descripción</th>
+                  <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Descripción</th>
                 )}
-                <th style={{ padding: '10px 16px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Estatus</th>
+                <th style={{ padding: '10px 16px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Estatus</th>
                 {puedeEscribir && <th style={{ padding: '10px 16px' }}></th>}
               </tr>
             </thead>
             <tbody>
               {items.map(item => (
-                <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9', opacity: item.activo ? 1 : 0.5 }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f8fafc'}
+                <tr key={item.id} style={{ borderBottom: '1px solid #F4F5F7', opacity: item.activo ? 1 : 0.5 }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FA'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
-                  <td style={{ padding: '10px 16px', fontWeight: 500, color: '#1e293b' }}>{item.nombre}</td>
+                  <td style={{ padding: '10px 16px', fontWeight: 500, color: '#26282D' }}>{item.nombre}</td>
                   {campos.some(c => c.key === 'descripcion') && (
-                    <td style={{ padding: '10px 16px', color: '#64748b', fontSize: 12 }}>{item.descripcion ?? '—'}</td>
+                    <td style={{ padding: '10px 16px', color: '#62666E', fontSize: 12 }}>{item.descripcion ?? '—'}</td>
                   )}
                   <td style={{ padding: '10px 16px', textAlign: 'center' }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: item.activo ? '#dcfce7' : '#f1f5f9', color: item.activo ? '#16a34a' : '#94a3b8' }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: item.activo ? '#1F7A50' : '#F4F5F7', color: item.activo ? '#fff' : '#7A7E87' }}>
                       {item.activo ? 'Activo' : 'Inactivo'}
                     </span>
                   </td>
@@ -137,7 +137,7 @@ function CatalogoTab({ tabla, campos, puedeEscribir }: {
                     <td style={{ padding: '10px 16px' }}>
                       <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                         <button className="btn-ghost" style={{ padding: '4px 8px' }} title="Editar" onClick={() => openEdit(item)}><Edit2 size={13} /></button>
-                        <button className="btn-ghost" style={{ padding: '4px 8px', color: item.activo ? '#dc2626' : '#16a34a' }} title={item.activo ? 'Desactivar' : 'Activar'} onClick={() => toggleActivo(item)}>
+                        <button className="btn-ghost" style={{ padding: '4px 8px', color: item.activo ? '#C23B3B' : '#267F56' }} title={item.activo ? 'Desactivar' : 'Activar'} onClick={() => toggleActivo(item)}>
                           {item.activo ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}
                         </button>
                       </div>
@@ -244,7 +244,7 @@ function CentrosVentaPOSTab({ puedeEscribir }: { puedeEscribir: boolean }) {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <span style={{ fontSize: 13, color: '#64748b' }}>{items.length} registros</span>
+        <span style={{ fontSize: 13, color: '#62666E' }}>{items.length} registros</span>
         {puedeEscribir && (
           <button className="btn-primary" onClick={openNew} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Plus size={14} /> Nuevo centro
@@ -253,10 +253,10 @@ function CentrosVentaPOSTab({ puedeEscribir }: { puedeEscribir: boolean }) {
       </div>
 
       {showForm && (
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px 20px', marginBottom: 16 }}>
+        <div style={{ background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10, padding: '16px 20px', marginBottom: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#1e293b' }}>{editing ? 'Editar centro' : 'Nuevo centro'}</span>
-            <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={16} /></button>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#26282D' }}>{editing ? 'Editar centro' : 'Nuevo centro'}</span>
+            <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87' }}><X size={16} /></button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 20px' }}>
             <div style={{ gridColumn: '1 / -1' }}>
@@ -286,21 +286,21 @@ function CentrosVentaPOSTab({ puedeEscribir }: { puedeEscribir: boolean }) {
           {/* Toggle genera recibo automático */}
           {form.id_centro_ingreso_fk && (
             <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 8,
-              background: (form as any).genera_recibo_automatico ? '#f0fdf4' : '#fef3c7',
-              border: `1px solid ${(form as any).genera_recibo_automatico ? '#bbf7d0' : '#fde68a'}`,
+              background: (form as any).genera_recibo_automatico ? '#F4F5F7' : '#E6E8EB',
+              border: '1px solid #E6E8EB',
               display: 'flex', alignItems: 'center', gap: 10 }}>
               <input type="checkbox" id="chk-genera-recibo"
                 checked={(form as any).genera_recibo_automatico ?? false}
                 onChange={e => setForm(f => ({ ...f, genera_recibo_automatico: e.target.checked } as any))} />
               <label htmlFor="chk-genera-recibo" style={{ fontSize: 13, cursor: 'pointer',
-                color: (form as any).genera_recibo_automatico ? '#15803d' : '#92400e', fontWeight: 500 }}>
+                color: (form as any).genera_recibo_automatico ? '#1F7A50' : '#7A4B0C', fontWeight: 500 }}>
                 {(form as any).genera_recibo_automatico
                   ? 'Genera recibo de ingreso automáticamente al hacer corte'
                   : 'No genera recibo automático — captura manual requerida'}
               </label>
             </div>
           )}
-          {error &&<div style={{ marginTop: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, fontSize: 13, color: '#dc2626' }}>{error}</div>}
+          {error &&<div style={{ marginTop: 10, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 7, fontSize: 13, color: '#C23B3B' }}>{error}</div>}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
             <button className="btn-ghost" onClick={() => setShowForm(false)}>Cancelar</button>
             <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -313,16 +313,16 @@ function CentrosVentaPOSTab({ puedeEscribir }: { puedeEscribir: boolean }) {
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ padding: '32px', textAlign: 'center', color: '#94a3b8' }}>Cargando…</div>
+          <div style={{ padding: '32px', textAlign: 'center', color: '#7A7E87' }}>Cargando…</div>
         ) : items.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Sin centros. Crea el primero.</div>
+          <div style={{ padding: '40px', textAlign: 'center', color: '#7A7E87' }}>Sin centros. Crea el primero.</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+              <tr style={{ borderBottom: '1px solid #E6E8EB', background: '#F8F9FA' }}>
                 {['Nombre', 'Descripción', 'Orden', 'Centro de Ingreso', 'Recibo Auto', 'Estatus'].map(h => (
-                  <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                  <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                 ))}
                 {puedeEscribir && <th style={{ padding: '10px 16px' }}></th>}
               </tr>
@@ -332,33 +332,33 @@ function CentrosVentaPOSTab({ puedeEscribir }: { puedeEscribir: boolean }) {
                 const m = getMap(item.id)
                 const ciNombre = m ? (centrosIng.find(ci => ci.id === m.id_centro_ingreso_fk)?.nombre ?? '—') : null
                 return (
-                  <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9', opacity: item.activo ? 1 : 0.5 }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f8fafc'}
+                  <tr key={item.id} style={{ borderBottom: '1px solid #F4F5F7', opacity: item.activo ? 1 : 0.5 }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FA'}
                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
-                    <td style={{ padding: '10px 16px', fontWeight: 600, color: '#1e293b' }}>
+                    <td style={{ padding: '10px 16px', fontWeight: 600, color: '#26282D' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                        <Store size={13} color="#059669" />
+                        <Store size={13} color="#62666E" />
                         {item.nombre}
                       </div>
                     </td>
-                    <td style={{ padding: '10px 16px', color: '#64748b', fontSize: 12 }}>{item.descripcion ?? '—'}</td>
-                    <td style={{ padding: '10px 16px', color: '#64748b', textAlign: 'center' }}>{item.orden}</td>
+                    <td style={{ padding: '10px 16px', color: '#62666E', fontSize: 12 }}>{item.descripcion ?? '—'}</td>
+                    <td style={{ padding: '10px 16px', color: '#62666E', textAlign: 'center' }}>{item.orden}</td>
                     <td style={{ padding: '10px 16px' }}>
                       {ciNombre
-                        ? <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: '#dcfce7', color: '#15803d' }}>{ciNombre}</span>
-                        : <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>Sin asignar</span>}
+                        ? <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: '#1F7A50', color: '#fff' }}>{ciNombre}</span>
+                        : <span style={{ fontSize: 11, color: '#D9922B', fontWeight: 600 }}>Sin asignar</span>}
                     </td>
                     <td style={{ padding: '10px 16px' }}>
                       {m ? (
                         <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20,
-                          background: m.genera_recibo_automatico ? '#dcfce7' : '#fef3c7',
-                          color: m.genera_recibo_automatico ? '#15803d' : '#92400e' }}>
+                          background: m.genera_recibo_automatico ? '#1F7A50' : '#B5761A',
+                          color: '#fff' }}>
                           {m.genera_recibo_automatico ? 'Activo' : 'Manual'}
                         </span>
-                      ) : <span style={{ fontSize: 11, color: '#94a3b8' }}>—</span>}
+                      ) : <span style={{ fontSize: 11, color: '#7A7E87' }}>—</span>}
                     </td>
                     <td style={{ padding: '10px 16px' }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: item.activo ? '#dcfce7' : '#f1f5f9', color: item.activo ? '#16a34a' : '#94a3b8' }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: item.activo ? '#1F7A50' : '#F4F5F7', color: item.activo ? '#fff' : '#7A7E87' }}>
                         {item.activo ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
@@ -366,7 +366,7 @@ function CentrosVentaPOSTab({ puedeEscribir }: { puedeEscribir: boolean }) {
                       <td style={{ padding: '10px 16px' }}>
                         <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                           <button className="btn-ghost" style={{ padding: '4px 8px' }} title="Editar" onClick={() => openEdit(item)}><Edit2 size={13} /></button>
-                          <button className="btn-ghost" style={{ padding: '4px 8px', color: item.activo ? '#dc2626' : '#16a34a' }} title={item.activo ? 'Desactivar' : 'Activar'} onClick={() => toggleActivo(item)}>
+                          <button className="btn-ghost" style={{ padding: '4px 8px', color: item.activo ? '#C23B3B' : '#267F56' }} title={item.activo ? 'Desactivar' : 'Activar'} onClick={() => toggleActivo(item)}>
                             {item.activo ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}
                           </button>
                         </div>
@@ -445,7 +445,7 @@ export default function CatalogosClubPage() {
       />
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '2px solid #e2e8f0', marginBottom: 24, gap: 0, overflowX: 'auto' }}>
+      <div style={{ display: 'flex', borderBottom: '2px solid #E6E8EB', marginBottom: 24, gap: 0, overflowX: 'auto' }}>
         {TABS.map((t, i) => {
           const Icon = t.icon
           return (
@@ -454,8 +454,8 @@ export default function CatalogosClubPage() {
               padding: '9px 18px', fontSize: 13, background: 'none', border: 'none',
               cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
               fontWeight: tab === i ? 600 : 400,
-              color: tab === i ? '#2563eb' : '#94a3b8',
-              borderBottom: tab === i ? '2px solid #2563eb' : '2px solid transparent',
+              color: tab === i ? '#1C1D21' : '#7A7E87',
+              borderBottom: tab === i ? '2px solid #19D3C5' : '2px solid transparent',
               marginBottom: -2, transition: 'all 0.15s',
             }}>
               <Icon size={14} />

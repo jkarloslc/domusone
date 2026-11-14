@@ -160,7 +160,7 @@ export default function TableroPage() {
       <div className="page-header">
         <div className="page-header-left">
           <div style={{
-            width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg, #2563eb18, #0891b218)',
+            width: 48, height: 48, borderRadius: 12, background: '#F4F5F7',
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
             <LayoutDashboard size={24} style={{ color: 'var(--blue)' }} />
@@ -182,7 +182,7 @@ export default function TableroPage() {
       </div>
 
       {error && (
-        <div style={{ marginBottom: 16, padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, color: '#dc2626', fontSize: 13 }}>
+        <div style={{ marginBottom: 16, padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, color: '#C23B3B', fontSize: 13 }}>
           {error}
         </div>
       )}
@@ -190,10 +190,10 @@ export default function TableroPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 1fr) minmax(0, 1.4fr)', gap: 16, minHeight: 480 }}>
         {/* Columna izquierda: conversaciones + nuevo */}
         <div className="card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ padding: '14px 16px', borderBottom: '1px solid #e2e8f0', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: 'var(--blue)', textTransform: 'uppercase' }}>
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid #E6E8EB', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: 'var(--blue)', textTransform: 'uppercase' }}>
             Conversaciones
           </div>
-          <div style={{ maxHeight: 200, overflowY: 'auto', borderBottom: '1px solid #e2e8f0' }}>
+          <div style={{ maxHeight: 200, overflowY: 'auto', borderBottom: '1px solid #E6E8EB' }}>
             {loadingMsgs && threads.length === 0 ? (
               <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}><Loader size={18} className="animate-spin" /></div>
             ) : threads.length === 0 ? (
@@ -207,14 +207,14 @@ export default function TableroPage() {
                   type="button"
                   onClick={() => setPartnerId(th.partnerId)}
                   style={{
-                    width: '100%', textAlign: 'left', padding: '12px 16px', border: 'none', borderBottom: '1px solid #f1f5f9',
-                    background: partnerId === th.partnerId ? '#eff6ff' : 'transparent', cursor: 'pointer',
+                    width: '100%', textAlign: 'left', padding: '12px 16px', border: 'none', borderBottom: '1px solid #F4F5F7',
+                    background: partnerId === th.partnerId ? '#F4F5F7' : 'transparent', cursor: 'pointer',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 13, fontWeight: 600 }}>{th.partnerNombre}</span>
                     {th.unread > 0 && (
-                      <span style={{ fontSize: 10, fontWeight: 700, minWidth: 20, height: 20, borderRadius: 10, background: '#2563eb', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 6px' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, minWidth: 20, height: 20, borderRadius: 10, background: '#1C1D21', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 6px' }}>
                         {th.unread}
                       </span>
                     )}
@@ -247,12 +247,12 @@ export default function TableroPage() {
                   onClick={() => setPartnerId(u.id)}
                   style={{
                     width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px',
-                    borderRadius: 8, border: 'none', background: partnerId === u.id ? '#f0fdf4' : 'transparent',
+                    borderRadius: 8, border: 'none', background: partnerId === u.id ? '#F4F5F7' : 'transparent',
                     cursor: 'pointer', textAlign: 'left',
                   }}
                 >
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <User size={14} style={{ color: '#64748b' }} />
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#E6E8EB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <User size={14} style={{ color: '#62666E' }} />
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 600 }}>{u.nombre}</div>
@@ -274,7 +274,7 @@ export default function TableroPage() {
             </div>
           ) : (
             <>
-              <div style={{ padding: '14px 18px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ padding: '14px 18px', borderBottom: '1px solid #E6E8EB', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <User size={16} style={{ color: '#fff' }} />
                 </div>
@@ -283,17 +283,17 @@ export default function TableroPage() {
                   <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Mensajes internos</div>
                 </div>
               </div>
-              <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10, background: '#f8fafc' }}>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10, background: '#F8F9FA' }}>
                 {mensajesThread.map(m => {
                   const mine = m.remitente_id === myId
                   return (
                     <div key={m.id} style={{ display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start' }}>
                       <div style={{
                         maxWidth: '82%', padding: '10px 14px', borderRadius: 12,
-                        background: mine ? '#2563eb' : '#fff',
+                        background: mine ? '#1C1D21' : '#fff',
                         color: mine ? '#fff' : 'var(--text-primary)',
-                        border: mine ? 'none' : '1px solid #e2e8f0',
-                        boxShadow: mine ? '0 1px 4px rgba(37,99,235,0.25)' : '0 1px 2px rgba(0,0,0,0.04)',
+                        border: mine ? 'none' : '1px solid #E6E8EB',
+                        boxShadow: mine ? '0 1px 4px rgba(28,29,33,0.25)' : '0 1px 2px rgba(0,0,0,0.04)',
                       }}>
                         {!mine && (
                           <div style={{ fontSize: 10, opacity: 0.85, marginBottom: 4 }}>{m.remitente_nombre ?? '—'}</div>
@@ -307,7 +307,7 @@ export default function TableroPage() {
                   )
                 })}
               </div>
-              <div style={{ padding: '14px 18px', borderTop: '1px solid #e2e8f0', background: '#fff' }}>
+              <div style={{ padding: '14px 18px', borderTop: '1px solid #E6E8EB', background: '#fff' }}>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
                   <textarea
                     className="input"

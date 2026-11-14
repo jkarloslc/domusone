@@ -123,8 +123,8 @@ export default function ReporteConsumoSeccion() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
         {[
           { label: 'Total Consumo', value: fmt(totalGeneral), color: 'var(--blue)' },
-          { label: 'Secciones con consumo', value: String(rows.length), color: '#7c3aed' },
-          { label: 'Órdenes de Pago', value: String(docsTotal), color: '#059669' },
+          { label: 'Secciones con consumo', value: String(rows.length), color: '#6B4E79' },
+          { label: 'Órdenes de Pago', value: String(docsTotal), color: '#267F56' },
         ].map(k => (
           <div key={k.label} className="card" style={{ padding: '12px 16px' }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
@@ -149,12 +149,12 @@ export default function ReporteConsumoSeccion() {
           <div
             onClick={() => toggle(sec.id_area_fk)}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '12px 16px', background: '#eff6ff', cursor: 'pointer',
-              borderBottom: expanded.has(sec.id_area_fk) ? '1px solid #bfdbfe' : 'none' }}
+              padding: '12px 16px', background: '#F4F5F7', cursor: 'pointer',
+              borderBottom: expanded.has(sec.id_area_fk) ? '1px solid #C9CCD3' : 'none' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--blue)' }}>{sec.nombre}</span>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)', background: '#dbeafe',
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', background: '#E6E8EB',
                 padding: '2px 8px', borderRadius: 20 }}>{sec.docs} OP{sec.docs !== 1 ? 's' : ''}</span>
             </div>
             <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
@@ -164,7 +164,7 @@ export default function ReporteConsumoSeccion() {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Por pagar</div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: sec.saldo > 0 ? '#dc2626' : '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(sec.saldo)}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: sec.saldo > 0 ? '#C23B3B' : '#1F7A50', fontVariantNumeric: 'tabular-nums' }}>{fmt(sec.saldo)}</div>
               </div>
               <span style={{ fontSize: 16, color: 'var(--text-muted)' }}>{expanded.has(sec.id_area_fk) ? '▲' : '▼'}</span>
             </div>
@@ -188,22 +188,22 @@ export default function ReporteConsumoSeccion() {
               <tbody>
                 {sec.ops.map((op: any, i: number) => (
                   <tr key={i}>
-                    <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{op.folio}</td>
+                    <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{op.folio}</td>
                     <td style={{ fontSize: 12 }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? '—') : '—'}</td>
                     <td style={{ fontSize: 12, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
                     <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{catTG.nombre(op.id_tipo_gasto_fk) ?? '—'}</td>
                     <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{fmtF(op.fecha_op)}</td>
                     <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{fmt(Number(op.monto ?? 0))}</td>
-                    <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: Number(op.saldo ?? op.monto ?? 0) > 0 ? '#dc2626' : '#15803d', fontWeight: 600 }}>
+                    <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: Number(op.saldo ?? op.monto ?? 0) > 0 ? '#C23B3B' : '#1F7A50', fontWeight: 600 }}>
                       {fmt(Number(op.saldo ?? op.monto ?? 0))}
                     </td>
                     <td style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{op.status}</td>
                   </tr>
                 ))}
-                <tr style={{ background: '#f0f9ff', fontWeight: 700 }}>
+                <tr style={{ background: '#F4F5F7', fontWeight: 700 }}>
                   <td colSpan={5} style={{ color: 'var(--blue)', fontSize: 12 }}>Subtotal {sec.nombre}</td>
                   <td style={{ textAlign: 'right', color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>{fmt(sec.total)}</td>
-                  <td style={{ textAlign: 'right', color: sec.saldo > 0 ? '#dc2626' : '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(sec.saldo)}</td>
+                  <td style={{ textAlign: 'right', color: sec.saldo > 0 ? '#C23B3B' : '#1F7A50', fontVariantNumeric: 'tabular-nums' }}>{fmt(sec.saldo)}</td>
                   <td></td>
                 </tr>
               </tbody>
@@ -215,7 +215,7 @@ export default function ReporteConsumoSeccion() {
       {/* Total general */}
       {rows.length > 0 && (
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-          <div className="card" style={{ padding: '12px 20px', display: 'flex', gap: 32, background: 'var(--blue-pale)', border: '1px solid #bfdbfe' }}>
+          <div className="card" style={{ padding: '12px 20px', display: 'flex', gap: 32, background: 'var(--blue-pale)', border: '1px solid #C9CCD3' }}>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>TOTAL GENERAL</div>
               <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalGeneral)}</div>

@@ -85,8 +85,8 @@ export default function CategoriasManoObraPanel({ onBack }: { onBack?: () => voi
           )}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: '#b4530918', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <HardHat size={15} style={{ color: '#b45309' }} />
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: '#96600F18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <HardHat size={15} style={{ color: '#62666E' }} />
               </div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Categorías Mano de Obra</h2>
             </div>
@@ -110,8 +110,8 @@ export default function CategoriasManoObraPanel({ onBack }: { onBack?: () => voi
       {/* Stats */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
         <div className="card" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <CheckCircle size={13} style={{ color: '#15803d' }} />
-          <span style={{ fontSize: 12 }}><strong style={{ color: '#15803d' }}>{activos}</strong> activas</span>
+          <CheckCircle size={13} style={{ color: '#1F7A50' }} />
+          <span style={{ fontSize: 12 }}><strong style={{ color: '#1F7A50' }}>{activos}</strong> activas</span>
         </div>
       </div>
 
@@ -149,7 +149,7 @@ export default function CategoriasManoObraPanel({ onBack }: { onBack?: () => voi
               )}
             </div>
           </div>
-          {error && <div style={{ marginTop: 12, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, fontSize: 13, color: '#dc2626' }}>{error}</div>}
+          {error && <div style={{ marginTop: 12, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 7, fontSize: 13, color: '#C23B3B' }}>{error}</div>}
         </ModalShell>
       )}
 
@@ -177,15 +177,15 @@ export default function CategoriasManoObraPanel({ onBack }: { onBack?: () => voi
               </td></tr>
             ) : items.map(c => (
               <tr key={c.id} style={{ opacity: c.activo ? 1 : 0.45 }}>
-                <td style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{c.id}</td>
+                <td style={{ fontSize: 11, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{c.id}</td>
                 <td style={{ fontWeight: 500 }}>{c.categoria}</td>
                 <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt$(c.sueldo_diario)}</td>
                 <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-muted)' }}>{fmt$(c.sueldo_diario / 8)}</td>
                 <td style={{ textAlign: 'center' }}>
                   <button onClick={() => toggleActivo(c)} style={{ background: 'none', border: 'none', cursor: puedeEscribir ? 'pointer' : 'default', display: 'flex', margin: '0 auto' }}>
                     {c.activo
-                      ? <ToggleRight size={20} style={{ color: '#15803d' }} />
-                      : <ToggleLeft size={20} style={{ color: '#cbd5e1' }} />}
+                      ? <ToggleRight size={20} style={{ color: '#1F7A50' }} />
+                      : <ToggleLeft size={20} style={{ color: '#C9CCD3' }} />}
                   </button>
                 </td>
                 {puedeEscribir && (

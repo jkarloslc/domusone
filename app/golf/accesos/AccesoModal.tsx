@@ -90,34 +90,34 @@ function InvitadoPicker({ value, nombreActual, search, onSearchChange, onSelect,
   }
 
   if (value) return (
-    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', background: '#f8fafc', border: `1px solid ${borderColor}`, borderRadius: 8, minWidth: 0 }}>
-      <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nombreActual}</span>
-      <button onClick={() => onSelect(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', flexShrink: 0 }}><X size={13} /></button>
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', background: '#F8F9FA', border: `1px solid ${borderColor}`, borderRadius: 8, minWidth: 0 }}>
+      <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#26282D', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nombreActual}</span>
+      <button onClick={() => onSelect(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', flexShrink: 0 }}><X size={13} /></button>
     </div>
   )
 
   return (
     <div style={{ flex: 1, position: 'relative', minWidth: 0 }}>
       <input
-        style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: `1px solid ${borderColor}`, borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+        style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: `1px solid ${borderColor}`, borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
         placeholder={placeholder}
         value={search}
         onChange={e => { onSearchChange(e.target.value); setShowNuevo(false) }}
       />
       {search.trim().length >= 2 && !showNuevo && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 60, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4, maxHeight: 220, overflowY: 'auto' }}>
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 60, background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4, maxHeight: 220, overflowY: 'auto' }}>
           {buscando ? (
-            <div style={{ padding: 10, fontSize: 12, color: '#94a3b8' }}>Buscando…</div>
+            <div style={{ padding: 10, fontSize: 12, color: '#7A7E87' }}>Buscando…</div>
           ) : (
             <>
               {results.map(inv => (
                 <button key={inv.id} onClick={() => { onSelect(inv); onSearchChange(''); setResults([]) }}
-                  style={{ display: 'block', width: '100%', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 13, color: '#1e293b', borderBottom: '1px solid #f1f5f9' }}>
+                  style={{ display: 'block', width: '100%', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 13, color: '#26282D', borderBottom: '1px solid #F4F5F7' }}>
                   {nombreCompletoInvitado(inv)}
                 </button>
               ))}
               <button onClick={abrirNuevo}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '8px 12px', background: '#f0fdf4', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#16a34a' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '8px 12px', background: '#F4F5F7', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#267F56' }}>
                 <Plus size={12} /> Registrar invitado nuevo
               </button>
             </>
@@ -125,35 +125,35 @@ function InvitadoPicker({ value, nombreActual, search, onSearchChange, onSelect,
         </div>
       )}
       {showNuevo && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 60, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4, padding: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 60, background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4, padding: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
           <input
-            style={{ width: '100%', padding: '7px 10px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, textTransform: 'uppercase', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '7px 10px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 6, textTransform: 'uppercase', boxSizing: 'border-box' }}
             placeholder="Nombre(s) *"
             value={nuevo.nombre}
             onChange={e => setNuevo(n => ({ ...n, nombre: soloMayusculas(e.target.value) }))}
             autoFocus
           />
           <input
-            style={{ width: '100%', padding: '7px 10px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, textTransform: 'uppercase', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '7px 10px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 6, textTransform: 'uppercase', boxSizing: 'border-box' }}
             placeholder="Apellido Paterno"
             value={nuevo.apellido_paterno}
             onChange={e => setNuevo(n => ({ ...n, apellido_paterno: soloMayusculas(e.target.value) }))}
           />
           <input
-            style={{ width: '100%', padding: '7px 10px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, textTransform: 'uppercase', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '7px 10px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 6, textTransform: 'uppercase', boxSizing: 'border-box' }}
             placeholder="Apellido Materno"
             value={nuevo.apellido_materno}
             onChange={e => setNuevo(n => ({ ...n, apellido_materno: soloMayusculas(e.target.value) }))}
           />
-          {errorNuevo && <div style={{ fontSize: 11, color: '#dc2626' }}>{errorNuevo}</div>}
+          {errorNuevo && <div style={{ fontSize: 11, color: '#C23B3B' }}>{errorNuevo}</div>}
           <div style={{ display: 'flex', gap: 6 }}>
             <button onClick={crearInvitado} disabled={creando}
-              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '7px 10px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 6, background: '#16a34a', color: '#fff', cursor: 'pointer', opacity: creando ? 0.7 : 1 }}>
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '7px 10px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 6, background: '#267F56', color: '#fff', cursor: 'pointer', opacity: creando ? 0.7 : 1 }}>
               {creando ? <Loader size={12} className="animate-spin" /> : <Plus size={12} />}
               Guardar
             </button>
             <button onClick={() => setShowNuevo(false)}
-              style={{ padding: '7px 10px', fontSize: 12, fontWeight: 600, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', color: '#64748b', cursor: 'pointer' }}>
+              style={{ padding: '7px 10px', fontSize: 12, fontWeight: 600, border: '1px solid #E6E8EB', borderRadius: 6, background: '#fff', color: '#62666E', cursor: 'pointer' }}>
               Cancelar
             </button>
           </div>
@@ -183,10 +183,10 @@ function InvitadoVisitasBadge({ idInvitado, limite }: { idInvitado: number; limi
     return () => { cancel = true }
   }, [idInvitado, anio])
 
-  if (count === null) return <span style={{ fontSize: 11, color: '#94a3b8' }}>Verificando visitas…</span>
+  if (count === null) return <span style={{ fontSize: 11, color: '#7A7E87' }}>Verificando visitas…</span>
   const alTope = count >= limite
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: alTope ? '#fef2f2' : '#f0fdf4', color: alTope ? '#dc2626' : '#15803d' }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: alTope ? '#C23B3B' : '#1F7A50', color: '#fff' }}>
       {alTope && <AlertTriangle size={11} />}
       Visitas {anio}: {count}/{limite}{alTope ? ' — tope alcanzado' : ''}
     </span>
@@ -196,10 +196,10 @@ function InvitadoVisitasBadge({ idInvitado, limite }: { idInvitado: number; limi
 type Props = { onClose: () => void; onSaved: () => void }
 
 const inputStyle = {
-  width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0',
-  borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none',
+  width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB',
+  borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none',
 }
-const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }
+const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }
 
 const nombreCompleto = (x: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null }) =>
   [x.nombre, x.apellido_paterno, x.apellido_materno].filter(Boolean).join(' ')
@@ -634,14 +634,14 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
         <button className="btn-ghost" onClick={() => abrirTicket(false)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Printer size={14} /> Ver Ticket
         </button>
-        <button className="btn-primary" onClick={() => abrirTicket(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#059669', border: 'none' }}>
+        <button className="btn-primary" onClick={() => abrirTicket(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#267F56', border: 'none' }}>
           <Printer size={14} /> Imprimir Ticket
         </button>
       </>}
     >
       <div style={{ textAlign: 'center' }}>
-        {socioNombre && <div style={{ fontSize: 13, color: '#1e293b', fontWeight: 600, marginBottom: 6 }}>{socioNombre}</div>}
-        <div style={{ fontSize: 12, color: '#94a3b8' }}>Folio #{String(success.id).padStart(6, '0')}</div>
+        {socioNombre && <div style={{ fontSize: 13, color: '#26282D', fontWeight: 600, marginBottom: 6 }}>{socioNombre}</div>}
+        <div style={{ fontSize: 12, color: '#7A7E87' }}>Folio #{String(success.id).padStart(6, '0')}</div>
       </div>
     </ModalShell>
   )
@@ -666,48 +666,48 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
         <div>
           <label style={labelStyle}>Socio *</label>
           {socioSelec ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#1d4ed8' }}>{socioNombre}</div>
-                <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#26282D' }}>{socioNombre}</div>
+                <div style={{ fontSize: 11, color: '#62666E', marginTop: 1 }}>
                   {socioSelec.numero_socio && `#${socioSelec.numero_socio} · `}
                   {socioSelec.cat_categorias_socios?.nombre}
                   {socioSelec.numero_tarjeta && ` · Tarjeta: ${socioSelec.numero_tarjeta}`}
                 </div>
               </div>
-              <button onClick={limpiarSocio} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={14} /></button>
+              <button onClick={limpiarSocio} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87' }}><X size={14} /></button>
             </div>
           ) : null}
 
           {/* Estado de adeudos */}
           {socioSelec && (
             verificandoAdeudo ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '8px 12px', background: '#f8fafc', borderRadius: 8, fontSize: 12, color: '#64748b' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '8px 12px', background: '#F8F9FA', borderRadius: 8, fontSize: 12, color: '#62666E' }}>
                 <Loader size={13} className="animate-spin" /> Verificando cuotas…
               </div>
             ) : tieneAdeudo ? (
-              <div style={{ marginTop: 8, padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, fontSize: 12, fontWeight: 700, color: '#dc2626' }}>
+              <div style={{ marginTop: 8, padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, fontSize: 12, fontWeight: 700, color: '#C23B3B' }}>
                   <AlertTriangle size={13} /> Socio con adeudo — no puede salir al campo
                 </div>
                 {adeudos.map(a => (
-                  <div key={a.id} style={{ fontSize: 11, color: '#991b1b', display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                  <div key={a.id} style={{ fontSize: 11, color: '#8C2A2A', display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
                     <span>{a.concepto}</span>
                     <span style={{ fontWeight: 600 }}>{fmt$(a.monto_final ?? 0)}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, padding: '8px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, fontSize: 12, color: '#15803d', fontWeight: 600 }}>
-                <Circle size={8} style={{ fill: '#15803d', color: '#15803d' }} /> Sin adeudos — puede salir al campo
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #1F7A50', borderRadius: 8, fontSize: 12, color: '#1F7A50', fontWeight: 600 }}>
+                <Circle size={8} style={{ fill: '#1F7A50', color: '#1F7A50' }} /> Sin adeudos — puede salir al campo
               </div>
             )
           )}
 
           {!socioSelec && (
             <div style={{ position: 'relative' }}>
-              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              {buscando && <Loader size={12} className="animate-spin" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />}
+              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
+              {buscando && <Loader size={12} className="animate-spin" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />}
               <input
                 style={{ ...inputStyle, paddingLeft: 30 }}
                 placeholder="Buscar por nombre, número de socio o tarjeta…"
@@ -716,14 +716,14 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
                 autoFocus
               />
               {socioResults.length > 0 && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4 }}>
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4 }}>
                   {socioResults.map(s => (
                     <button key={s.id} onClick={() => seleccionarSocio(s)}
-                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', padding: '9px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #f1f5f9' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', padding: '9px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #F4F5F7' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{nombreCompleto(s)}</span>
-                      <span style={{ fontSize: 11, color: '#64748b' }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>{nombreCompleto(s)}</span>
+                      <span style={{ fontSize: 11, color: '#62666E' }}>
                         {s.numero_socio && `#${s.numero_socio} · `}{s.cat_categorias_socios?.nombre}
                       </span>
                     </button>
@@ -759,32 +759,32 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <label style={{ ...labelStyle, marginBottom: 0 }}>Acompañantes</label>
-              <span style={{ fontSize: 11, color: '#94a3b8' }}>(máx. 5)</span>
+              <span style={{ fontSize: 11, color: '#7A7E87' }}>(máx. 5)</span>
               {familiares.length > 0 && (
-                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#eff6ff', color: '#2563eb', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#F4F5F7', color: '#1C1D21', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
                   <Users size={10} /> {familiares.length} familiar{familiares.length !== 1 ? 'es' : ''}
                 </span>
               )}
               {socioSelec && totalPasesDisp > 0 && (
-                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#fffbeb', color: '#d97706', fontWeight: 600 }}>
-                  🎫 {totalPasesDisp} pase{totalPasesDisp !== 1 ? 's' : ''} disponible{totalPasesDisp !== 1 ? 's' : ''}
+                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#B5761A', color: '#fff', fontWeight: 600 }}>
+                  {totalPasesDisp} pase{totalPasesDisp !== 1 ? 's' : ''} disponible{totalPasesDisp !== 1 ? 's' : ''}
                 </span>
               )}
               {socioSelec && totalPasesDisp === 0 && acompanantes.some(a => a.tipo === 'externo') && (
-                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#fef2f2', color: '#dc2626', fontWeight: 600 }}>
+                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#C23B3B', color: '#fff', fontWeight: 600 }}>
                   Sin pases — se registrará como Green Fee
                 </span>
               )}
             </div>
             {socioSelec && acompanantes.length < 5 && (
-              <button onClick={addAcomp} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+              <button onClick={addAcomp} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#1C1D21', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
                 <Plus size={13} /> Agregar
               </button>
             )}
           </div>
 
           {!socioSelec && (
-            <div style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>
+            <div style={{ fontSize: 12, color: '#7A7E87', fontStyle: 'italic' }}>
               Selecciona un socio para agregar acompañantes
             </div>
           )}
@@ -792,27 +792,27 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {acompanantes.map((a, i) => (
               <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <div style={{ display: 'flex', border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
+                <div style={{ display: 'flex', border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
                   {familiares.length > 0 && (
                     <button
                       onClick={() => switchTipoAcomp(i, 'familiar')}
-                      style={{ padding: '7px 11px', fontSize: 12, fontWeight: 600, background: a.tipo === 'familiar' ? '#eff6ff' : '#fff', color: a.tipo === 'familiar' ? '#1d4ed8' : '#94a3b8', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      style={{ padding: '7px 11px', fontSize: 12, fontWeight: 600, background: a.tipo === 'familiar' ? '#F4F5F7' : '#fff', color: a.tipo === 'familiar' ? '#26282D' : '#7A7E87', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                       Familiar
                     </button>
                   )}
                   <button
                     onClick={() => switchTipoAcomp(i, 'externo')}
-                    style={{ padding: '7px 11px', fontSize: 12, fontWeight: 600, background: a.tipo === 'externo' ? '#fffbeb' : '#fff', color: a.tipo === 'externo' ? '#d97706' : '#94a3b8', border: 'none', borderLeft: familiares.length > 0 ? '1px solid #e2e8f0' : 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                    🎫 Invitado
+                    style={{ padding: '7px 11px', fontSize: 12, fontWeight: 600, background: a.tipo === 'externo' ? '#F4F5F7' : '#fff', color: a.tipo === 'externo' ? '#B5761A' : '#7A7E87', border: 'none', borderLeft: familiares.length > 0 ? '1px solid #E6E8EB' : 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    Invitado
                   </button>
                   <button
                     onClick={() => switchTipoAcomp(i, 'libre')}
-                    style={{ padding: '7px 11px', fontSize: 12, fontWeight: 600, background: a.tipo === 'libre' ? '#f0fdf4' : '#fff', color: a.tipo === 'libre' ? '#16a34a' : '#94a3b8', border: 'none', borderLeft: '1px solid #e2e8f0', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    style={{ padding: '7px 11px', fontSize: 12, fontWeight: 600, background: a.tipo === 'libre' ? '#F4F5F7' : '#fff', color: a.tipo === 'libre' ? '#267F56' : '#7A7E87', border: 'none', borderLeft: '1px solid #E6E8EB', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                     Green Fee
                   </button>
                   <button
                     onClick={() => switchTipoAcomp(i, 'intercambio')}
-                    style={{ padding: '7px 11px', fontSize: 12, fontWeight: 600, background: a.tipo === 'intercambio' ? '#fdf4ff' : '#fff', color: a.tipo === 'intercambio' ? '#a21caf' : '#94a3b8', border: 'none', borderLeft: '1px solid #e2e8f0', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    style={{ padding: '7px 11px', fontSize: 12, fontWeight: 600, background: a.tipo === 'intercambio' ? '#F4F5F7' : '#fff', color: a.tipo === 'intercambio' ? '#6B4E79' : '#7A7E87', border: 'none', borderLeft: '1px solid #E6E8EB', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                     Intercambio
                   </button>
                 </div>
@@ -832,13 +832,13 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
                 ) : a.tipo === 'intercambio' ? (
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <input
-                      style={{ ...inputStyle, borderColor: '#f5d0fe' }}
+                      style={{ ...inputStyle, borderColor: '#E6E8EB' }}
                       placeholder={`Nombre del visitante ${i + 1} (intercambio)`}
                       value={a.nombre}
                       onChange={e => setAcompLibre(i, e.target.value)}
                     />
                     <input
-                      style={{ ...inputStyle, borderColor: '#f5d0fe' }}
+                      style={{ ...inputStyle, borderColor: '#E6E8EB' }}
                       placeholder="Club origen"
                       value={a.club_origen ?? ''}
                       onChange={e => setAcompClubOrigen(i, e.target.value)}
@@ -855,23 +855,23 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
                       placeholder={a.tipo === 'externo'
                         ? `Buscar o crear invitado ${i + 1} (consumirá 1 pase)`
                         : `Buscar o crear invitado ${i + 1} (green fee)`}
-                      borderColor={a.tipo === 'externo' ? '#fde68a' : '#e2e8f0'}
+                      borderColor="#E6E8EB"
                     />
                     {a.id_invitado && <InvitadoVisitasBadge idInvitado={a.id_invitado} limite={limiteInvitados} />}
                     {!a.id_invitado && (a._searchInvitado ?? '').trim() && (
-                      <span style={{ fontSize: 11, color: '#dc2626' }}>Falta confirmar — selecciona un resultado o registra al invitado nuevo</span>
+                      <span style={{ fontSize: 11, color: '#C23B3B' }}>Falta confirmar — selecciona un resultado o registra al invitado nuevo</span>
                     )}
                   </div>
                 ) : (
                   <input
-                    style={{ ...inputStyle, flex: 1, borderColor: '#e2e8f0' }}
+                    style={{ ...inputStyle, flex: 1, borderColor: '#E6E8EB' }}
                     placeholder={`Nombre del acompañante ${i + 1}`}
                     value={a.nombre}
                     onChange={e => setAcompLibre(i, e.target.value)}
                   />
                 )}
 
-                <button onClick={() => removeAcomp(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4, flexShrink: 0 }}>
+                <button onClick={() => removeAcomp(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 4, flexShrink: 0 }}>
                   <Trash2 size={14} />
                 </button>
               </div>
@@ -887,23 +887,23 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
               <input
                 style={{
                   ...inputStyle, paddingRight: 34,
-                  borderColor: !folioTicketPOS.trim() ? '#e2e8f0' : folioValidado?.ok ? '#86efac' : '#fca5a5',
+                  borderColor: !folioTicketPOS.trim() ? '#E6E8EB' : folioValidado?.ok ? '#1F7A50' : '#C23B3B',
                 }}
                 type="number" min="1"
                 placeholder="Folio impreso en el ticket (el número grande, ej. 123)…"
                 value={folioTicketPOS}
                 onChange={e => setFolioTicketPOS(e.target.value)}
               />
-              {verificandoFolio && <Loader size={14} className="animate-spin" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />}
+              {verificandoFolio && <Loader size={14} className="animate-spin" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />}
             </div>
             {!verificandoFolio && folioValidado && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 11, fontWeight: 600, color: folioValidado.ok ? '#15803d' : '#dc2626' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 11, fontWeight: 600, color: folioValidado.ok ? '#1F7A50' : '#C23B3B' }}>
                 {folioValidado.ok ? <CheckCircle size={13} /> : <AlertTriangle size={13} />}
                 {folioValidado.msg}
               </div>
             )}
             {!folioTicketPOS.trim() && (
-              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
+              <div style={{ fontSize: 11, color: '#7A7E87', marginTop: 4 }}>
                 La salida incluye un visitante Green Fee — captura el folio del ticket cobrado hoy en el POS antes de registrar la salida.
               </div>
             )}
@@ -922,7 +922,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
         </div>
 
         {error && (
-          <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>
+          <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 13, color: '#C23B3B' }}>
             {error}
           </div>
         )}

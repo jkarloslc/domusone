@@ -70,11 +70,11 @@ const mapFormaPagoSAT = (nombre: string): string => {
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '8px 12px', fontSize: 13,
-  border: '1px solid #e2e8f0', borderRadius: 8,
+  border: '1px solid #E6E8EB', borderRadius: 8,
   background: '#fff', fontFamily: 'inherit', outline: 'none',
 }
 const labelStyle: React.CSSProperties = {
-  fontSize: 11, fontWeight: 600, color: '#64748b',
+  fontSize: 11, fontWeight: 600, color: '#62666E',
   display: 'block', marginBottom: 4,
 }
 const selectStyle: React.CSSProperties = { ...inputStyle }
@@ -303,14 +303,14 @@ export default function FacturaUniversalModal({
       <p>Estimado cliente,</p>
       <p>Adjuntamos su factura electrónica con los siguientes datos:</p>
       <table style="border-collapse:collapse;font-size:14px">
-        <tr><td style="padding:4px 12px 4px 0;color:#64748b">Folio fiscal (UUID):</td><td><strong style="font-family:monospace">${resultado.folio_fiscal}</strong></td></tr>
-        <tr><td style="padding:4px 12px 4px 0;color:#64748b">Recibo:</td><td><strong>${folio}</strong></td></tr>
-        <tr><td style="padding:4px 12px 4px 0;color:#64748b">Total:</td><td><strong>${fmt$(totalCalc)}</strong></td></tr>
-        <tr><td style="padding:4px 12px 4px 0;color:#64748b">Fecha:</td><td>${fecha}</td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#62666E">Folio fiscal (UUID):</td><td><strong style="font-variant-numeric:tabular-nums">${resultado.folio_fiscal}</strong></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#62666E">Recibo:</td><td><strong>${folio}</strong></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#62666E">Total:</td><td><strong>${fmt$(totalCalc)}</strong></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#62666E">Fecha:</td><td>${fecha}</td></tr>
       </table>
       <p style="margin-top:16px">Los archivos XML y PDF se encuentran adjuntos a este correo.</p>
       <p>Para cualquier aclaración, comuníquese con administración.</p>
-      <p style="color:#64748b;font-size:12px">${emisor.razon_social} · RFC: ${emisor.rfc}</p>
+      <p style="color:#62666E;font-size:12px">${emisor.razon_social} · RFC: ${emisor.rfc}</p>
     `
 
     try {
@@ -343,16 +343,16 @@ export default function FacturaUniversalModal({
       <div style={{
         width: 24, height: 24, borderRadius: '50%', fontSize: 11, fontWeight: 700,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: paso > n ? '#7c3aed' : paso === n ? '#ede9fe' : '#f1f5f9',
-        color:      paso > n ? '#fff'    : paso === n ? '#7c3aed' : '#94a3b8',
-        border: paso === n ? '2px solid #7c3aed' : '2px solid transparent',
+        background: paso > n ? '#6B4E79' : paso === n ? '#E6E8EB' : '#F4F5F7',
+        color:      paso > n ? '#fff'    : paso === n ? '#6B4E79' : '#7A7E87',
+        border: paso === n ? '2px solid #6B4E79' : '2px solid transparent',
       }}>
         {paso > n ? '✓' : n}
       </div>
-      <span style={{ fontSize: 12, color: paso === n ? '#7c3aed' : paso > n ? '#475569' : '#94a3b8', fontWeight: paso === n ? 700 : 400 }}>
+      <span style={{ fontSize: 12, color: paso === n ? '#6B4E79' : paso > n ? '#4A4D54' : '#7A7E87', fontWeight: paso === n ? 700 : 400 }}>
         {PASOS[n - 1]}
       </span>
-      {n < 4 && <ChevronRight size={12} color="#cbd5e1" />}
+      {n < 4 && <ChevronRight size={12} color="#C9CCD3" />}
     </div>
   )
 
@@ -360,23 +360,23 @@ export default function FacturaUniversalModal({
     <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
       {paso > 1 && paso < 4 && (
         <button onClick={() => setPaso(p => p - 1)} disabled={saving}
-          style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
+          style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', cursor: 'pointer' }}>
           Atrás
         </button>
       )}
       <button onClick={onClose} disabled={saving}
-        style={{ padding: '8px 14px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
+        style={{ padding: '8px 14px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', cursor: 'pointer' }}>
         Cancelar
       </button>
       {paso < 3 && (
         <button onClick={() => setPaso(p => p + 1)}
-          style={{ padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: 'pointer' }}>
+          style={{ padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#6B4E79', color: '#fff', cursor: 'pointer' }}>
           Siguiente →
         </button>
       )}
       {paso === 3 && (
         <button onClick={handleTimbrar} disabled={saving}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: timbradoPendiente ? '#d97706' : '#7c3aed', color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: timbradoPendiente ? '#B5761A' : '#6B4E79', color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
           {saving ? <Loader size={14} className="animate-spin" /> : <FileCheck size={14} />}
           {saving ? 'Guardando…' : timbradoPendiente ? 'Reintentar guardar' : 'Timbrar CFDI'}
         </button>
@@ -386,14 +386,14 @@ export default function FacturaUniversalModal({
     <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
       {receptor.email && !emailEnviado && (
         <button onClick={handleEnviarEmail} disabled={enviandoEmail}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, border: '1px solid #a7f3d0', borderRadius: 8, background: '#ecfdf5', color: '#047857', cursor: 'pointer', opacity: enviandoEmail ? 0.6 : 1 }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, border: '1px solid #E6E8EB', borderRadius: 8, background: '#F4F5F7', color: '#1F7A50', cursor: 'pointer', opacity: enviandoEmail ? 0.6 : 1 }}>
           {enviandoEmail ? <Loader size={13} className="animate-spin" /> : <Send size={13} />}
           Enviar por email
         </button>
       )}
-      {emailEnviado && <span style={{ fontSize: 13, color: '#15803d', display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle size={14} /> Email enviado</span>}
+      {emailEnviado && <span style={{ fontSize: 13, color: '#1F7A50', display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle size={14} /> Email enviado</span>}
       <button onClick={() => onSaved(resultado?.folio_fiscal ?? '')}
-        style={{ padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: 'pointer' }}>
+        style={{ padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#6B4E79', color: '#fff', cursor: 'pointer' }}>
         Cerrar
       </button>
     </div>
@@ -405,14 +405,14 @@ export default function FacturaUniversalModal({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
         {/* Stepper */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 12px', background: '#f8fafc', borderRadius: 10, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 12px', background: '#F8F9FA', borderRadius: 10, flexWrap: 'wrap' }}>
           {[1, 2, 3, 4].map(n => stepDot(n))}
         </div>
 
         {/* ── Paso 1: Datos del Receptor ── */}
         {paso === 1 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed', marginBottom: 4 }}>Datos del Receptor (Quien recibe la factura)</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#6B4E79', marginBottom: 4 }}>Datos del Receptor (Quien recibe la factura)</div>
 
             {fiscalOptions && fiscalOptions.length > 1 && (
               <div>
@@ -432,12 +432,12 @@ export default function FacturaUniversalModal({
                         })}
                         style={{
                           display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2,
-                          padding: '6px 12px', fontSize: 12, border: `1px solid ${active ? '#7c3aed' : '#e2e8f0'}`,
-                          borderRadius: 8, background: active ? '#f5f3ff' : '#fff',
-                          color: active ? '#6d28d9' : '#475569', cursor: 'pointer',
+                          padding: '6px 12px', fontSize: 12, border: `1px solid ${active ? '#6B4E79' : '#E6E8EB'}`,
+                          borderRadius: 8, background: active ? '#F4F5F7' : '#fff',
+                          color: active ? '#5C4268' : '#4A4D54', cursor: 'pointer',
                         }}>
                         <span style={{ fontWeight: 700 }}>{opt.alias}</span>
-                        <span style={{ fontSize: 10.5, fontFamily: 'monospace', opacity: 0.8 }}>{opt.rfc}</span>
+                        <span style={{ fontSize: 10.5, fontVariantNumeric: 'tabular-nums', opacity: 0.8 }}>{opt.rfc}</span>
                       </button>
                     )
                   })}
@@ -455,7 +455,7 @@ export default function FacturaUniversalModal({
                   uso_cfdi:       'S01',
                   email:          '',
                 })}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 12, fontWeight: 600, border: '1px solid #a7f3d0', borderRadius: 8, background: '#ecfdf5', color: '#065f46', cursor: 'pointer', alignSelf: 'flex-start' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 12, fontWeight: 600, border: '1px solid #E6E8EB', borderRadius: 8, background: '#F4F5F7', color: '#17603F', cursor: 'pointer', alignSelf: 'flex-start' }}>
                 Usar RFC Genérico (Público en General)
               </button>
             )}
@@ -463,7 +463,7 @@ export default function FacturaUniversalModal({
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div style={{ gridColumn: 'span 2' }}>
                 <label style={labelStyle}>RFC *</label>
-                <input style={{ ...inputStyle, fontFamily: 'monospace', textTransform: 'uppercase' }}
+                <input style={{ ...inputStyle, fontVariantNumeric: 'tabular-nums', textTransform: 'uppercase' }}
                   value={receptor.rfc} onChange={e => setR('rfc', e.target.value.toUpperCase())} placeholder="XAXX010101000" />
               </div>
               <div style={{ gridColumn: 'span 2' }}>
@@ -500,7 +500,7 @@ export default function FacturaUniversalModal({
         {/* ── Paso 2: Datos del Comprobante ── */}
         {paso === 2 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed', marginBottom: 4 }}>Datos del Comprobante</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#6B4E79', marginBottom: 4 }}>Datos del Comprobante</div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div style={{ gridColumn: 'span 2' }}>
@@ -522,40 +522,40 @@ export default function FacturaUniversalModal({
               </div>
               <div>
                 <label style={labelStyle}>Serie{serieFactura ? ' (folio automático)' : ''}</label>
-                <input style={{ ...inputStyle, ...(serieFactura ? { background: '#f1f5f9', color: '#64748b' } : {}) }}
+                <input style={{ ...inputStyle, ...(serieFactura ? { background: '#F4F5F7', color: '#62666E' } : {}) }}
                   value={serieFactura ?? cfdi.serie}
                   disabled={!!serieFactura}
                   onChange={e => setC('serie', e.target.value)} placeholder="A" />
               </div>
               <div>
                 <label style={labelStyle}>Clave Prod/Serv SAT (respaldo)</label>
-                <input style={{ ...inputStyle, fontFamily: 'monospace' }} value={cfdi.clave_prod_serv} onChange={e => setC('clave_prod_serv', e.target.value)} placeholder="80101601" />
-                <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>
+                <input style={{ ...inputStyle, fontVariantNumeric: 'tabular-nums' }} value={cfdi.clave_prod_serv} onChange={e => setC('clave_prod_serv', e.target.value)} placeholder="80101601" />
+                <div style={{ fontSize: 10, color: '#7A7E87', marginTop: 3 }}>
                   Solo aplica a renglones sin clave propia — revisa la columna "Clave SAT" abajo.
                 </div>
               </div>
             </div>
 
             {/* Conceptos — IVA fijo desde el catálogo, solo lectura */}
-            <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden', marginTop: 4 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 110px 80px', padding: '8px 12px', background: '#f8fafc', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', gap: 8 }}>
+            <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden', marginTop: 4 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 110px 80px', padding: '8px 12px', background: '#F8F9FA', fontSize: 10, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.06em', gap: 8 }}>
                 <span>Concepto</span><span>Clave SAT</span><span style={{ textAlign: 'right' }}>Base</span><span style={{ textAlign: 'center' }}>IVA</span>
               </div>
               {conceptos.map((c, i) => {
                 const tiva = tasas[i] ?? 0
                 const claveEfectiva = c.clave_prod_serv || cfdi.clave_prod_serv
                 return (
-                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 90px 110px 80px', padding: '8px 12px', borderTop: '1px solid #f1f5f9', fontSize: 12, gap: 8, alignItems: 'center' }}>
-                    <span style={{ color: '#475569' }}>{c.descripcion}</span>
-                    <span style={{ fontFamily: 'monospace', fontSize: 11, color: c.clave_prod_serv ? '#0f766e' : '#cbd5e1' }} title={c.clave_prod_serv ? 'Resuelta del catálogo' : 'Usa el respaldo global'}>
+                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 90px 110px 80px', padding: '8px 12px', borderTop: '1px solid #F4F5F7', fontSize: 12, gap: 8, alignItems: 'center' }}>
+                    <span style={{ color: '#4A4D54' }}>{c.descripcion}</span>
+                    <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: c.clave_prod_serv ? '#126B63' : '#C9CCD3' }} title={c.clave_prod_serv ? 'Resuelta del catálogo' : 'Usa el respaldo global'}>
                       {claveEfectiva}
                     </span>
-                    <span style={{ fontWeight: 700, color: '#1e293b', textAlign: 'right' }}>{fmt$(c.importe)}</span>
+                    <span style={{ fontWeight: 700, color: '#26282D', textAlign: 'right' }}>{fmt$(c.importe)}</span>
                     <span style={{ textAlign: 'center' }}>
                       <span style={{
                         display: 'inline-block', padding: '2px 7px', borderRadius: 10, fontSize: 10, fontWeight: 700,
-                        background: tiva > 0 ? '#ecfdf5' : '#f1f5f9',
-                        color:      tiva > 0 ? '#065f46' : '#64748b',
+                        background: tiva > 0 ? '#1F7A50' : '#F4F5F7',
+                        color:      tiva > 0 ? '#fff' : '#62666E',
                       }}>
                         {tiva > 0 ? `${Math.round(tiva * 100)} %` : 'Exento'}
                       </span>
@@ -564,18 +564,18 @@ export default function FacturaUniversalModal({
                 )
               })}
               {/* Totales */}
-              <div style={{ borderTop: '2px solid #e2e8f0', background: '#faf5ff' }}>
+              <div style={{ borderTop: '2px solid #E6E8EB', background: '#F4F5F7' }}>
                 {ivaCalc > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', fontSize: 12, color: '#64748b' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', fontSize: 12, color: '#62666E' }}>
                     <span>Subtotal (base)</span><span>{fmt$(subtotalCalc)}</span>
                   </div>
                 )}
                 {ivaCalc > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 12px 8px', fontSize: 12, color: '#64748b' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 12px 8px', fontSize: 12, color: '#62666E' }}>
                     <span>IVA incluido</span><span>{fmt$(ivaCalc)}</span>
                   </div>
                 )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', borderTop: ivaCalc > 0 ? '1px solid #e2e8f0' : undefined, fontSize: 13, fontWeight: 700, color: '#7c3aed' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', borderTop: ivaCalc > 0 ? '1px solid #E6E8EB' : undefined, fontSize: 13, fontWeight: 700, color: '#6B4E79' }}>
                   <span>Total a facturar</span>
                   <span>{fmt$(totalCalc)}</span>
                 </div>
@@ -587,36 +587,36 @@ export default function FacturaUniversalModal({
         {/* ── Paso 3: Confirmación con vista previa de la factura ── */}
         {paso === 3 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed', marginBottom: 4 }}>Vista Previa de la Factura</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#6B4E79', marginBottom: 4 }}>Vista Previa de la Factura</div>
 
             {/* Documento simulado — refleja exactamente lo que se envía a timbrar */}
-            <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#fff' }}>
+            <div style={{ border: '1px solid #E6E8EB', borderRadius: 10, overflow: 'hidden', background: '#fff' }}>
               {/* Emisor / Receptor */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
-                <div style={{ padding: '12px 14px', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
-                  <div style={{ fontSize: 9.5, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Emisor</div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#1e293b' }}>{emisor.razon_social || '—'}</div>
-                  <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#64748b', marginTop: 2 }}>{emisor.rfc || '—'}</div>
-                  <div style={{ fontSize: 10.5, color: '#94a3b8', marginTop: 2 }}>Régimen {emisor.regimen_fiscal}</div>
+                <div style={{ padding: '12px 14px', borderRight: '1px solid #F4F5F7', borderBottom: '1px solid #F4F5F7' }}>
+                  <div style={{ fontSize: 9.5, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Emisor</div>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#26282D' }}>{emisor.razon_social || '—'}</div>
+                  <div style={{ fontSize: 11, fontVariantNumeric: 'tabular-nums', color: '#62666E', marginTop: 2 }}>{emisor.rfc || '—'}</div>
+                  <div style={{ fontSize: 10.5, color: '#7A7E87', marginTop: 2 }}>Régimen {emisor.regimen_fiscal}</div>
                 </div>
-                <div style={{ padding: '12px 14px', borderBottom: '1px solid #f1f5f9' }}>
-                  <div style={{ fontSize: 9.5, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Receptor</div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#1e293b' }}>{receptor.razon_social || '—'}</div>
-                  <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#64748b', marginTop: 2 }}>{receptor.rfc || '—'}</div>
-                  <div style={{ fontSize: 10.5, color: '#94a3b8', marginTop: 2 }}>CP {receptor.cp || '—'} · Uso {receptor.uso_cfdi} · Rég. {receptor.regimen_fiscal}</div>
+                <div style={{ padding: '12px 14px', borderBottom: '1px solid #F4F5F7' }}>
+                  <div style={{ fontSize: 9.5, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Receptor</div>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#26282D' }}>{receptor.razon_social || '—'}</div>
+                  <div style={{ fontSize: 11, fontVariantNumeric: 'tabular-nums', color: '#62666E', marginTop: 2 }}>{receptor.rfc || '—'}</div>
+                  <div style={{ fontSize: 10.5, color: '#7A7E87', marginTop: 2 }}>CP {receptor.cp || '—'} · Uso {receptor.uso_cfdi} · Rég. {receptor.regimen_fiscal}</div>
                 </div>
               </div>
 
               {/* Metadatos del comprobante */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, padding: '9px 14px', background: '#f8fafc', fontSize: 11, borderBottom: '1px solid #f1f5f9' }}>
-                <div><span style={{ color: '#94a3b8' }}>Folio: </span><strong>{obtenerFolioFactura ? `${serieFactura ?? cfdi.serie}-????` : `${cfdi.serie}-${folio}`}</strong></div>
-                <div><span style={{ color: '#94a3b8' }}>Fecha: </span><strong>{fecha}</strong></div>
-                <div><span style={{ color: '#94a3b8' }}>Método: </span><strong>{cfdi.metodo_pago}</strong></div>
-                <div><span style={{ color: '#94a3b8' }}>Forma pago: </span><strong>{cfdi.forma_pago}</strong></div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, padding: '9px 14px', background: '#F8F9FA', fontSize: 11, borderBottom: '1px solid #F4F5F7' }}>
+                <div><span style={{ color: '#7A7E87' }}>Folio: </span><strong>{obtenerFolioFactura ? `${serieFactura ?? cfdi.serie}-????` : `${cfdi.serie}-${folio}`}</strong></div>
+                <div><span style={{ color: '#7A7E87' }}>Fecha: </span><strong>{fecha}</strong></div>
+                <div><span style={{ color: '#7A7E87' }}>Método: </span><strong>{cfdi.metodo_pago}</strong></div>
+                <div><span style={{ color: '#7A7E87' }}>Forma pago: </span><strong>{cfdi.forma_pago}</strong></div>
               </div>
 
               {/* Tabla de conceptos */}
-              <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 80px 60px 80px', padding: '7px 14px', fontSize: 9.5, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', gap: 6, borderBottom: '1px solid #f1f5f9' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 80px 60px 80px', padding: '7px 14px', fontSize: 9.5, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.05em', gap: 6, borderBottom: '1px solid #F4F5F7' }}>
                 <span>Clave SAT</span><span>Descripción</span><span style={{ textAlign: 'right' }}>Importe</span><span style={{ textAlign: 'center' }}>IVA</span><span style={{ textAlign: 'right' }}>Imp. IVA</span>
               </div>
               {conceptos.map((c, i) => {
@@ -624,33 +624,33 @@ export default function FacturaUniversalModal({
                 const claveEfectiva = c.clave_prod_serv || cfdi.clave_prod_serv
                 const importeIva = c.iva ?? Math.round(c.importe * tiva * 100) / 100
                 return (
-                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 80px 60px 80px', padding: '7px 14px', borderTop: i > 0 ? '1px solid #f8fafc' : undefined, fontSize: 12, gap: 6, alignItems: 'center' }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#64748b' }}>{claveEfectiva}</span>
-                    <span style={{ color: '#475569' }}>{c.descripcion || cfdi.descripcion}</span>
-                    <span style={{ textAlign: 'right', color: '#1e293b' }}>{fmt$(c.importe)}</span>
-                    <span style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: tiva > 0 ? '#065f46' : '#94a3b8' }}>{tiva > 0 ? `${Math.round(tiva * 100)}%` : 'Exento'}</span>
-                    <span style={{ textAlign: 'right', color: '#1e293b' }}>{importeIva > 0 ? fmt$(importeIva) : '—'}</span>
+                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 80px 60px 80px', padding: '7px 14px', borderTop: i > 0 ? '1px solid #F8F9FA' : undefined, fontSize: 12, gap: 6, alignItems: 'center' }}>
+                    <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 10, color: '#62666E' }}>{claveEfectiva}</span>
+                    <span style={{ color: '#4A4D54' }}>{c.descripcion || cfdi.descripcion}</span>
+                    <span style={{ textAlign: 'right', color: '#26282D' }}>{fmt$(c.importe)}</span>
+                    <span style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: tiva > 0 ? '#17603F' : '#7A7E87' }}>{tiva > 0 ? `${Math.round(tiva * 100)}%` : 'Exento'}</span>
+                    <span style={{ textAlign: 'right', color: '#26282D' }}>{importeIva > 0 ? fmt$(importeIva) : '—'}</span>
                   </div>
                 )
               })}
 
               {/* Totales */}
-              <div style={{ borderTop: '2px solid #e2e8f0', background: '#faf5ff', padding: '10px 14px' }}>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 20, fontSize: 12, color: '#64748b', marginBottom: 2 }}>
+              <div style={{ borderTop: '2px solid #E6E8EB', background: '#F4F5F7', padding: '10px 14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 20, fontSize: 12, color: '#62666E', marginBottom: 2 }}>
                   <span>Subtotal</span><span style={{ minWidth: 80, textAlign: 'right' }}>{fmt$(subtotalCalc)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 20, fontSize: 12, color: '#64748b', marginBottom: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 20, fontSize: 12, color: '#62666E', marginBottom: 6 }}>
                   <span>IVA{ivaCalc === 0 ? ' (Exento)' : ''}</span><span style={{ minWidth: 80, textAlign: 'right' }}>{fmt$(ivaCalc)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 20, fontSize: 14, fontWeight: 700, color: '#7c3aed', borderTop: '1px solid #e2e8f0', paddingTop: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 20, fontSize: 14, fontWeight: 700, color: '#6B4E79', borderTop: '1px solid #E6E8EB', paddingTop: 6 }}>
                   <span>Total</span><span style={{ minWidth: 80, textAlign: 'right' }}>{fmt$(totalCalc)}</span>
                 </div>
               </div>
             </div>
 
             {!emisor.rfc && (
-              <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
-                ⚠ Configura el RFC del emisor en <strong>Configuración → Organización</strong> antes de timbrar.
+              <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>
+                Configura el RFC del emisor en <strong>Configuración → Organización</strong> antes de timbrar.
               </div>
             )}
           </div>
@@ -659,20 +659,20 @@ export default function FacturaUniversalModal({
         {/* ── Paso 4: Factura emitida ── */}
         {paso === 4 && resultado && (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <CheckCircle size={48} color="#7c3aed" style={{ marginBottom: 12 }} />
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 6 }}>¡Factura timbrada exitosamente!</div>
-            <div style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>El folio fiscal ha sido vinculado al recibo.</div>
+            <CheckCircle size={48} color="#6B4E79" style={{ marginBottom: 12 }} />
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#26282D', marginBottom: 6 }}>¡Factura timbrada exitosamente!</div>
+            <div style={{ fontSize: 13, color: '#62666E', marginBottom: 16 }}>El folio fiscal ha sido vinculado al recibo.</div>
 
             {folioFacturaAsignado && (
-              <div style={{ background: '#faf5ff', border: '1px solid #ddd6fe', borderRadius: 10, padding: '10px 18px', marginBottom: 10 }}>
-                <div style={{ fontSize: 10, color: '#7c3aed', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Folio de Factura</div>
-                <div style={{ fontSize: 14, fontFamily: 'monospace', fontWeight: 700, color: '#4c1d95' }}>{folioFacturaAsignado}</div>
+              <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 10, padding: '10px 18px', marginBottom: 10 }}>
+                <div style={{ fontSize: 10, color: '#6B4E79', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Folio de Factura</div>
+                <div style={{ fontSize: 14, fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: '#3D2A45' }}>{folioFacturaAsignado}</div>
               </div>
             )}
 
-            <div style={{ background: '#faf5ff', border: '1px solid #ddd6fe', borderRadius: 10, padding: '14px 18px', marginBottom: 16 }}>
-              <div style={{ fontSize: 10, color: '#7c3aed', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>UUID / Folio Fiscal</div>
-              <div style={{ fontSize: 13, fontFamily: 'monospace', fontWeight: 600, color: '#4c1d95', wordBreak: 'break-all' }}>{resultado.folio_fiscal}</div>
+            <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 10, padding: '14px 18px', marginBottom: 16 }}>
+              <div style={{ fontSize: 10, color: '#6B4E79', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>UUID / Folio Fiscal</div>
+              <div style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#3D2A45', wordBreak: 'break-all' }}>{resultado.folio_fiscal}</div>
             </div>
 
             {resultado.pdf_url && (
@@ -689,15 +689,15 @@ export default function FacturaUniversalModal({
                   window.open(blobUrl, '_blank')
                   setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
                 }}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, border: '1px solid #ddd6fe', borderRadius: 8, background: '#ede9fe', color: '#7c3aed', cursor: 'pointer', marginBottom: 12 }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, border: '1px solid #E6E8EB', borderRadius: 8, background: '#E6E8EB', color: '#6B4E79', cursor: 'pointer', marginBottom: 12 }}>
                 <FileCheck size={14} /> Ver PDF
               </button>
             )}
 
             {receptor.email && (
-              <div style={{ fontSize: 12, color: '#64748b' }}>
+              <div style={{ fontSize: 12, color: '#62666E' }}>
                 {emailEnviado
-                  ? <span style={{ color: '#15803d' }}>✓ Comprobante enviado a {receptor.email}</span>
+                  ? <span style={{ color: '#1F7A50' }}>✓ Comprobante enviado a {receptor.email}</span>
                   : `Puedes enviar el comprobante a ${receptor.email}`}
               </div>
             )}
@@ -706,7 +706,7 @@ export default function FacturaUniversalModal({
 
         {/* Error */}
         {error && (
-          <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>
+          <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 13, color: '#C23B3B' }}>
             {error}
           </div>
         )}

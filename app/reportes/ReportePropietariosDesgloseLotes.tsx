@@ -9,7 +9,7 @@ const fmtPeso = (n: number) =>
   n > 0 ? '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 0 }) : '—'
 
 const STATUS_COLOR: Record<string, string> = {
-  Vendido: '#15803d', Libre: '#1d4ed8', Bloqueado: '#dc2626',
+  Vendido: '#1F7A50', Libre: '#26282D', Bloqueado: '#C23B3B',
 }
 
 export default function ReportePropietariosDesgloseLotes() {
@@ -190,9 +190,9 @@ export default function ReportePropietariosDesgloseLotes() {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
         {[
           { label: 'Propietarios',  value: totalProps,     color: 'var(--blue)' },
-          { label: 'Lotes únicos',  value: totalLotesU,    color: '#6366f1' },
-          { label: 'Vendidos',      value: totalVendidos,  color: '#15803d' },
-          { label: 'Libres',        value: totalLibres,    color: '#1d4ed8' },
+          { label: 'Lotes únicos',  value: totalLotesU,    color: '#33363C' },
+          { label: 'Vendidos',      value: totalVendidos,  color: '#1F7A50' },
+          { label: 'Libres',        value: totalLibres,    color: '#26282D' },
           { label: 'Superficie m²', value: fmt(totalSuperficie), color: 'var(--text-primary)' },
         ].map(k => (
           <div key={k.label} className="card"
@@ -204,8 +204,8 @@ export default function ReportePropietariosDesgloseLotes() {
       </div>
 
       {queryError && (
-        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8,
-          padding: '10px 14px', marginBottom: 12, fontSize: 12, color: '#dc2626' }}>
+        <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8,
+          padding: '10px 14px', marginBottom: 12, fontSize: 12, color: '#C23B3B' }}>
           Error: {queryError}
         </div>
       )}
@@ -234,24 +234,24 @@ export default function ReportePropietariosDesgloseLotes() {
                 <button onClick={() => toggleProp(prop)}
                   style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '12px 16px', background: 'var(--blue-pale)', border: 'none', cursor: 'pointer',
-                    borderBottom: expandedP ? '1px solid #e2e8f0' : 'none' }}>
+                    borderBottom: expandedP ? '1px solid #E6E8EB' : 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     {expandedP
                       ? <ChevronDown  size={14} style={{ color: 'var(--blue)' }} />
                       : <ChevronRight size={14} style={{ color: 'var(--blue)' }} />}
                     <div style={{ width: 30, height: 30, borderRadius: '50%',
                       background: '#6366f120', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <User size={14} style={{ color: '#6366f1' }} />
+                      <User size={14} style={{ color: '#33363C' }} />
                     </div>
                     <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--blue)' }}>{prop}</span>
                     {propData?.rfc && (
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
                         {propData.rfc}
                       </span>
                     )}
                     {propData?.tipo_persona && (
                       <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10,
-                        background: '#e0e7ff', color: '#4f46e5', fontWeight: 600 }}>
+                        background: '#E6E8EB', color: '#1C1D21', fontWeight: 600 }}>
                         {propData.tipo_persona}
                       </span>
                     )}
@@ -269,17 +269,17 @@ export default function ReportePropietariosDesgloseLotes() {
                   const totalLotesSec = clasifsEnSec.reduce((a, cl) => a + hier[prop][sec][cl].length, 0)
 
                   return (
-                    <div key={secKey} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <div key={secKey} style={{ borderBottom: '1px solid #F4F5F7' }}>
                       {/* ── Sub-header SECCIÓN ── */}
                       <button onClick={() => toggleSec(secKey)}
                         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          padding: '10px 20px', background: '#f8fafc', border: 'none', cursor: 'pointer',
-                          borderBottom: expandedS ? '1px solid #e2e8f0' : 'none' }}>
+                          padding: '10px 20px', background: '#F8F9FA', border: 'none', cursor: 'pointer',
+                          borderBottom: expandedS ? '1px solid #E6E8EB' : 'none' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           {expandedS
-                            ? <ChevronDown  size={12} style={{ color: '#64748b' }} />
-                            : <ChevronRight size={12} style={{ color: '#64748b' }} />}
-                          <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{sec}</span>
+                            ? <ChevronDown  size={12} style={{ color: '#62666E' }} />
+                            : <ChevronRight size={12} style={{ color: '#62666E' }} />}
+                          <span style={{ fontSize: 13, fontWeight: 700, color: '#26282D' }}>{sec}</span>
                         </div>
                         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                           {totalLotesSec} lote{totalLotesSec !== 1 ? 's' : ''}
@@ -292,11 +292,11 @@ export default function ReportePropietariosDesgloseLotes() {
                             const lotesEnClasif = hier[prop][sec][clasif]
 
                             return (
-                              <div key={clasif} style={{ borderBottom: '1px solid #f8fafc' }}>
+                              <div key={clasif} style={{ borderBottom: '1px solid #F8F9FA' }}>
                                 {/* ── Sub-sub-header CLASIFICACIÓN ── */}
-                                <div style={{ padding: '6px 32px', background: '#f0f7ff',
-                                  borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  <span style={{ fontSize: 11, fontWeight: 600, color: '#3b5bdb',
+                                <div style={{ padding: '6px 32px', background: '#F8F9FA',
+                                  borderBottom: '1px solid #E6E8EB', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <span style={{ fontSize: 11, fontWeight: 600, color: '#33363C',
                                     textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                     {clasif}
                                   </span>
@@ -328,7 +328,7 @@ export default function ReportePropietariosDesgloseLotes() {
                                             {l?.cve_lote ?? `#${l?.lote}`}
                                             {rel.es_principal && (
                                               <span style={{ marginLeft: 6, fontSize: 10, padding: '1px 5px',
-                                                borderRadius: 8, background: '#dcfce7', color: '#15803d' }}>
+                                                borderRadius: 8, background: '#1F7A50', color: '#fff' }}>
                                                 Principal
                                               </span>
                                             )}
@@ -342,7 +342,7 @@ export default function ReportePropietariosDesgloseLotes() {
                                           <td>
                                             <span style={{ fontSize: 11, fontWeight: 600,
                                               padding: '2px 8px', borderRadius: 20,
-                                              color: stColor, background: stColor + '15', border: `1px solid ${stColor}40` }}>
+                                              color: '#fff', background: stColor, border: `1px solid ${stColor}` }}>
                                               {l?.status_lote ?? '—'}
                                             </span>
                                           </td>

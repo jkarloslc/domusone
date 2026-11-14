@@ -167,7 +167,7 @@ function ReporteResumen() {
         )}
       </div>
 
-      {error && <div className="card" style={{ padding: 16, color: '#dc2626', fontSize: 13, marginBottom: 16 }}>{error}</div>}
+      {error && <div className="card" style={{ padding: 16, color: '#C23B3B', fontSize: 13, marginBottom: 16 }}>{error}</div>}
 
       {!buscado && !error && (
         <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 14 }}>Consultando…</div>
@@ -185,11 +185,11 @@ function ReporteResumen() {
           {/* KPIs */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
             {[
-              { label: 'Arrendatarios',        value: visibles.length.toString(), color: '#2563eb' },
-              { label: 'Caballerizas asignadas', value: totCab.toString(),         color: '#92400e' },
-              { label: 'Total pagado',          value: fmt$(totPagado),            color: '#16a34a' },
-              { label: 'Vencido por pagar',     value: fmt$(totVencido),           color: totVencido > 0 ? '#dc2626' : '#16a34a' },
-              { label: 'Con adeudo vencido',    value: `${conVencido} (${totVencidas} cuotas)`, color: '#dc2626' },
+              { label: 'Arrendatarios',        value: visibles.length.toString(), color: '#1C1D21' },
+              { label: 'Caballerizas asignadas', value: totCab.toString(),         color: '#7A4B0C' },
+              { label: 'Total pagado',          value: fmt$(totPagado),            color: '#267F56' },
+              { label: 'Vencido por pagar',     value: fmt$(totVencido),           color: totVencido > 0 ? '#C23B3B' : '#267F56' },
+              { label: 'Con adeudo vencido',    value: `${conVencido} (${totVencidas} cuotas)`, color: '#C23B3B' },
             ].map(k => (
               <div key={k.label} className="card" style={{ flex: '1 1 150px', padding: '12px 16px' }}>
                 <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>{k.label}</div>
@@ -218,21 +218,21 @@ function ReporteResumen() {
                   {visibles.map((f, i) => (
                     <tr key={f.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                       <td style={{ padding: '9px 12px', color: 'var(--text-primary)', fontWeight: 600 }}>{f.nombre}</td>
-                      <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#92400e' }}>{f.claves.length}</td>
+                      <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#7A4B0C' }}>{f.claves.length}</td>
                       <td style={{ padding: '9px 12px', color: 'var(--text-muted)', fontSize: 11 }}>{f.claves.join(', ') || '—'}</td>
-                      <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 600, color: '#16a34a' }}>{fmt$(f.pagado)}</td>
-                      <td style={{ padding: '9px 12px', textAlign: 'right', color: f.nVencidas > 0 ? '#dc2626' : 'var(--text-muted)' }}>{f.nVencidas || '—'}</td>
-                      <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: f.vencido > 0 ? '#dc2626' : '#16a34a' }}>{fmt$(f.vencido)}</td>
-                      <td style={{ padding: '9px 12px', textAlign: 'right', color: f.maxDias > 0 ? '#dc2626' : 'var(--text-muted)' }}>{f.maxDias || '—'}</td>
+                      <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 600, color: '#267F56' }}>{fmt$(f.pagado)}</td>
+                      <td style={{ padding: '9px 12px', textAlign: 'right', color: f.nVencidas > 0 ? '#C23B3B' : 'var(--text-muted)' }}>{f.nVencidas || '—'}</td>
+                      <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: f.vencido > 0 ? '#C23B3B' : '#267F56' }}>{fmt$(f.vencido)}</td>
+                      <td style={{ padding: '9px 12px', textAlign: 'right', color: f.maxDias > 0 ? '#C23B3B' : 'var(--text-muted)' }}>{f.maxDias || '—'}</td>
                     </tr>
                   ))}
                   <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
                     <td style={{ padding: '9px 12px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>TOTAL</td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#92400e' }}>{totCab}</td>
+                    <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#7A4B0C' }}>{totCab}</td>
                     <td></td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#16a34a' }}>{fmt$(totPagado)}</td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#dc2626' }}>{totVencidas}</td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: totVencido > 0 ? '#dc2626' : '#16a34a' }}>{fmt$(totVencido)}</td>
+                    <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#267F56' }}>{fmt$(totPagado)}</td>
+                    <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#C23B3B' }}>{totVencidas}</td>
+                    <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: totVencido > 0 ? '#C23B3B' : '#267F56' }}>{fmt$(totVencido)}</td>
                     <td></td>
                   </tr>
                 </tbody>

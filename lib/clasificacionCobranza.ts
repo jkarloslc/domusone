@@ -37,22 +37,22 @@ export const BANDA_META: Record<BandaCobranza, {
 }> = {
   CORRIENTE: {
     label: 'Corriente', corto: 'Corr.',
-    color: '#16a34a', bg: '#dcfce7',
+    color: '#267F56', bg: '#E6E8EB',
     ayuda: 'Cuota del mismo mes en que se cobró — es el desempeño real del mes',
   },
   VENCIDA: {
     label: 'Vencida recuperada', corto: 'Venc.',
-    color: '#dc2626', bg: '#fee2e2',
+    color: '#C23B3B', bg: '#E6E8EB',
     ayuda: 'Cuota de un mes anterior cobrada en este mes — recuperación de cartera, no desempeño del mes',
   },
   ANTICIPADA: {
     label: 'Anticipada', corto: 'Antic.',
-    color: '#2563eb', bg: '#dbeafe',
+    color: '#1C1D21', bg: '#E6E8EB',
     ayuda: 'Cuota de un mes posterior cobrada en este mes (pago anualizado) — financiamiento, no desempeño del mes',
   },
   OTROS: {
     label: 'Sin periodo', corto: 'Otros',
-    color: '#64748b', bg: '#f1f5f9',
+    color: '#62666E', bg: '#F4F5F7',
     ayuda: 'Líneas sin periodo asignado: cargos adicionales, intereses, conceptos sueltos',
   },
 }
@@ -154,10 +154,10 @@ export type ModuloCuotas = 'residencial' | 'golf' | 'hipico' | 'locales'
 export const MODULOS_CUOTAS: ModuloCuotas[] = ['residencial', 'golf', 'hipico', 'locales']
 
 export const MODULO_META: Record<ModuloCuotas, { label: string; color: string }> = {
-  residencial: { label: 'Fraccionamiento',   color: '#2563eb' },
-  golf:        { label: 'Club Golf',         color: '#b8952a' },
-  hipico:      { label: 'Hípico',            color: '#7c3aed' },
-  locales:     { label: 'Locales Comerciales', color: '#0f766e' },
+  residencial: { label: 'Fraccionamiento',   color: '#1C1D21' },
+  golf:        { label: 'Club Golf',         color: '#A8821A' },
+  hipico:      { label: 'Hípico',            color: '#6B4E79' },
+  locales:     { label: 'Locales Comerciales', color: '#126B63' },
 }
 
 export const claveArranque = (m: ModuloCuotas) => `arranque_cobranza_${m}`

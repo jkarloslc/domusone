@@ -114,8 +114,8 @@ const fmtMes = (d: string | null) =>
   d ? new Date(d + '-01T12:00:00').toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }) : '—'
 
 const STATUS_COLOR: Record<string, { bg: string; color: string; label: string }> = {
-  VIGENTE:   { bg: '#dcfce7', color: '#15803d', label: 'Vigente' },
-  CANCELADO: { bg: '#fee2e2', color: '#dc2626', label: 'Cancelado' },
+  VIGENTE:   { bg: '#E6E8EB', color: '#1F7A50', label: 'Vigente' },
+  CANCELADO: { bg: '#E6E8EB', color: '#C23B3B', label: 'Cancelado' },
 }
 
 // ── Componente ─────────────────────────────────────────────────
@@ -781,7 +781,7 @@ export default function CobranzaLocalesPage() {
 
   const SEVERIDAD: Record<string, number> = { 'Vencida': 3, 'Parcial': 2, 'Por vencer': 1, 'Pagada': 0 }
   const situacionGrupo = (cuotas: CuotaMes[]) => {
-    let peor = { label: 'Pagada', bg: '#dcfce7', color: '#15803d' }
+    let peor = { label: 'Pagada', bg: '#E6E8EB', color: '#1F7A50' }
     let peorSev = -1
     for (const c of cuotas) {
       const s = situacionCuota(c)
@@ -826,11 +826,11 @@ export default function CobranzaLocalesPage() {
 
   const situacionCuota = (c: CuotaMes) => {
     const s = saldoCuota(c)
-    if (s === 0)                         return { label: 'Pagada',     bg: '#dcfce7', color: '#15803d' }
-    if (c.status === 'PAGO_PARCIAL')     return { label: 'Parcial',    bg: '#fffbeb', color: '#d97706' }
+    if (s === 0)                         return { label: 'Pagada',     bg: '#E6E8EB', color: '#1F7A50' }
+    if (c.status === 'PAGO_PARCIAL')     return { label: 'Parcial',    bg: '#F4F5F7', color: '#B5761A' }
     if (c.fecha_vencimiento && c.fecha_vencimiento < hoy)
-                                         return { label: 'Vencida',    bg: '#fef2f2', color: '#dc2626' }
-    return                                      { label: 'Por vencer', bg: '#eff6ff', color: '#2563eb' }
+                                         return { label: 'Vencida',    bg: '#F4F5F7', color: '#C23B3B' }
+    return                                      { label: 'Por vencer', bg: '#F4F5F7', color: '#1C1D21' }
   }
 
   return (
@@ -845,13 +845,13 @@ export default function CobranzaLocalesPage() {
           </button>
           {puedeEscribir && tab === 'asignaciones' && (
             <button className="btn-primary" onClick={() => { setEditAsig(undefined); setShowAsig(true) }}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#0f766e' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#126B63' }}>
               <Plus size={14} /> Nueva Asignación
             </button>
           )}
           {puedeEscribir && tab === 'cobranza' && (
             <button className="btn-primary" onClick={() => { setShowGenerar(true); setGeneradosMsg('') }}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#0f766e' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#126B63' }}>
               <Zap size={14} /> Generar Cuotas del Mes
             </button>
           )}
@@ -861,20 +861,20 @@ export default function CobranzaLocalesPage() {
       {/* ── Stats ── */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { label: 'Asignaciones Activas', value: stats.activas,        color: '#16a34a', bg: '#ecfdf5' },
-          { label: 'Cuotas Pendientes',    value: stats.pendientes,     color: '#d97706', bg: '#fffbeb' },
-          { label: 'Monto por Cobrar',     value: fmt$(stats.montoPendiente), color: '#dc2626', bg: '#fef2f2' },
-          { label: 'Con Adeudo Vencido',   value: stats.vencidas,       color: '#7c3aed', bg: '#f5f3ff' },
+          { label: 'Asignaciones Activas', value: stats.activas,        color: '#267F56', bg: '#F4F5F7' },
+          { label: 'Cuotas Pendientes',    value: stats.pendientes,     color: '#B5761A', bg: '#F4F5F7' },
+          { label: 'Monto por Cobrar',     value: fmt$(stats.montoPendiente), color: '#C23B3B', bg: '#F4F5F7' },
+          { label: 'Con Adeudo Vencido',   value: stats.vencidas,       color: '#6B4E79', bg: '#F4F5F7' },
         ].map(c => (
-          <div key={c.label} className="card" style={{ flex: '1 1 140px', maxWidth: 220, padding: '12px 16px', background: c.bg }}>
-            <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>{c.label}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+          <div key={c.label} className="card" style={{ flex: '1 1 140px', maxWidth: 220, padding: '12px 16px', background: '#fff' }}>
+            <div style={{ fontSize: 11, color: '#62666E', marginBottom: 4 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: c.color, marginRight: 6, verticalAlign: 'middle' }} />{c.label}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{c.value}</div>
           </div>
         ))}
       </div>
 
       {/* ── Tabs ── */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 20 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', marginBottom: 20 }}>
         {TABS.map(t => {
           const Icon = t.icon
           return (
@@ -882,8 +882,8 @@ export default function CobranzaLocalesPage() {
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '10px 20px', fontSize: 13, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
               fontWeight: tab === t.key ? 600 : 400,
-              color:      tab === t.key ? '#0f766e' : '#94a3b8',
-              borderBottom: tab === t.key ? '2px solid #0f766e' : '2px solid transparent',
+              color:      tab === t.key ? '#1C1D21' : '#7A7E87',
+              borderBottom: tab === t.key ? '2px solid #19D3C5' : '2px solid transparent',
               marginBottom: -1,
             }}>
               <Icon size={14} /> {t.label}
@@ -899,28 +899,28 @@ export default function CobranzaLocalesPage() {
         <>
           <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 320 }}>
-              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
+              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
                 placeholder="Buscar arrendatario o propiedad…" value={busquedaA} onChange={e => setBusquedaA(e.target.value)} />
-              {busquedaA && <button onClick={() => setBusquedaA('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+              {busquedaA && <button onClick={() => setBusquedaA('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2 }}><X size={12} /></button>}
             </div>
-            <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', gap: 0, border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
               {([
-                { key: 'todas',     label: 'Todas',        color: '#0f766e' },
-                { key: 'adeudo',    label: 'Con Adeudo',   color: '#dc2626' },
-                { key: 'corriente', label: 'Al corriente', color: '#2563eb' },
+                { key: 'todas',     label: 'Todas',        color: '#126B63' },
+                { key: 'adeudo',    label: 'Con Adeudo',   color: '#C23B3B' },
+                { key: 'corriente', label: 'Al corriente', color: '#1C1D21' },
               ] as const).map(f => (
                 <button key={f.key} onClick={() => setFiltroSituacion(f.key)} style={{
                   padding: '7px 14px', fontSize: 12, fontWeight: filtroSituacion === f.key ? 600 : 400,
                   background: filtroSituacion === f.key ? f.color : '#fff',
-                  color: filtroSituacion === f.key ? '#fff' : '#94a3b8',
+                  color: filtroSituacion === f.key ? '#fff' : '#7A7E87',
                   border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', whiteSpace: 'nowrap',
                 }}>
                   {f.label}
                 </button>
               ))}
             </div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#475569', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#4A4D54', cursor: 'pointer' }}>
               <input type="checkbox" checked={soloActivas} onChange={e => setSoloActivas(e.target.checked)} />
               Solo activas
             </label>
@@ -951,10 +951,10 @@ export default function CobranzaLocalesPage() {
                       <>
                         <tr key={a.id}
                           onClick={() => setExpandidoA(abierto ? null : a.id)}
-                          style={{ borderBottom: abierto ? 'none' : '1px solid var(--border)', cursor: 'pointer', opacity: a.activo ? 1 : 0.55, background: abierto ? '#f0fdfa' : '' }}
+                          style={{ borderBottom: abierto ? 'none' : '1px solid var(--border)', cursor: 'pointer', opacity: a.activo ? 1 : 0.55, background: abierto ? '#F4F5F7' : '' }}
                           onMouseEnter={e => { if (!abierto) (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)' }}
                           onMouseLeave={e => { if (!abierto) (e.currentTarget as HTMLElement).style.background = '' }}>
-                          <td style={{ padding: '10px 10px 10px 14px', width: 28, color: '#94a3b8' }}>
+                          <td style={{ padding: '10px 10px 10px 14px', width: 28, color: '#7A7E87' }}>
                             {abierto ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                           </td>
                           <td style={{ padding: '10px 14px' }}>
@@ -964,29 +964,29 @@ export default function CobranzaLocalesPage() {
                           <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>
                             <div>{propDesc}</div>
                             {a.cat_propiedades?.status && a.cat_propiedades.status !== 'Libre' && (
-                              <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, background: a.cat_propiedades.status === 'Rentada' ? '#dbeafe' : '#f3e8ff', color: a.cat_propiedades.status === 'Rentada' ? '#1d4ed8' : '#7c3aed', fontWeight: 600 }}>
+                              <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, background: a.cat_propiedades.status === 'Rentada' ? '#E6E8EB' : '#6B4E79', color: a.cat_propiedades.status === 'Rentada' ? '#26282D' : '#fff', fontWeight: 600 }}>
                                 {a.cat_propiedades.status}
                               </span>
                             )}
                           </td>
                           <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                            <div style={{ fontWeight: 600, color: '#0f766e' }}>{fmt$(a.monto_mensual)}</div>
+                            <div style={{ fontWeight: 600, color: '#126B63' }}>{fmt$(a.monto_mensual)}</div>
                             {a.monto_mantenimiento > 0 && (
-                              <div style={{ fontSize: 11, color: '#64748b' }}>+ {fmt$(a.monto_mantenimiento)} mantto</div>
+                              <div style={{ fontSize: 11, color: '#62666E' }}>+ {fmt$(a.monto_mantenimiento)} mantto</div>
                             )}
                           </td>
                           <td style={{ padding: '10px 14px' }}>
                             {a.pendientes > 0
-                              ? <span style={{ fontSize: 12, fontWeight: 700, color: '#dc2626' }}>{a.pendientes} · {fmt$(a.monto_pendiente)}</span>
-                              : <span style={{ color: '#cbd5e1', fontSize: 12 }}>—</span>}
+                              ? <span style={{ fontSize: 12, fontWeight: 700, color: '#C23B3B' }}>{a.pendientes} · {fmt$(a.monto_pendiente)}</span>
+                              : <span style={{ color: '#C9CCD3', fontSize: 12 }}>—</span>}
                           </td>
                           <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: a.con_adeudo ? '#fef2f2' : '#eff6ff', color: a.con_adeudo ? '#dc2626' : '#2563eb' }}>
+                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: a.con_adeudo ? '#C23B3B' : '#F4F5F7', color: a.con_adeudo ? '#fff' : '#1C1D21' }}>
                               {a.con_adeudo ? 'Con Adeudo' : 'Al corriente'}
                             </span>
                           </td>
                           <td style={{ padding: '10px 14px' }}>
-                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: a.activo ? '#dcfce7' : '#f1f5f9', color: a.activo ? '#15803d' : '#64748b' }}>
+                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: a.activo ? '#1F7A50' : '#F4F5F7', color: a.activo ? '#fff' : '#62666E' }}>
                               {a.activo ? 'Activa' : 'Inactiva'}
                             </span>
                           </td>
@@ -994,7 +994,7 @@ export default function CobranzaLocalesPage() {
                             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                               {puedeEscribir && (
                                 <button onClick={e => { e.stopPropagation(); setEditAsig({ id: a.id, id_arrendatario_fk: a.id_arrendatario_fk, id_propiedad_fk: a.id_propiedad_fk, fecha_inicio: a.fecha_inicio, fecha_fin: a.fecha_fin, monto_mensual: a.monto_mensual, monto_mantenimiento: a.monto_mantenimiento, dia_pago: a.dia_pago, activo: a.activo, observaciones: a.observaciones }); setShowAsig(true) }}
-                                  style={{ fontSize: 12, fontWeight: 600, color: '#475569', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                  style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                   Editar
                                 </button>
                               )}
@@ -1002,7 +1002,7 @@ export default function CobranzaLocalesPage() {
                                 <button onClick={e => { e.stopPropagation(); handleEliminarAsignacion(a) }}
                                   disabled={eliminandoA === a.id}
                                   title="Eliminar asignación"
-                                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '5px 8px', borderRadius: 8, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', cursor: 'pointer', opacity: eliminandoA === a.id ? 0.5 : 1 }}>
+                                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '5px 8px', borderRadius: 8, border: '1px solid #C23B3B', background: '#C23B3B', color: '#fff', cursor: 'pointer', opacity: eliminandoA === a.id ? 0.5 : 1 }}>
                                   {eliminandoA === a.id ? <Loader size={12} className="animate-spin" /> : <Trash2 size={12} />}
                                 </button>
                               )}
@@ -1014,8 +1014,8 @@ export default function CobranzaLocalesPage() {
                         {abierto && (
                           <tr key={`${a.id}-det`}>
                             <td colSpan={8} style={{ padding: 0, borderBottom: '1px solid var(--border)' }}>
-                              <div style={{ background: '#f0fdfa', padding: '16px 20px 20px 48px' }}>
-                                <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 12, color: '#64748b', marginBottom: 14 }}>
+                              <div style={{ background: '#F4F5F7', padding: '16px 20px 20px 48px' }}>
+                                <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 12, color: '#62666E', marginBottom: 14 }}>
                                   <span><strong>Inicio:</strong> {fmtFecha(a.fecha_inicio)}</span>
                                   {a.fecha_fin && <span><strong>Fin:</strong> {fmtFecha(a.fecha_fin)}</span>}
                                   <span><strong>Día venc.:</strong> {a.dia_pago}</span>
@@ -1027,7 +1027,7 @@ export default function CobranzaLocalesPage() {
                                     <>
                                       {/* Selector de mes + botón agregar cuota */}
                                       <select value={mesGenerar} onChange={e => setMesGenerar(e.target.value)}
-                                        style={{ fontSize: 12, padding: '4px 8px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', color: '#1e293b' }}>
+                                        style={{ fontSize: 12, padding: '4px 8px', borderRadius: 6, border: '1px solid #E6E8EB', background: '#fff', color: '#26282D' }}>
                                         {Array.from({ length: 12 }, (_, i) => {
                                           const hoyD = new Date()
                                           const total = hoyD.getFullYear() * 12 + hoyD.getMonth() + (i - 2)
@@ -1036,18 +1036,18 @@ export default function CobranzaLocalesPage() {
                                       </select>
                                       <button onClick={e => { e.stopPropagation(); handleGenerarCargoAsig(a, mesGenerar) }}
                                         disabled={generandoCargo === a.id}
-                                        style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '5px 12px', borderRadius: 8, border: '1px solid #0f766e', background: '#f0fdfa', color: '#0f766e', cursor: 'pointer', opacity: generandoCargo === a.id ? 0.6 : 1 }}>
+                                        style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '5px 12px', borderRadius: 8, border: '1px solid #126B63', background: '#126B63', color: '#fff', cursor: 'pointer', opacity: generandoCargo === a.id ? 0.6 : 1 }}>
                                         {generandoCargo === a.id ? <Loader size={12} /> : <Plus size={12} />} Agregar Cuota
                                       </button>
                                       <button onClick={e => { e.stopPropagation(); setModoCuotas({ idAsig: a.id, monto: a.monto_mensual, montoMantto: a.monto_mantenimiento }); setShowAsig(true) }}
-                                        style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '5px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', color: '#475569', cursor: 'pointer' }}>
+                                        style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '5px 12px', borderRadius: 8, border: '1px solid #E6E8EB', background: '#fff', color: '#4A4D54', cursor: 'pointer' }}>
                                         <Plus size={12} /> Generar cuotas (rango)
                                       </button>
                                     </>
                                   )}
                                   {a.pendientes > 0 && puedeEscribir && (
                                     <button onClick={e => { e.stopPropagation(); abrirCobroAsig(a) }}
-                                      style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '5px 12px', borderRadius: 8, border: 'none', background: '#0f766e', color: '#fff', cursor: 'pointer' }}>
+                                      style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '5px 12px', borderRadius: 8, border: 'none', background: '#126B63', color: '#fff', cursor: 'pointer' }}>
                                       <DollarSign size={12} /> Cobrar ({fmt$(a.monto_pendiente)})
                                     </button>
                                   )}
@@ -1074,15 +1074,15 @@ export default function CobranzaLocalesPage() {
           {/* KPIs */}
           <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
             {[
-              { label: `Emitido — ${mesLabel}`, value: fmt$(emitido), sub: `${cuotasMes.length} cuota${cuotasMes.length !== 1 ? 's' : ''}`, color: '#2563eb', bg: '#eff6ff' },
-              { label: 'Cobrado del mes', value: fmt$(cobrado), sub: `${pagadas} pagadas · ${avance}%`, color: '#16a34a', bg: '#ecfdf5' },
-              { label: 'Por cobrar del mes', value: fmt$(porCobrar), sub: 'Saldo pendiente', color: porCobrar > 0 ? '#dc2626' : '#64748b', bg: porCobrar > 0 ? '#fef2f2' : '#f8fafc' },
-              { label: 'Cartera vencida total', value: fmt$(carteraVencida.monto), sub: `${carteraVencida.count} cuotas`, color: carteraVencida.monto > 0 ? '#dc2626' : '#64748b', bg: carteraVencida.monto > 0 ? '#fef2f2' : '#f8fafc' },
+              { label: `Emitido — ${mesLabel}`, value: fmt$(emitido), sub: `${cuotasMes.length} cuota${cuotasMes.length !== 1 ? 's' : ''}`, color: '#1C1D21', bg: '#F4F5F7' },
+              { label: 'Cobrado del mes', value: fmt$(cobrado), sub: `${pagadas} pagadas · ${avance}%`, color: '#267F56', bg: '#F4F5F7' },
+              { label: 'Por cobrar del mes', value: fmt$(porCobrar), sub: 'Saldo pendiente', color: porCobrar > 0 ? '#C23B3B' : '#62666E', bg: porCobrar > 0 ? '#F4F5F7' : '#F8F9FA' },
+              { label: 'Cartera vencida total', value: fmt$(carteraVencida.monto), sub: `${carteraVencida.count} cuotas`, color: carteraVencida.monto > 0 ? '#C23B3B' : '#62666E', bg: carteraVencida.monto > 0 ? '#F4F5F7' : '#F8F9FA' },
             ].map(c => (
-              <div key={c.label} className="card" style={{ flex: '1 1 200px', maxWidth: 280, padding: '14px 18px', background: c.bg }}>
-                <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>{c.label}</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{loadingC ? '—' : c.value}</div>
-                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{loadingC ? '' : c.sub}</div>
+              <div key={c.label} className="card" style={{ flex: '1 1 200px', maxWidth: 280, padding: '14px 18px', background: '#fff' }}>
+                <div style={{ fontSize: 11, color: '#62666E', marginBottom: 4 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: c.color, marginRight: 6, verticalAlign: 'middle' }} />{c.label}</div>
+                <div style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{loadingC ? '—' : c.value}</div>
+                <div style={{ fontSize: 11, color: '#7A7E87', marginTop: 2 }}>{loadingC ? '' : c.sub}</div>
               </div>
             ))}
           </div>
@@ -1090,17 +1090,17 @@ export default function CobranzaLocalesPage() {
           {/* Filtros */}
           <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 320 }}>
-              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
+              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
                 placeholder="Buscar arrendatario…" value={busquedaC} onChange={e => setBusquedaC(e.target.value)} />
-              {busquedaC && <button onClick={() => setBusquedaC('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+              {busquedaC && <button onClick={() => setBusquedaC('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2 }}><X size={12} /></button>}
             </div>
             {(() => {
               const [anioSel, mesSel] = mesCobranza.split('-')
               const anioActual = new Date().getFullYear()
               const anios = Array.from({ length: anioActual - 2024 + 2 }, (_, i) => 2024 + i)
               const MESES_L = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
-              const sel: React.CSSProperties = { padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none' }
+              const sel: React.CSSProperties = { padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none' }
               return (
                 <>
                   <select value={anioSel} onChange={e => setMesCobranza(`${e.target.value}-${mesSel}`)} style={sel}>
@@ -1112,16 +1112,16 @@ export default function CobranzaLocalesPage() {
                 </>
               )
             })()}
-            <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', gap: 0, border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
               {([
-                { key: 'todas',      label: 'Todas',      color: '#0f766e' },
-                { key: 'por_cobrar', label: 'Por cobrar', color: '#dc2626' },
-                { key: 'pagadas',    label: 'Pagadas',    color: '#2563eb' },
+                { key: 'todas',      label: 'Todas',      color: '#126B63' },
+                { key: 'por_cobrar', label: 'Por cobrar', color: '#C23B3B' },
+                { key: 'pagadas',    label: 'Pagadas',    color: '#1C1D21' },
               ] as const).map(f => (
                 <button key={f.key} onClick={() => setFiltroStatusC(f.key)} style={{
                   padding: '7px 14px', fontSize: 12, fontWeight: filtroStatusC === f.key ? 600 : 400,
                   background: filtroStatusC === f.key ? f.color : '#fff',
-                  color: filtroStatusC === f.key ? '#fff' : '#94a3b8',
+                  color: filtroStatusC === f.key ? '#fff' : '#7A7E87',
                   border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', whiteSpace: 'nowrap',
                 }}>
                   {f.label}
@@ -1154,10 +1154,10 @@ export default function CobranzaLocalesPage() {
                       <>
                         <tr key={g.idArr}
                           onClick={() => setExpandidoC(abierto ? null : g.idArr)}
-                          style={{ borderBottom: abierto ? 'none' : '1px solid var(--border)', cursor: 'pointer', background: abierto ? '#f0fdfa' : '' }}
+                          style={{ borderBottom: abierto ? 'none' : '1px solid var(--border)', cursor: 'pointer', background: abierto ? '#F4F5F7' : '' }}
                           onMouseEnter={e => { if (!abierto) (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)' }}
                           onMouseLeave={e => { if (!abierto) (e.currentTarget as HTMLElement).style.background = '' }}>
-                          <td style={{ padding: '10px 10px 10px 14px', width: 28, color: '#94a3b8' }}>
+                          <td style={{ padding: '10px 10px 10px 14px', width: 28, color: '#7A7E87' }}>
                             {abierto ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                           </td>
                           <td style={{ padding: '10px 14px', fontWeight: 500 }}>{g.nombreArr}</td>
@@ -1165,15 +1165,15 @@ export default function CobranzaLocalesPage() {
                             {g.propiedades.length > 0 ? g.propiedades.join(', ') : '—'}
                           </td>
                           <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12 }}>{g.cuotas.length}</td>
-                          <td style={{ padding: '10px 14px', fontWeight: 600, color: '#0f766e', whiteSpace: 'nowrap' }}>{fmt$(g.totalMonto)}</td>
-                          <td style={{ padding: '10px 14px', fontWeight: 700, whiteSpace: 'nowrap', color: g.totalSaldo > 0 ? '#dc2626' : '#15803d' }}>{fmt$(g.totalSaldo)}</td>
+                          <td style={{ padding: '10px 14px', fontWeight: 600, color: '#126B63', whiteSpace: 'nowrap' }}>{fmt$(g.totalMonto)}</td>
+                          <td style={{ padding: '10px 14px', fontWeight: 700, whiteSpace: 'nowrap', color: g.totalSaldo > 0 ? '#C23B3B' : '#1F7A50' }}>{fmt$(g.totalSaldo)}</td>
                           <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: sit.bg, color: sit.color }}>{sit.label}</span>
+                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: sit.color, color: '#fff'}}>{sit.label}</span>
                           </td>
                           <td style={{ padding: '10px 14px' }}>
                             {puedeEscribir && g.totalSaldo > 0 && (
                               <button onClick={e => { e.stopPropagation(); abrirCobroArrendatarioMes(g.idArr, g.nombreArr) }}
-                                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '4px 10px', borderRadius: 6, border: 'none', background: '#0f766e', color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '4px 10px', borderRadius: 6, border: 'none', background: '#126B63', color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                 <DollarSign size={12} /> Cobrar todo
                               </button>
                             )}
@@ -1183,13 +1183,13 @@ export default function CobranzaLocalesPage() {
                         {abierto && (
                           <tr key={`${g.idArr}-det`}>
                             <td colSpan={8} style={{ padding: 0, borderBottom: '1px solid var(--border)' }}>
-                              <div style={{ background: '#f0fdfa', padding: '4px 20px 14px 48px' }}>
+                              <div style={{ background: '#F4F5F7', padding: '4px 20px 14px 48px' }}>
                                 <div style={{ overflowX: 'auto' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                                   <thead>
                                     <tr>
                                       {['Propiedad', 'Concepto', 'Monto', 'Saldo', 'Situación', 'Fecha pago', ''].map(h => (
-                                        <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                                        <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#7A7E87', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                                       ))}
                                     </tr>
                                   </thead>
@@ -1199,21 +1199,21 @@ export default function CobranzaLocalesPage() {
                                       const saldo  = saldoCuota(c)
                                       const vencida = c.fecha_vencimiento && c.fecha_vencimiento < hoy && saldo > 0
                                       return (
-                                        <tr key={c.id} style={{ borderTop: '1px solid #99f6e4' }}>
-                                          <td style={{ padding: '7px 10px', color: '#64748b' }}>{c.ctrl_asignaciones?.cat_propiedades?.clave ?? '—'}</td>
-                                          <td style={{ padding: '7px 10px', color: '#475569', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.concepto}</td>
-                                          <td style={{ padding: '7px 10px', fontWeight: 600, color: '#0f766e', whiteSpace: 'nowrap' }}>{fmt$(c.monto_final)}</td>
-                                          <td style={{ padding: '7px 10px', fontWeight: 700, whiteSpace: 'nowrap', color: saldo > 0 ? '#dc2626' : '#15803d' }}>{fmt$(saldo)}</td>
+                                        <tr key={c.id} style={{ borderTop: '1px solid #E6E8EB' }}>
+                                          <td style={{ padding: '7px 10px', color: '#62666E' }}>{c.ctrl_asignaciones?.cat_propiedades?.clave ?? '—'}</td>
+                                          <td style={{ padding: '7px 10px', color: '#4A4D54', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.concepto}</td>
+                                          <td style={{ padding: '7px 10px', fontWeight: 600, color: '#126B63', whiteSpace: 'nowrap' }}>{fmt$(c.monto_final)}</td>
+                                          <td style={{ padding: '7px 10px', fontWeight: 700, whiteSpace: 'nowrap', color: saldo > 0 ? '#C23B3B' : '#1F7A50' }}>{fmt$(saldo)}</td>
                                           <td style={{ padding: '7px 10px', whiteSpace: 'nowrap' }}>
-                                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, fontWeight: 600, background: sitC.bg, color: sitC.color }}>{sitC.label}</span>
+                                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, fontWeight: 600, background: sitC.color, color: '#fff'}}>{sitC.label}</span>
                                           </td>
-                                          <td style={{ padding: '7px 10px', color: vencida ? '#dc2626' : '#94a3b8', whiteSpace: 'nowrap' }}>
+                                          <td style={{ padding: '7px 10px', color: vencida ? '#C23B3B' : '#7A7E87', whiteSpace: 'nowrap' }}>
                                             {c.fecha_pago ? fmtFecha(c.fecha_pago) : '—'}
                                           </td>
                                           <td style={{ padding: '7px 10px' }}>
                                             {puedeEscribir && saldo > 0 && (
                                               <button onClick={e => { e.stopPropagation(); abrirCobroMes(c) }}
-                                                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, padding: '3px 9px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', color: '#475569', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, padding: '3px 9px', borderRadius: 6, border: '1px solid #E6E8EB', background: '#fff', color: '#4A4D54', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                                 <DollarSign size={11} /> Cobrar
                                               </button>
                                             )}
@@ -1245,10 +1245,10 @@ export default function CobranzaLocalesPage() {
         <>
           <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 360 }}>
-              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
+              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
                 placeholder="Buscar arrendatario o folio…" value={busquedaR} onChange={e => setBusquedaR(e.target.value)} />
-              {busquedaR && <button onClick={() => setBusquedaR('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+              {busquedaR && <button onClick={() => setBusquedaR('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2 }}><X size={12} /></button>}
             </div>
             <button className="btn-ghost" onClick={fetchRecibos} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <RefreshCw size={13} />
@@ -1271,20 +1271,20 @@ export default function CobranzaLocalesPage() {
                   ) : recibosFiltrados.length === 0 ? (
                     <tr><td colSpan={7} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>Sin recibos registrados</td></tr>
                   ) : recibosFiltrados.map(r => {
-                    const sc = STATUS_COLOR[r.status] ?? { bg: '#f1f5f9', color: '#64748b', label: r.status }
+                    const sc = STATUS_COLOR[r.status] ?? { bg: '#F4F5F7', color: '#62666E', label: r.status }
                     return (
                       <tr key={r.id}
                         onClick={() => { setDetalleRecibo(r); setTicketErrR('') }}
                         style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.1s' }}
                         onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)'}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
-                        <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: '#0f766e' }}>{r.folio}</td>
+                        <td style={{ padding: '10px 14px', fontVariantNumeric: 'tabular-nums', fontSize: 12, fontWeight: 700, color: '#126B63' }}>{r.folio}</td>
                         <td style={{ padding: '10px 14px', fontWeight: 500 }}>{fmtNombre(r.cat_arrendatarios)}</td>
                         <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12 }}>{fmtFecha(r.fecha_recibo)}</td>
-                        <td style={{ padding: '10px 14px', fontWeight: 700, color: '#0f766e' }}>{fmt$(r.total)}</td>
+                        <td style={{ padding: '10px 14px', fontWeight: 700, color: '#126B63' }}>{fmt$(r.total)}</td>
                         <td style={{ padding: '10px 14px', color: 'var(--text-muted)' }}>{r.forma_pago_nombre ?? '—'}</td>
                         <td style={{ padding: '10px 14px' }}>
-                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: sc.bg, color: sc.color }}>{sc.label}</span>
+                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: sc.color, color: '#fff'}}>{sc.label}</span>
                         </td>
                         <td style={{ padding: '10px 14px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1293,7 +1293,7 @@ export default function CobranzaLocalesPage() {
                               <button
                                 onClick={e => { e.stopPropagation(); setCancelando(r); setMotivoCancel('') }}
                                 title="Cancelar recibo"
-                                style={{ display: 'flex', alignItems: 'center', padding: '4px 6px', borderRadius: 6, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', cursor: 'pointer' }}>
+                                style={{ display: 'flex', alignItems: 'center', padding: '4px 6px', borderRadius: 6, border: '1px solid #C23B3B', background: '#C23B3B', color: '#fff', cursor: 'pointer' }}>
                                 <XCircle size={13} />
                               </button>
                             )}
@@ -1302,7 +1302,7 @@ export default function CobranzaLocalesPage() {
                                 onClick={e => { e.stopPropagation(); handleReabrir(r) }}
                                 disabled={reabriendoId === r.id}
                                 title="Reabrir recibo (solo superadmin)"
-                                style={{ display: 'flex', alignItems: 'center', padding: '4px 6px', borderRadius: 6, border: '1px solid #bbf7d0', background: '#f0fdf4', color: '#15803d', cursor: 'pointer', opacity: reabriendoId === r.id ? 0.6 : 1 }}>
+                                style={{ display: 'flex', alignItems: 'center', padding: '4px 6px', borderRadius: 6, border: '1px solid #1F7A50', background: '#1F7A50', color: '#fff', cursor: 'pointer', opacity: reabriendoId === r.id ? 0.6 : 1 }}>
                                 {reabriendoId === r.id ? <Loader size={13} className="animate-spin" /> : <RotateCcw size={13} />}
                               </button>
                             )}
@@ -1325,23 +1325,23 @@ export default function CobranzaLocalesPage() {
         <>
           <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 360 }}>
-              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
+              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
                 placeholder="Buscar arrendatario, concepto o periodo…" value={busquedaQ} onChange={e => { setBusquedaQ(e.target.value); setPaginaQ(1) }} />
-              {busquedaQ && <button onClick={() => setBusquedaQ('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+              {busquedaQ && <button onClick={() => setBusquedaQ('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2 }}><X size={12} /></button>}
             </div>
-            <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', gap: 0, border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
               {([
-                { key: 'todas',        label: 'Todas',        color: '#0f766e' },
-                { key: 'PENDIENTE',    label: 'Pendiente',    color: '#dc2626' },
-                { key: 'PAGO_PARCIAL', label: 'Parcial',      color: '#d97706' },
-                { key: 'PAGADO',       label: 'Pagado',       color: '#16a34a' },
-                { key: 'CANCELADO',    label: 'Cancelado',    color: '#64748b' },
+                { key: 'todas',        label: 'Todas',        color: '#126B63' },
+                { key: 'PENDIENTE',    label: 'Pendiente',    color: '#C23B3B' },
+                { key: 'PAGO_PARCIAL', label: 'Parcial',      color: '#B5761A' },
+                { key: 'PAGADO',       label: 'Pagado',       color: '#267F56' },
+                { key: 'CANCELADO',    label: 'Cancelado',    color: '#62666E' },
               ] as const).map(f => (
                 <button key={f.key} onClick={() => { setFiltroStatusQ(f.key); setPaginaQ(1) }} style={{
                   padding: '7px 12px', fontSize: 12, fontWeight: filtroStatusQ === f.key ? 600 : 400,
                   background: filtroStatusQ === f.key ? f.color : '#fff',
-                  color: filtroStatusQ === f.key ? '#fff' : '#94a3b8',
+                  color: filtroStatusQ === f.key ? '#fff' : '#7A7E87',
                   border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', whiteSpace: 'nowrap',
                 }}>
                   {f.label}
@@ -1372,12 +1372,12 @@ export default function CobranzaLocalesPage() {
                     const saldo = c.saldo ?? (c.status === 'PAGADO' ? 0 : c.monto_final)
                     const vencida = c.fecha_vencimiento && c.fecha_vencimiento < hoy && saldo > 0
                     const statusCfg: Record<string, { bg: string; color: string }> = {
-                      PENDIENTE:    { bg: '#fef2f2', color: '#dc2626' },
-                      PAGO_PARCIAL: { bg: '#fffbeb', color: '#d97706' },
-                      PAGADO:       { bg: '#dcfce7', color: '#15803d' },
-                      CANCELADO:    { bg: '#f1f5f9', color: '#64748b' },
+                      PENDIENTE:    { bg: '#F4F5F7', color: '#C23B3B' },
+                      PAGO_PARCIAL: { bg: '#F4F5F7', color: '#B5761A' },
+                      PAGADO:       { bg: '#E6E8EB', color: '#1F7A50' },
+                      CANCELADO:    { bg: '#F4F5F7', color: '#62666E' },
                     }
-                    const sc = statusCfg[c.status] ?? { bg: '#f1f5f9', color: '#64748b' }
+                    const sc = statusCfg[c.status] ?? { bg: '#F4F5F7', color: '#62666E' }
                     const prop = c.ctrl_asignaciones?.cat_propiedades
                       ? `${c.ctrl_asignaciones.cat_propiedades.clave}${c.ctrl_asignaciones.cat_propiedades.nombre ? ` — ${c.ctrl_asignaciones.cat_propiedades.nombre}` : ''}`
                       : '—'
@@ -1389,12 +1389,12 @@ export default function CobranzaLocalesPage() {
                         <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12, whiteSpace: 'nowrap' }}>{prop}</td>
                         <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.concepto}</td>
                         <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12, whiteSpace: 'nowrap' }}>{c.periodo ? fmtMes(c.periodo) : '—'}</td>
-                        <td style={{ padding: '10px 14px', fontWeight: 600, color: '#0f766e', whiteSpace: 'nowrap' }}>{fmt$(c.monto_final)}</td>
-                        <td style={{ padding: '10px 14px', fontWeight: 700, whiteSpace: 'nowrap', color: saldo > 0 ? '#dc2626' : '#15803d' }}>{fmt$(saldo)}</td>
+                        <td style={{ padding: '10px 14px', fontWeight: 600, color: '#126B63', whiteSpace: 'nowrap' }}>{fmt$(c.monto_final)}</td>
+                        <td style={{ padding: '10px 14px', fontWeight: 700, whiteSpace: 'nowrap', color: saldo > 0 ? '#C23B3B' : '#1F7A50' }}>{fmt$(saldo)}</td>
                         <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: sc.bg, color: sc.color }}>{c.status.replace('_', ' ')}</span>
+                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: sc.color, color: '#fff'}}>{c.status.replace('_', ' ')}</span>
                         </td>
-                        <td style={{ padding: '10px 14px', fontSize: 12, whiteSpace: 'nowrap', color: vencida ? '#dc2626' : 'var(--text-muted)' }}>
+                        <td style={{ padding: '10px 14px', fontSize: 12, whiteSpace: 'nowrap', color: vencida ? '#C23B3B' : 'var(--text-muted)' }}>
                           {fmtFecha(c.fecha_vencimiento)}
                         </td>
                         {puedeEliminarCuota && (
@@ -1403,7 +1403,7 @@ export default function CobranzaLocalesPage() {
                               onClick={() => handleEliminarCuota(c.id)}
                               disabled={eliminandoQ === c.id}
                               title="Eliminar cuota"
-                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '4px 8px', borderRadius: 6, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', cursor: 'pointer', opacity: eliminandoQ === c.id ? 0.5 : 1 }}>
+                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '4px 8px', borderRadius: 6, border: '1px solid #C23B3B', background: '#C23B3B', color: '#fff', cursor: 'pointer', opacity: eliminandoQ === c.id ? 0.5 : 1 }}>
                               {eliminandoQ === c.id ? <Loader size={12} /> : <Trash2 size={12} />}
                             </button>
                           </td>
@@ -1457,7 +1457,7 @@ export default function CobranzaLocalesPage() {
           footer={<>
             <button className="btn-ghost" onClick={() => setShowGenerar(false)} disabled={generando}>Cerrar</button>
             <button className="btn-primary" onClick={handleGenerarMasivo} disabled={generando}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#0f766e' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#126B63' }}>
               {generando ? <Loader size={13} className="animate-spin" /> : <Zap size={13} />}
               {generando ? 'Generando…' : 'Generar'}
             </button>
@@ -1472,7 +1472,7 @@ export default function CobranzaLocalesPage() {
               const anioActual = new Date().getFullYear()
               const anios = Array.from({ length: anioActual - 2024 + 2 }, (_, i) => 2024 + i)
               const MESES_L = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
-              const sel: React.CSSProperties = { padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', flex: 1 }
+              const sel: React.CSSProperties = { padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none', flex: 1 }
               return (
                 <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
                   <select value={anioSel} onChange={e => setMesGenerarAll(`${e.target.value}-${mesSel}`)} style={sel}>
@@ -1485,7 +1485,7 @@ export default function CobranzaLocalesPage() {
               )
             })()}
             {generadosMsg && (
-              <div style={{ fontSize: 13, padding: '10px 14px', background: generadosMsg.startsWith('✓') ? '#f0fdf4' : '#fef9c3', border: '1px solid', borderColor: generadosMsg.startsWith('✓') ? '#bbf7d0' : '#fde047', borderRadius: 8, color: generadosMsg.startsWith('✓') ? '#15803d' : '#92400e' }}>
+              <div style={{ fontSize: 13, padding: '10px 14px', background: generadosMsg.startsWith('✓') ? '#F4F5F7' : '#E6E8EB', border: '1px solid', borderColor: generadosMsg.startsWith('✓') ? '#E6E8EB' : '#E8CF5A', borderRadius: 8, color: generadosMsg.startsWith('✓') ? '#1F7A50' : '#7A4B0C' }}>
                 {generadosMsg}
               </div>
             )}
@@ -1501,17 +1501,17 @@ export default function CobranzaLocalesPage() {
           footer={<>
             {puedeEscribir && detalleRecibo.status === 'VIGENTE' && (
               <button onClick={() => { setCancelando(detalleRecibo); setMotivoCancel('') }}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #fecaca', borderRadius: 10, background: '#fef2f2', color: '#dc2626', cursor: 'pointer', marginRight: 'auto' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #E6E8EB', borderRadius: 10, background: '#F4F5F7', color: '#C23B3B', cursor: 'pointer', marginRight: 'auto' }}>
                 <XCircle size={14} /> Cancelar recibo
               </button>
             )}
             <button onClick={() => handleImprimirRecibo(detalleRecibo)} disabled={imprimiendo}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #99f6e4', borderRadius: 10, background: '#f0fdfa', color: '#0f766e', cursor: 'pointer', opacity: imprimiendo ? 0.6 : 1 }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #E6E8EB', borderRadius: 10, background: '#F4F5F7', color: '#126B63', cursor: 'pointer', opacity: imprimiendo ? 0.6 : 1 }}>
               <Printer size={14} /> {imprimiendo ? 'Imprimiendo…' : 'Imprimir'}
             </button>
             {detalleRecibo.status === 'VIGENTE' && (
               <button onClick={() => handleTicketPOS(detalleRecibo)} disabled={genTicketR}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 10, background: '#0f766e', color: '#fff', cursor: 'pointer', opacity: genTicketR ? 0.6 : 1 }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 10, background: '#126B63', color: '#fff', cursor: 'pointer', opacity: genTicketR ? 0.6 : 1 }}>
                 <Receipt size={14} /> {genTicketR ? 'Generando…' : 'Ticket POS'}
               </button>
             )}
@@ -1535,7 +1535,7 @@ export default function CobranzaLocalesPage() {
                   <div style={{ fontWeight: 700 }}>{fmt$(d.monto_final)}</div>
                 </div>
               ))}
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 12px', borderTop: '1px solid var(--border)', background: '#f0fdfa', fontWeight: 700, color: '#0f766e' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 12px', borderTop: '1px solid var(--border)', background: '#F4F5F7', fontWeight: 700, color: '#126B63' }}>
                 <span>TOTAL</span><span>{fmt$(detalleRecibo.total)}</span>
               </div>
             </div>
@@ -1548,7 +1548,7 @@ export default function CobranzaLocalesPage() {
               <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '8px 12px', background: 'var(--surface-800)', borderRadius: 8, marginBottom: 14 }}>{detalleRecibo.observaciones}</div>
             )}
 
-            {ticketErrR && <div style={{ fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{ticketErrR}</div>}
+            {ticketErrR && <div style={{ fontSize: 12, color: '#C23B3B', background: '#F4F5F7', padding: '8px 12px', borderRadius: 6 }}>{ticketErrR}</div>}
         </ModalShell>
       )}
 
@@ -1560,18 +1560,18 @@ export default function CobranzaLocalesPage() {
           footer={<>
             <button className="btn-secondary" onClick={() => setCancelando(null)} disabled={savingCancel}>Cerrar</button>
             <button onClick={handleCancelarRecibo} disabled={savingCancel}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 7, background: '#dc2626', color: '#fff', cursor: 'pointer', opacity: savingCancel ? 0.6 : 1 }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 7, background: '#C23B3B', color: '#fff', cursor: 'pointer', opacity: savingCancel ? 0.6 : 1 }}>
               {savingCancel ? <Loader size={13} className="animate-spin" /> : <XCircle size={14} />} {savingCancel ? 'Cancelando…' : 'Confirmar cancelación'}
             </button>
           </>}
         >
-            <p style={{ fontSize: 13, color: '#475569', marginBottom: 16, lineHeight: 1.5 }}>
+            <p style={{ fontSize: 13, color: '#4A4D54', marginBottom: 16, lineHeight: 1.5 }}>
               Las cuotas cubiertas por este recibo volverán a estar pendientes de cobro por el monto correspondiente
               {cancelando.id_venta_pos_fk ? <> y se cancelará el <strong>ticket POS</strong> generado</> : null}. Esta acción no se puede deshacer.
             </p>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Motivo de cancelación</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>Motivo de cancelación</label>
             <textarea
-              style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', height: 72, resize: 'vertical', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, fontFamily: 'inherit', outline: 'none', height: 72, resize: 'vertical', boxSizing: 'border-box' }}
               value={motivoCancel} onChange={e => setMotivoCancel(e.target.value)} placeholder="Opcional…" />
         </ModalShell>
       )}

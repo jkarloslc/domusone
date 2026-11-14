@@ -17,29 +17,29 @@ const MESES = [
 const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
 const TIPO_CLR: Record<string, string> = {
-  'Jardinería': '#16a34a',
-  'Fumigación': '#d97706',
-  'Obra Civil': '#2563eb',
-  'Otro':       '#7c3aed',
+  'Jardinería': '#267F56',
+  'Fumigación': '#B5761A',
+  'Obra Civil': '#1C1D21',
+  'Otro':       '#6B4E79',
 }
 
 const STATUS_CLR: Record<string, { bg: string; text: string }> = {
-  'Pendiente':  { bg: '#fef3c7', text: '#d97706' },
-  'En Proceso': { bg: '#dbeafe', text: '#2563eb' },
-  'Completada': { bg: '#dcfce7', text: '#16a34a' },
-  'Omitida':    { bg: '#f1f5f9', text: '#64748b' },
+  'Pendiente':  { bg: '#E6E8EB', text: '#B5761A' },
+  'En Proceso': { bg: '#E6E8EB', text: '#1C1D21' },
+  'Completada': { bg: '#E6E8EB', text: '#267F56' },
+  'Omitida':    { bg: '#F4F5F7', text: '#62666E' },
 }
 
 const CAT_CLR: Record<string, string> = {
-  'Fungicida':     '#ef4444',
-  'Herbicida':     '#f97316',
-  'Insecticida':   '#a855f7',
-  'Fertilizante':  '#16a34a',
-  'Bioestimulante':'#0891b2',
-  'Enmienda':      '#92400e',
-  'Humectante':    '#0284c7',
-  'Agua':          '#2563eb',
-  'Semilla':       '#4ade80',
+  'Fungicida':     '#D05252',
+  'Herbicida':     '#D97A3F',
+  'Insecticida':   '#8E739B',
+  'Fertilizante':  '#267F56',
+  'Bioestimulante':'#32789A',
+  'Enmienda':      '#7A4B0C',
+  'Humectante':    '#32789A',
+  'Agua':          '#1C1D21',
+  'Semilla':       '#C9CCD3',
 }
 
 // Catálogo de productos — basado en hoja 2 del reporte Excel Nov 2025–Jun 2026
@@ -316,23 +316,23 @@ export default function MantenimientoCampoPage() {
       <PageHeader
         backHref="/golf/mantto-campo"
         icon={Leaf}
-        color="#16a34a"
+        color="#267F56"
         eyebrowLabel="Mantto. Campo"
         title="Mantenimiento — Campo de Golf"
         subtitle="Club de Golf · Campo de Golf · Áreas Verdes y Jardinería"
         actions={esLluvias ? (
           <div style={{
-            background: '#dbeafe', color: '#1d4ed8',
+            background: '#E6E8EB', color: '#26282D',
             borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600,
-            border: '1px solid #bfdbfe', whiteSpace: 'nowrap',
+            border: '1px solid #C9CCD3', whiteSpace: 'nowrap',
           }}>
-            ⛈ Temporada lluvias — Protocolos intensificados
+            Temporada lluvias — Protocolos intensificados
           </div>
         ) : undefined}
       />
 
       {/* ── Tabs ──────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: 2, borderBottom: '2px solid #e2e8f0', marginBottom: 24 }}>
+      <div style={{ display: 'flex', gap: 2, borderBottom: '2px solid #E6E8EB', marginBottom: 24 }}>
         {([
           { key: 'ejecucion', label: 'Ejecución Semanal' },
           { key: 'programas', label: 'Programas Anuales' },
@@ -345,8 +345,8 @@ export default function MantenimientoCampoPage() {
             style={{
               padding: '9px 20px', fontWeight: 600, fontSize: 13.5,
               border: 'none', cursor: 'pointer', background: 'transparent',
-              color: tab === t.key ? '#16a34a' : '#64748b',
-              borderBottom: `2px solid ${tab === t.key ? '#16a34a' : 'transparent'}`,
+              color: tab === t.key ? '#267F56' : '#62666E',
+              borderBottom: `2px solid ${tab === t.key ? '#267F56' : 'transparent'}`,
               marginBottom: -2,
             }}>
             {t.label}
@@ -382,24 +382,24 @@ export default function MantenimientoCampoPage() {
           {/* KPI cards */}
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
             {[
-              { label: 'Completadas',     val: completadas,    bg: '#dcfce7', clr: '#16a34a' },
-              { label: 'En Proceso',      val: enProceso,      bg: '#dbeafe', clr: '#2563eb' },
-              { label: 'Pendientes',      val: pendientes,     bg: '#fef3c7', clr: '#d97706' },
-              { label: 'Total semana',    val: celdas.length,  bg: '#f1f5f9', clr: '#374151' },
+              { label: 'Completadas',     val: completadas,    bg: '#E6E8EB', clr: '#267F56' },
+              { label: 'En Proceso',      val: enProceso,      bg: '#E6E8EB', clr: '#1C1D21' },
+              { label: 'Pendientes',      val: pendientes,     bg: '#E6E8EB', clr: '#B5761A' },
+              { label: 'Total semana',    val: celdas.length,  bg: '#F4F5F7', clr: '#33363C' },
               {
                 label: 'Cumplimiento',
                 val: `${cumplimiento}%`,
-                bg: '#f8fafc',
-                clr: cumplimiento >= 80 ? '#16a34a' : cumplimiento >= 50 ? '#d97706' : '#dc2626',
+                bg: '#F8F9FA',
+                clr: cumplimiento >= 80 ? '#267F56' : cumplimiento >= 50 ? '#B5761A' : '#C23B3B',
               },
             ].map(k => (
               <div key={k.label} className="card" style={{
                 flex: '1 1 140px', maxWidth: 190, padding: '14px 18px',
-                background: k.bg, border: 'none',
+                background: '#fff', border: '1px solid #E6E8EB',
               }}>
-                <div style={{ fontSize: 26, fontWeight: 700, color: k.clr }}>{k.val}</div>
-                <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, fontWeight: 500 }}>
-                  {k.label}
+                <div style={{ fontSize: 26, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{k.val}</div>
+                <div style={{ fontSize: 11, color: '#62666E', marginTop: 2, fontWeight: 500 }}>
+                  <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.clr, marginRight: 6, verticalAlign: 'middle' }} />{k.label}
                 </div>
               </div>
             ))}
@@ -407,18 +407,18 @@ export default function MantenimientoCampoPage() {
 
           {/* Tipo filter pills */}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20, alignItems: 'center' }}>
-            <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, letterSpacing: '0.08em' }}>
+            <span style={{ fontSize: 10, color: '#7A7E87', fontWeight: 700, letterSpacing: '0.08em' }}>
               TIPO:
             </span>
             {tipos.map(t => {
-              const clr = TIPO_CLR[t] ?? '#374151'
+              const clr = TIPO_CLR[t] ?? '#33363C'
               const active = filtroTipo === t
               return (
                 <button key={t} onClick={() => setFiltroTipo(t)} style={{
                   padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-                  border: `1.5px solid ${active ? clr : '#e2e8f0'}`,
-                  background: active ? clr + '1a' : '#fff',
-                  color: active ? clr : '#64748b',
+                  border: `1.5px solid ${active ? clr : '#E6E8EB'}`,
+                  background: active ? '#E6E8EB' : '#fff',
+                  color: active ? clr : '#62666E',
                   cursor: 'pointer',
                 }}>
                   {t === 'Todos' ? `Todos (${progsSemana.length})` : t}
@@ -429,13 +429,13 @@ export default function MantenimientoCampoPage() {
 
           {/* Tablas por tipo, columnas = días de la semana */}
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 60, color: '#94a3b8' }}>
+            <div style={{ textAlign: 'center', padding: 60, color: '#7A7E87' }}>
               Cargando programas...
             </div>
           ) : progsFiltradosSemana.length === 0 ? (
             <div style={{
-              textAlign: 'center', padding: 60, color: '#94a3b8',
-              background: '#f8fafc', borderRadius: 12, border: '1px dashed #e2e8f0',
+              textAlign: 'center', padding: 60, color: '#7A7E87',
+              background: '#F8F9FA', borderRadius: 12, border: '1px dashed #E6E8EB',
             }}>
               <Leaf size={32} style={{ marginBottom: 12, opacity: 0.3 }} />
               <div style={{ fontSize: 14, fontWeight: 600 }}>
@@ -451,17 +451,17 @@ export default function MantenimientoCampoPage() {
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10,
                   paddingBottom: 8,
-                  borderBottom: `2px solid ${TIPO_CLR[tipo] ?? '#e2e8f0'}22`,
+                  borderBottom: '2px solid #E6E8EB',
                 }}>
                   <span style={{
                     fontSize: 10, fontWeight: 800, letterSpacing: '0.08em',
-                    color: TIPO_CLR[tipo] ?? '#374151',
-                    background: (TIPO_CLR[tipo] ?? '#374151') + '18',
+                    color: '#fff',
+                    background: (TIPO_CLR[tipo] ?? '#33363C'),
                     borderRadius: 4, padding: '3px 10px',
                   }}>
                     {tipo.toUpperCase()}
                   </span>
-                  <span style={{ fontSize: 12, color: '#94a3b8' }}>
+                  <span style={{ fontSize: 12, color: '#7A7E87' }}>
                     {agrupados[tipo].length} programa{agrupados[tipo].length !== 1 ? 's' : ''}
                   </span>
                 </div>
@@ -475,7 +475,7 @@ export default function MantenimientoCampoPage() {
                         {dias.map((d, i) => (
                           <th key={i} style={{ textAlign: 'center', minWidth: 80 }}>
                             {DIAS[i]}<br />
-                            <span style={{ fontWeight: 400, color: '#94a3b8', fontSize: 11 }}>{d.getDate()}/{d.getMonth() + 1}</span>
+                            <span style={{ fontWeight: 400, color: '#7A7E87', fontSize: 11 }}>{d.getDate()}/{d.getMonth() + 1}</span>
                           </th>
                         ))}
                       </tr>
@@ -493,11 +493,11 @@ export default function MantenimientoCampoPage() {
                                     <ChevronDown size={13} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: '.2s' }} />
                                   </button>
                                 </div>
-                                <div style={{ fontSize: 10.5, color: '#94a3b8', fontStyle: 'italic' }}>{p.frecuencia}</div>
+                                <div style={{ fontSize: 10.5, color: '#7A7E87', fontStyle: 'italic' }}>{p.frecuencia}</div>
                               </td>
                               {dias.map((f, i) => {
                                 const activo = fechas.some(fe => toISODate(fe) === toISODate(f))
-                                if (!activo) return <td key={i} style={{ textAlign: 'center', color: '#e2e8f0' }}>·</td>
+                                if (!activo) return <td key={i} style={{ textAlign: 'center', color: '#E6E8EB' }}>·</td>
                                 const fechaISO = toISODate(f)
                                 const status = getStatus(p.id, fechaISO)
                                 const sc = STATUS_CLR[status] ?? STATUS_CLR['Pendiente']
@@ -513,8 +513,8 @@ export default function MantenimientoCampoPage() {
                                         onChange={e => cambiarStatus(p, f, e.target.value)}
                                         style={{
                                           padding: '3px 4px', borderRadius: 5, fontSize: 10.5, fontWeight: 600,
-                                          background: sc.bg, color: sc.text,
-                                          border: `1.5px solid ${sc.text}50`,
+                                          background: sc.text, color: '#fff',
+                                          border: '1.5px solid #E6E8EB',
                                           cursor: 'pointer', opacity: isSaving ? 0.5 : 1, outline: 'none',
                                         }}>
                                         <option value="Pendiente">Pendiente</option>
@@ -523,14 +523,14 @@ export default function MantenimientoCampoPage() {
                                         <option value="Omitida">Omitida</option>
                                       </select>
                                       {tarea?.id_ot_fk ? (
-                                        <span style={{ fontSize: 9, color: '#2563eb' }}>OT ✓</span>
+                                        <span style={{ fontSize: 9, color: '#1C1D21' }}>OT ✓</span>
                                       ) : (
                                         <button
                                           onClick={() => generarOT(p, f)}
                                           disabled={isSaving}
                                           title="Crear Orden de Trabajo"
-                                          style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, border: '1px solid #bfdbfe',
-                                            background: '#eff6ff', color: '#2563eb', cursor: 'pointer' }}>
+                                          style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, border: '1px solid #C9CCD3',
+                                            background: '#F4F5F7', color: '#1C1D21', cursor: 'pointer' }}>
                                           + OT
                                         </button>
                                       )}
@@ -541,7 +541,7 @@ export default function MantenimientoCampoPage() {
                             </tr>
                             {isExpanded && p.descripcion && (
                               <tr>
-                                <td colSpan={8} style={{ fontSize: 12.5, color: '#475569', lineHeight: 1.7, background: '#f8fafc' }}>
+                                <td colSpan={8} style={{ fontSize: 12.5, color: '#4A4D54', lineHeight: 1.7, background: '#F8F9FA' }}>
                                   {p.descripcion}
                                 </td>
                               </tr>
@@ -567,7 +567,7 @@ export default function MantenimientoCampoPage() {
             <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 360 }}>
               <Search size={14} style={{
                 position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
-                color: '#94a3b8',
+                color: '#7A7E87',
               }} />
               <input
                 value={busqueda}
@@ -575,19 +575,19 @@ export default function MantenimientoCampoPage() {
                 placeholder="Buscar por nombre o producto..."
                 style={{
                   width: '100%', padding: '8px 12px 8px 32px', borderRadius: 8,
-                  border: '1.5px solid #e2e8f0', fontSize: 13, outline: 'none',
+                  border: '1.5px solid #E6E8EB', fontSize: 13, outline: 'none',
                   boxSizing: 'border-box',
                 }} />
             </div>
             {tipos.map(t => {
-              const clr = TIPO_CLR[t] ?? '#374151'
+              const clr = TIPO_CLR[t] ?? '#33363C'
               const active = filtroTipo === t
               return (
                 <button key={t} onClick={() => setFiltroTipo(t)} style={{
                   padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-                  border: `1.5px solid ${active ? clr : '#e2e8f0'}`,
-                  background: active ? clr + '1a' : '#fff',
-                  color: active ? clr : '#64748b', cursor: 'pointer',
+                  border: `1.5px solid ${active ? clr : '#E6E8EB'}`,
+                  background: active ? '#E6E8EB' : '#fff',
+                  color: active ? clr : '#62666E', cursor: 'pointer',
                 }}>
                   {t}
                 </button>
@@ -600,13 +600,13 @@ export default function MantenimientoCampoPage() {
             {Object.entries(resumenTipos).map(([tipo, count]) => (
               <div key={tipo} style={{
                 fontSize: 12, padding: '4px 12px', borderRadius: 6,
-                background: (TIPO_CLR[tipo] ?? '#374151') + '18',
-                color: TIPO_CLR[tipo] ?? '#374151', fontWeight: 600,
+                background: (TIPO_CLR[tipo] ?? '#33363C'),
+                color: '#fff', fontWeight: 600,
               }}>
                 {tipo}: {count}
               </div>
             ))}
-            <span style={{ fontSize: 12, color: '#94a3b8' }}>
+            <span style={{ fontSize: 12, color: '#7A7E87' }}>
               · Mostrando {progsAnualesFiltrados.length} de {programas.length} programas
             </span>
           </div>
@@ -615,7 +615,7 @@ export default function MantenimientoCampoPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             {progsAnualesFiltrados.map(p => {
               const isExp = expandedId === p.id
-              const clr = TIPO_CLR[p.tipo_trabajo] ?? '#374151'
+              const clr = TIPO_CLR[p.tipo_trabajo] ?? '#33363C'
               return (
                 <div key={p.id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
                   <button
@@ -626,39 +626,39 @@ export default function MantenimientoCampoPage() {
                       background: 'none', border: 'none', cursor: 'pointer',
                     }}>
                     <span style={{
-                      fontSize: 10, fontWeight: 800, color: clr,
-                      background: clr + '18', borderRadius: 4,
+                      fontSize: 10, fontWeight: 800, color: '#fff',
+                      background: clr, borderRadius: 4,
                       padding: '2px 8px', whiteSpace: 'nowrap', minWidth: 70, textAlign: 'center',
                     }}>
                       {p.tipo_trabajo.toUpperCase()}
                     </span>
-                    <span style={{ flex: 1, fontWeight: 600, fontSize: 13.5, color: '#1e293b', textAlign: 'left' }}>
+                    <span style={{ flex: 1, fontWeight: 600, fontSize: 13.5, color: '#26282D', textAlign: 'left' }}>
                       {p.nombre}
                     </span>
                     <span style={{
-                      fontSize: 11, color: '#64748b',
-                      background: '#f1f5f9', borderRadius: 4, padding: '2px 8px', whiteSpace: 'nowrap',
+                      fontSize: 11, color: '#62666E',
+                      background: '#F4F5F7', borderRadius: 4, padding: '2px 8px', whiteSpace: 'nowrap',
                     }}>
                       {p.frecuencia}
                     </span>
-                    <span style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: 11, color: '#7A7E87', whiteSpace: 'nowrap' }}>
                       {rangoMeses(p)}
                     </span>
                     <ChevronDown
-                      size={15} color="#94a3b8"
+                      size={15} color="#7A7E87"
                       style={{ transform: isExp ? 'rotate(180deg)' : 'none', transition: '.2s', flexShrink: 0 }} />
                   </button>
 
                   {isExp && p.descripcion && (
                     <div style={{
                       padding: '0 20px 18px',
-                      fontSize: 13, color: '#475569', lineHeight: 1.8,
-                      borderTop: `3px solid ${clr}30`,
-                      background: clr + '06',
+                      fontSize: 13, color: '#4A4D54', lineHeight: 1.8,
+                      borderTop: '3px solid #E6E8EB',
+                      background: '#F4F5F7',
                     }}>
                       <div style={{ paddingTop: 14 }}>{p.descripcion}</div>
                       {p.responsable && (
-                        <div style={{ marginTop: 10, fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>
+                        <div style={{ marginTop: 10, fontSize: 12, color: '#7A7E87', fontStyle: 'italic' }}>
                           Responsable: {p.responsable}
                         </div>
                       )}
@@ -668,7 +668,7 @@ export default function MantenimientoCampoPage() {
               )
             })}
             {progsAnualesFiltrados.length === 0 && !loading && (
-              <div style={{ textAlign: 'center', padding: 60, color: '#94a3b8' }}>
+              <div style={{ textAlign: 'center', padding: 60, color: '#7A7E87' }}>
                 Sin programas que coincidan con el filtro
               </div>
             )}
@@ -684,7 +684,7 @@ export default function MantenimientoCampoPage() {
             <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 340 }}>
               <Search size={14} style={{
                 position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
-                color: '#94a3b8',
+                color: '#7A7E87',
               }} />
               <input
                 value={busqueda}
@@ -692,19 +692,19 @@ export default function MantenimientoCampoPage() {
                 placeholder="Buscar producto..."
                 style={{
                   width: '100%', padding: '8px 12px 8px 32px', borderRadius: 8,
-                  border: '1.5px solid #e2e8f0', fontSize: 13, outline: 'none',
+                  border: '1.5px solid #E6E8EB', fontSize: 13, outline: 'none',
                   boxSizing: 'border-box',
                 }} />
             </div>
             {cats.map(c => {
-              const clr = CAT_CLR[c] ?? '#374151'
+              const clr = CAT_CLR[c] ?? '#33363C'
               const active = filtroCat === c
               return (
                 <button key={c} onClick={() => setFiltroCat(c)} style={{
                   padding: '5px 13px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-                  border: `1.5px solid ${active ? clr : '#e2e8f0'}`,
-                  background: active ? clr + '18' : '#fff',
-                  color: active ? clr : '#64748b', cursor: 'pointer',
+                  border: `1.5px solid ${active ? clr : '#E6E8EB'}`,
+                  background: active ? '#E6E8EB' : '#fff',
+                  color: active ? clr : '#62666E', cursor: 'pointer',
                 }}>
                   {c}
                 </button>
@@ -713,15 +713,15 @@ export default function MantenimientoCampoPage() {
           </div>
 
           {/* Table */}
-          <div style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+          <div style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid #E6E8EB' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#f8fafc' }}>
+                <tr style={{ background: '#F8F9FA' }}>
                   {['Categoría', 'Producto', 'Dosificación', 'Área de aplicación', 'Uso principal'].map(h => (
                     <th key={h} style={{
                       padding: '11px 14px', textAlign: 'left', fontWeight: 700,
-                      fontSize: 11, color: '#64748b', letterSpacing: '0.05em',
-                      whiteSpace: 'nowrap', borderBottom: '2px solid #e2e8f0',
+                      fontSize: 11, color: '#62666E', letterSpacing: '0.05em',
+                      whiteSpace: 'nowrap', borderBottom: '2px solid #E6E8EB',
                     }}>
                       {h.toUpperCase()}
                     </th>
@@ -730,33 +730,33 @@ export default function MantenimientoCampoPage() {
               </thead>
               <tbody>
                 {catalogoFiltrado.map((p, i) => {
-                  const clr = CAT_CLR[p.cat] ?? '#374151'
+                  const clr = CAT_CLR[p.cat] ?? '#33363C'
                   return (
                     <tr key={i} style={{
-                      borderBottom: '1px solid #f1f5f9',
+                      borderBottom: '1px solid #F4F5F7',
                       background: i % 2 === 0 ? '#fff' : '#fafafa',
                     }}>
                       <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                         <span style={{
-                          fontSize: 10, fontWeight: 700, color: clr,
-                          background: clr + '18', borderRadius: 4, padding: '2px 8px',
+                          fontSize: 10, fontWeight: 700, color: '#fff',
+                          background: clr, borderRadius: 4, padding: '2px 8px',
                         }}>
                           {p.cat}
                         </span>
                       </td>
-                      <td style={{ padding: '10px 14px', fontWeight: 600, color: '#1e293b' }}>
+                      <td style={{ padding: '10px 14px', fontWeight: 600, color: '#26282D' }}>
                         {p.nombre}
                       </td>
                       <td style={{
-                        padding: '10px 14px', color: '#475569',
-                        fontFamily: 'monospace', fontSize: 12, whiteSpace: 'nowrap',
+                        padding: '10px 14px', color: '#4A4D54',
+                        fontVariantNumeric: 'tabular-nums', fontSize: 12, whiteSpace: 'nowrap',
                       }}>
                         {p.dosis}
                       </td>
-                      <td style={{ padding: '10px 14px', color: '#64748b', fontSize: 12 }}>
+                      <td style={{ padding: '10px 14px', color: '#62666E', fontSize: 12 }}>
                         {p.areas}
                       </td>
-                      <td style={{ padding: '10px 14px', color: '#475569' }}>
+                      <td style={{ padding: '10px 14px', color: '#4A4D54' }}>
                         {p.uso}
                       </td>
                     </tr>
@@ -765,12 +765,12 @@ export default function MantenimientoCampoPage() {
               </tbody>
             </table>
             {catalogoFiltrado.length === 0 && (
-              <div style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>
+              <div style={{ textAlign: 'center', padding: 40, color: '#7A7E87' }}>
                 Sin resultados
               </div>
             )}
           </div>
-          <p style={{ marginTop: 12, fontSize: 12, color: '#94a3b8' }}>
+          <p style={{ marginTop: 12, fontSize: 12, color: '#7A7E87' }}>
             {catalogoFiltrado.length} de {CATALOGO.length} productos · Fuente: Resumen_Reportes_Balvanera_Nov2025_Mar2026.xlsx
           </p>
         </>

@@ -31,7 +31,7 @@ export default function ReporteLotesAsociacion() {
   }, [filterSec, filterAC])
 
   const STATUS_COLOR: Record<string, string> = {
-    'Vendido': '#15803d', 'Libre': '#1d4ed8', 'Bloqueado': '#dc2626',
+    'Vendido': '#1F7A50', 'Libre': '#26282D', 'Bloqueado': '#C23B3B',
   }
 
   return (
@@ -82,9 +82,9 @@ export default function ReporteLotesAsociacion() {
                 </td>
                 <td>
                   <span style={{ fontSize: 11, fontWeight: 600, padding: '1px 8px', borderRadius: 20,
-                    color: l.pertenece_asociacion ? '#15803d' : '#64748b',
-                    background: l.pertenece_asociacion ? '#f0fdf4' : '#f8fafc',
-                    border: `1px solid ${l.pertenece_asociacion ? '#bbf7d0' : '#e2e8f0'}` }}>
+                    color: l.pertenece_asociacion ? '#fff' : '#62666E',
+                    background: l.pertenece_asociacion ? '#1F7A50' : '#F8F9FA',
+                    border: `1px solid ${l.pertenece_asociacion ? '#1F7A50' : '#E6E8EB'}` }}>
                     {l.pertenece_asociacion ? 'Sí' : 'No'}
                   </span>
                 </td>

@@ -79,7 +79,7 @@ export default function CajaChicaPage() {
       <PageHeader
         onBack={() => router.push('/compras')}
         icon={Wallet}
-        color="#d97706"
+        color="#B5761A"
         eyebrowLabel="Compras"
         title="Caja Chica"
         subtitle="Fondos y reembolsos de gastos menores"
@@ -99,11 +99,11 @@ export default function CajaChicaPage() {
 
       {/* Stats */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
-        <KpiCard label="Pendientes auth." value={pendAuth} color="#d97706" icon={AlertTriangle} />
-        <KpiCard label="Autorizados" value={autorizados} color="#059669" icon={CheckCircle} />
-        <KpiCard label="Total por pagar" value={`$${totalPendiente.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`} color="#0891b2" icon={DollarSign} />
+        <KpiCard label="Pendientes auth." value={pendAuth} color="#B5761A" icon={AlertTriangle} />
+        <KpiCard label="Autorizados" value={autorizados} color="#267F56" icon={CheckCircle} />
+        <KpiCard label="Total por pagar" value={`$${totalPendiente.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`} color="#32789A" icon={DollarSign} />
         {isAdmin && (
-          <KpiCard label="Fondos activos" value={fondos.filter(f => f.status === 'Activo').length} color="#7c3aed" icon={Users} />
+          <KpiCard label="Fondos activos" value={fondos.filter(f => f.status === 'Activo').length} color="#6B4E79" icon={Users} />
         )}
       </div>
 
@@ -113,8 +113,8 @@ export default function CajaChicaPage() {
           {(['reembolsos', 'fondos'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
               style={{ padding: '8px 18px', fontSize: 13, fontWeight: 600, background: 'none', border: 'none',
-                borderBottom: tab === t ? '2px solid var(--gold)' : '2px solid transparent',
-                color: tab === t ? 'var(--gold)' : 'var(--text-muted)', cursor: 'pointer', textTransform: 'capitalize' }}>
+                borderBottom: tab === t ? '2px solid #19D3C5' : '2px solid transparent',
+                color: tab === t ? '#1C1D21' : 'var(--text-muted)', cursor: 'pointer', textTransform: 'capitalize' }}>
               {t === 'reembolsos' ? 'Reembolsos' : 'Fondos Asignados'}
             </button>
           ))}
@@ -183,7 +183,7 @@ export default function CajaChicaPage() {
                   ? <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 24 }}>Sin reembolsos</td></tr>
                   : filteredPag.map(r => (
                     <tr key={r.id} style={{ opacity: r.status === 'Rechazado' || r.status === 'Cancelado' ? 0.5 : 1 }}>
-                      <td style={{ fontFamily: 'monospace', fontSize: 13 }}>{r.folio ?? `#${r.id}`}</td>
+                      <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 13 }}>{r.folio ?? `#${r.id}`}</td>
                       <td style={{ fontSize: 13 }}>{r.usuario_nombre ?? r.id_usuario_fk}</td>
                       <td style={{ fontSize: 13 }}>{r.fecha}</td>
                       <td style={{ fontFamily: 'var(--font-display)', fontSize: 15, color: 'var(--gold-light)' }}>

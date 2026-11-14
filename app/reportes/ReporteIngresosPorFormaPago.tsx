@@ -149,7 +149,7 @@ export default function ReporteIngresosPorFormaPago() {
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         <div className="card" style={{ padding: '14px 20px', flex: '1 1 180px' }}>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total Ingresos</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: '#059669' }}>{fmt(totalGeneral)}</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: '#267F56' }}>{fmt(totalGeneral)}</div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{recibos.length} recibo{recibos.length !== 1 ? 's' : ''} · {grupos.length} centro{grupos.length !== 1 ? 's' : ''}</div>
         </div>
         {Object.entries(totalesForma).sort((a, b) => b[1] - a[1]).map(([nombre, total]) => (
@@ -184,7 +184,7 @@ export default function ReporteIngresosPorFormaPago() {
         <div id="reporte-print-area" className="card" style={{ overflow: 'auto' }}>
           <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+              <tr style={{ background: '#F8F9FA', borderBottom: '2px solid #E6E8EB' }}>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', minWidth: 220 }}>
                   Centro de Ingreso
                 </th>
@@ -203,12 +203,12 @@ export default function ReporteIngresosPorFormaPago() {
                 <>
                   {/* Fila de centro */}
                   <tr key={`grp-${g.key}`} onClick={() => toggle(g.key)}
-                    style={{ background: '#f1f5f9', cursor: 'pointer', borderBottom: '1px solid #e2e8f0' }}>
+                    style={{ background: '#F4F5F7', cursor: 'pointer', borderBottom: '1px solid #E6E8EB' }}>
                     <td style={{ padding: '10px 14px', fontWeight: 700 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {expanded.has(g.key)
-                          ? <ChevronDown size={14} style={{ color: '#059669' }} />
-                          : <ChevronRight size={14} style={{ color: '#059669' }} />}
+                          ? <ChevronDown size={14} style={{ color: '#62666E' }} />
+                          : <ChevronRight size={14} style={{ color: '#62666E' }} />}
                         <span style={{ color: 'var(--text-primary)' }}>{g.label}</span>
                         <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>
                           ({g.items.length} recibo{g.items.length !== 1 ? 's' : ''})
@@ -220,7 +220,7 @@ export default function ReporteIngresosPorFormaPago() {
                         {g.porForma[f] ? fmt(g.porForma[f]) : '—'}
                       </td>
                     ))}
-                    <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: '#059669' }}>
+                    <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: '#267F56' }}>
                       {fmt(g.total)}
                     </td>
                   </tr>
@@ -228,9 +228,9 @@ export default function ReporteIngresosPorFormaPago() {
                   {expanded.has(g.key) && g.items.map(r => {
                     const fpsMap = Object.fromEntries(getFormasPago(r).map(f => [f.nombre, f.monto]))
                     return (
-                      <tr key={`r-${r.id}`} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <tr key={`r-${r.id}`} style={{ borderBottom: '1px solid #F4F5F7' }}>
                         <td style={{ padding: '8px 14px 8px 38px', fontSize: 12 }}>
-                          <span style={{ fontFamily: 'monospace', color: 'var(--blue)' }}>
+                          <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--blue)' }}>
                             {r.folio ?? `ING-${r.id}`}
                           </span>
                           <span style={{ color: 'var(--text-muted)', marginLeft: 8 }}>{fmtF(r.fecha)}</span>
@@ -254,16 +254,16 @@ export default function ReporteIngresosPorFormaPago() {
                 </>
               ))}
               {/* Total general */}
-              <tr style={{ background: '#0f172a', borderTop: '2px solid #334155' }}>
-                <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#f8fafc' }}>
+              <tr style={{ background: '#1C1D21', borderTop: '2px solid #33363C' }}>
+                <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#F8F9FA' }}>
                   Total General · {recibos.length} recibo{recibos.length !== 1 ? 's' : ''}
                 </td>
                 {formasColumnas.map(f => (
-                  <td key={f} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 13, color: '#6ee7b7' }}>
+                  <td key={f} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 13, color: '#7CC9A3' }}>
                     {totalesForma[f] ? fmt(totalesForma[f]) : '—'}
                   </td>
                 ))}
-                <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 14, color: '#6ee7b7' }}>
+                <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 14, color: '#7CC9A3' }}>
                   {fmt(totalGeneral)}
                 </td>
               </tr>

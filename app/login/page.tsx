@@ -52,7 +52,7 @@ export default function LoginPage() {
   }
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F4F5F7' }}>
       <Loader size={24} className="animate-spin" style={{ color: 'var(--blue)' }} />
     </div>
   )
@@ -60,7 +60,7 @@ export default function LoginPage() {
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(135deg, #eff6ff 0%, #f1f5f9 50%, #e0f2fe 100%)',
+      background: '#F4F5F7',
       fontFamily: 'var(--font-body)',
       position: 'relative',
     }}>
@@ -86,21 +86,21 @@ export default function LoginPage() {
         {/* Card de login */}
         <div style={{
           background: '#ffffff', borderRadius: 16, padding: '32px',
-          boxShadow: '0 4px 24px rgba(37,99,235,0.08), 0 1px 3px rgba(0,0,0,0.06)',
-          border: '1px solid #e2e8f0',
+          boxShadow: '0 4px 24px rgba(28,29,33,0.08), 0 1px 3px rgba(0,0,0,0.06)',
+          border: '1px solid #E6E8EB',
         }}>
           <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 24 }}>
             Iniciar Sesión
           </h2>
 
           {error && (
-            <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, color: '#dc2626', fontSize: 13, marginBottom: 16 }}>
+            <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, color: '#C23B3B', fontSize: 13, marginBottom: 16 }}>
               {error}
             </div>
           )}
 
           {aviso && (
-            <div style={{ padding: '10px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, color: '#15803d', fontSize: 13, marginBottom: 16 }}>
+            <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #1F7A50', borderRadius: 8, color: '#1F7A50', fontSize: 13, marginBottom: 16 }}>
               {aviso}
             </div>
           )}
@@ -176,7 +176,7 @@ export default function LoginPage() {
           style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 1000 }}>
           <div onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Aviso de Privacidad"
             style={{ background: '#fff', borderRadius: 14, width: '100%', maxWidth: 640, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 50px rgba(0,0,0,0.25)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #E6E8EB' }}>
               <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Aviso de Privacidad</h3>
               <button type="button" onClick={() => setVerAviso(false)} aria-label="Cerrar"
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}>
@@ -192,7 +192,7 @@ export default function LoginPage() {
               <p><strong>Derechos ARCO.</strong> Usted puede acceder, rectificar o cancelar sus datos personales, oponerse a su tratamiento y revocar su consentimiento, solicitándolo por escrito a la administración de su club o fraccionamiento, o al Responsable.</p>
               <p><strong>Cambios al aviso.</strong> El presente aviso puede modificarse; cualquier cambio se dará a conocer en esta plataforma.</p>
             </div>
-            <div style={{ padding: '12px 20px', borderTop: '1px solid #e2e8f0', textAlign: 'right' }}>
+            <div style={{ padding: '12px 20px', borderTop: '1px solid #E6E8EB', textAlign: 'right' }}>
               <button type="button" className="btn-primary" onClick={() => setVerAviso(false)}>Cerrar</button>
             </div>
           </div>

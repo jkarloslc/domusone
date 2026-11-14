@@ -132,11 +132,11 @@ export default function ReporteLotesResumenClasif() {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
         {[
           { label: 'Total Lotes',     value: fmt(gt.total),      color: 'var(--blue)' },
-          { label: 'Vendidos',        value: fmt(gt.vendidos),   color: '#15803d' },
-          { label: 'Libres',          value: fmt(gt.libres),     color: '#1d4ed8' },
-          { label: 'Bloqueados',      value: fmt(gt.bloqueados), color: '#dc2626' },
+          { label: 'Vendidos',        value: fmt(gt.vendidos),   color: '#1F7A50' },
+          { label: 'Libres',          value: fmt(gt.libres),     color: '#26282D' },
+          { label: 'Bloqueados',      value: fmt(gt.bloqueados), color: '#C23B3B' },
           { label: 'Superficie m²',   value: fmt(gt.superficie), color: 'var(--text-primary)' },
-          { label: 'Valor Operación', value: fmtPeso(gt.valor),  color: '#0f766e' },
+          { label: 'Valor Operación', value: fmtPeso(gt.valor),  color: '#126B63' },
         ].map(k => (
           <div key={k.label} className="card"
             style={{ padding: '10px 16px', flex: '1 1 130px', maxWidth: 190, borderTop: `3px solid ${k.color}` }}>
@@ -147,8 +147,8 @@ export default function ReporteLotesResumenClasif() {
       </div>
 
       {queryError && (
-        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px',
-          marginBottom: 12, fontSize: 12, color: '#dc2626' }}>
+        <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, padding: '10px 14px',
+          marginBottom: 12, fontSize: 12, color: '#C23B3B' }}>
           Error al cargar datos: {queryError}
         </div>
       )}
@@ -181,16 +181,16 @@ export default function ReporteLotesResumenClasif() {
                   if (row.kind === 'sec-header') {
                     const { sec, st } = row
                     return (
-                      <tr key={`h-${sec}`} style={{ background: '#eff6ff' }}>
+                      <tr key={`h-${sec}`} style={{ background: '#F4F5F7' }}>
                         <td style={{ fontWeight: 700, color: 'var(--blue)', paddingLeft: 12 }}>
                           {sec}
                         </td>
                         <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{st.total}</td>
-                        <td style={{ textAlign: 'right', color: '#15803d', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{st.vendidos > 0 ? st.vendidos : '—'}</td>
-                        <td style={{ textAlign: 'right', color: '#1d4ed8', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{st.libres > 0 ? st.libres : '—'}</td>
-                        <td style={{ textAlign: 'right', color: '#dc2626', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{st.bloqueados > 0 ? st.bloqueados : '—'}</td>
+                        <td style={{ textAlign: 'right', color: '#1F7A50', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{st.vendidos > 0 ? st.vendidos : '—'}</td>
+                        <td style={{ textAlign: 'right', color: '#26282D', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{st.libres > 0 ? st.libres : '—'}</td>
+                        <td style={{ textAlign: 'right', color: '#C23B3B', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{st.bloqueados > 0 ? st.bloqueados : '—'}</td>
                         <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(st.superficie)}</td>
-                        <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: '#0f766e' }}>{fmtPeso(st.valor)}</td>
+                        <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: '#126B63' }}>{fmtPeso(st.valor)}</td>
                       </tr>
                     )
                   }
@@ -202,23 +202,23 @@ export default function ReporteLotesResumenClasif() {
                         {clasif}
                       </td>
                       <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.total}</td>
-                      <td style={{ textAlign: 'right', color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{r.vendidos > 0 ? r.vendidos : '—'}</td>
-                      <td style={{ textAlign: 'right', color: '#1d4ed8', fontVariantNumeric: 'tabular-nums' }}>{r.libres > 0 ? r.libres : '—'}</td>
-                      <td style={{ textAlign: 'right', color: '#dc2626', fontVariantNumeric: 'tabular-nums' }}>{r.bloqueados > 0 ? r.bloqueados : '—'}</td>
+                      <td style={{ textAlign: 'right', color: '#1F7A50', fontVariantNumeric: 'tabular-nums' }}>{r.vendidos > 0 ? r.vendidos : '—'}</td>
+                      <td style={{ textAlign: 'right', color: '#26282D', fontVariantNumeric: 'tabular-nums' }}>{r.libres > 0 ? r.libres : '—'}</td>
+                      <td style={{ textAlign: 'right', color: '#C23B3B', fontVariantNumeric: 'tabular-nums' }}>{r.bloqueados > 0 ? r.bloqueados : '—'}</td>
                       <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{fmt(r.superficie)}</td>
-                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#0f766e' }}>{fmtPeso(r.valor)}</td>
+                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#126B63' }}>{fmtPeso(r.valor)}</td>
                     </tr>
                   )
                 })}
                 {/* Total general */}
-                <tr style={{ background: '#1e3a5f', fontWeight: 700 }}>
+                <tr style={{ background: '#26282D', fontWeight: 700 }}>
                   <td style={{ color: '#fff', paddingLeft: 12 }}>Total general</td>
                   <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#fff' }}>{gt.total}</td>
-                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#86efac' }}>{gt.vendidos > 0 ? gt.vendidos : '—'}</td>
-                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#93c5fd' }}>{gt.libres > 0 ? gt.libres : '—'}</td>
-                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#fca5a5' }}>{gt.bloqueados > 0 ? gt.bloqueados : '—'}</td>
+                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#7CC9A3' }}>{gt.vendidos > 0 ? gt.vendidos : '—'}</td>
+                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#C9CCD3' }}>{gt.libres > 0 ? gt.libres : '—'}</td>
+                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#EBB5B5' }}>{gt.bloqueados > 0 ? gt.bloqueados : '—'}</td>
                   <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#fff' }}>{fmt(gt.superficie)}</td>
-                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#6ee7b7' }}>{fmtPeso(gt.valor)}</td>
+                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#7CC9A3' }}>{fmtPeso(gt.valor)}</td>
                 </tr>
               </tbody>
             </table>

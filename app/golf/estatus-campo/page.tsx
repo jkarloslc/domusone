@@ -24,15 +24,15 @@ type Estatus = {
 }
 
 const STATUS_CAMPO_CFG: Record<Status, { label: string; color: string; bg: string; icon: React.ComponentType<any> }> = {
-  abierto:  { label: 'Abierto',              color: '#16a34a', bg: '#dcfce7', icon: CheckCircle2 },
-  cerrado:  { label: 'Cerrado',              color: '#dc2626', bg: '#fee2e2', icon: XCircle },
-  parcial:  { label: 'Abierto Parcialmente', color: '#d97706', bg: '#fef3c7', icon: AlertCircle },
+  abierto:  { label: 'Abierto',              color: '#267F56', bg: '#E6E8EB', icon: CheckCircle2 },
+  cerrado:  { label: 'Cerrado',              color: '#C23B3B', bg: '#E6E8EB', icon: XCircle },
+  parcial:  { label: 'Abierto Parcialmente', color: '#B5761A', bg: '#E6E8EB', icon: AlertCircle },
 }
 
 const STATUS_CAMINOS_CFG: Record<Status, { label: string; color: string; bg: string }> = {
-  abierto: { label: 'Caminos Abiertos',  color: '#0891b2', bg: '#e0f7fa' },
-  cerrado: { label: 'Caminos Cerrados',  color: '#7c3aed', bg: '#f5f3ff' },
-  parcial: { label: 'Caminos Parcial',   color: '#b45309', bg: '#fef3c7' },
+  abierto: { label: 'Caminos Abiertos',  color: '#32789A', bg: '#E6E8EB' },
+  cerrado: { label: 'Caminos Cerrados',  color: '#6B4E79', bg: '#F4F5F7' },
+  parcial: { label: 'Caminos Parcial',   color: '#96600F', bg: '#E6E8EB' },
 }
 
 function getIniMes() {
@@ -47,7 +47,7 @@ function StatusBadge({ status, cfg }: { status: Status; cfg: Record<Status, { la
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
       padding: '3px 9px', borderRadius: 20, fontSize: 11.5, fontWeight: 700,
-      color: c.color, background: c.bg,
+      color: '#fff', background: c.color,
     }}>
       {Icon && <Icon size={12} />}
       {c.label}
@@ -141,7 +141,7 @@ export default function EstatusCampoPage() {
               </td></tr>
             ) : rowsPag.map(r => (
               <tr key={r.id}>
-                <td style={{ fontWeight: 600, color: '#1e293b' }}>{r.fecha}</td>
+                <td style={{ fontWeight: 600, color: '#26282D' }}>{r.fecha}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.franja ?? '—'}</td>
                 <td><StatusBadge status={r.status_campo} cfg={STATUS_CAMPO_CFG} /></td>
                 <td><StatusBadge status={r.status_caminos} cfg={STATUS_CAMINOS_CFG} /></td>
@@ -151,7 +151,7 @@ export default function EstatusCampoPage() {
                 <td>
                   <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                     {writer && <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setModal(r)}><Edit2 size={13} /></button>}
-                    {canDelete() && <button className="btn-ghost" style={{ padding: '4px 6px', color: '#dc2626' }} onClick={() => handleDelete(r.id)}><Trash2 size={13} /></button>}
+                    {canDelete() && <button className="btn-ghost" style={{ padding: '4px 6px', color: '#C23B3B' }} onClick={() => handleDelete(r.id)}><Trash2 size={13} /></button>}
                   </div>
                 </td>
               </tr>
@@ -214,7 +214,7 @@ function EstatusModal({ row, onClose, onSaved }: { row: Estatus | null; onClose:
       </>}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+        {error && <div style={{ padding: '10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
 
         <div><label className="label">Fecha *</label>
           <input type="date" className="input" value={form.fecha} onChange={e => setForm(f => ({ ...f, fecha: e.target.value }))} />

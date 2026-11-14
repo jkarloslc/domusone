@@ -81,8 +81,8 @@ export default function ReporteInventario() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
         {[
           { label: 'Valor Total Inventario', value: fmt(valorTotal), color: 'var(--blue)' },
-          { label: 'Artículos con existencia', value: String(rows.filter(r => Number(r.cantidad) > 0).length), color: '#059669' },
-          { label: 'Alertas stock mínimo', value: String(alertas), color: alertas > 0 ? '#dc2626' : '#94a3b8' },
+          { label: 'Artículos con existencia', value: String(rows.filter(r => Number(r.cantidad) > 0).length), color: '#267F56' },
+          { label: 'Alertas stock mínimo', value: String(alertas), color: alertas > 0 ? '#C23B3B' : '#7A7E87' },
         ].map(k => (
           <div key={k.label} className="card" style={{ padding: '12px 16px' }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
@@ -114,20 +114,20 @@ export default function ReporteInventario() {
             ) : rows.length === 0 ? (
               <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin registros</td></tr>
             ) : rows.map((r, i) => (
-              <tr key={i} style={{ background: r.bajoMin ? '#fef2f2' : 'transparent' }}>
+              <tr key={i} style={{ background: r.bajoMin ? '#F4F5F7' : 'transparent' }}>
                 <td>
                   <div style={{ fontWeight: 500, fontSize: 13 }}>{r.almacen?.nombre ?? `#${r.id_almacen_fk}`}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.almacen?.area ?? ''}</div>
                 </td>
-                <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)' }}>{r.articulo?.clave ?? '—'}</td>
+                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)' }}>{r.articulo?.clave ?? '—'}</td>
                 <td style={{ fontSize: 13 }}>
-                  {r.bajoMin && <AlertTriangle size={11} style={{ color: '#dc2626', marginRight: 4 }} />}
+                  {r.bajoMin && <AlertTriangle size={11} style={{ color: '#C23B3B', marginRight: 4 }} />}
                   {r.articulo?.nombre ?? `#${r.id_articulo_fk}`}
                 </td>
                 <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{catTG.nombre(r.articulo?.id_tipo_gasto_fk) ?? '—'}</td>
                 <td style={{ textAlign: 'right', fontSize: 12, color: 'var(--text-muted)' }}>{r.articulo?.stock_minimo ?? 0}</td>
                 <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums',
-                  color: Number(r.cantidad) === 0 ? '#dc2626' : r.bajoMin ? '#d97706' : '#15803d', fontSize: 14 }}>
+                  color: Number(r.cantidad) === 0 ? '#C23B3B' : r.bajoMin ? '#B5761A' : '#1F7A50', fontSize: 14 }}>
                   {Number(r.cantidad).toLocaleString('es-MX', { maximumFractionDigits: 3 })}
                 </td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.articulo?.unidad ?? '—'}</td>

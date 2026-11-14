@@ -31,15 +31,15 @@ function Stepper({ status }: { status: string }) {
         const done    = idx > i
         const current = idx === i
         const Icon    = p.icon
-        const color   = rechazada && i > 0 ? '#94a3b8'
-                      : done    ? '#15803d'
+        const color   = rechazada && i > 0 ? '#7A7E87'
+                      : done    ? '#1F7A50'
                       : current ? 'var(--blue)'
-                      : '#cbd5e1'
+                      : '#C9CCD3'
         return (
           <div key={p.key} style={{ display: 'flex', alignItems: 'center', flex: i < 3 ? 1 : 0 }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
               <div style={{ width: 32, height: 32, borderRadius: '50%',
-                background: done ? '#f0fdf4' : current ? 'var(--blue-pale)' : '#f8fafc',
+                background: done ? '#F4F5F7' : current ? 'var(--blue-pale)' : '#F8F9FA',
                 border: `2px solid ${color}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Icon size={14} style={{ color }} />
@@ -49,7 +49,7 @@ function Stepper({ status }: { status: string }) {
               </span>
             </div>
             {i < 3 && (
-              <div style={{ flex: 1, height: 2, background: done ? '#15803d' : '#e2e8f0',
+              <div style={{ flex: 1, height: 2, background: done ? '#1F7A50' : '#E6E8EB',
                 margin: '0 4px', marginBottom: 18 }} />
             )}
           </div>
@@ -151,11 +151,11 @@ export default function TransferenciasPage() {
   const puedeAutorizar = canAuth('transferencias')
 
   const statusColor = (s: string) =>
-    s === 'Solicitada'  ? '#d97706' :
-    s === 'Autorizada'  ? '#2563eb' :
-    s === 'Enviada'     ? '#7c3aed' :
-    s === 'Completada'  ? '#15803d' :
-    s === 'Rechazada'   ? '#dc2626' : '#64748b'
+    s === 'Solicitada'  ? '#B5761A' :
+    s === 'Autorizada'  ? '#1C1D21' :
+    s === 'Enviada'     ? '#6B4E79' :
+    s === 'Completada'  ? '#1F7A50' :
+    s === 'Rechazada'   ? '#C23B3B' : '#62666E'
 
   const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(rows.length / pgSize) - 1))
   const rowsPag = rows.slice(curPg * pgSize, (curPg + 1) * pgSize)
@@ -229,7 +229,7 @@ export default function TransferenciasPage() {
               </td></tr>
             ) : rowsPag.map(r => (
               <tr key={r.id}>
-                <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
+                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
                 <td>
                   <div style={{ fontSize: 13, fontWeight: 500 }}>{r.area_solicitante || '—'}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.solicitante}</div>
@@ -243,9 +243,9 @@ export default function TransferenciasPage() {
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{fmtFecha(r.fecha_solicitud)}</td>
                 <td>
                   <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                    color: statusColor(r.status),
-                    background: statusColor(r.status) + '15',
-                    border: `1px solid ${statusColor(r.status)}40` }}>
+                    color: '#fff',
+                    background: statusColor(r.status),
+                    border: `1px solid ${statusColor(r.status)}` }}>
                     {r.status}
                   </span>
                 </td>
@@ -414,7 +414,7 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
     >
 
         <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(90vh - 130px)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+          {error && <div style={{ padding: '10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
 
           {/* Almacenes */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -463,7 +463,7 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
 
           {/* Artículos */}
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em',
-            textTransform: 'uppercase', paddingTop: 4, borderTop: '1px solid #f1f5f9' }}>
+            textTransform: 'uppercase', paddingTop: 4, borderTop: '1px solid #F4F5F7' }}>
             Artículos a Transferir
           </div>
 
@@ -471,8 +471,8 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
             const saldoOrigen = d.id_articulo_fk ? (invMap[d.id_articulo_fk] ?? 0) : null
             const insuficiente = saldoOrigen !== null && Number(d.cantidad_solicitada) > saldoOrigen
             return (
-              <div key={i} style={{ padding: '10px 12px', background: insuficiente ? '#fef2f2' : '#f8fafc',
-                border: `1px solid ${insuficiente ? '#fecaca' : '#e2e8f0'}`, borderRadius: 8 }}>
+              <div key={i} style={{ padding: '10px 12px', background: insuficiente ? '#F4F5F7' : '#F8F9FA',
+                border: '1px solid #E6E8EB', borderRadius: 8 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 80px 28px', gap: 8, alignItems: 'end' }}>
                 <div style={{ position: 'relative' }}>
                     <label className="label">Artículo</label>
@@ -483,17 +483,17 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
                     />
                     {(artOptions[i]?.length ?? 0) > 0 && (
                       <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
-                        background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+                        background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8,
                         boxShadow: '0 4px 20px rgba(0,0,0,0.12)', maxHeight: 200, overflowY: 'auto' }}>
                         {artOptions[i].map((a: any) => (
                           <button key={a.id}
                             onMouseDown={e => { e.preventDefault(); seleccionarArticulo(i, a) }}
                             style={{ display: 'block', width: '100%', textAlign: 'left',
                               padding: '8px 12px', background: 'none', border: 'none',
-                              cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                              cursor: 'pointer', borderBottom: '1px solid #F4F5F7' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                            <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)' }}>{a.clave}</span>
+                            <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--blue)' }}>{a.clave}</span>
                             <span style={{ fontSize: 13, marginLeft: 8 }}>{a.nombre}</span>
                             <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 6 }}>{a.unidad}</span>
                           </button>
@@ -524,9 +524,9 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
                 </div>
                 {/* Saldo disponible en origen */}
                 {d.id_articulo_fk && form.id_almacen_origen && (
-                  <div style={{ fontSize: 11, marginTop: 6, color: insuficiente ? '#dc2626' : '#15803d' }}>
+                  <div style={{ fontSize: 11, marginTop: 6, color: insuficiente ? '#C23B3B' : '#1F7A50' }}>
                     {insuficiente
-                      ? `⚠ Saldo insuficiente en ${almOrigNombre ?? 'origen'}: ${saldoOrigen} disponibles`
+                      ? `Saldo insuficiente en ${almOrigNombre ?? 'origen'}: ${saldoOrigen} disponibles`
                       : `✓ Saldo en ${almOrigNombre ?? 'origen'}: ${saldoOrigen}`}
                   </div>
                 )}
@@ -598,37 +598,37 @@ function TransferenciaDetail({ trans, almMap, puedeAutorizar, isAlmacenista, sol
     } catch {}
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+      : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
     const filasDet = det.map(d => {
       const art = artsMap[d.id_articulo_fk] ?? `Art #${d.id_articulo_fk}`
       const enviado = d.cantidad_enviada ?? d.cantidad_enviada_input ?? '—'
       return `<tr>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13px">${art}</td>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;font-size:13px">${d.cantidad_solicitada}</td>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;font-size:13px;font-weight:600;color:#0D4F80">${enviado}</td>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:12px;color:#64748b">${d.unidad ?? ''}</td>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:11px;color:#94a3b8">${d.notas ?? ''}</td>
+        <td style="padding:7px 10px;border:1px solid #E6E8EB;font-size:13px">${art}</td>
+        <td style="padding:7px 10px;border:1px solid #E6E8EB;text-align:right;font-size:13px">${d.cantidad_solicitada}</td>
+        <td style="padding:7px 10px;border:1px solid #E6E8EB;text-align:right;font-size:13px;font-weight:600;color:#1C1D21">${enviado}</td>
+        <td style="padding:7px 10px;border:1px solid #E6E8EB;font-size:12px;color:#62666E">${d.unidad ?? ''}</td>
+        <td style="padding:7px 10px;border:1px solid #E6E8EB;font-size:11px;color:#7A7E87">${d.notas ?? ''}</td>
       </tr>`
     }).join('')
     const html = `<!DOCTYPE html><html><head><title>Vale de Transferencia ${trans.folio}</title>
       <style>
-        body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
-        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
-        .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
-        .org-sub { font-size: 11px; color: #64748b; }
-        .doc-title { font-size: 14px; font-weight: 600; color: #0D4F80; margin-bottom: 2px; }
+        body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #26282D; }
+        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #1C1D21; margin-bottom: 18px; }
+        .org-nombre { font-size: 18px; font-weight: 700; color: #1C1D21; margin: 0 0 2px; }
+        .org-sub { font-size: 11px; color: #62666E; }
+        .doc-title { font-size: 14px; font-weight: 600; color: #1C1D21; margin-bottom: 2px; }
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; margin-bottom: 18px; }
-        .info-item label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 2px; }
-        .info-item span { font-size: 13px; color: #1e293b; }
+        .info-item label { font-size: 10px; color: #7A7E87; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 2px; }
+        .info-item span { font-size: 13px; color: #26282D; }
         table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-        thead th { background: #f1f5f9; padding: 8px 10px; font-size: 10px; text-transform: uppercase;
-          letter-spacing: 0.05em; text-align: left; border: 1px solid #e2e8f0; color: #64748b; }
+        thead th { background: #F4F5F7; padding: 8px 10px; font-size: 10px; text-transform: uppercase;
+          letter-spacing: 0.05em; text-align: left; border: 1px solid #E6E8EB; color: #62666E; }
         thead th.right { text-align: right; }
         .firmas { display: flex; gap: 40px; margin-top: 64px; justify-content: space-around; }
         .firma { text-align: center; min-width: 160px; }
-        .firma-linea { border-top: 1px solid #1e293b; padding-top: 8px; margin-top: 48px; font-size: 11px; color: #64748b; }
-        .firma-nombre { font-size: 12px; font-weight: 600; color: #1e293b; margin-bottom: 2px; }
-        .nota { font-size: 11px; color: #94a3b8; font-style: italic; margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 8px; }
+        .firma-linea { border-top: 1px solid #26282D; padding-top: 8px; margin-top: 48px; font-size: 11px; color: #62666E; }
+        .firma-nombre { font-size: 12px; font-weight: 600; color: #26282D; margin-bottom: 2px; }
+        .nota { font-size: 11px; color: #7A7E87; font-style: italic; margin-top: 20px; border-top: 1px solid #F4F5F7; padding-top: 8px; }
         @page { margin: 1.2cm; }
       </style></head><body>
       <div class="org-header">
@@ -639,13 +639,13 @@ function TransferenciaDetail({ trans, almMap, puedeAutorizar, isAlmacenista, sol
         </div>
         <div style="margin-left:auto;text-align:right">
           <div class="doc-title">Vale de Transferencia</div>
-          <div style="font-size:16px;font-weight:700;color:#0D4F80;font-family:monospace">${trans.folio}</div>
+          <div style="font-size:16px;font-weight:700;color:#1C1D21;font-variant-numeric:tabular-nums">${trans.folio}</div>
         </div>
       </div>
 
       <div class="info-grid">
         <div class="info-item"><label>Almacén Origen</label><span>${almMap[trans.id_almacen_origen] ?? `#${trans.id_almacen_origen}`}</span></div>
-        <div class="info-item"><label>Almacén Destino</label><span style="font-weight:600;color:#0D4F80">${almMap[trans.id_almacen_destino] ?? `#${trans.id_almacen_destino}`}</span></div>
+        <div class="info-item"><label>Almacén Destino</label><span style="font-weight:600;color:#1C1D21">${almMap[trans.id_almacen_destino] ?? `#${trans.id_almacen_destino}`}</span></div>
         <div class="info-item"><label>Área Solicitante</label><span>${trans.area_solicitante ?? '—'}</span></div>
         <div class="info-item"><label>Solicitante</label><span>${trans.solicitante ?? '—'}</span></div>
         <div class="info-item"><label>Fecha Solicitud</label><span>${fmtFecha(trans.fecha_solicitud)}</span></div>
@@ -707,8 +707,8 @@ function TransferenciaDetail({ trans, almMap, puedeAutorizar, isAlmacenista, sol
           {/* Stepper */}
           {trans.status !== 'Rechazada'
             ? <Stepper status={trans.status} />
-            : <div style={{ padding: '12px', background: '#fef2f2', borderRadius: 8, margin: '12px 0',
-                color: '#dc2626', fontSize: 13, fontWeight: 600 }}>
+            : <div style={{ padding: '12px', background: '#F4F5F7', borderRadius: 8, margin: '12px 0',
+                color: '#C23B3B', fontSize: 13, fontWeight: 600 }}>
                 ✕ Solicitud rechazada
                 {trans.comentario_auth && <div style={{ fontWeight: 400, marginTop: 4 }}>{trans.comentario_auth}</div>}
               </div>}
@@ -754,7 +754,7 @@ function TransferenciaDetail({ trans, almMap, puedeAutorizar, isAlmacenista, sol
                           onChange={e => updateEnviado(d.id, e.target.value)}
                           style={{ textAlign: 'right', width: 80, padding: '4px 8px' }} />
                       ) : (
-                        <span style={{ color: d.cantidad_enviada ? '#15803d' : 'var(--text-muted)', fontWeight: 600 }}>
+                        <span style={{ color: d.cantidad_enviada ? '#1F7A50' : 'var(--text-muted)', fontWeight: 600 }}>
                           {d.cantidad_enviada ?? '—'}
                         </span>
                       )}
@@ -770,8 +770,8 @@ function TransferenciaDetail({ trans, almMap, puedeAutorizar, isAlmacenista, sol
           {/* ── PASO 2: Botones de autorización ── */}
           {puedeAutorizar && trans.status === 'Solicitada' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8,
-              padding: '14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#d97706' }}>Paso 2 — Autorización</div>
+              padding: '14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#B5761A' }}>Paso 2 — Autorización</div>
               {showRechazo && (
                 <div>
                   <label className="label">Motivo del rechazo</label>
@@ -786,8 +786,8 @@ function TransferenciaDetail({ trans, almMap, puedeAutorizar, isAlmacenista, sol
                       onClick={() => onAuth(trans.id, true)}>
                       <CheckCircle size={13} /> Autorizar Transferencia
                     </button>
-                    <button style={{ padding: '8px 16px', borderRadius: 7, background: '#fef2f2',
-                      color: '#dc2626', border: '1px solid #fecaca', cursor: 'pointer', fontSize: 13,
+                    <button style={{ padding: '8px 16px', borderRadius: 7, background: '#F4F5F7',
+                      color: '#C23B3B', border: '1px solid #E6E8EB', cursor: 'pointer', fontSize: 13,
                       fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', gap: 6 }}
                       onClick={() => setShowRechazo(true)}>
                       <XCircle size={13} /> Rechazar
@@ -796,7 +796,7 @@ function TransferenciaDetail({ trans, almMap, puedeAutorizar, isAlmacenista, sol
                 ) : (
                   <>
                     <button className="btn-secondary" onClick={() => setShowRechazo(false)}>Cancelar</button>
-                    <button style={{ padding: '8px 16px', borderRadius: 7, background: '#dc2626',
+                    <button style={{ padding: '8px 16px', borderRadius: 7, background: '#C23B3B',
                       color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13,
                       fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', gap: 6 }}
                       onClick={() => onAuth(trans.id, false, comentario)}>
@@ -810,7 +810,7 @@ function TransferenciaDetail({ trans, almMap, puedeAutorizar, isAlmacenista, sol
 
           {/* ── PASO 3: Almacenista despacha ── */}
           {isAlmacenista && trans.status === 'Autorizada' && (
-            <div style={{ padding: '14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8 }}>
+            <div style={{ padding: '14px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8 }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--blue)', marginBottom: 8 }}>
                 Paso 3 — Despacho de Mercancía
               </div>
@@ -832,8 +832,8 @@ function TransferenciaDetail({ trans, almMap, puedeAutorizar, isAlmacenista, sol
 
           {/* ── PASO 4: Solicitante confirma recepción ── */}
           {trans.status === 'Enviada' && (
-            <div style={{ padding: '14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#15803d', marginBottom: 8 }}>
+            <div style={{ padding: '14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#1F7A50', marginBottom: 8 }}>
                 Paso 4 — Confirmar Recepción
               </div>
               <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 10 }}>
@@ -841,7 +841,7 @@ function TransferenciaDetail({ trans, almMap, puedeAutorizar, isAlmacenista, sol
                 se descuenta del origen y se acredita a {almMap[trans.id_almacen_destino] ?? 'destino'}.
               </p>
               {!confirmando ? (
-                <button className="btn-primary" style={{ width: '100%', background: '#15803d' }}
+                <button className="btn-primary" style={{ width: '100%', background: '#1F7A50' }}
                   onClick={() => setConfirmando(true)}>
                   <PackageCheck size={13} /> Confirmar Recepción de Mercancía
                 </button>
@@ -850,7 +850,7 @@ function TransferenciaDetail({ trans, almMap, puedeAutorizar, isAlmacenista, sol
                   <button className="btn-secondary" style={{ flex: 1 }} onClick={() => setConfirmando(false)}>
                     Cancelar
                   </button>
-                  <button style={{ flex: 2, padding: '8px 16px', borderRadius: 7, background: '#15803d',
+                  <button style={{ flex: 2, padding: '8px 16px', borderRadius: 7, background: '#1F7A50',
                     color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13,
                     fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                     onClick={() => onRecibir(trans, det)}>
@@ -863,12 +863,12 @@ function TransferenciaDetail({ trans, almMap, puedeAutorizar, isAlmacenista, sol
 
           {/* Completada */}
           {trans.status === 'Completada' && (
-            <div style={{ padding: '12px 16px', background: '#f0fdf4', border: '1px solid #bbf7d0',
+            <div style={{ padding: '12px 16px', background: '#F4F5F7', border: '1px solid #E6E8EB',
               borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <CheckCircle size={18} style={{ color: '#15803d', flexShrink: 0 }} />
+              <CheckCircle size={18} style={{ color: '#1F7A50', flexShrink: 0 }} />
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#15803d' }}>Transferencia completada</div>
-                <div style={{ fontSize: 11, color: '#64748b' }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#1F7A50' }}>Transferencia completada</div>
+                <div style={{ fontSize: 11, color: '#62666E' }}>
                   Inventario actualizado — {almMap[trans.id_almacen_destino]} recibió la mercancía
                 </div>
               </div>

@@ -22,8 +22,8 @@ type Props = {
   onSaved: () => void
 }
 
-const inputStyle = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none' }
-const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }
+const inputStyle = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none' }
+const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }
 
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
 
@@ -203,8 +203,8 @@ export default function PensionModal({
       maxWidth={560}
       onClose={onClose}
       footer={<>
-        <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cancelar</button>
-        <button onClick={handleSave} disabled={saving || cuotas.length === 0} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: (saving || cuotas.length === 0) ? 0.7 : 1 }}>
+        <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', cursor: 'pointer' }}>Cancelar</button>
+        <button onClick={handleSave} disabled={saving || cuotas.length === 0} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#267F56', color: '#fff', cursor: 'pointer', opacity: (saving || cuotas.length === 0) ? 0.7 : 1 }}>
           {saving ? <Loader size={14} /> : <Save size={14} />}
           {btnLabel}
         </button>
@@ -220,13 +220,13 @@ export default function PensionModal({
               <option value="">— Seleccionar slot disponible —</option>
               {slots.map(s => <option key={s.id} value={s.id}>Cajón {s.numero}</option>)}
             </select>
-            {slots.length === 0 && <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4 }}>No hay slots disponibles. Agrega slots en Configuración.</div>}
+            {slots.length === 0 && <div style={{ fontSize: 11, color: '#C23B3B', marginTop: 4 }}>No hay slots disponibles. Agrega slots en Configuración.</div>}
           </div>
         )}
 
         {/* ── Info slot cuando es modo agregar cuotas ── */}
         {modoAgregarCuotas && idSlotExistente != null && (
-          <div style={{ padding: '8px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, fontSize: 12, color: '#15803d', fontWeight: 500 }}>
+          <div style={{ padding: '8px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #1F7A50', borderRadius: 8, fontSize: 12, color: '#1F7A50', fontWeight: 500 }}>
             Agregando cuotas a pensión existente · Cajón ya asignado
           </div>
         )}
@@ -243,7 +243,7 @@ export default function PensionModal({
               <input style={inputStyle} type="number" min={0} step={0.01}
                 value={form.monto_mensual}
                 onChange={e => set('monto_mensual', parseFloat(e.target.value) || 0)} />
-              {tarifa > 0 && <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Tarifa global: ${tarifa.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div>}
+              {tarifa > 0 && <div style={{ fontSize: 11, color: '#62666E', marginTop: 2 }}>Tarifa global: ${tarifa.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div>}
             </div>
           </div>
         )}
@@ -255,20 +255,20 @@ export default function PensionModal({
             <input style={inputStyle} type="number" min={0} step={0.01}
               value={form.monto_mensual}
               onChange={e => set('monto_mensual', parseFloat(e.target.value) || 0)} />
-            {tarifa > 0 && <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Tarifa vigente: ${tarifa.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div>}
+            {tarifa > 0 && <div style={{ fontSize: 11, color: '#62666E', marginTop: 2 }}>Tarifa vigente: ${tarifa.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div>}
           </div>
         )}
 
         {/* ── Modalidad ── */}
         <div>
           <label style={labelStyle}>Modalidad de Cobro</label>
-          <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', gap: 0, border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
             <button onClick={() => set('modalidad', 'MENSUAL')}
-              style={{ flex: 1, padding: '9px', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', background: form.modalidad === 'MENSUAL' ? '#ecfdf5' : '#fff', color: form.modalidad === 'MENSUAL' ? '#065f46' : '#94a3b8' }}>
+              style={{ flex: 1, padding: '9px', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', background: form.modalidad === 'MENSUAL' ? '#F4F5F7' : '#fff', color: form.modalidad === 'MENSUAL' ? '#17603F' : '#7A7E87' }}>
               Mensual
             </button>
             <button onClick={() => set('modalidad', 'ANUAL')}
-              style={{ flex: 1, padding: '9px', fontSize: 13, fontWeight: 600, border: 'none', borderLeft: '1px solid #e2e8f0', cursor: 'pointer', background: form.modalidad === 'ANUAL' ? '#ecfdf5' : '#fff', color: form.modalidad === 'ANUAL' ? '#065f46' : '#94a3b8' }}>
+              style={{ flex: 1, padding: '9px', fontSize: 13, fontWeight: 600, border: 'none', borderLeft: '1px solid #E6E8EB', cursor: 'pointer', background: form.modalidad === 'ANUAL' ? '#F4F5F7' : '#fff', color: form.modalidad === 'ANUAL' ? '#17603F' : '#7A7E87' }}>
               Anual (múltiples cuotas)
             </button>
           </div>
@@ -281,7 +281,7 @@ export default function PensionModal({
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 8, alignItems: 'end' }}>
               {/* Inicio */}
               <div>
-                <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Desde</div>
+                <div style={{ fontSize: 11, color: '#7A7E87', marginBottom: 4 }}>Desde</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                   <select style={inputStyle} value={form.mes_ini} onChange={e => {
                     const m = Number(e.target.value)
@@ -305,10 +305,10 @@ export default function PensionModal({
                 </div>
               </div>
               {/* Flecha */}
-              <div style={{ paddingBottom: 8, color: '#94a3b8', fontSize: 18, textAlign: 'center' }}>→</div>
+              <div style={{ paddingBottom: 8, color: '#7A7E87', fontSize: 18, textAlign: 'center' }}>→</div>
               {/* Fin */}
               <div>
-                <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Hasta</div>
+                <div style={{ fontSize: 11, color: '#7A7E87', marginBottom: 4 }}>Hasta</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                   <select style={inputStyle} value={form.mes_fin} onChange={e => set('mes_fin', Number(e.target.value))}>
                     {MESES.map((mn, i) => <option key={i+1} value={i+1}>{mn}</option>)}
@@ -320,7 +320,7 @@ export default function PensionModal({
               </div>
             </div>
             {diffMeses(form.anio_ini, form.mes_ini, form.anio_fin, form.mes_fin) < 0 && (
-              <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4 }}>El mes de fin debe ser igual o posterior al de inicio.</div>
+              <div style={{ fontSize: 11, color: '#C23B3B', marginTop: 4 }}>El mes de fin debe ser igual o posterior al de inicio.</div>
             )}
           </div>
         )}
@@ -349,7 +349,7 @@ export default function PensionModal({
                   value={form.num_meses}
                   onChange={e => set('num_meses', Math.min(Math.max(1, Number(e.target.value)), maxMesesAnual))}
                   min={1} max={maxMesesAnual} />
-                <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Máx. {maxMesesAnual} desde {MESES[form.mes_inicio_anual - 1]}</div>
+                <div style={{ fontSize: 11, color: '#62666E', marginTop: 2 }}>Máx. {maxMesesAnual} desde {MESES[form.mes_inicio_anual - 1]}</div>
               </div>
             </div>
             <div>
@@ -364,32 +364,32 @@ export default function PensionModal({
 
         {/* ── Resumen de cuotas a generar ── */}
         {cuotas.length > 0 ? (
-          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+          <div style={{ background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10, padding: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
               Cuotas a generar ({cuotas.length})
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 160, overflowY: 'auto' }}>
               {cuotas.map(c => (
-                <div key={c.periodo} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#475569' }}>
+                <div key={c.periodo} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#4A4D54' }}>
                   <span>{c.label}</span>
                   <span style={{ fontWeight: 600 }}>${c.monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
                 </div>
               ))}
             </div>
-            <div style={{ borderTop: '1px solid #e2e8f0', marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700 }}>
-              <span style={{ color: '#1e293b' }}>Total</span>
+            <div style={{ borderTop: '1px solid #E6E8EB', marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700 }}>
+              <span style={{ color: '#26282D' }}>Total</span>
               <div style={{ textAlign: 'right' }}>
                 {descuentoAnual > 0 && (
-                  <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 600 }}>
+                  <div style={{ fontSize: 11, color: '#267F56', fontWeight: 600 }}>
                     Descuento: -${descuentoAnual.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </div>
                 )}
-                <span style={{ color: '#059669' }}>${totalCuotas.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span style={{ color: '#267F56' }}>${totalCuotas.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
           </div>
         ) : (
-          <div style={{ padding: '12px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+          <div style={{ padding: '12px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>
             El rango seleccionado no genera cuotas. Ajusta los meses.
           </div>
         )}
@@ -402,7 +402,7 @@ export default function PensionModal({
           </div>
         )}
 
-        {error && <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>{error}</div>}
+        {error && <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 13, color: '#C23B3B' }}>{error}</div>}
       </div>
     </ModalShell>
   )

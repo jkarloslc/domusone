@@ -188,7 +188,7 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
         </>
       }
     >
-      {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 13, marginBottom: 16 }}>{error}</div>}
+      {error && <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13, marginBottom: 16 }}>{error}</div>}
 
       {/* ── Tab: Identificación ── */}
       {tab === 'identificacion' && (
@@ -212,11 +212,11 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
                   const ok = zs.some(z => String(z.id) === zonaLote)
                   return (
                     <div style={{ marginTop: 6 }}>
-                      <div style={{ fontSize: 11, color: ok ? 'var(--text-muted)' : '#b45309', marginBottom: 3 }}>
+                      <div style={{ fontSize: 11, color: ok ? 'var(--text-muted)' : '#96600F', marginBottom: 3 }}>
                         Esta sección está en {zs.length} zonas — elige la zona del lote
                       </div>
                       <select className="select" value={ok ? zonaLote : ''} onChange={e => setZonaLote(e.target.value)}
-                        style={!ok ? { borderColor: '#f59e0b' } : undefined}>
+                        style={!ok ? { borderColor: '#D9922B' } : undefined}>
                         <option value="">— Elegir zona —</option>
                         {zs.map(z => <option key={z.id} value={z.id}>{z.nombre}</option>)}
                       </select>
@@ -417,17 +417,17 @@ function CapacidadIndicador({ capacidad, loading }: { capacidad: { actual: numbe
   return (
     <div style={{ marginTop: 6, fontSize: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
       {/* Barra de progreso */}
-      <div style={{ height: 4, borderRadius: 4, background: '#e2e8f0', overflow: 'hidden' }}>
+      <div style={{ height: 4, borderRadius: 4, background: '#E6E8EB', overflow: 'hidden' }}>
         <div style={{
           height: '100%',
           width: `${pct}%`,
-          background: llena ? '#dc2626' : pct >= 80 ? '#f59e0b' : '#22c55e',
+          background: llena ? '#C23B3B' : pct >= 80 ? '#D9922B' : '#2E9E6B',
           borderRadius: 4,
           transition: 'width 0.3s ease',
         }} />
       </div>
       {/* Texto */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: llena ? '#dc2626' : pct >= 80 ? '#b45309' : '#15803d' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: llena ? '#C23B3B' : pct >= 80 ? '#96600F' : '#1F7A50' }}>
         {loading
           ? <span style={{ color: 'var(--text-muted)' }}>Verificando capacidad…</span>
           : llena

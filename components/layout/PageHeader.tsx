@@ -41,7 +41,7 @@ export default function PageHeader({
         <div style={{ minWidth: 0 }}>
           {Icon && eyebrowLabel && (
             <div className="page-eyebrow">
-              <Icon size={16} style={{ color }} />
+              <Icon size={16} style={{ color: 'var(--carbon)' }} />
               <span className="page-eyebrow-label">{eyebrowLabel}</span>
             </div>
           )}

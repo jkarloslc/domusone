@@ -13,8 +13,8 @@ import { RefreshCw, ChevronDown } from 'lucide-react'
 const TIPOS = ['Jardinería','Plomería','Electricidad','Limpieza','Obra Civil','Pintura','Fumigación','Mantto. Lineas Sanitarias','Otro']
 
 const CRIT_STYLE: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  critico:   { label: 'Crítico',   color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
-  rutinario: { label: 'Rutinario', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
+  critico:   { label: 'Crítico',   color: '#C23B3B', bg: '#F4F5F7', border: '#E6E8EB' },
+  rutinario: { label: 'Rutinario', color: '#1C1D21', bg: '#F4F5F7', border: '#C9CCD3' },
 }
 
 const fmt = (n: number) => '$' + (n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })
@@ -172,16 +172,16 @@ export default function ReporteProgramasMantenimiento() {
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
         {[
           { label: 'Costo total',       value: fmt(costoTotalGeneral), color: 'var(--blue)', bg: 'var(--blue-pale)' },
-          { label: 'Programas',         value: filas.length,           color: '#374151',     bg: '#f1f5f9' },
-          { label: 'Ejecuciones registradas', value: registradasTotal, color: '#374151',     bg: '#f1f5f9' },
+          { label: 'Programas',         value: filas.length,           color: '#33363C',     bg: '#F4F5F7' },
+          { label: 'Ejecuciones registradas', value: registradasTotal, color: '#33363C',     bg: '#F4F5F7' },
           { label: 'Cumplimiento',      value: `${cumplimientoGeneral}%`,
-            color: cumplimientoGeneral >= 80 ? '#15803d' : cumplimientoGeneral >= 50 ? '#d97706' : '#dc2626', bg: '#fff' },
+            color: cumplimientoGeneral >= 80 ? '#1F7A50' : cumplimientoGeneral >= 50 ? '#B5761A' : '#C23B3B', bg: '#fff' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '12px 18px', background: k.bg, minWidth: 130 }}>
-            <div style={{ fontSize: 20, fontFamily: 'var(--font-display)', fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>
+          <div key={k.label} className="card" style={{ padding: '12px 18px', background: '#fff', minWidth: 130 }}>
+            <div style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)',  }}>
               {k.value}
             </div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{k.label}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
           </div>
         ))}
       </div>
@@ -214,7 +214,7 @@ export default function ReporteProgramasMantenimiento() {
                 const cumplG = g.registradas ? Math.round((g.completadas / g.registradas) * 100) : null
                 return (
                   <Fragment key={g.key}>
-                    <tr style={{ background: '#f8fafc', cursor: 'pointer' }} onClick={() => toggle(g.key)}>
+                    <tr style={{ background: '#F8F9FA', cursor: 'pointer' }} onClick={() => toggle(g.key)}>
                       <td style={{ fontWeight: 700, fontSize: 13 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <ChevronDown size={13} style={{ transform: isOpen ? 'rotate(180deg)' : undefined, transition: 'transform .15s', color: 'var(--text-muted)' }} />
@@ -225,7 +225,7 @@ export default function ReporteProgramasMantenimiento() {
                       <td></td><td></td><td></td>
                       <td style={{ textAlign: 'center', fontWeight: 700 }}>{g.registradas}</td>
                       <td style={{ textAlign: 'center', fontWeight: 700,
-                        color: cumplG === null ? 'var(--text-muted)' : cumplG >= 80 ? '#15803d' : cumplG >= 50 ? '#d97706' : '#dc2626' }}>
+                        color: cumplG === null ? 'var(--text-muted)' : cumplG >= 80 ? '#1F7A50' : cumplG >= 50 ? '#B5761A' : '#C23B3B' }}>
                         {cumplG === null ? '—' : `${cumplG}%`}
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 700 }}>{fmt(g.costoMO)}</td>
@@ -241,13 +241,13 @@ export default function ReporteProgramasMantenimiento() {
                           <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{f.prog.frecuencia}</td>
                           <td>
                             <span style={{ fontSize: 10.5, fontWeight: 600, padding: '2px 7px', borderRadius: 20,
-                              color: cs.color, background: cs.bg, border: `1px solid ${cs.border}` }}>
+                              color: '#fff', background: cs.color, border: `1px solid ${cs.color}` }}>
                               {cs.label}
                             </span>
                           </td>
                           <td style={{ textAlign: 'center', fontSize: 12 }}>{f.registradas}</td>
                           <td style={{ textAlign: 'center', fontSize: 12,
-                            color: f.cumplimiento === null ? 'var(--text-muted)' : f.cumplimiento >= 80 ? '#15803d' : f.cumplimiento >= 50 ? '#d97706' : '#dc2626' }}>
+                            color: f.cumplimiento === null ? 'var(--text-muted)' : f.cumplimiento >= 80 ? '#1F7A50' : f.cumplimiento >= 50 ? '#B5761A' : '#C23B3B' }}>
                             {f.cumplimiento === null ? '—' : `${f.cumplimiento}%`}
                           </td>
                           <td style={{ textAlign: 'right', fontSize: 12 }}>{fmt(f.costoMO)}</td>
@@ -262,7 +262,7 @@ export default function ReporteProgramasMantenimiento() {
             </tbody>
             {gruposCuadrante.length > 0 && (
               <tfoot>
-                <tr style={{ borderTop: '2px solid #e2e8f0' }}>
+                <tr style={{ borderTop: '2px solid #E6E8EB' }}>
                   <td style={{ fontWeight: 700 }}>Total general</td>
                   <td></td><td></td><td></td>
                   <td style={{ textAlign: 'center', fontWeight: 700 }}>{registradasTotal}</td>

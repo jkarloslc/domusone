@@ -162,7 +162,7 @@ export default function OrdenesPage() {
               <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Sin órdenes de compra</td></tr>
             ) : rows.map(r => (
               <tr key={r.id}>
-                <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
+                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
                 <td style={{ fontSize: 13 }}>{provMap[r.id_proveedor_fk] ?? `#${r.id_proveedor_fk}`}</td>
                 <td style={{ fontSize: 12 }}>{fmtFecha(r.fecha_oc)}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{fmtFecha(r.fecha_entrega_est)}</td>
@@ -474,7 +474,7 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
       </>}
     >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {error && <div style={{ padding: '10px', background: '#fef2f2', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+          {error && <div style={{ padding: '10px', background: '#F4F5F7', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
 
           <Sec label="Origen">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -500,8 +500,8 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
             </div>
             {/* Picker multi-ganador: aparece cuando la RFQ tiene varios proveedores ganadores */}
             {rfqMultiProvs.length > 0 && (
-              <div style={{ padding: '12px 14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#92400e', marginBottom: 10 }}>
+              <div style={{ padding: '12px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#7A4B0C', marginBottom: 10 }}>
                   Esta RFQ tiene productos de múltiples proveedores ganadores.<br />
                   <span style={{ fontWeight: 400 }}>Elige el proveedor para <em>esta</em> OC — crea una OC separada por cada proveedor.</span>
                 </div>
@@ -511,7 +511,7 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
                       style={{ fontSize: 12, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '8px 14px', gap: 2, opacity: op.yaCreada ? 0.6 : 1 }}
                       onClick={() => elegirProveedorRFQ(op)}>
                       <span style={{ fontWeight: 600 }}>{op.nombre}</span>
-                      <span style={{ fontSize: 11, color: op.yaCreada ? '#15803d' : 'var(--text-muted)' }}>
+                      <span style={{ fontSize: 11, color: op.yaCreada ? '#1F7A50' : 'var(--text-muted)' }}>
                         {op.yaCreada ? '✓ OC ya creada' : `${op.items.length} producto${op.items.length !== 1 ? 's' : ''} ganador${op.items.length !== 1 ? 'es' : ''}`}
                       </span>
                     </button>
@@ -580,21 +580,21 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
 
           <Sec label="Productos">
             {det.map((d, i) => (
-              <div key={i} style={{ padding: '10px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, marginBottom: 8 }}>
+              <div key={i} style={{ padding: '10px 12px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, marginBottom: 8 }}>
                 <div style={{ position: 'relative', marginBottom: 8 }}>
                   <label className="label">Artículo</label>
                   <input className="input" placeholder="Escribe clave o nombre…"
                     value={artSearches[i] ?? ''} onChange={e => buscarArticulos(i, e.target.value)} />
                   {(artOptions[i]?.length ?? 0) > 0 && (
                     <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
-                      background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+                      background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8,
                       boxShadow: '0 4px 20px rgba(0,0,0,0.12)', maxHeight: 200, overflowY: 'auto' }}>
                       {artOptions[i].map((a: any) => (
                         <button key={a.id} onMouseDown={e => { e.preventDefault(); seleccionarArticulo(i, a) }}
-                          style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
-                          onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                          style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid #F4F5F7' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                          <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)' }}>{a.clave}</span>
+                          <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--blue)' }}>{a.clave}</span>
                           <span style={{ fontSize: 13, marginLeft: 8 }}>{a.nombre}</span>
                           <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 6 }}>{a.unidad}</span>
                         </button>
@@ -666,7 +666,7 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
 
 const Sec = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div>
-    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, paddingBottom: 4, borderBottom: '1px solid #e2e8f0' }}>{label}</div>
+    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, paddingBottom: 4, borderBottom: '1px solid #E6E8EB' }}>{label}</div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{children}</div>
   </div>
 )

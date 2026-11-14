@@ -63,7 +63,7 @@ export default function AlmacenesPage() {
       {generales.length > 0 && (
         <div style={{ marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2563eb' }} />
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#1C1D21' }} />
             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Almacén General</span>
           </div>
           <AlmacenTable rows={generales} onEdit={setModal} onToggle={toggleActivo} onDelete={handleDelete} />
@@ -74,8 +74,8 @@ export default function AlmacenesPage() {
       {particular.length > 0 && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#059669' }} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#059669', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Almacenes Particulares / Centros de Costo</span>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#267F56' }} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#267F56', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Almacenes Particulares / Centros de Costo</span>
           </div>
           <AlmacenTable rows={particular} onEdit={setModal} onToggle={toggleActivo} onDelete={handleDelete} />
         </div>
@@ -119,10 +119,10 @@ function AlmacenTable({ rows, onEdit, onToggle, onDelete }: {
         <tbody>
           {rows.map(r => (
             <tr key={r.id} style={{ opacity: r.activo ? 1 : 0.45 }}>
-              <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.clave}</td>
+              <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.clave}</td>
               <td style={{ fontWeight: 500 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 7, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 7, background: '#F4F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Warehouse size={13} style={{ color: 'var(--blue)' }} />
                   </div>
                   {r.nombre}
@@ -133,14 +133,14 @@ function AlmacenTable({ rows, onEdit, onToggle, onDelete }: {
               <td style={{ textAlign: 'center' }}>
                 <button onClick={() => onToggle(r)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', margin: '0 auto' }}>
                   {r.activo
-                    ? <ToggleRight size={20} style={{ color: '#15803d' }} />
-                    : <ToggleLeft  size={20} style={{ color: '#cbd5e1' }} />}
+                    ? <ToggleRight size={20} style={{ color: '#1F7A50' }} />
+                    : <ToggleLeft  size={20} style={{ color: '#C9CCD3' }} />}
                 </button>
               </td>
               <td>
                 <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                   <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => onEdit(r)}><Edit2 size={13} /></button>
-                  <button className="btn-ghost" style={{ padding: '4px 6px', color: '#dc2626' }} onClick={() => onDelete(r.id)}><Trash2 size={13} /></button>
+                  <button className="btn-ghost" style={{ padding: '4px 6px', color: '#C23B3B' }} onClick={() => onDelete(r.id)}><Trash2 size={13} /></button>
                 </div>
               </td>
             </tr>
@@ -195,10 +195,10 @@ function AlmacenModal({ row, onClose, onSaved }: { row: Almacen | null; onClose:
       </>}
     >
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+          {error && <div style={{ padding: '10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
           <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 10 }}>
             <div><label className="label">Clave *</label>
-              <input className="input" value={form.clave} onChange={set('clave')} style={{ textTransform: 'uppercase', fontFamily: 'monospace' }} />
+              <input className="input" value={form.clave} onChange={set('clave')} style={{ textTransform: 'uppercase', fontVariantNumeric: 'tabular-nums' }} />
             </div>
             <div><label className="label">Nombre *</label>
               <input className="input" value={form.nombre} onChange={set('nombre')} />

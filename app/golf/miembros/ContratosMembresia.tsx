@@ -51,15 +51,15 @@ const mesSugerido = (anio: number) => {
 }
 
 const ESTADO_CFG: Record<string, { label: string; bg: string; color: string }> = {
-  BORRADOR:  { label: 'Pendiente de imprimir', bg: '#f1f5f9', color: '#475569' },
-  IMPRESO:   { label: 'Pendiente de firma',    bg: '#fef3c7', color: '#92400e' },
-  FIRMADO:   { label: 'Pendiente de pago de inscripción', bg: '#fee2e2', color: '#b91c1c' },
-  ACTIVO:    { label: 'Ciclo activo',          bg: '#dcfce7', color: '#15803d' },
-  CANCELADO: { label: 'Cancelado',             bg: '#f1f5f9', color: '#94a3b8' },
+  BORRADOR:  { label: 'Pendiente de imprimir', bg: '#F4F5F7', color: '#4A4D54' },
+  IMPRESO:   { label: 'Pendiente de firma',    bg: '#E6E8EB', color: '#7A4B0C' },
+  FIRMADO:   { label: 'Pendiente de pago de inscripción', bg: '#E6E8EB', color: '#A83232' },
+  ACTIVO:    { label: 'Ciclo activo',          bg: '#E6E8EB', color: '#1F7A50' },
+  CANCELADO: { label: 'Cancelado',             bg: '#F4F5F7', color: '#7A7E87' },
 }
 
-const inputStyle: React.CSSProperties = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }
-const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }
+const inputStyle: React.CSSProperties = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }
+const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }
 
 function ArchivoLink({ path }: { path: string }) {
   const [url, setUrl] = useState<string | null>(null)
@@ -69,7 +69,7 @@ function ArchivoLink({ path }: { path: string }) {
   if (!url) return null
   return (
     <a href={url} target="_blank" rel="noopener noreferrer"
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#2563eb', textDecoration: 'none', fontSize: 11 }}>
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#1C1D21', textDecoration: 'none', fontSize: 11 }}>
       <ExternalLink size={10} /> Ver contrato firmado
     </a>
   )
@@ -77,7 +77,7 @@ function ArchivoLink({ path }: { path: string }) {
 
 function Paso({ ok, label, detalle }: { ok: boolean; label: string; detalle?: string }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: ok ? '#15803d' : '#94a3b8', fontWeight: ok ? 600 : 500 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: ok ? '#1F7A50' : '#7A7E87', fontWeight: ok ? 600 : 500 }}>
       {ok ? <CheckCircle size={13} /> : <Circle size={13} />}
       <span>{label}{detalle ? ` · ${detalle}` : ''}</span>
     </div>
@@ -265,26 +265,26 @@ export default function ContratosMembresia({ socio, puedeEscribir }: { socio: So
     fetchAll()
   }
 
-  if (loading) return <div style={{ padding: 24, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>Cargando…</div>
+  if (loading) return <div style={{ padding: 24, textAlign: 'center', color: '#7A7E87', fontSize: 13 }}>Cargando…</div>
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <FileCheck size={15} style={{ color: '#7c3aed' }} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>Alta / Renovación de membresía</span>
-          <span style={{ fontSize: 11, color: '#64748b' }}>({contratos.length})</span>
+          <FileCheck size={15} style={{ color: '#62666E' }} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>Alta / Renovación de membresía</span>
+          <span style={{ fontSize: 11, color: '#62666E' }}>({contratos.length})</span>
         </div>
         {puedeEscribir && !showNuevo && (
           <button onClick={() => { setShowNuevo(true); setError('') }}
-            style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#6B4E79', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
             <Plus size={13} /> Alta / Renovar ciclo
           </button>
         )}
       </div>
 
       {showNuevo && (
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 16 }}>
+        <div style={{ background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10, padding: 16 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
               <label style={labelStyle}>Ciclo (año)</label>
@@ -303,32 +303,32 @@ export default function ContratosMembresia({ socio, puedeEscribir }: { socio: So
             <select style={inputStyle} value={mesInicio} disabled={!esAdmin} onChange={e => setMesInicio(Number(e.target.value))}>
               {MESES_NOM.map((m, i) => <option key={i} value={i + 1}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
             </select>
-            {!esAdmin && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>El mes de inicio se sugiere según la fecha de hoy; solo admin puede cambiarlo.</div>}
+            {!esAdmin && <div style={{ fontSize: 11, color: '#7A7E87', marginTop: 3 }}>El mes de inicio se sugiere según la fecha de hoy; solo admin puede cambiarlo.</div>}
           </div>
-          {errLista && <div style={{ fontSize: 12, color: '#dc2626', marginTop: 8 }}>{errLista}</div>}
+          {errLista && <div style={{ fontSize: 12, color: '#C23B3B', marginTop: 8 }}>{errLista}</div>}
           {lista && (() => {
             const meses = 13 - mesInicio
             const prorr = meses < 12
             return (
-              <div style={{ marginTop: 10, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px', fontSize: 12, color: '#475569', lineHeight: 1.7 }}>
+              <div style={{ marginTop: 10, background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8, padding: '10px 12px', fontSize: 12, color: '#4A4D54', lineHeight: 1.7 }}>
                 <div>Meses del ciclo: <b>{meses}</b> de 12 ({MESES_NOM[mesInicio - 1]} → diciembre {anio})</div>
                 <div>
-                  Inscripción: {prorr && <span style={{ color: '#94a3b8' }}>{fmt$(lista.insc)} × {meses}/12 = </span>}
-                  <b style={{ color: '#16a34a' }}>{fmt$(round2(lista.insc * meses / 12))}</b>
+                  Inscripción: {prorr && <span style={{ color: '#7A7E87' }}>{fmt$(lista.insc)} × {meses}/12 = </span>}
+                  <b style={{ color: '#267F56' }}>{fmt$(round2(lista.insc * meses / 12))}</b>
                 </div>
                 <div>Mensualidad: <b>{fmt$(lista.mens)}</b> × {meses} = {fmt$(round2(lista.mens * meses))}</div>
               </div>
             )
           })()}
-          <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 10, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 11.5, color: '#62666E', marginTop: 10, lineHeight: 1.5 }}>
             Los montos de inscripción y mensualidad se toman de la tarifa pactada del socio o, si no hay, del precio de lista de su categoría.
             Si el ciclo inicia después de enero, la inscripción se cobra proporcional a los meses que restan al 31 de diciembre. La inscripción se cobra al registrar el contrato firmado; las mensualidades se generan al quedar pagada.
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
             <button onClick={() => setShowNuevo(false)}
-              style={{ padding: '7px 14px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cancelar</button>
+              style={{ padding: '7px 14px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', cursor: 'pointer' }}>Cancelar</button>
             <button onClick={handleCrear} disabled={creando}
-              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: 'pointer', opacity: creando ? 0.7 : 1 }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#6B4E79', color: '#fff', cursor: 'pointer', opacity: creando ? 0.7 : 1 }}>
               {creando && <Loader size={12} className="animate-spin" />} Asignar contrato
             </button>
           </div>
@@ -336,13 +336,12 @@ export default function ContratosMembresia({ socio, puedeEscribir }: { socio: So
       )}
 
       {error && (
-        <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{error}</div>
+        <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>{error}</div>
       )}
 
       {contratos.length === 0 && !showNuevo ? (
-        <div style={{ textAlign: 'center', padding: '32px 20px', background: '#f8fafc', borderRadius: 10, border: '1px dashed #e2e8f0' }}>
-          <div style={{ fontSize: 28, marginBottom: 8 }}>📄</div>
-          <div style={{ fontSize: 13, fontWeight: 500, color: '#475569' }}>Sin contratos registrados</div>
+        <div style={{ textAlign: 'center', padding: '32px 20px', background: '#F8F9FA', borderRadius: 10, border: '1px dashed #E6E8EB' }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: '#4A4D54' }}>Sin contratos registrados</div>
         </div>
       ) : contratos.map(c => {
         const cfg = ESTADO_CFG[c.estado]
@@ -351,28 +350,28 @@ export default function ContratosMembresia({ socio, puedeEscribir }: { socio: So
         const mens  = cargos.filter(g => g.id_contrato_fk === c.id && g.tipo === 'MENSUALIDAD')
         const firmado = ['FIRMADO', 'ACTIVO'].includes(c.estado)
         return (
-          <div key={c.id} style={{ border: `1px solid ${c.vigente ? '#a3e635' : '#e2e8f0'}`, background: c.vigente ? '#f7fee7' : '#fff', borderRadius: 10, padding: '12px 16px' }}>
+          <div key={c.id} style={{ border: `1px solid ${c.vigente ? '#C9CCD3' : '#E6E8EB'}`, background: c.vigente ? '#F4F5F7' : '#fff', borderRadius: 10, padding: '12px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#1e293b' }}>Ciclo {c.anio}</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#26282D' }}>Ciclo {c.anio}</span>
               {c.tipo_movimiento && (
-                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#ede9fe', color: '#6d28d9' }}>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#6B4E79', color: '#fff' }}>
                   {c.tipo_movimiento === 'ALTA' ? 'ALTA' : 'RENOVACIÓN'}
                 </span>
               )}
-              <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: cfg.bg, color: cfg.color }}>{cfg.label}</span>
-              {c.vigente && <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#84cc16', color: '#fff' }}>VIGENTE</span>}
+              <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: cfg.color, color: '#fff'}}>{cfg.label}</span>
+              {c.vigente && <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#C9CCD3', color: '#fff' }}>VIGENTE</span>}
               <span style={{ flex: 1 }} />
               {c.archivo_url && <ArchivoLink path={c.archivo_url} />}
               {puedeEscribir && ['BORRADOR', 'IMPRESO'].includes(c.estado) && flujo && (
                 <button onClick={() => eliminar(c)} disabled={busy === c.id} title="Eliminar"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4 }}><Trash2 size={14} /></button>
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 4 }}><Trash2 size={14} /></button>
               )}
             </div>
-            <div style={{ fontSize: 11.5, color: '#64748b', display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 4 }}>
-              <span>Inscripción: <b style={{ color: '#16a34a' }}>{fmt$(c.monto_inscripcion)}</b></span>
-              {c.monto_mensualidad != null && <span>Mensualidad: <b style={{ color: '#16a34a' }}>{fmt$(c.monto_mensualidad)}</b></span>}
+            <div style={{ fontSize: 11.5, color: '#62666E', display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 4 }}>
+              <span>Inscripción: <b style={{ color: '#267F56' }}>{fmt$(c.monto_inscripcion)}</b></span>
+              {c.monto_mensualidad != null && <span>Mensualidad: <b style={{ color: '#267F56' }}>{fmt$(c.monto_mensualidad)}</b></span>}
               {c.tipo_movimiento && c.fecha_inicio && Number(c.fecha_inicio.slice(5, 7)) > 1 && (
-                <span style={{ color: '#b45309' }}>Proporcional: {13 - Number(c.fecha_inicio.slice(5, 7))} meses (desde {MESES_NOM[Number(c.fecha_inicio.slice(5, 7)) - 1]})</span>
+                <span style={{ color: '#96600F' }}>Proporcional: {13 - Number(c.fecha_inicio.slice(5, 7))} meses (desde {MESES_NOM[Number(c.fecha_inicio.slice(5, 7)) - 1]})</span>
               )}
               {c.fecha_firma && <span>Firmado: {fmtF(c.fecha_firma)}</span>}
             </div>
@@ -391,19 +390,19 @@ export default function ContratosMembresia({ socio, puedeEscribir }: { socio: So
               <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                 {c.estado !== 'CANCELADO' && (
                   <button onClick={() => imprimir(c)} disabled={busy === c.id}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 13px', fontSize: 12.5, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: 'pointer' }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 13px', fontSize: 12.5, fontWeight: 600, border: 'none', borderRadius: 8, background: '#6B4E79', color: '#fff', cursor: 'pointer' }}>
                     <Printer size={13} /> {c.estado === 'BORRADOR' ? 'Imprimir contrato' : 'Reimprimir contrato'}
                   </button>
                 )}
                 {puedeEscribir && flujo && c.estado === 'IMPRESO' && firmaId !== c.id && (
                   <button onClick={() => { setFirmaId(c.id); setArchivo(''); setFechaFirma(hoyLocal()); setError('') }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 13px', fontSize: 12.5, fontWeight: 600, border: '1px solid #16a34a', borderRadius: 8, background: '#f0fdf4', color: '#15803d', cursor: 'pointer' }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 13px', fontSize: 12.5, fontWeight: 600, border: '1px solid #267F56', borderRadius: 8, background: '#F4F5F7', color: '#1F7A50', cursor: 'pointer' }}>
                     <FileCheck size={13} /> Registrar contrato firmado
                   </button>
                 )}
                 {puedeEscribir && flujo && c.estado === 'FIRMADO' && insc && insc.status !== 'PAGADO' && (
                   <button onClick={() => setCobrar(insc)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 13px', fontSize: 12.5, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer' }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 13px', fontSize: 12.5, fontWeight: 600, border: 'none', borderRadius: 8, background: '#267F56', color: '#fff', cursor: 'pointer' }}>
                     <Receipt size={13} /> Cobrar inscripción · {fmt$(insc.saldo ?? insc.monto_final)}
                   </button>
                 )}
@@ -411,7 +410,7 @@ export default function ContratosMembresia({ socio, puedeEscribir }: { socio: So
             )}
 
             {firmaId === c.id && (
-              <div style={{ marginTop: 12, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 14 }}>
+              <div style={{ marginTop: 12, background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10, padding: 14 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <div>
                     <label style={labelStyle}>Fecha de firma *</label>
@@ -421,23 +420,23 @@ export default function ContratosMembresia({ socio, puedeEscribir }: { socio: So
                     <label style={labelStyle}>Contrato firmado (PDF/imagen) *</label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <button onClick={() => fileRef.current?.click()} disabled={subiendo}
-                        style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '7px 12px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', cursor: 'pointer', color: '#475569' }}>
+                        style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '7px 12px', border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', cursor: 'pointer', color: '#4A4D54' }}>
                         {subiendo ? <Loader size={12} className="animate-spin" /> : <Upload size={12} />} {archivo ? 'Cambiar archivo' : 'Subir archivo'}
                       </button>
-                      {archivo && <span style={{ fontSize: 11, color: '#16a34a' }}>✓ Archivo listo</span>}
+                      {archivo && <span style={{ fontSize: 11, color: '#267F56' }}>✓ Archivo listo</span>}
                     </div>
                     <input ref={fileRef} type="file" accept="image/jpeg,image/png,application/pdf" style={{ display: 'none' }}
                       onChange={e => { const f = e.target.files?.[0]; if (f) subirArchivo(f, c); e.target.value = '' }} />
                   </div>
                 </div>
-                <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 8 }}>
+                <div style={{ fontSize: 11.5, color: '#62666E', marginTop: 8 }}>
                   Al registrar la firma se genera de inmediato el cargo de inscripción ({fmt$(c.monto_inscripcion)}).
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 10, justifyContent: 'flex-end' }}>
                   <button onClick={() => setFirmaId(null)}
-                    style={{ padding: '7px 14px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cancelar</button>
+                    style={{ padding: '7px 14px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', cursor: 'pointer' }}>Cancelar</button>
                   <button onClick={() => registrarFirma(c)} disabled={guardandoFirma || subiendo}
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#16a34a', color: '#fff', cursor: 'pointer', opacity: guardandoFirma ? 0.7 : 1 }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#267F56', color: '#fff', cursor: 'pointer', opacity: guardandoFirma ? 0.7 : 1 }}>
                     {guardandoFirma && <Loader size={12} className="animate-spin" />} Registrar firma
                   </button>
                 </div>
@@ -445,7 +444,7 @@ export default function ContratosMembresia({ socio, puedeEscribir }: { socio: So
             )}
 
             {c.estado === 'ACTIVO' && mens.length > 0 && (
-              <div style={{ marginTop: 10, fontSize: 11.5, color: '#64748b' }}>
+              <div style={{ marginTop: 10, fontSize: 11.5, color: '#62666E' }}>
                 Mensualidades: {mens.filter(m => m.status === 'PAGADO').length} pagadas de {mens.length}
                 {' '}({fmtF(mens[0].fecha_vencimiento)} → {fmtF(mens[mens.length - 1].fecha_vencimiento)}). Se cobran desde la pestaña Cobranza.
               </div>

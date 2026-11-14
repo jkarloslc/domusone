@@ -73,30 +73,30 @@ export default function ReporteGolfSlotsOcupacion() {
   const ocupados = rows.filter(r => r.pension).length
   const pctOcupacion = rows.length > 0 ? Math.round((ocupados / rows.length) * 100) : 0
 
-  const thStyle: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }
+  const thStyle: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#4A4D54', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }
 
   return (
     <div>
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 320 }}>
-          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Cajón, socio, familiar, carrito…"
-            style={{ width: '100%', padding: '8px 12px 8px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '8px 12px 8px 30px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
-        <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', gap: 0, border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
           {([
-            { key: 'todos',       label: 'Todos',       color: '#059669' },
-            { key: 'ocupados',    label: 'Ocupados',    color: '#dc2626' },
-            { key: 'disponibles', label: 'Disponibles', color: '#15803d' },
+            { key: 'todos',       label: 'Todos',       color: '#267F56' },
+            { key: 'ocupados',    label: 'Ocupados',    color: '#C23B3B' },
+            { key: 'disponibles', label: 'Disponibles', color: '#1F7A50' },
           ] as const).map(f => (
             <button key={f.key} onClick={() => setFiltro(f.key)} style={{
               padding: '8px 14px', fontSize: 12, fontWeight: filtro === f.key ? 600 : 400,
               background: filtro === f.key ? f.color : '#fff',
-              color: filtro === f.key ? '#fff' : '#94a3b8',
+              color: filtro === f.key ? '#fff' : '#7A7E87',
               border: 'none', cursor: 'pointer', fontFamily: 'inherit',
             }}>
               {f.label}
@@ -104,13 +104,13 @@ export default function ReporteGolfSlotsOcupacion() {
           ))}
         </div>
         <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}
-          style={{ padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', fontFamily: 'inherit', outline: 'none' }}>
+          style={{ padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', fontFamily: 'inherit', outline: 'none' }}>
           <option value="">Todos los tipos</option>
-          <option value="ELECTRICO">⚡ Eléctrico</option>
-          <option value="COMBUSTION">⛽ Combustión</option>
+          <option value="ELECTRICO">Eléctrico</option>
+          <option value="COMBUSTION">Combustión</option>
         </select>
         <button onClick={fetchData}
-          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', cursor: 'pointer' }}>
           <RefreshCw size={13} /> Actualizar
         </button>
       </div>
@@ -118,17 +118,17 @@ export default function ReporteGolfSlotsOcupacion() {
       {/* KPIs */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
         {[
-          { label: 'Cajones activos', value: String(rows.length),            color: '#059669', bg: '#ecfdf5' },
-          { label: 'Ocupados',        value: String(ocupados),               color: '#dc2626', bg: '#fef2f2' },
-          { label: 'Disponibles',     value: String(rows.length - ocupados), color: '#15803d', bg: '#f0fdf4' },
-          { label: '% Ocupación',     value: `${pctOcupacion}%`,             color: '#2563eb', bg: '#eff6ff' },
+          { label: 'Cajones activos', value: String(rows.length),            color: '#267F56', bg: '#F4F5F7' },
+          { label: 'Ocupados',        value: String(ocupados),               color: '#C23B3B', bg: '#F4F5F7' },
+          { label: 'Disponibles',     value: String(rows.length - ocupados), color: '#1F7A50', bg: '#F4F5F7' },
+          { label: '% Ocupación',     value: `${pctOcupacion}%`,             color: '#1C1D21', bg: '#F4F5F7' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '14px 20px', background: k.bg, border: `1px solid ${k.color}22`, minWidth: 140 }}>
+          <div key={k.label} className="card" style={{ padding: '14px 20px', background: '#fff', border: '1px solid #E6E8EB', minWidth: 140 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
               <Warehouse size={14} style={{ color: k.color }} />
-              <span style={{ fontSize: 11, color: '#64748b' }}>{k.label}</span>
+              <span style={{ fontSize: 11, color: '#62666E' }}>{k.label}</span>
             </div>
-            <div style={{ fontSize: 30, fontWeight: 700, color: k.color, lineHeight: 1 }}>{loading ? '—' : k.value}</div>
+            <div style={{ fontSize: 30, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)', lineHeight: 1 }}>{loading ? '—' : k.value}</div>
           </div>
         ))}
       </div>
@@ -138,24 +138,24 @@ export default function ReporteGolfSlotsOcupacion() {
       <div id="reporte-print-area">
         {/* Header impresión */}
         <div className="print-only" style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#1e293b' }}>Ocupación de Slots / Cajones</div>
-          <div style={{ fontSize: 12, color: '#64748b' }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#26282D' }}>Ocupación de Slots / Cajones</div>
+          <div style={{ fontSize: 12, color: '#62666E' }}>
             {new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })} · {filtered.length} cajones · {ocupados} ocupados ({pctOcupacion}%)
           </div>
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>Cargando…</div>
+          <div style={{ textAlign: 'center', padding: '40px', color: '#7A7E87' }}>Cargando…</div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '48px 20px', background: '#f8fafc', borderRadius: 12, border: '1px dashed #e2e8f0' }}>
-            <div style={{ fontSize: 14, fontWeight: 500, color: '#475569' }}>Sin cajones para los filtros seleccionados</div>
+          <div style={{ textAlign: 'center', padding: '48px 20px', background: '#F8F9FA', borderRadius: 12, border: '1px dashed #E6E8EB' }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: '#4A4D54' }}>Sin cajones para los filtros seleccionados</div>
           </div>
         ) : (
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ overflowX: 'auto' }}>
               <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ borderBottom: '2px solid #e2e8f0', background: '#f8fafc' }}>
+                  <tr style={{ borderBottom: '2px solid #E6E8EB', background: '#F8F9FA' }}>
                     {['#', 'Cajón', 'Status', 'Socio', 'Familiar', 'Tipo', 'Marca', 'Modelo', 'Placa'].map(h => (
                       <th key={h} style={thStyle}>{h}</th>
                     ))}
@@ -167,42 +167,42 @@ export default function ReporteGolfSlotsOcupacion() {
                     const car = r.pension?.cat_carritos
                     const fam = r.pension?.cat_familiares
                     return (
-                      <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.1s' }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f8fafc'}
+                      <tr key={r.id} style={{ borderBottom: '1px solid #F4F5F7', transition: 'background 0.1s' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FA'}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
-                        <td style={{ padding: '9px 12px', color: '#94a3b8', fontSize: 11 }}>{idx + 1}</td>
-                        <td style={{ padding: '9px 12px', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap' }}>Cajón {r.numero}</td>
+                        <td style={{ padding: '9px 12px', color: '#7A7E87', fontSize: 11 }}>{idx + 1}</td>
+                        <td style={{ padding: '9px 12px', fontWeight: 700, color: '#26282D', whiteSpace: 'nowrap' }}>Cajón {r.numero}</td>
                         <td style={{ padding: '9px 12px', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: ocupado ? '#fee2e2' : '#dcfce7', color: ocupado ? '#dc2626' : '#15803d' }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: ocupado ? '#C23B3B' : '#1F7A50', color: '#fff' }}>
                             {ocupado ? 'Ocupado' : 'Disponible'}
                           </span>
                         </td>
                         <td style={{ padding: '9px 12px' }}>
                           {ocupado ? (
                             <>
-                              <div style={{ fontWeight: 500, color: '#1e293b' }}>{nc(r.pension!.cat_socios)}</div>
-                              {r.pension!.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: '#94a3b8' }}>#{r.pension!.cat_socios.numero_socio}</div>}
+                              <div style={{ fontWeight: 500, color: '#26282D' }}>{nc(r.pension!.cat_socios)}</div>
+                              {r.pension!.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: '#7A7E87' }}>#{r.pension!.cat_socios.numero_socio}</div>}
                             </>
-                          ) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                          ) : <span style={{ color: '#C9CCD3' }}>—</span>}
                         </td>
-                        <td style={{ padding: '9px 12px', fontSize: 12, color: '#475569' }}>
+                        <td style={{ padding: '9px 12px', fontSize: 12, color: '#4A4D54' }}>
                           {fam ? (
                             <>
                               <div>{nc(fam)}</div>
-                              {fam.parentesco && <div style={{ fontSize: 11, color: '#94a3b8' }}>{fam.parentesco}</div>}
+                              {fam.parentesco && <div style={{ fontSize: 11, color: '#7A7E87' }}>{fam.parentesco}</div>}
                             </>
-                          ) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                          ) : <span style={{ color: '#C9CCD3' }}>—</span>}
                         </td>
                         <td style={{ padding: '9px 12px', whiteSpace: 'nowrap' }}>
                           {car?.tipo
-                            ? <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: car.tipo === 'ELECTRICO' ? '#eff6ff' : '#fffbeb', color: car.tipo === 'ELECTRICO' ? '#1d4ed8' : '#92400e' }}>
-                                {car.tipo === 'ELECTRICO' ? '⚡ Eléctrico' : '⛽ Combustión'}
+                            ? <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: car.tipo === 'ELECTRICO' ? '#F4F5F7' : '#B5761A', color: car.tipo === 'ELECTRICO' ? '#26282D' : '#fff' }}>
+                                {car.tipo === 'ELECTRICO' ? 'Eléctrico' : 'Combustión'}
                               </span>
-                            : <span style={{ color: '#cbd5e1' }}>—</span>}
+                            : <span style={{ color: '#C9CCD3' }}>—</span>}
                         </td>
-                        <td style={{ padding: '9px 12px', fontSize: 12, color: '#475569' }}>{car?.marca ?? '—'}</td>
-                        <td style={{ padding: '9px 12px', fontSize: 12, color: '#475569' }}>{car?.modelo ?? '—'}</td>
-                        <td style={{ padding: '9px 12px', fontSize: 12, color: '#64748b', fontFamily: 'monospace' }}>{car?.placa ?? '—'}</td>
+                        <td style={{ padding: '9px 12px', fontSize: 12, color: '#4A4D54' }}>{car?.marca ?? '—'}</td>
+                        <td style={{ padding: '9px 12px', fontSize: 12, color: '#4A4D54' }}>{car?.modelo ?? '—'}</td>
+                        <td style={{ padding: '9px 12px', fontSize: 12, color: '#62666E', fontVariantNumeric: 'tabular-nums' }}>{car?.placa ?? '—'}</td>
                       </tr>
                     )
                   })}

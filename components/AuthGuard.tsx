@@ -21,7 +21,7 @@ export default function AuthGuard({ children, modulo }: { children: React.ReactN
   }, [authUser, loading, modulo, router, can])
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F4F5F7' }}>
       <Loader size={20} className="animate-spin" style={{ color: 'var(--blue)' }} />
     </div>
   )
@@ -31,7 +31,7 @@ export default function AuthGuard({ children, modulo }: { children: React.ReactN
   // Mientras se procesa la redirección por módulo sin permiso, mostrar loader
   if (modulo && !can(modulo)) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F4F5F7' }}>
         <Loader size={20} className="animate-spin" style={{ color: 'var(--blue)' }} />
       </div>
     )

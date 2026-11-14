@@ -64,15 +64,15 @@ const STATUS_LABEL: Record<string, string> = {
   PENDIENTE: 'Pendiente', PAGO_PARCIAL: 'Pago Parcial', PAGADO: 'Pagado', CANCELADO: 'Cancelado',
 }
 const STATUS_STYLE: Record<string, { color: string; bg: string }> = {
-  PENDIENTE:     { color: '#d97706', bg: '#fffbeb' },
-  PAGO_PARCIAL:  { color: '#d97706', bg: '#fffbeb' },
-  PAGADO:        { color: '#15803d', bg: '#f0fdf4' },
-  CANCELADO:     { color: '#64748b', bg: '#f8fafc' },
-  VENCIDA:       { color: '#dc2626', bg: '#fef2f2' },
+  PENDIENTE:     { color: '#B5761A', bg: '#F4F5F7' },
+  PAGO_PARCIAL:  { color: '#B5761A', bg: '#F4F5F7' },
+  PAGADO:        { color: '#1F7A50', bg: '#F4F5F7' },
+  CANCELADO:     { color: '#62666E', bg: '#F8F9FA' },
+  VENCIDA:       { color: '#C23B3B', bg: '#F4F5F7' },
 }
 
-const inp = { width: '100%', padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' } as React.CSSProperties
-const lbl = { fontSize: 12, fontWeight: 600 as const, color: '#475569', marginBottom: 4, display: 'block' as const }
+const inp = { width: '100%', padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' } as React.CSSProperties
+const lbl = { fontSize: 12, fontWeight: 600 as const, color: '#4A4D54', marginBottom: 4, display: 'block' as const }
 
 // ── Helpers de periodo ────────────────────────────────────────
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
@@ -309,7 +309,7 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
       footer={<>
         <button className="btn-ghost" onClick={onClose}>Cancelar</button>
         <button onClick={handleSave} disabled={saving || preview.length === 0 || !socioSel}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: 'pointer', opacity: (saving || preview.length === 0 || !socioSel) ? 0.6 : 1 }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#6B4E79', color: '#fff', cursor: 'pointer', opacity: (saving || preview.length === 0 || !socioSel) ? 0.6 : 1 }}>
           {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
           {preview.length > 1 ? `Generar ${preview.length} cuotas` : 'Guardar cuota'}
         </button>
@@ -322,39 +322,39 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
           <label style={lbl}>Tipo de cuota</label>
           <div style={{ position: 'relative' }}>
             {configSel ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#f5f3ff', border: '2px solid #7c3aed', borderRadius: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#F4F5F7', border: '2px solid #6B4E79', borderRadius: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#7c3aed', color: '#fff', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#6B4E79', color: '#fff', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                     {TIPOS_LABEL[configSel.tipo] ?? configSel.tipo}
                   </span>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#3b0764' }}>{configSel.nombre}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#3D2A45' }}>{configSel.nombre}</div>
                     {!socioSel && (
-                      <div style={{ fontSize: 11, color: '#94a3b8' }}>Selecciona un socio para calcular el monto</div>
+                      <div style={{ fontSize: 11, color: '#7A7E87' }}>Selecciona un socio para calcular el monto</div>
                     )}
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   {socioSel && tarifaAplicable && (
                     <span title={`Tarifa pactada: ${tarifaAplicable.motivo_excepcion}`}
-                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: '#fff', border: '1px solid #7c3aed', color: '#7c3aed', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: '#fff', border: '1px solid #6B4E79', color: '#6B4E79', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                       <Tag size={10} /> Pactada
                     </span>
                   )}
                   {socioSel && (
-                    <span style={{ fontSize: 14, fontWeight: 700, color: precioMissing ? '#dc2626' : '#7c3aed' }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: precioMissing ? '#C23B3B' : '#6B4E79' }}>
                       {precioMissing ? 'Sin precio' : fmt$(parseFloat(monto) || 0)}
                     </span>
                   )}
                   <button onClick={() => { clearConfig(); setShowPicker(true) }}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}>
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2 }}>
                     <X size={14} />
                   </button>
                 </div>
               </div>
             ) : (
               <button onClick={() => setShowPicker(v => !v)}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', fontSize: 13, border: '1px dashed #c4b5fd', borderRadius: 10, background: '#faf5ff', color: '#7c3aed', cursor: 'pointer', fontFamily: 'inherit' }}>
+                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', fontSize: 13, border: '1px dashed #C9CCD3', borderRadius: 10, background: '#F4F5F7', color: '#6B4E79', cursor: 'pointer', fontFamily: 'inherit' }}>
                 <span style={{ fontWeight: 500 }}>
                   {loadingCfg ? 'Cargando tipos…' : '— Elegir tipo de cuota —'}
                 </span>
@@ -364,11 +364,11 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
 
             {/* Picker popup */}
             {showPicker && (
-              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.14)', zIndex: 50, overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#fff', border: '1px solid #E6E8EB', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.14)', zIndex: 50, overflow: 'hidden' }}>
                 {/* Buscador dentro del picker */}
-                <div style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9' }}>
+                <div style={{ padding: '10px 12px', borderBottom: '1px solid #F4F5F7' }}>
                   <div style={{ position: 'relative' }}>
-                    <Search size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                    <Search size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
                     <input
                       autoFocus
                       value={pickerSearch}
@@ -381,33 +381,33 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
                 {/* Lista de configs */}
                 <div style={{ maxHeight: 280, overflowY: 'auto' }}>
                   {configsFiltradas.length === 0 ? (
-                    <div style={{ padding: '20px', textAlign: 'center', fontSize: 13, color: '#94a3b8' }}>Sin resultados</div>
+                    <div style={{ padding: '20px', textAlign: 'center', fontSize: 13, color: '#7A7E87' }}>Sin resultados</div>
                   ) : (
                     configsFiltradas.map(c => (
                       <button key={c.id} onClick={() => selectConfig(c)}
-                        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 16px', border: 'none', borderBottom: '1px solid #f8fafc', background: '#fff', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#faf5ff'}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 16px', border: 'none', borderBottom: '1px solid #F8F9FA', background: '#fff', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F4F5F7'}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#fff'}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: c.tipo === 'INSCRIPCION' ? '#fef3c7' : '#ede9fe', color: c.tipo === 'INSCRIPCION' ? '#92400e' : '#6d28d9', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: c.tipo === 'INSCRIPCION' ? '#B5761A' : '#6B4E79', color: '#fff', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
                             {TIPOS_LABEL[c.tipo] ?? c.tipo}
                           </span>
                           <div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{c.nombre}</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>{c.nombre}</div>
                           </div>
                         </div>
                         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <div style={{ fontSize: 11, color: '#7c3aed', fontWeight: 600 }}>Según categoría</div>
-                          <div style={{ fontSize: 10, color: '#94a3b8' }}>vence día {c.dia_vencimiento}</div>
+                          <div style={{ fontSize: 11, color: '#6B4E79', fontWeight: 600 }}>Según categoría</div>
+                          <div style={{ fontSize: 10, color: '#7A7E87' }}>vence día {c.dia_vencimiento}</div>
                         </div>
                       </button>
                     ))
                   )}
                 </div>
                 {/* Opción manual */}
-                <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9' }}>
+                <div style={{ padding: '8px 12px', borderTop: '1px solid #F4F5F7' }}>
                   <button onClick={() => { clearConfig(); setShowPicker(false) }}
-                    style={{ width: '100%', padding: '7px 12px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#f8fafc', color: '#64748b', cursor: 'pointer', fontFamily: 'inherit' }}>
+                    style={{ width: '100%', padding: '7px 12px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 8, background: '#F8F9FA', color: '#62666E', cursor: 'pointer', fontFamily: 'inherit' }}>
                     Captura manual (sin precargar datos)
                   </button>
                 </div>
@@ -436,19 +436,19 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
           </div>
 
           {configSel && socioSel && precioMissing && (
-            <div style={{ marginTop: 8, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+            <div style={{ marginTop: 8, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>
               No hay precio configurado para la categoría de este socio en «{configSel.nombre}». Captura el monto manualmente o agrega la línea de precio en el catálogo de Cuotas.
             </div>
           )}
 
           {tarifaErr && (
-            <div style={{ marginTop: 8, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+            <div style={{ marginTop: 8, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>
               No se pudieron leer las tarifas pactadas ({tarifaErr}). No generes el cargo sin revisarlo: si este socio tiene precio pactado, nacería al precio de lista.
             </div>
           )}
 
           {tarifaAplicable && !esCortesia && (
-            <div style={{ marginTop: 8, padding: '8px 12px', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, fontSize: 12, color: '#5b21b6' }}>
+            <div style={{ marginTop: 8, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #4E3758', borderRadius: 8, fontSize: 12, color: '#4E3758' }}>
               <strong>Tarifa pactada</strong> de {fmt$(Number(tarifaAplicable.monto))}
               {precioLista != null && <> en lugar del precio de lista de {fmt$(precioLista)}</>} — {tarifaAplicable.motivo_excepcion}
               {(tarifaAplicable.vigente_desde || tarifaAplicable.vigente_hasta) && (
@@ -458,7 +458,7 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
           )}
 
           {esCortesia && (
-            <div style={{ marginTop: 8, padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#475569' }}>
+            <div style={{ marginTop: 8, padding: '8px 12px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, fontSize: 12, color: '#4A4D54' }}>
               Tarifa pactada en <strong>cortesía ($0)</strong> — {tarifaAplicable!.motivo_excepcion}. No hay nada que cobrar, así que no se genera cargo.
             </div>
           )}
@@ -480,24 +480,24 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
         <div>
           <label style={lbl}>Socio *</label>
           {socioSel ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 10 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#166534' }}>{nc(socioSel)}</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 10 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#17603F' }}>{nc(socioSel)}</span>
               <button onClick={() => { setSocioSel(null); setSocioSearch('') }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}>
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2 }}>
                 <X size={13} />
               </button>
             </div>
           ) : (
             <div style={{ position: 'relative' }}>
-              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
               <input style={{ ...inp, paddingLeft: 30 }} placeholder="Buscar por nombre o número de socio…"
                 value={socioSearch} onChange={e => setSocioSearch(e.target.value)} autoFocus={!!configSel} />
               {socios.length > 0 && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.1)', zIndex: 20, maxHeight: 200, overflowY: 'auto' }}>
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #E6E8EB', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.1)', zIndex: 20, maxHeight: 200, overflowY: 'auto' }}>
                   {socios.map(s => (
                     <div key={s.id} onClick={() => { setSocioSel(s); setSocioSearch(''); setSocios([]) }}
-                      style={{ padding: '9px 14px', cursor: 'pointer', fontSize: 13, borderBottom: '1px solid #f1f5f9' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f8fafc'}
+                      style={{ padding: '9px 14px', cursor: 'pointer', fontSize: 13, borderBottom: '1px solid #F4F5F7' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FA'}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#fff'}>
                       {nc(s)}
                     </div>
@@ -513,10 +513,10 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
           <label style={lbl}>Período a generar</label>
 
           {/* Toggle Una / Rango */}
-          <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden', marginBottom: 10 }}>
+          <div style={{ display: 'flex', gap: 0, border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden', marginBottom: 10 }}>
             {(['UNICA', 'RANGO'] as const).map(m => (
               <button key={m} onClick={() => setModalidad(m)}
-                style={{ flex: 1, padding: '8px', fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', borderRight: m === 'UNICA' ? '1px solid #e2e8f0' : 'none', background: modalidad === m ? '#f5f3ff' : '#fff', color: modalidad === m ? '#6d28d9' : '#94a3b8' }}>
+                style={{ flex: 1, padding: '8px', fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', borderRight: m === 'UNICA' ? '1px solid #E6E8EB' : 'none', background: modalidad === m ? '#F4F5F7' : '#fff', color: modalidad === m ? '#5C4268' : '#7A7E87' }}>
                 {m === 'UNICA' ? 'Una sola cuota' : 'Rango mensual (varias cuotas)'}
               </button>
             ))}
@@ -531,13 +531,13 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
               <div>
                 <label style={{ ...lbl, marginBottom: 2 }}>Fecha vencimiento</label>
                 <input style={inp} type="date" value={fechaVencU} onChange={e => setFechaVencU(e.target.value)} placeholder="Auto desde día venc." />
-                <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>Vacío = día {diaVenc} del mes</div>
+                <div style={{ fontSize: 10, color: '#7A7E87', marginTop: 2 }}>Vacío = día {diaVenc} del mes</div>
               </div>
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 8, alignItems: 'end' }}>
               <div>
-                <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Desde</div>
+                <div style={{ fontSize: 11, color: '#7A7E87', marginBottom: 4 }}>Desde</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px', gap: 6 }}>
                   <select style={inp} value={mesIni} onChange={e => {
                     const m = Number(e.target.value); setMesIni(m)
@@ -549,9 +549,9 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
                     onChange={e => { const a = Number(e.target.value); setAnioIni(a); if (diffMeses(a, mesIni, anioFin, mesFin) < 0) setAnioFin(a) }} />
                 </div>
               </div>
-              <div style={{ paddingBottom: 9, color: '#94a3b8', fontSize: 20, textAlign: 'center' }}>→</div>
+              <div style={{ paddingBottom: 9, color: '#7A7E87', fontSize: 20, textAlign: 'center' }}>→</div>
               <div>
-                <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Hasta</div>
+                <div style={{ fontSize: 11, color: '#7A7E87', marginBottom: 4 }}>Hasta</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px', gap: 6 }}>
                   <select style={inp} value={mesFin} onChange={e => setMesFin(Number(e.target.value))}>
                     {MESES.map((mn, i) => <option key={i+1} value={i+1}>{mn}</option>)}
@@ -563,7 +563,7 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
             </div>
           )}
           {modalidad === 'RANGO' && diffMeses(anioIni, mesIni, anioFin, mesFin) < 0 && (
-            <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4 }}>El mes final debe ser igual o posterior al inicial.</div>
+            <div style={{ fontSize: 11, color: '#C23B3B', marginTop: 4 }}>El mes final debe ser igual o posterior al inicial.</div>
           )}
         </div>
 
@@ -575,41 +575,41 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
 
         {/* ── 4. Preview ── */}
         {preview.length > 0 && (
-          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+          <div style={{ background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 12, padding: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
               Vista previa — {preview.length} cuota{preview.length !== 1 ? 's' : ''}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 180, overflowY: 'auto' }}>
               {preview.map(p => (
-                <div key={p.periodo} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: '#475569' }}>
+                <div key={p.periodo} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: '#4A4D54' }}>
                   <div>
-                    <span style={{ fontWeight: 600, color: '#1e293b' }}>{p.label}</span>
-                    <span style={{ marginLeft: 10, color: '#94a3b8' }}>
+                    <span style={{ fontWeight: 600, color: '#26282D' }}>{p.label}</span>
+                    <span style={{ marginLeft: 10, color: '#7A7E87' }}>
                       vence {new Date(p.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </span>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontWeight: 700, color: '#059669' }}>{fmt$(p.monto_neto)}</span>
-                    {p.descuento > 0 && <span style={{ marginLeft: 6, fontSize: 10, color: '#94a3b8', textDecoration: 'line-through' }}>{fmt$(p.monto_original)}</span>}
+                    <span style={{ fontWeight: 700, color: '#267F56' }}>{fmt$(p.monto_neto)}</span>
+                    {p.descuento > 0 && <span style={{ marginLeft: 6, fontSize: 10, color: '#7A7E87', textDecoration: 'line-through' }}>{fmt$(p.monto_original)}</span>}
                   </div>
                 </div>
               ))}
             </div>
-            <div style={{ borderTop: '1px solid #e2e8f0', marginTop: 10, paddingTop: 10, display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700 }}>
-              <span style={{ color: '#1e293b' }}>Total a generar</span>
-              <span style={{ color: '#059669' }}>{fmt$(totalNeto)}</span>
+            <div style={{ borderTop: '1px solid #E6E8EB', marginTop: 10, paddingTop: 10, display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700 }}>
+              <span style={{ color: '#26282D' }}>Total a generar</span>
+              <span style={{ color: '#267F56' }}>{fmt$(totalNeto)}</span>
             </div>
           </div>
         )}
 
         {preview.length === 0 && parseFloat(monto) > 0 && modalidad === 'RANGO' && diffMeses(anioIni, mesIni, anioFin, mesFin) < 0 && (
-          <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+          <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>
             El rango de meses no produce cuotas.
           </div>
         )}
 
         {error && (
-          <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>
+          <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 13, color: '#C23B3B' }}>
             {error}
           </div>
         )}
@@ -724,7 +724,7 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
         <button className="btn-ghost" onClick={done ? onSaved : onClose}>{done ? 'Listo' : 'Cancelar'}</button>
         {!done && aCrear.length > 0 && (
           <button onClick={handleGenerar} disabled={saving}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#6B4E79', color: '#fff', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
             {saving ? <Loader size={13} className="animate-spin" /> : <Zap size={13} />}
             Generar {aCrear.length} cuotas
           </button>
@@ -734,16 +734,16 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {done ? (
             <div style={{ textAlign: 'center', padding: '32px 20px' }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
-              <div style={{ fontSize: 16, fontWeight: 600, color: '#16a34a', marginBottom: 6 }}>Generación completada</div>
-              <div style={{ fontSize: 13, color: '#64748b' }}>
+              <div style={{ fontSize: 40, color: '#1F7A50', lineHeight: 1, marginBottom: 12 }}>✓</div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: '#267F56', marginBottom: 6 }}>Generación completada</div>
+              <div style={{ fontSize: 13, color: '#62666E' }}>
                 <strong>{done.creadas}</strong> cuotas creadas · <strong>{done.omitidas}</strong> omitidas (ya existían)
                 {done.sinPrecio > 0 && <> · <strong>{done.sinPrecio}</strong> omitidas (sin precio configurado)</>}
                 {done.cortesias > 0 && <> · <strong>{done.cortesias}</strong> omitidas (tarifa pactada en cortesía)</>}
               </div>
               {done.creadas > 0 && (
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#1e293b', marginTop: 10 }}>
-                  Total generado: <span style={{ color: '#7c3aed' }}>{fmt$(done.total)}</span>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#26282D', marginTop: 10 }}>
+                  Total generado: <span style={{ color: '#6B4E79' }}>{fmt$(done.total)}</span>
                 </div>
               )}
             </div>
@@ -767,46 +767,46 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
                 </div>
                 <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                   <button onClick={handlePreview} disabled={loadingPrev || !configSel}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: '1px solid #bfdbfe', borderRadius: 8, background: '#eff6ff', color: '#1d4ed8', cursor: 'pointer', opacity: !configSel ? 0.5 : 1 }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: '1px solid #C9CCD3', borderRadius: 8, background: '#F4F5F7', color: '#26282D', cursor: 'pointer', opacity: !configSel ? 0.5 : 1 }}>
                     {loadingPrev ? <Loader size={12} className="animate-spin" /> : <Search size={12} />} Previsualizar
                   </button>
                 </div>
               </div>
-              {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{error}</div>}
+              {error && <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>{error}</div>}
               {preview.length > 0 && (
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54' }}>
                       {aCrear.length} a crear · {preview.filter(p => p.existente).length} ya existentes · {preview.filter(p => !p.existente && p.monto == null).length} sin precio configurado
-                      {nPactadas > 0  && <> · <span style={{ color: '#7c3aed' }}>{nPactadas} con tarifa pactada</span></>}
+                      {nPactadas > 0  && <> · <span style={{ color: '#6B4E79' }}>{nPactadas} con tarifa pactada</span></>}
                       {nCortesias > 0 && <> · {nCortesias} en cortesía (no se generan)</>}
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed' }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#6B4E79' }}>
                       Total: {fmt$(totalACrear)}
                     </div>
                   </div>
-                  <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden', maxHeight: 240, overflowY: 'auto' }}>
+                  <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden', maxHeight: 240, overflowY: 'auto' }}>
                     {preview.map((p, i) => {
                       const sinPrecio = !p.existente && p.monto == null
                       const cortesia  = !p.existente && p.monto === 0
                       const etiqueta  = p.existente ? 'Ya existe' : sinPrecio ? 'Sin precio' : cortesia ? 'Cortesía' : 'Crear'
                       const estilo    = p.existente || cortesia
-                        ? { bg: '#f1f5f9', fg: '#94a3b8' }
-                        : sinPrecio ? { bg: '#fef2f2', fg: '#dc2626' } : { bg: '#f0fdf4', fg: '#16a34a' }
+                        ? { bg: '#F4F5F7', fg: '#7A7E87' }
+                        : sinPrecio ? { bg: '#F4F5F7', fg: '#C23B3B' } : { bg: '#F4F5F7', fg: '#267F56' }
                       return (
-                        <div key={p.socioId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', borderBottom: i < preview.length - 1 ? '1px solid #f1f5f9' : 'none', background: p.existente ? '#f8fafc' : '#fff' }}>
-                          <span style={{ fontSize: 13, color: p.existente ? '#94a3b8' : '#1e293b' }}>{p.nombre}</span>
+                        <div key={p.socioId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', borderBottom: i < preview.length - 1 ? '1px solid #F4F5F7' : 'none', background: p.existente ? '#F8F9FA' : '#fff' }}>
+                          <span style={{ fontSize: 13, color: p.existente ? '#7A7E87' : '#26282D' }}>{p.nombre}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             {p.esPactada && (
                               <span title={p.motivo ?? undefined}
-                                style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20, border: '1px solid #ddd6fe', background: '#f5f3ff', color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20, border: '1px solid #6B4E79', background: '#6B4E79', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                                 <Tag size={9} /> Pactada
                               </span>
                             )}
                             {!p.existente && p.monto != null && (
-                              <span style={{ fontSize: 12, fontWeight: 600, color: cortesia ? '#94a3b8' : '#059669' }}>{fmt$(p.monto)}</span>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: cortesia ? '#7A7E87' : '#267F56' }}>{fmt$(p.monto)}</span>
                             )}
-                            <span style={{ fontSize: 11, fontWeight: 600, padding: '1px 7px', borderRadius: 20, background: estilo.bg, color: estilo.fg }}>
+                            <span style={{ fontSize: 11, fontWeight: 600, padding: '1px 7px', borderRadius: 20, background: estilo.fg, color: '#fff'}}>
                               {etiqueta}
                             </span>
                           </div>
@@ -815,7 +815,7 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
                     })}
                   </div>
                   {configObj && (
-                    <div style={{ marginTop: 8, fontSize: 12, color: '#64748b', padding: '8px 12px', background: '#f8fafc', borderRadius: 8 }}>
+                    <div style={{ marginTop: 8, fontSize: 12, color: '#62666E', padding: '8px 12px', background: '#F8F9FA', borderRadius: 8 }}>
                       Vencimiento día <strong>{configObj.dia_vencimiento}</strong> de {periodo} · el monto sale de la <strong>tarifa pactada</strong> del socio si tiene una vigente en {periodo}, y si no del precio de lista de su categoría
                     </div>
                   )}
@@ -867,14 +867,14 @@ function EditarMontoModal({ cuota, onClose, onSaved }: { cuota: Cuota; onClose: 
       footer={<>
         <button className="btn-ghost" onClick={onClose}>Cancelar</button>
         <button onClick={handleSave} disabled={saving}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#6B4E79', color: '#fff', cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
           {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
           Guardar
         </button>
       </>}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ padding: '8px 12px', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, fontSize: 12, color: '#5b21b6' }}>
+        <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #4E3758', borderRadius: 8, fontSize: 12, color: '#4E3758' }}>
           Solo disponible para <strong>superadmin</strong>. El monto ya cobrado ({fmt$(pagado)}) no se ve afectado; solo se ajusta el saldo pendiente.
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -887,16 +887,16 @@ function EditarMontoModal({ cuota, onClose, onSaved }: { cuota: Cuota; onClose: 
             <input style={inp} type="number" min={0} step={0.01} value={descuento} onChange={e => setDescuento(e.target.value)} />
           </div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13 }}>
-          <span style={{ color: '#64748b' }}>Nuevo monto final</span>
-          <span style={{ fontWeight: 700, color: '#1e293b' }}>{fmt$(montoFinal)}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, fontSize: 13 }}>
+          <span style={{ color: '#62666E' }}>Nuevo monto final</span>
+          <span style={{ fontWeight: 700, color: '#26282D' }}>{fmt$(montoFinal)}</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13 }}>
-          <span style={{ color: '#64748b' }}>Nuevo saldo pendiente</span>
-          <span style={{ fontWeight: 700, color: nuevoSaldo > 0 ? '#d97706' : '#15803d' }}>{fmt$(nuevoSaldo)}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, fontSize: 13 }}>
+          <span style={{ color: '#62666E' }}>Nuevo saldo pendiente</span>
+          <span style={{ fontWeight: 700, color: nuevoSaldo > 0 ? '#B5761A' : '#1F7A50' }}>{fmt$(nuevoSaldo)}</span>
         </div>
         {error && (
-          <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>
+          <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 13, color: '#C23B3B' }}>
             {error}
           </div>
         )}
@@ -962,34 +962,34 @@ function ConfigConceptosModal({ onClose }: { onClose: () => void }) {
   return (
     <ModalShell modulo="golf-carritos" titulo="Concepto de Ingreso por Cuota" subtitulo="Para distribuir el corte POS a su partida de presupuesto" onClose={onClose} maxWidth={560}>
       {loading ? (
-        <div style={{ padding: 30, textAlign: 'center', color: '#94a3b8' }}><Loader size={16} className="animate-spin" /></div>
+        <div style={{ padding: 30, textAlign: 'center', color: '#7A7E87' }}><Loader size={16} className="animate-spin" /></div>
       ) : configs.length === 0 ? (
-        <div style={{ padding: 20, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>No hay tipos de cuota configurados.</div>
+        <div style={{ padding: 20, textAlign: 'center', color: '#7A7E87', fontSize: 13 }}>No hay tipos de cuota configurados.</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {error && (
-            <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>{error}</div>
+            <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 13, color: '#C23B3B' }}>{error}</div>
           )}
           {configs.map(c => (
-            <div key={`${c.tipo}-${c.nombre}`} style={{ padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+            <div key={`${c.tipo}-${c.nombre}`} style={{ padding: '10px 12px', border: '1px solid #E6E8EB', borderRadius: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ flex: '1 1 auto', minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{c.nombre}</div>
-                  <div style={{ fontSize: 11, color: '#94a3b8' }}>{TIPOS_LABEL[c.tipo] ?? c.tipo}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>{c.nombre}</div>
+                  <div style={{ fontSize: 11, color: '#7A7E87' }}>{TIPOS_LABEL[c.tipo] ?? c.tipo}</div>
                 </div>
-                {saving === c.id && <Loader size={13} className="animate-spin" style={{ color: '#94a3b8' }} />}
+                {saving === c.id && <Loader size={13} className="animate-spin" style={{ color: '#7A7E87' }} />}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
                 <div>
-                  <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 2 }}>Producto POS (fuente real de facturación)</div>
+                  <div style={{ fontSize: 10, color: '#7A7E87', marginBottom: 2 }}>Producto POS (fuente real de facturación)</div>
                   <ProductoPosSelect idCentroFk={idCentroMembresias} value={c.id_producto_pos_fk} onChange={id => guardarProducto(c, id)}
                     style={{ width: '100%', padding: '6px 8px', fontSize: 12, borderRadius: 6 }} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 2 }}>Concepto de ingreso (respaldo si no hay producto)</div>
+                  <div style={{ fontSize: 10, color: '#7A7E87', marginBottom: 2 }}>Concepto de ingreso (respaldo si no hay producto)</div>
                   <select value={c.id_concepto_ingreso_fk ?? ''} disabled={saving === c.id}
                     onChange={e => guardarConcepto(c, e.target.value ? Number(e.target.value) : null)}
-                    style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none' }}>
+                    style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 6, fontFamily: 'inherit', outline: 'none' }}>
                     <option value="">— Sin asignar (cae en "Otros") —</option>
                     {conceptos.map(co => <option key={co.id} value={co.id}>{co.nombre}</option>)}
                   </select>
@@ -1136,28 +1136,28 @@ function TarifasPactadasModal({ onClose, authUser }: { onClose: () => void; auth
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {error && (
-          <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{error}</div>
+          <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>{error}</div>
         )}
 
         {showForm && (
-          <div style={{ padding: 14, border: '1px solid #ddd6fe', background: '#faf5ff', borderRadius: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ padding: 14, border: '1px solid #E6E8EB', background: '#F4F5F7', borderRadius: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={lbl}>Socio *</label>
                 {socioSel ? (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#fff', border: '1px solid #c4b5fd', borderRadius: 8 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#3b0764' }}>{nc(socioSel)}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#fff', border: '1px solid #C9CCD3', borderRadius: 8 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#3D2A45' }}>{nc(socioSel)}</span>
                     <button onClick={() => { setSocioSel(null); setSocioSearch('') }}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={13} /></button>
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2 }}><X size={13} /></button>
                   </div>
                 ) : (
                   <>
                     <input style={inp} placeholder="Nombre o número de socio…" value={socioSearch} onChange={e => setSocioSearch(e.target.value)} />
                     {socios.length > 0 && (
-                      <div style={{ marginTop: 4, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', overflow: 'hidden' }}>
+                      <div style={{ marginTop: 4, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', overflow: 'hidden' }}>
                         {socios.map(so => (
                           <button key={so.id} onClick={() => { setSocioSel(so); setSocios([]) }}
-                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 12px', fontSize: 13, background: 'none', border: 'none', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', fontFamily: 'inherit', color: '#1e293b' }}>
+                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 12px', fontSize: 13, background: 'none', border: 'none', borderBottom: '1px solid #F4F5F7', cursor: 'pointer', fontFamily: 'inherit', color: '#26282D' }}>
                             {nc(so)}
                           </button>
                         ))}
@@ -1174,20 +1174,20 @@ function TarifasPactadasModal({ onClose, authUser }: { onClose: () => void; auth
                 </select>
               </div>
               <div>
-                <label style={lbl}>Monto pactado * <span style={{ fontWeight: 400, color: '#94a3b8' }}>(IVA incluido)</span></label>
+                <label style={lbl}>Monto pactado * <span style={{ fontWeight: 400, color: '#7A7E87' }}>(IVA incluido)</span></label>
                 <input style={inp} type="number" min={0} step={0.01} value={monto} onChange={e => setMonto(e.target.value)} placeholder="0.00" />
                 {precioLista != null && (
-                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 3 }}>
+                  <div style={{ fontSize: 11, color: '#62666E', marginTop: 3 }}>
                     Precio de lista de su categoría: <strong>{fmt$(precioLista)}</strong>
                   </div>
                 )}
               </div>
               <div>
-                <label style={lbl}>Vigente desde <span style={{ fontWeight: 400, color: '#94a3b8' }}>(periodo)</span></label>
+                <label style={lbl}>Vigente desde <span style={{ fontWeight: 400, color: '#7A7E87' }}>(periodo)</span></label>
                 <input style={inp} type="month" value={desde} onChange={e => setDesde(e.target.value)} />
               </div>
               <div>
-                <label style={lbl}>Vigente hasta <span style={{ fontWeight: 400, color: '#94a3b8' }}>(opcional)</span></label>
+                <label style={lbl}>Vigente hasta <span style={{ fontWeight: 400, color: '#7A7E87' }}>(opcional)</span></label>
                 <input style={inp} type="month" value={hasta} onChange={e => setHasta(e.target.value)} />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
@@ -1196,7 +1196,7 @@ function TarifasPactadasModal({ onClose, authUser }: { onClose: () => void; auth
                   placeholder="Convenio firmado 2026, membresía de cortesía, tarifa de lanzamiento…" />
               </div>
             </div>
-            <div style={{ fontSize: 11, color: '#64748b' }}>
+            <div style={{ fontSize: 11, color: '#62666E' }}>
               La vigencia se compara contra el <strong>periodo</strong> de la cuota, no contra la fecha de captura. Sin fechas, la tarifa aplica a todos los periodos. Monto <strong>0</strong> = cortesía: no se genera cargo.
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -1209,42 +1209,42 @@ function TarifasPactadasModal({ onClose, authUser }: { onClose: () => void; auth
         )}
 
         {loading ? (
-          <div style={{ padding: 30, textAlign: 'center', color: '#94a3b8' }}><Loader size={16} className="animate-spin" /></div>
+          <div style={{ padding: 30, textAlign: 'center', color: '#7A7E87' }}><Loader size={16} className="animate-spin" /></div>
         ) : rows.length === 0 ? (
-          <div style={{ padding: '24px 20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+          <div style={{ padding: '24px 20px', textAlign: 'center', color: '#7A7E87', fontSize: 13 }}>
             Sin tarifas pactadas. Todos los cargos nacen al precio de lista de la categoría del socio.
           </div>
         ) : (
-          <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'auto' }}>
+          <div style={{ border: '1px solid #E6E8EB', borderRadius: 10, overflow: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
-                <tr style={{ background: '#f8fafc' }}>
+                <tr style={{ background: '#F8F9FA' }}>
                   {['Socio', 'Cuota', 'Pactado', 'Vigencia', 'Motivo', ''].map((h, i) => (
-                    <th key={h + i} style={{ padding: '8px 10px', textAlign: i === 2 ? 'right' : 'left', fontWeight: 600, color: '#475569', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
+                    <th key={h + i} style={{ padding: '8px 10px', textAlign: i === 2 ? 'right' : 'left', fontWeight: 600, color: '#4A4D54', borderBottom: '1px solid #E6E8EB', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {rows.map(r => (
-                  <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '8px 10px', color: '#1e293b' }}>
+                  <tr key={r.id} style={{ borderBottom: '1px solid #F4F5F7' }}>
+                    <td style={{ padding: '8px 10px', color: '#26282D' }}>
                       {nc(r.cat_socios ?? null)}
-                      {r.cat_socios?.numero_socio && <span style={{ color: '#94a3b8' }}> · {r.cat_socios.numero_socio}</span>}
+                      {r.cat_socios?.numero_socio && <span style={{ color: '#7A7E87' }}> · {r.cat_socios.numero_socio}</span>}
                     </td>
-                    <td style={{ padding: '8px 10px', color: '#475569' }}>
+                    <td style={{ padding: '8px 10px', color: '#4A4D54' }}>
                       {r.cat_cuotas_config?.nombre ?? '—'}
-                      <span style={{ color: '#94a3b8' }}> · {TIPOS_LABEL[r.cat_cuotas_config?.tipo ?? ''] ?? r.cat_cuotas_config?.tipo ?? ''}</span>
+                      <span style={{ color: '#7A7E87' }}> · {TIPOS_LABEL[r.cat_cuotas_config?.tipo ?? ''] ?? r.cat_cuotas_config?.tipo ?? ''}</span>
                     </td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 700, color: Number(r.monto) === 0 ? '#94a3b8' : '#7c3aed', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 700, color: Number(r.monto) === 0 ? '#7A7E87' : '#6B4E79', whiteSpace: 'nowrap' }}>
                       {Number(r.monto) === 0 ? 'Cortesía' : fmt$(Number(r.monto))}
                     </td>
-                    <td style={{ padding: '8px 10px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '8px 10px', color: '#62666E', whiteSpace: 'nowrap' }}>
                       {r.vigente_desde ?? '—'} a {r.vigente_hasta ?? '—'}
                     </td>
-                    <td style={{ padding: '8px 10px', color: '#64748b' }}>{r.motivo_excepcion}</td>
+                    <td style={{ padding: '8px 10px', color: '#62666E' }}>{r.motivo_excepcion}</td>
                     <td style={{ padding: '8px 10px', textAlign: 'right' }}>
                       <button onClick={() => desactivar(r)} title="Desactivar tarifa"
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: 2 }}>
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#C23B3B', padding: 2 }}>
                         <Trash2 size={13} />
                       </button>
                     </td>
@@ -1362,10 +1362,10 @@ export default function CuotasGolfPage() {
       <PageHeader
         backHref="/golf/administracion"
         icon={CreditCard}
-        color="#7c3aed"
+        color="#6B4E79"
         eyebrowLabel="Cuotas"
         title="Asignación de Cuotas"
-        subtitle={<>Administra las cuotas asignadas — para cobrar ve a <Link href="/golf/cxc" style={{ color: '#2563eb', textDecoration: 'none' }}>CXC Golf</Link></>}
+        subtitle={<>Administra las cuotas asignadas — para cobrar ve a <Link href="/golf/cxc" style={{ color: '#1C1D21', textDecoration: 'none' }}>CXC Golf</Link></>}
         actions={<>
           <button className="btn-ghost" onClick={fetchCuotas} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <RefreshCw size={13} /> Actualizar
@@ -1381,7 +1381,7 @@ export default function CuotasGolfPage() {
                 <Tag size={13} /> Tarifas pactadas
               </button>
               <button className="btn-ghost" onClick={() => setShowMasivo(true)}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#7c3aed', borderColor: '#ddd6fe' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#6B4E79', borderColor: '#E6E8EB' }}>
                 <Zap size={13} /> Generar masivo
               </button>
               <button className="btn-primary" onClick={() => setShowNueva(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1395,23 +1395,23 @@ export default function CuotasGolfPage() {
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 220px', maxWidth: 300 }}>
-          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-          <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }}
+          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
+          <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }}
             placeholder="Socio, concepto, período…" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
-          {busqueda && <button onClick={() => setBusqueda('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+          {busqueda && <button onClick={() => setBusqueda('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2 }}><X size={12} /></button>}
         </div>
         <select value={filtroCat} onChange={e => setFiltroCat(e.target.value)}
-          style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
+          style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
           <option value="">Todas las categorías</option>
           {categorias.map(c => <option key={c.id} value={String(c.id)}>{c.nombre}</option>)}
         </select>
         <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}
-          style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
+          style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
           <option value="">Todos los tipos</option>
           {TIPO_OPTS.filter(Boolean).map(t => <option key={t} value={t}>{TIPOS_LABEL[t]}</option>)}
         </select>
         <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}
-          style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
+          style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
           <option value="">Todos los status</option>
           {STATUS_OPTS.filter(Boolean).map(s => <option key={s} value={s}>{STATUS_LABEL[s] ?? s}</option>)}
         </select>
@@ -1421,17 +1421,17 @@ export default function CuotasGolfPage() {
         <button className="btn-ghost" onClick={colapsarTodo} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '7px 10px' }}>
           <ChevronRight size={12} /> Contraer todo
         </button>
-        <span style={{ fontSize: 12, color: '#94a3b8', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 12, color: '#7A7E87', whiteSpace: 'nowrap' }}>
           {grupos.length} socio{grupos.length !== 1 ? 's' : ''} · {cuotasF.length} cuota{cuotasF.length !== 1 ? 's' : ''}
-          {totalPendiente > 0 && <span style={{ marginLeft: 8, color: '#d97706', fontWeight: 600 }}>· Pendiente: {fmt$(totalPendiente)}</span>}
+          {totalPendiente > 0 && <span style={{ marginLeft: 8, color: '#B5761A', fontWeight: 600 }}>· Pendiente: {fmt$(totalPendiente)}</span>}
         </span>
       </div>
 
       {/* Vista agrupada por socio */}
       {loading ? (
-        <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}><Loader size={18} className="animate-spin" /></div>
+        <div style={{ padding: '40px', textAlign: 'center', color: '#7A7E87' }}><Loader size={18} className="animate-spin" /></div>
       ) : grupos.length === 0 ? (
-        <div className="card" style={{ padding: '56px', textAlign: 'center', color: '#94a3b8' }}>
+        <div className="card" style={{ padding: '56px', textAlign: 'center', color: '#7A7E87' }}>
           <CreditCard size={32} style={{ display: 'block', margin: '0 auto 10px', opacity: 0.3 }} />
           <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin cuotas</div>
           <div style={{ fontSize: 12 }}>No hay registros con los filtros actuales</div>
@@ -1445,19 +1445,19 @@ export default function CuotasGolfPage() {
                 {/* Cabecera de grupo */}
                 <button
                   onClick={() => toggleGrupo(g.socioId)}
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#f8fafc', border: 'none', borderBottom: exp ? '1px solid #e2e8f0' : 'none', cursor: 'pointer', textAlign: 'left' }}>
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#F8F9FA', border: 'none', borderBottom: exp ? '1px solid #E6E8EB' : 'none', cursor: 'pointer', textAlign: 'left' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    {exp ? <ChevronDown size={14} style={{ color: '#94a3b8' }} /> : <ChevronRight size={14} style={{ color: '#94a3b8' }} />}
-                    <span style={{ fontSize: 14, fontWeight: 600, color: '#1e293b' }}>{g.nombre}</span>
-                    <span style={{ fontSize: 11, color: '#94a3b8', background: '#e2e8f0', borderRadius: 20, padding: '1px 8px' }}>
+                    {exp ? <ChevronDown size={14} style={{ color: '#7A7E87' }} /> : <ChevronRight size={14} style={{ color: '#7A7E87' }} />}
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#26282D' }}>{g.nombre}</span>
+                    <span style={{ fontSize: 11, color: '#7A7E87', background: '#E6E8EB', borderRadius: 20, padding: '1px 8px' }}>
                       {g.cuotas.length} cuota{g.cuotas.length !== 1 ? 's' : ''}
                     </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 12 }}>
                     {g.totalPendiente > 0 && (
-                      <span style={{ color: '#d97706', fontWeight: 600 }}>Pendiente: {fmt$(g.totalPendiente)}</span>
+                      <span style={{ color: '#B5761A', fontWeight: 600 }}>Pendiente: {fmt$(g.totalPendiente)}</span>
                     )}
-                    <span style={{ color: '#64748b' }}>Total: {fmt$(g.totalTotal)}</span>
+                    <span style={{ color: '#62666E' }}>Total: {fmt$(g.totalTotal)}</span>
                   </div>
                 </button>
 
@@ -1468,7 +1468,7 @@ export default function CuotasGolfPage() {
                     <thead>
                       <tr style={{ background: '#fafafa' }}>
                         {['Concepto', 'Tipo', 'Período', 'Vencimiento', 'Monto', 'Status', ...(esSuperAdmin ? [''] : [])].map(h => (
-                          <th key={h} style={{ padding: '8px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
+                          <th key={h} style={{ padding: '8px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -1479,30 +1479,30 @@ export default function CuotasGolfPage() {
                         const st = STATUS_STYLE[stKey] ?? STATUS_STYLE.PENDIENTE
                         const saldo = c.saldo ?? c.monto_final
                         return (
-                          <tr key={c.id} style={{ borderTop: '1px solid #f1f5f9' }}
-                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#fafffe'}
+                          <tr key={c.id} style={{ borderTop: '1px solid #F4F5F7' }}
+                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F4F5F7'}
                             onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
-                            <td style={{ padding: '8px 14px', color: '#475569', maxWidth: 220 }}>{c.concepto}</td>
+                            <td style={{ padding: '8px 14px', color: '#4A4D54', maxWidth: 220 }}>{c.concepto}</td>
                             <td style={{ padding: '8px 14px' }}>
-                              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: '#475569' }}>
+                              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#F4F5F7', color: '#4A4D54' }}>
                                 {TIPOS_LABEL[c.tipo] ?? c.tipo}
                               </span>
                             </td>
-                            <td style={{ padding: '8px 14px', color: '#64748b', fontSize: 12, whiteSpace: 'nowrap' }}>{c.periodo ?? '—'}</td>
-                            <td style={{ padding: '8px 14px', color: venc ? '#dc2626' : '#64748b', fontSize: 12, whiteSpace: 'nowrap' }}>
+                            <td style={{ padding: '8px 14px', color: '#62666E', fontSize: 12, whiteSpace: 'nowrap' }}>{c.periodo ?? '—'}</td>
+                            <td style={{ padding: '8px 14px', color: venc ? '#C23B3B' : '#62666E', fontSize: 12, whiteSpace: 'nowrap' }}>
                               {c.fecha_vencimiento ? new Date(c.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                             </td>
-                            <td style={{ padding: '8px 14px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>
+                            <td style={{ padding: '8px 14px', fontWeight: 600, color: '#26282D', whiteSpace: 'nowrap' }}>
                               {fmt$(saldo)}
                               {c.status === 'PAGO_PARCIAL' && saldo !== c.monto_final && (
-                                <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 4, textDecoration: 'line-through' }}>{fmt$(c.monto_final)}</span>
+                                <span style={{ fontSize: 10, color: '#7A7E87', marginLeft: 4, textDecoration: 'line-through' }}>{fmt$(c.monto_final)}</span>
                               )}
                               {c.status !== 'PAGO_PARCIAL' && c.descuento > 0 && (
-                                <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 4, textDecoration: 'line-through' }}>{fmt$(c.monto_original)}</span>
+                                <span style={{ fontSize: 10, color: '#7A7E87', marginLeft: 4, textDecoration: 'line-through' }}>{fmt$(c.monto_original)}</span>
                               )}
                             </td>
                             <td style={{ padding: '8px 14px' }}>
-                              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 20, background: st.bg, color: st.color }}>
+                              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 20, background: st.color, color: '#fff'}}>
                                 {venc ? 'Vencida' : STATUS_LABEL[c.status] ?? c.status}
                               </span>
                             </td>
@@ -1513,8 +1513,8 @@ export default function CuotasGolfPage() {
                                     <button
                                       onClick={() => setEditando(c)}
                                       title="Modificar monto"
-                                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 7px', fontSize: 11, border: '1px solid #ddd6fe', borderRadius: 6, background: '#fff', color: '#7c3aed', cursor: 'pointer' }}
-                                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#f5f3ff' }}
+                                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 7px', fontSize: 11, border: '1px solid #E6E8EB', borderRadius: 6, background: '#fff', color: '#6B4E79', cursor: 'pointer' }}
+                                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F4F5F7' }}
                                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff' }}>
                                       <Pencil size={12} />
                                     </button>
@@ -1522,8 +1522,8 @@ export default function CuotasGolfPage() {
                                   <button
                                     onClick={() => deleteCuota(c.id)}
                                     title="Eliminar cuota"
-                                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 7px', fontSize: 11, border: '1px solid #fecaca', borderRadius: 6, background: '#fff', color: '#dc2626', cursor: 'pointer' }}
-                                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#fef2f2' }}
+                                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 7px', fontSize: 11, border: '1px solid #E6E8EB', borderRadius: 6, background: '#fff', color: '#C23B3B', cursor: 'pointer' }}
+                                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F4F5F7' }}
                                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff' }}>
                                     <Trash2 size={12} />
                                   </button>

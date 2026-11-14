@@ -397,7 +397,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
       <div style={{ padding: '10px 12px 16px', borderTop: '1px solid var(--surface-800)' }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8,
-          padding: '8px 10px', background: '#f8fafc', borderRadius: 8,
+          padding: '8px 10px', background: '#F8F9FA', borderRadius: 8,
         }}>
           <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <User size={14} style={{ color: '#fff' }} />
@@ -418,7 +418,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
             padding: '7px 10px', background: 'none', border: 'none', cursor: 'pointer',
             color: 'var(--text-muted)', fontSize: 12, borderRadius: 6, transition: 'all 0.15s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#dc2626' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#E6E8EB'; e.currentTarget.style.color = '#C23B3B' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-muted)' }}
         >
           <LogOut size={13} />

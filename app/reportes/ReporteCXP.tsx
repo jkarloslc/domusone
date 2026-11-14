@@ -11,11 +11,11 @@ const diasVenc = (fecha: string | null) => {
 }
 
 const banda = (dias: number) => {
-  if (dias <= 0)  return { label: 'Por vencer',  color: '#15803d' }
-  if (dias <= 30) return { label: '1-30 días',   color: '#d97706' }
-  if (dias <= 60) return { label: '31-60 días',  color: '#ea580c' }
-  if (dias <= 90) return { label: '61-90 días',  color: '#dc2626' }
-  return             { label: '+90 días',        color: '#7f1d1d' }
+  if (dias <= 0)  return { label: 'Por vencer',  color: '#1F7A50' }
+  if (dias <= 30) return { label: '1-30 días',   color: '#B5761A' }
+  if (dias <= 60) return { label: '31-60 días',  color: '#C8642A' }
+  if (dias <= 90) return { label: '61-90 días',  color: '#C23B3B' }
+  return             { label: '+90 días',        color: '#8C2A2A' }
 }
 
 export default function ReporteCXP() {
@@ -118,7 +118,7 @@ export default function ReporteCXP() {
               const b = banda(r.dias)
               return (
                 <tr key={i}>
-                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
+                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
                   <td style={{ fontSize: 12 }}>{r.id_proveedor_fk ? (provMap[r.id_proveedor_fk] ?? '—') : '—'}</td>
                   <td style={{ fontSize: 12, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.concepto ?? '—'}</td>
                   <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{catTG.nombre(r.id_tipo_gasto_fk) ?? '—'}</td>
@@ -127,11 +127,11 @@ export default function ReporteCXP() {
                     {fmtF(r.fecha_vencimiento)}
                   </td>
                   <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{fmt(r.monto)}</td>
-                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 12, color: '#15803d' }}>{fmt(r.monto_pagado ?? 0)}</td>
+                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 12, color: '#1F7A50' }}>{fmt(r.monto_pagado ?? 0)}</td>
                   <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: b.color }}>{fmt(r.saldo ?? r.monto)}</td>
                   <td>
                     <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                      color: b.color, background: b.color + '15', border: `1px solid ${b.color}40` }}>
+                      color: '#fff', background: b.color, border: `1px solid ${b.color}` }}>
                       {b.label}
                     </span>
                   </td>

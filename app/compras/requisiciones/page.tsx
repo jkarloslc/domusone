@@ -199,13 +199,13 @@ export default function RequisicionesPage() {
               <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Sin requisiciones</td></tr>
             ) : rows.map(r => (
               <tr key={r.id}>
-                <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
+                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
                 <td style={{ fontSize: 13 }}>{r.area_solicitante}</td>
                 <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{r.solicitante}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{fmtFecha(r.fecha_solicitud)}</td>
                 <td style={{ fontSize: 12, color: r.fecha_requerida ? 'var(--text-secondary)' : 'var(--text-muted)' }}>{fmtFecha(r.fecha_requerida)}</td>
                 <td>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: r.prioridad === 'Crítica' ? '#dc2626' : r.prioridad === 'Urgente' ? '#d97706' : '#64748b' }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: r.prioridad === 'Crítica' ? '#C23B3B' : r.prioridad === 'Urgente' ? '#B5761A' : '#62666E' }}>
                     {r.prioridad}
                   </span>
                 </td>
@@ -217,7 +217,7 @@ export default function RequisicionesPage() {
                       <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setModal(r)} title="Editar"><Edit2 size={13} /></button>
                     )}
                     {canWrite('requisiciones') && !ESTADOS_NO_CANCELABLES.includes(r.status) && (
-                      <button className="btn-ghost" style={{ padding: '4px 6px', color: '#dc2626' }}
+                      <button className="btn-ghost" style={{ padding: '4px 6px', color: '#C23B3B' }}
                         onClick={() => { setCancelando(r); setMotivoCancel(''); setCancelError('') }} title="Cancelar requisición">
                         <Ban size={13} />
                       </button>
@@ -249,19 +249,19 @@ export default function RequisicionesPage() {
           footer={<>
             <button className="btn-secondary" onClick={() => setCancelando(null)} disabled={savingCancel}>Cerrar</button>
             <button onClick={handleCancelar} disabled={savingCancel}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 7, background: '#dc2626', color: '#fff', cursor: 'pointer', opacity: savingCancel ? 0.6 : 1 }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 7, background: '#C23B3B', color: '#fff', cursor: 'pointer', opacity: savingCancel ? 0.6 : 1 }}>
               {savingCancel ? <Loader size={13} className="animate-spin" /> : <Ban size={14} />} {savingCancel ? 'Cancelando…' : 'Confirmar cancelación'}
             </button>
           </>}
         >
-          <p style={{ fontSize: 13, color: '#475569', marginBottom: 16, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 13, color: '#4A4D54', marginBottom: 16, lineHeight: 1.5 }}>
             Solo se puede cancelar si no existe una Orden de Compra generada a partir de esta requisición.
             Si tiene una Cotización (RFQ) asociada sin OC, también se cancelará. Esta acción no se puede deshacer.
           </p>
-          {cancelError && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13, marginBottom: 16 }}>{cancelError}</div>}
-          <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Motivo de cancelación</label>
+          {cancelError && <div style={{ padding: '10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13, marginBottom: 16 }}>{cancelError}</div>}
+          <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>Motivo de cancelación</label>
           <textarea
-            style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', height: 72, resize: 'vertical', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, fontFamily: 'inherit', outline: 'none', height: 72, resize: 'vertical', boxSizing: 'border-box' }}
             value={motivoCancel} onChange={e => setMotivoCancel(e.target.value)} placeholder="Opcional…" />
         </ModalShell>
       )}
@@ -312,37 +312,37 @@ async function imprimirRequisicion(req: any, det: any[]) {
   } catch {}
   const logoHtml = orgLogo
     ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-    : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+    : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
 
-  const prioridadColor = req.prioridad === 'Crítica' ? '#dc2626' : req.prioridad === 'Urgente' ? '#d97706' : '#64748b'
+  const prioridadColor = req.prioridad === 'Crítica' ? '#C23B3B' : req.prioridad === 'Urgente' ? '#B5761A' : '#62666E'
   const filasDet = det.map(d =>
     `<tr>
-      <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13px">${d.descripcion ?? '—'}</td>
-      <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;font-size:13px;font-weight:600">${d.cantidad ?? ''}</td>
-      <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:12px;color:#64748b">${d.unidad ?? ''}</td>
-      <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:11px;color:#94a3b8">${d.notas ?? ''}</td>
+      <td style="padding:7px 10px;border:1px solid #E6E8EB;font-size:13px">${d.descripcion ?? '—'}</td>
+      <td style="padding:7px 10px;border:1px solid #E6E8EB;text-align:right;font-size:13px;font-weight:600">${d.cantidad ?? ''}</td>
+      <td style="padding:7px 10px;border:1px solid #E6E8EB;font-size:12px;color:#62666E">${d.unidad ?? ''}</td>
+      <td style="padding:7px 10px;border:1px solid #E6E8EB;font-size:11px;color:#7A7E87">${d.notas ?? ''}</td>
     </tr>`
   ).join('')
 
   const html = `<!DOCTYPE html><html><head><title>Requisición ${req.folio ?? 'Nueva'}</title>
     <style>
-      body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
-      .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
-      .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
-      .org-sub { font-size: 11px; color: #64748b; }
-      .doc-title { font-size: 14px; font-weight: 600; color: #0D4F80; margin-bottom: 2px; }
+      body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #26282D; }
+      .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #1C1D21; margin-bottom: 18px; }
+      .org-nombre { font-size: 18px; font-weight: 700; color: #1C1D21; margin: 0 0 2px; }
+      .org-sub { font-size: 11px; color: #62666E; }
+      .doc-title { font-size: 14px; font-weight: 600; color: #1C1D21; margin-bottom: 2px; }
       .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; margin-bottom: 18px; }
-      .info-item label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 2px; }
-      .info-item span { font-size: 13px; color: #1e293b; }
+      .info-item label { font-size: 10px; color: #7A7E87; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 2px; }
+      .info-item span { font-size: 13px; color: #26282D; }
       table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-      thead th { background: #f1f5f9; padding: 8px 10px; font-size: 10px; text-transform: uppercase;
-        letter-spacing: 0.05em; text-align: left; border: 1px solid #e2e8f0; color: #64748b; }
+      thead th { background: #F4F5F7; padding: 8px 10px; font-size: 10px; text-transform: uppercase;
+        letter-spacing: 0.05em; text-align: left; border: 1px solid #E6E8EB; color: #62666E; }
       thead th.right { text-align: right; }
       .firmas { display: flex; gap: 40px; margin-top: 64px; justify-content: space-around; }
       .firma { text-align: center; min-width: 160px; }
-      .firma-linea { border-top: 1px solid #1e293b; padding-top: 8px; margin-top: 48px; font-size: 11px; color: #64748b; }
-      .firma-nombre { font-size: 12px; font-weight: 600; color: #1e293b; margin-bottom: 2px; }
-      .nota { font-size: 11px; color: #94a3b8; font-style: italic; margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 8px; }
+      .firma-linea { border-top: 1px solid #26282D; padding-top: 8px; margin-top: 48px; font-size: 11px; color: #62666E; }
+      .firma-nombre { font-size: 12px; font-weight: 600; color: #26282D; margin-bottom: 2px; }
+      .nota { font-size: 11px; color: #7A7E87; font-style: italic; margin-top: 20px; border-top: 1px solid #F4F5F7; padding-top: 8px; }
       @page { margin: 1.2cm; }
     </style></head><body>
     <div class="org-header">
@@ -353,8 +353,8 @@ async function imprimirRequisicion(req: any, det: any[]) {
       </div>
       <div style="margin-left:auto;text-align:right">
         <div class="doc-title">Requisición de Compra</div>
-        <div style="font-size:16px;font-weight:700;color:#0D4F80;font-family:monospace">${req.folio ?? 'Borrador'}</div>
-        <div style="font-size:11px;color:#64748b;margin-top:2px">Status: <strong>${req.status ?? 'Borrador'}</strong>
+        <div style="font-size:16px;font-weight:700;color:#1C1D21;font-variant-numeric:tabular-nums">${req.folio ?? 'Borrador'}</div>
+        <div style="font-size:11px;color:#62666E;margin-top:2px">Status: <strong>${req.status ?? 'Borrador'}</strong>
           &nbsp;·&nbsp; Prioridad: <span style="color:${prioridadColor};font-weight:600">${req.prioridad ?? 'Normal'}</span>
         </div>
       </div>
@@ -591,7 +591,7 @@ function RequisicionModal({ row, esAdminPleno, onClose, onSaved }: { row: any | 
       </>}
     >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+          {error && <div style={{ padding: '10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
 
           <Sec label="Datos de la Solicitud">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -655,7 +655,7 @@ function RequisicionModal({ row, esAdminPleno, onClose, onSaved }: { row: any | 
               ))}
             </div>
             {det.map((d, i) => (
-              <div key={i} style={{ marginBottom: 8, padding: '10px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+              <div key={i} style={{ marginBottom: 8, padding: '10px 12px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px', gap: 8, marginBottom: 8 }}>
                   {/* Buscador de artículo */}
                   <div style={{ position: 'relative' }}>
@@ -668,17 +668,17 @@ function RequisicionModal({ row, esAdminPleno, onClose, onSaved }: { row: any | 
                     />
                     {(artOptions[i]?.length ?? 0) > 0 && (
                       <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
-                        background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+                        background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8,
                         boxShadow: '0 4px 20px rgba(0,0,0,0.12)', maxHeight: 200, overflowY: 'auto' }}>
                         {artOptions[i].map(a => (
                           <button key={a.id}
                             onMouseDown={e => { e.preventDefault(); seleccionarArticulo(i, a) }}
                             style={{ display: 'block', width: '100%', textAlign: 'left',
                               padding: '8px 12px', background: 'none', border: 'none',
-                              cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                              cursor: 'pointer', borderBottom: '1px solid #F4F5F7' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                            <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)' }}>{a.clave}</span>
+                            <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--blue)' }}>{a.clave}</span>
                             <span style={{ fontSize: 13, marginLeft: 8 }}>{a.nombre}</span>
                             <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 6 }}>{a.unidad}</span>
                           </button>
@@ -754,11 +754,11 @@ function RequisicionDetail({ req, canAuth, onClose, onAuth, puedeCancelar, onCan
       footer={<>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <StatusBadge status={req.status} />
-          <span style={{ fontSize: 11, fontWeight: 600, color: req.prioridad === 'Crítica' ? '#dc2626' : req.prioridad === 'Urgente' ? '#d97706' : '#64748b' }}>● {req.prioridad}</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: req.prioridad === 'Crítica' ? '#C23B3B' : req.prioridad === 'Urgente' ? '#B5761A' : '#62666E' }}>● {req.prioridad}</span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {puedeCancelar && (
-            <button className="btn-secondary" style={{ fontSize: 12, color: '#dc2626' }} onClick={onCancelar}>
+            <button className="btn-secondary" style={{ fontSize: 12, color: '#C23B3B' }} onClick={onCancelar}>
               <Ban size={13} /> Cancelar
             </button>
           )}
@@ -803,7 +803,7 @@ function RequisicionDetail({ req, canAuth, onClose, onAuth, puedeCancelar, onCan
 
           {/* Panel autorización */}
           {canAuth && req.status === 'Enviada' && (
-            <div style={{ padding: '14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+            <div style={{ padding: '14px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8 }}>
               <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 10 }}>Autorización de Requisición</div>
               <textarea className="input" rows={2} value={comentario} onChange={e => setComent(e.target.value)}
                 placeholder="Comentario (opcional)" style={{ resize: 'vertical', marginBottom: 10 }} />
@@ -812,7 +812,7 @@ function RequisicionDetail({ req, canAuth, onClose, onAuth, puedeCancelar, onCan
                   <CheckCircle size={13} /> Aprobar
                 </button>
                 <button onClick={() => onAuth(req.id, false, comentario)}
-                  style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px', borderRadius: 7, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font-body)' }}>
+                  style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px', borderRadius: 7, background: '#F4F5F7', color: '#C23B3B', border: '1px solid #E6E8EB', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font-body)' }}>
                   <XCircle size={13} /> Rechazar
                 </button>
               </div>
@@ -825,7 +825,7 @@ function RequisicionDetail({ req, canAuth, onClose, onAuth, puedeCancelar, onCan
 
 const Sec = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div>
-    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, paddingBottom: 4, borderBottom: '1px solid #e2e8f0' }}>{label}</div>
+    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, paddingBottom: 4, borderBottom: '1px solid #E6E8EB' }}>{label}</div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{children}</div>
   </div>
 )

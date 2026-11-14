@@ -33,11 +33,11 @@ const TIPOS = ['Local Comercial', 'Oficina', 'Bodega', 'Terreno', 'Otro']
 const STATUSES = ['Libre', 'Rentada', 'Ocupada', 'Mantenimiento', 'Bloqueada']
 
 const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
-  'Libre':         { bg: '#dcfce7', color: '#16a34a' },
-  'Rentada':       { bg: '#dbeafe', color: '#1d4ed8' },
-  'Ocupada':       { bg: '#fef9c3', color: '#b45309' },
-  'Mantenimiento': { bg: '#f3e8ff', color: '#7c3aed' },
-  'Bloqueada':     { bg: '#fee2e2', color: '#dc2626' },
+  'Libre':         { bg: '#E6E8EB', color: '#267F56' },
+  'Rentada':       { bg: '#E6E8EB', color: '#26282D' },
+  'Ocupada':       { bg: '#E6E8EB', color: '#96600F' },
+  'Mantenimiento': { bg: '#E6E8EB', color: '#6B4E79' },
+  'Bloqueada':     { bg: '#E6E8EB', color: '#C23B3B' },
 }
 
 export default function PropiedadesPage() {
@@ -171,15 +171,15 @@ export default function PropiedadesPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(120px, 1fr))', gap: 10, marginBottom: 18 }}>
         {[
-          { label: 'Total', value: total, color: '#1d4ed8', bg: '#eff6ff' },
-          { label: 'Libres', value: kpis.libres, color: '#16a34a', bg: '#f0fdf4' },
-          { label: 'Rentadas', value: kpis.rentadas, color: '#1d4ed8', bg: '#eff6ff' },
-          { label: 'Ocupadas', value: kpis.ocupadas, color: '#b45309', bg: '#fffbeb' },
-          { label: 'Mantenimiento', value: kpis.mantenimiento, color: '#7c3aed', bg: '#f5f3ff' },
+          { label: 'Total', value: total, color: '#26282D', bg: '#F4F5F7' },
+          { label: 'Libres', value: kpis.libres, color: '#267F56', bg: '#F4F5F7' },
+          { label: 'Rentadas', value: kpis.rentadas, color: '#26282D', bg: '#F4F5F7' },
+          { label: 'Ocupadas', value: kpis.ocupadas, color: '#96600F', bg: '#F4F5F7' },
+          { label: 'Mantenimiento', value: kpis.mantenimiento, color: '#6B4E79', bg: '#F4F5F7' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '12px 14px', background: k.bg }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>{k.label}</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: k.color }}>{k.value}</div>
+          <div key={k.label} className="card" style={{ padding: '12px 14px', background: '#fff' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{k.value}</div>
           </div>
         ))}
       </div>
@@ -214,23 +214,23 @@ export default function PropiedadesPage() {
             ) : items.length === 0 ? (
               <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Sin registros</td></tr>
             ) : items.map((c, i) => {
-              const sc = STATUS_COLOR[c.status] ?? { bg: '#f1f5f9', color: '#64748b' }
+              const sc = STATUS_COLOR[c.status] ?? { bg: '#F4F5F7', color: '#62666E' }
               return (
                 <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
-                  <td style={{ padding: '10px 14px', fontWeight: 600, color: '#0f766e', fontFamily: 'monospace' }}>{c.clave}</td>
+                  <td style={{ padding: '10px 14px', fontWeight: 600, color: '#126B63', fontVariantNumeric: 'tabular-nums' }}>{c.clave}</td>
                   <td style={{ padding: '10px 14px', color: 'var(--text-primary)' }}>{c.nombre ?? '—'}</td>
                   <td style={{ padding: '10px 14px', color: 'var(--text-muted)' }}>{c.ubicacion ?? '—'}</td>
                   <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>{c.tipo ?? 'Local Comercial'}</td>
                   <td style={{ padding: '10px 14px', color: 'var(--text-muted)' }}>{c.metros2 ?? '—'}</td>
                   <td style={{ padding: '10px 14px' }}>
-                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: sc.bg, color: sc.color }}>
+                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: sc.color, color: '#fff'}}>
                       {c.status ?? 'Libre'}
                     </span>
                   </td>
                   <td style={{ padding: '10px 14px' }}>
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                       {puedeEscribir && <button className="btn-ghost" style={{ padding: '4px 8px' }} onClick={() => openEdit(c)}><Edit2 size={13} /></button>}
-                      {puedeEliminar && <button className="btn-ghost" style={{ padding: '4px 8px', color: '#dc2626' }} disabled={deleting === c.id} onClick={() => handleDelete(c.id)}><Trash2 size={13} /></button>}
+                      {puedeEliminar && <button className="btn-ghost" style={{ padding: '4px 8px', color: '#C23B3B' }} disabled={deleting === c.id} onClick={() => handleDelete(c.id)}><Trash2 size={13} /></button>}
                     </div>
                   </td>
                 </tr>
@@ -280,7 +280,7 @@ export default function PropiedadesPage() {
               <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Producto POS (renta de esta propiedad)</label>
               <ProductoPosSelect idCentroFk={idCentroVentaLocales} value={form.id_producto_pos_fk}
                 onChange={id => setForm(f => ({ ...f, id_producto_pos_fk: id }))} style={{ width: '100%' }} />
-              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>
+              <div style={{ fontSize: 11, color: '#7A7E87', marginTop: 3 }}>
                 Fuente real de clasificación del ticket (concepto de ingreso + clave SAT). Si no se asigna, se usa el concepto de ingreso de abajo como respaldo.
               </div>
             </div>
@@ -293,7 +293,7 @@ export default function PropiedadesPage() {
                 <option value="">— Usar el concepto global de Locales —</option>
                 {conceptosIngreso.map(co => <option key={co.id} value={co.id}>{co.nombre}</option>)}
               </select>
-              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>
+              <div style={{ fontSize: 11, color: '#7A7E87', marginTop: 3 }}>
                 Solo aplica si la propiedad no tiene producto POS asignado arriba.
               </div>
             </div>
@@ -308,7 +308,7 @@ export default function PropiedadesPage() {
               <label htmlFor="activo-prop" style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Activa</label>
             </div>
 
-            {err && <div style={{ gridColumn: 'span 2', fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{err}</div>}
+            {err && <div style={{ gridColumn: 'span 2', fontSize: 12, color: '#C23B3B', background: '#F4F5F7', padding: '8px 12px', borderRadius: 6 }}>{err}</div>}
           </div>
         </ModalShell>
       )}

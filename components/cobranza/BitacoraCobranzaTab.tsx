@@ -34,12 +34,12 @@ const SEGUIMIENTOS = [
 ] as const
 
 const SEG_STYLE: Record<string, { bg: string; color: string }> = {
-  'Contactar de nuevo': { bg: '#fffbeb', color: '#d97706' },
-  'Sin respuesta':      { bg: '#f8fafc', color: '#64748b' },
-  'Pago prometido':     { bg: '#f5f3ff', color: '#7c3aed' },
-  'En mora':            { bg: '#fef2f2', color: '#dc2626' },
-  'Gestión jurídica':   { bg: '#fff7ed', color: '#9a3412' },
-  'Cerrado':            { bg: '#f0fdf4', color: '#15803d' },
+  'Contactar de nuevo': { bg: '#F4F5F7', color: '#B5761A' },
+  'Sin respuesta':      { bg: '#F8F9FA', color: '#62666E' },
+  'Pago prometido':     { bg: '#F4F5F7', color: '#6B4E79' },
+  'En mora':            { bg: '#F4F5F7', color: '#C23B3B' },
+  'Gestión jurídica':   { bg: '#F4F5F7', color: '#8A4119' },
+  'Cerrado':            { bg: '#F4F5F7', color: '#1F7A50' },
 }
 
 const CANAL_ICON: Record<string, React.ReactNode> = {
@@ -163,16 +163,16 @@ export default function BitacoraCobranzaTab({
     w.document.write(`
       <html><head><title>Seguimiento Cobranza — ${nombreEntidad}</title>
       <style>
-        body { font-family: Arial, sans-serif; font-size: 12px; color: #1e293b; padding: 20px; }
+        body { font-family: Arial, sans-serif; font-size: 12px; color: #26282D; padding: 20px; }
         h2   { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
-        .sub { font-size: 11px; color: #64748b; margin-bottom: 20px; }
-        .entry { border-left: 3px solid #e2e8f0; padding: 8px 12px; margin-bottom: 12px; page-break-inside: avoid; }
-        .meta  { display: flex; gap: 12px; font-size: 11px; color: #64748b; margin-bottom: 4px; flex-wrap: wrap; }
+        .sub { font-size: 11px; color: #62666E; margin-bottom: 20px; }
+        .entry { border-left: 3px solid #E6E8EB; padding: 8px 12px; margin-bottom: 12px; page-break-inside: avoid; }
+        .meta  { display: flex; gap: 12px; font-size: 11px; color: #62666E; margin-bottom: 4px; flex-wrap: wrap; }
         .badge { display: inline-block; padding: 1px 7px; border-radius: 20px; font-size: 10px; font-weight: bold; }
         .resp  { font-size: 12px; margin-bottom: 2px; }
-        .next  { font-size: 11px; color: #7c3aed; }
-        .note  { font-size: 11px; color: #64748b; font-style: italic; margin-top: 2px; }
-        .user  { font-size: 10px; color: #94a3b8; }
+        .next  { font-size: 11px; color: #6B4E79; }
+        .note  { font-size: 11px; color: #62666E; font-style: italic; margin-top: 2px; }
+        .user  { font-size: 10px; color: #7A7E87; }
         @media print { @page { margin: 1.5cm; } }
       </style></head><body>
       <h2>Seguimiento de Cobranza</h2>
@@ -215,13 +215,13 @@ export default function BitacoraCobranzaTab({
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 8, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           {abiertos > 0 && (
-            <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 20, background: '#fffbeb', color: '#d97706', border: '1px solid #fde68a' }}>
+            <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 20, background: '#B5761A', color: '#fff', border: '1px solid #B5761A' }}>
               {abiertos} abierto{abiertos !== 1 ? 's' : ''}
             </span>
           )}
           {proxHoy > 0 && (
-            <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
-              ⚡ {proxHoy} para hoy
+            <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: '#C23B3B', color: '#fff', border: '1px solid #C23B3B' }}>
+              {proxHoy} para hoy
             </span>
           )}
         </div>
@@ -234,7 +234,7 @@ export default function BitacoraCobranzaTab({
           )}
           {puedeEscribir && (
             <button onClick={() => { setForm({ ...EMPTY_FORM, fecha_contacto: hoy() }); setErr(''); setShowForm(true) }}
-              style={{ ...btnGhost, background: '#eff6ff', color: '#2563eb', borderColor: '#bfdbfe' }}>
+              style={{ ...btnGhost, background: '#F4F5F7', color: '#1C1D21', borderColor: '#C9CCD3' }}>
               <Plus size={12} /> Agregar
             </button>
           )}
@@ -243,10 +243,10 @@ export default function BitacoraCobranzaTab({
 
       {/* Formulario inline */}
       {showForm && (
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px', marginBottom: 16 }}>
+        <div style={{ background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10, padding: '16px', marginBottom: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>Nuevo registro de contacto</span>
-            <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4 }}><X size={14} /></button>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#26282D' }}>Nuevo registro de contacto</span>
+            <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 4 }}><X size={14} /></button>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
@@ -309,12 +309,12 @@ export default function BitacoraCobranzaTab({
               rows={2} style={{ ...inputStyle, resize: 'vertical' as const }} />
           </div>
 
-          {err && <div style={{ fontSize: 12, color: '#dc2626', marginBottom: 8 }}>{err}</div>}
+          {err && <div style={{ fontSize: 12, color: '#C23B3B', marginBottom: 8 }}>{err}</div>}
 
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
             <button onClick={() => setShowForm(false)} style={btnGhost}>Cancelar</button>
             <button onClick={handleSave} disabled={saving}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', background: '#1C1D21', color: '#fff', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
               {saving ? <Loader size={12} style={{ animation: 'spin 1s linear infinite' }} /> : null}
               {saving ? 'Guardando…' : 'Guardar'}
             </button>
@@ -324,17 +324,17 @@ export default function BitacoraCobranzaTab({
 
       {/* Timeline de registros — se incluye en el DOM para impresión */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: 13 }}>Cargando…</div>
+        <div style={{ textAlign: 'center', padding: '40px', color: '#7A7E87', fontSize: 13 }}>Cargando…</div>
       ) : registros.length === 0 && !showForm ? (
-        <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: 10, border: '1px dashed #e2e8f0' }}>
-          <ClipboardList size={28} style={{ color: '#cbd5e1', margin: '0 auto 8px', display: 'block' }} />
-          <div style={{ fontSize: 13, color: '#94a3b8', fontWeight: 500 }}>Sin registros de seguimiento</div>
-          {puedeEscribir && <div style={{ fontSize: 12, color: '#cbd5e1', marginTop: 4 }}>Usa el botón "Agregar" para registrar el primer contacto</div>}
+        <div style={{ textAlign: 'center', padding: '40px 20px', background: '#F8F9FA', borderRadius: 10, border: '1px dashed #E6E8EB' }}>
+          <ClipboardList size={28} style={{ color: '#C9CCD3', margin: '0 auto 8px', display: 'block' }} />
+          <div style={{ fontSize: 13, color: '#7A7E87', fontWeight: 500 }}>Sin registros de seguimiento</div>
+          {puedeEscribir && <div style={{ fontSize: 12, color: '#C9CCD3', marginTop: 4 }}>Usa el botón "Agregar" para registrar el primer contacto</div>}
         </div>
       ) : (
         <div ref={printRef} style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
           {registros.map((r, i) => {
-            const seg  = SEG_STYLE[r.seguimiento] ?? { bg: '#f8fafc', color: '#64748b' }
+            const seg  = SEG_STYLE[r.seguimiento] ?? { bg: '#F8F9FA', color: '#62666E' }
             const prox = r.fecha_proximo_contacto
             const proxVencida = prox && prox <= hoy() && r.seguimiento !== 'Cerrado'
             const isLast = i === registros.length - 1
@@ -348,36 +348,36 @@ export default function BitacoraCobranzaTab({
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 24, flexShrink: 0, paddingTop: 4 }}>
                   <div style={{
                     width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
-                    background: r.seguimiento === 'Cerrado' ? '#15803d'
-                      : r.seguimiento === 'En mora' || r.seguimiento === 'Gestión jurídica' ? '#dc2626'
-                      : r.seguimiento === 'Pago prometido' ? '#7c3aed'
-                      : '#d97706',
+                    background: r.seguimiento === 'Cerrado' ? '#1F7A50'
+                      : r.seguimiento === 'En mora' || r.seguimiento === 'Gestión jurídica' ? '#C23B3B'
+                      : r.seguimiento === 'Pago prometido' ? '#6B4E79'
+                      : '#B5761A',
                     border: '2px solid #fff',
-                    boxShadow: '0 0 0 2px #e2e8f0',
+                    boxShadow: '0 0 0 2px #E6E8EB',
                   }} />
-                  {!isLast && <div style={{ width: 2, flex: 1, minHeight: 20, background: '#e2e8f0', marginTop: 4 }} />}
+                  {!isLast && <div style={{ width: 2, flex: 1, minHeight: 20, background: '#E6E8EB', marginTop: 4 }} />}
                 </div>
 
                 {/* Contenido */}
                 <div style={{
                   flex: 1, marginLeft: 10, marginBottom: 14,
-                  background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: '12px 14px',
+                  background: '#fff', border: '1px solid #E6E8EB', borderRadius: 10, padding: '12px 14px',
                 }}>
                   {/* Meta */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-                    <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{fmtFecha(r.fecha_contacto)}</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#64748b' }}>
+                    <span style={{ fontSize: 11, color: '#62666E', fontWeight: 600 }}>{fmtFecha(r.fecha_contacto)}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#62666E' }}>
                       {CANAL_ICON[r.canal] ?? <MoreHorizontal size={12} />} {r.canal}
                     </span>
                     <span style={{
                       fontSize: 10, fontWeight: 700, padding: '1px 8px', borderRadius: 20,
-                      background: seg.bg, color: seg.color,
+                      background: seg.color, color: '#fff',
                     }}>
                       {r.seguimiento}
                     </span>
                     {puedeEliminar && (
                       <button onClick={() => handleDelete(r.id)} disabled={deletingId === r.id}
-                        style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#cbd5e1', padding: 2, display: 'flex' }}
+                        style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#C9CCD3', padding: 2, display: 'flex' }}
                         title="Eliminar registro">
                         {deletingId === r.id ? <Loader size={12} /> : <Trash2 size={12} />}
                       </button>
@@ -386,34 +386,34 @@ export default function BitacoraCobranzaTab({
 
                   {/* Respuesta */}
                   {r.respuesta && (
-                    <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.5, marginBottom: 4, fontStyle: 'italic' }}>
+                    <div style={{ fontSize: 13, color: '#26282D', lineHeight: 1.5, marginBottom: 4, fontStyle: 'italic' }}>
                       "{r.respuesta}"
                     </div>
                   )}
 
                   {/* Monto prometido */}
                   {r.monto_prometido != null && r.monto_prometido > 0 && (
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '2px 9px', marginBottom: 4 }}>
-                      💰 {fmt$(r.monto_prometido)}
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: '#fff', background: '#6B4E79', border: '1px solid #6B4E79', borderRadius: 6, padding: '2px 9px', marginBottom: 4 }}>
+                      {fmt$(r.monto_prometido)}
                     </div>
                   )}
 
                   {/* Próx. contacto */}
                   {prox && r.seguimiento !== 'Cerrado' && (
-                    <div style={{ fontSize: 11, color: proxVencida ? '#dc2626' : '#7c3aed', fontWeight: 600, marginBottom: 2 }}>
-                      {proxVencida ? '⚠ ' : '📅 '}Próx. contacto: {fmtFecha(prox)}
+                    <div style={{ fontSize: 11, color: proxVencida ? '#C23B3B' : '#6B4E79', fontWeight: 600, marginBottom: 2 }}>
+                      {proxVencida ? '' : ''}Próx. contacto: {fmtFecha(prox)}
                     </div>
                   )}
 
                   {/* Notas internas */}
                   {r.notas && (
-                    <div style={{ fontSize: 11, color: '#64748b', fontStyle: 'italic', marginTop: 4, paddingTop: 4, borderTop: '1px dashed #f1f5f9' }}>
+                    <div style={{ fontSize: 11, color: '#62666E', fontStyle: 'italic', marginTop: 4, paddingTop: 4, borderTop: '1px dashed #F4F5F7' }}>
                       {r.notas}
                     </div>
                   )}
 
                   {/* Usuario + fecha registro */}
-                  <div style={{ fontSize: 10, color: '#cbd5e1', marginTop: 6, display: 'flex', gap: 8 }}>
+                  <div style={{ fontSize: 10, color: '#C9CCD3', marginTop: 6, display: 'flex', gap: 8 }}>
                     {r.usuario_nombre && <span>{r.usuario_nombre}</span>}
                     <span>{new Date(r.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                   </div>
@@ -432,18 +432,18 @@ export default function BitacoraCobranzaTab({
 // ── Estilos compartidos ──────────────────────────────────────
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '6px 10px', fontSize: 12,
-  border: '1px solid #e2e8f0', borderRadius: 6,
+  border: '1px solid #E6E8EB', borderRadius: 6,
   background: '#fff', fontFamily: 'inherit', outline: 'none',
   boxSizing: 'border-box',
 }
 const labelStyle: React.CSSProperties = {
   display: 'block', fontSize: 10, fontWeight: 700,
-  color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em',
+  color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.06em',
   marginBottom: 4,
 }
 const btnGhost: React.CSSProperties = {
   display: 'flex', alignItems: 'center', gap: 4,
   padding: '5px 10px', fontSize: 11, fontWeight: 600,
-  border: '1px solid #e2e8f0', borderRadius: 7,
-  background: '#fff', color: '#64748b', cursor: 'pointer',
+  border: '1px solid #E6E8EB', borderRadius: 7,
+  background: '#fff', color: '#62666E', cursor: 'pointer',
 }

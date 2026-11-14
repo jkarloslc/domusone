@@ -115,8 +115,8 @@ export default function ReporteConsumoCentroCosto() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
         {[
           { label: 'Total Consumo',          value: fmt(totalGeneral), color: 'var(--blue)' },
-          { label: 'Centros de Costo',        value: String(rows.length), color: '#7c3aed' },
-          { label: 'Órdenes de Pago',         value: String(docsTotal),   color: '#059669' },
+          { label: 'Centros de Costo',        value: String(rows.length), color: '#6B4E79' },
+          { label: 'Órdenes de Pago',         value: String(docsTotal),   color: '#267F56' },
         ].map(k => (
           <div key={k.label} className="card" style={{ padding: '12px 16px' }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
@@ -141,12 +141,12 @@ export default function ReporteConsumoCentroCosto() {
           <div
             onClick={() => toggle(cc.id)}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '12px 16px', background: '#eff6ff', cursor: 'pointer',
-              borderBottom: expanded.has(cc.id) ? '1px solid #bfdbfe' : 'none' }}
+              padding: '12px 16px', background: '#F4F5F7', cursor: 'pointer',
+              borderBottom: expanded.has(cc.id) ? '1px solid #C9CCD3' : 'none' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--blue)' }}>{cc.nombre}</span>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)', background: '#dbeafe',
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', background: '#E6E8EB',
                 padding: '2px 8px', borderRadius: 20 }}>
                 {cc.docs} OP{cc.docs !== 1 ? 's' : ''}
               </span>
@@ -158,11 +158,11 @@ export default function ReporteConsumoCentroCosto() {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Pagado</div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(cc.pagado)}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#1F7A50', fontVariantNumeric: 'tabular-nums' }}>{fmt(cc.pagado)}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Por pagar</div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: cc.saldo > 0 ? '#dc2626' : '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(cc.saldo)}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: cc.saldo > 0 ? '#C23B3B' : '#1F7A50', fontVariantNumeric: 'tabular-nums' }}>{fmt(cc.saldo)}</div>
               </div>
               <span style={{ fontSize: 16, color: 'var(--text-muted)' }}>{expanded.has(cc.id) ? '▲' : '▼'}</span>
             </div>
@@ -191,23 +191,23 @@ export default function ReporteConsumoCentroCosto() {
                   const pagado = monto - saldo
                   return (
                     <tr key={i}>
-                      <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{op.folio}</td>
+                      <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{op.folio}</td>
                       <td style={{ fontSize: 12 }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? '—') : '—'}</td>
                       <td style={{ fontSize: 12, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
                       <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{catTG.nombre(op.id_tipo_gasto_fk) ?? '—'}</td>
                       <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{fmtF(op.fecha_op)}</td>
                       <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{fmt(monto)}</td>
-                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#15803d' }}>{fmt(pagado)}</td>
-                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: saldo > 0 ? '#dc2626' : '#15803d' }}>{fmt(saldo)}</td>
+                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#1F7A50' }}>{fmt(pagado)}</td>
+                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: saldo > 0 ? '#C23B3B' : '#1F7A50' }}>{fmt(saldo)}</td>
                       <td style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{op.status}</td>
                     </tr>
                   )
                 })}
-                <tr style={{ background: '#f0f9ff', fontWeight: 700 }}>
+                <tr style={{ background: '#F4F5F7', fontWeight: 700 }}>
                   <td colSpan={5} style={{ color: 'var(--blue)', fontSize: 12 }}>Subtotal {cc.nombre}</td>
                   <td style={{ textAlign: 'right', color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>{fmt(cc.total)}</td>
-                  <td style={{ textAlign: 'right', color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(cc.pagado)}</td>
-                  <td style={{ textAlign: 'right', color: cc.saldo > 0 ? '#dc2626' : '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(cc.saldo)}</td>
+                  <td style={{ textAlign: 'right', color: '#1F7A50', fontVariantNumeric: 'tabular-nums' }}>{fmt(cc.pagado)}</td>
+                  <td style={{ textAlign: 'right', color: cc.saldo > 0 ? '#C23B3B' : '#1F7A50', fontVariantNumeric: 'tabular-nums' }}>{fmt(cc.saldo)}</td>
                   <td></td>
                 </tr>
               </tbody>
@@ -219,7 +219,7 @@ export default function ReporteConsumoCentroCosto() {
       {/* Total general */}
       {rows.length > 0 && (
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-          <div className="card" style={{ padding: '12px 20px', background: 'var(--blue-pale)', border: '1px solid #bfdbfe' }}>
+          <div className="card" style={{ padding: '12px 20px', background: 'var(--blue-pale)', border: '1px solid #C9CCD3' }}>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>TOTAL GENERAL</div>
             <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalGeneral)}</div>
           </div>

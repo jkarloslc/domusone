@@ -102,14 +102,14 @@ export default function CotizacionesPage() {
               <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Sin RFQs registradas</td></tr>
             ) : rows.map(r => (
               <tr key={r.id}>
-                <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
+                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.id_requisicion_fk ? `REQ #${r.id_requisicion_fk}` : '—'}</td>
                 <td style={{ fontSize: 12 }}>{fmtFecha(r.fecha_rfq)}</td>
                 <td style={{ fontSize: 12, color: r.fecha_limite ? 'var(--text-secondary)' : 'var(--text-muted)' }}>{fmtFecha(r.fecha_limite)}</td>
                 <td><StatusBadge status={r.status} /></td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                   {r.status === 'Cerrada' && !r.proveedor_ganador
-                    ? <span style={{ color: '#15803d', fontWeight: 600 }}>Múltiples proveedores</span>
+                    ? <span style={{ color: '#1F7A50', fontWeight: 600 }}>Múltiples proveedores</span>
                     : r.proveedor_ganador
                       ? (provMap[r.proveedor_ganador] ?? `#${r.proveedor_ganador}`)
                       : '—'}
@@ -193,7 +193,7 @@ function RFQModal({ row, onClose, onSaved }: { row: any | null; onClose: () => v
         </>
       }
     >
-      {error && <div style={{ padding: '10px', background: '#fef2f2', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+      {error && <div style={{ padding: '10px', background: '#F4F5F7', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
       <div>
         <label className="label">Requisición Asociada (opcional)</label>
         <select className="select" value={form.id_requisicion_fk}
@@ -572,7 +572,7 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                         ).length
                         const hasWinners = winnerCount > 0
                         return (
-                          <th key={c.id} style={{ background: hasWinners ? '#f0fdf4' : undefined, color: hasWinners ? '#15803d' : undefined, minWidth: 140 }}>
+                          <th key={c.id} style={{ background: hasWinners ? '#F4F5F7' : undefined, color: hasWinners ? '#1F7A50' : undefined, minWidth: 140 }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
                               <span>{prov?.nombre ?? `Prov #${c.id_proveedor_fk}`}</span>
                               {rfq.status === 'Abierta' && (
@@ -596,8 +596,8 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                   </thead>
                   <tbody>
                     {/* ── Sección: Datos generales ── */}
-                    <tr style={{ background: '#f1f5f9' }}>
-                      <td colSpan={cotizaciones.length + 1} style={{ fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '6px 10px' }}>
+                    <tr style={{ background: '#F4F5F7' }}>
+                      <td colSpan={cotizaciones.length + 1} style={{ fontSize: 10, fontWeight: 700, color: '#4A4D54', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '6px 10px' }}>
                         Datos de la cotización
                       </td>
                     </tr>
@@ -605,7 +605,7 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                       <td style={{ fontWeight: 600, fontSize: 12, color: 'var(--text-muted)' }}>No. Cotización</td>
                       {cotizaciones.map(c => <td key={c.id} style={{ fontSize: 12 }}>{c.numero_cotizacion ?? '—'}</td>)}
                     </tr>
-                    <tr style={{ background: '#f8fafc' }}>
+                    <tr style={{ background: '#F8F9FA' }}>
                       <td style={{ fontWeight: 600, fontSize: 12, color: 'var(--text-muted)' }}>Condiciones Pago</td>
                       {cotizaciones.map(c => <td key={c.id} style={{ fontSize: 12 }}>{c.condiciones_pago ?? '—'}</td>)}
                     </tr>
@@ -614,11 +614,11 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                       {cotizaciones.map(c => <td key={c.id} style={{ fontSize: 12 }}>{c.tiempo_entrega ?? '—'}</td>)}
                     </tr>
                     {/* ── Sección: Artículos ── */}
-                    <tr style={{ background: '#f1f5f9' }}>
-                      <td colSpan={cotizaciones.length + 1} style={{ fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '6px 10px' }}>
+                    <tr style={{ background: '#F4F5F7' }}>
+                      <td colSpan={cotizaciones.length + 1} style={{ fontSize: 10, fontWeight: 700, color: '#4A4D54', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '6px 10px' }}>
                         Artículos · precio unitario
                         {rfq.status === 'Abierta' && (cotizaciones[0]?.rfq_cotizaciones_det ?? []).length > 0 && (
-                          <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, marginLeft: 8, color: '#64748b' }}>— clic en el precio para elegir ganador</span>
+                          <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, marginLeft: 8, color: '#62666E' }}>— clic en el precio para elegir ganador</span>
                         )}
                       </td>
                     </tr>
@@ -626,12 +626,11 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                     {(cotizaciones[0]?.rfq_cotizaciones_det ?? []).length === 0 && (
                       <tr>
                         <td colSpan={cotizaciones.length + 1} style={{ padding: '14px 10px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
-                            <span style={{ fontSize: 16 }}>⚠️</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 8, fontSize: 12, color: '#7A4B0C' }}>
                             <span>
                               Las cotizaciones no tienen artículos registrados.
                               {rfq.status === 'Abierta'
-                                ? <strong> Usa el botón ✏️ Editar en cada proveedor para ingresar los precios.</strong>
+                                ? <strong> Usa el botón Editar en cada proveedor para ingresar los precios.</strong>
                                 : ' Los precios no fueron capturados en esta cotización.'}
                             </span>
                           </div>
@@ -639,22 +638,22 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                       </tr>
                     )}
                     {(cotizaciones[0]?.rfq_cotizaciones_det ?? []).map((_: any, pi: number) => {
-                      const rowBg = pi % 2 === 0 ? '#ffffff' : '#f8fafc'
+                      const rowBg = pi % 2 === 0 ? '#ffffff' : '#F8F9FA'
                       const hasWinner = itemWinners[pi] !== undefined
                       return (
                       <tr key={pi} style={{ background: hasWinner ? undefined : rowBg }}>
                         <td style={{
                           fontSize: 12,
                           fontWeight: hasWinner ? 600 : 400,
-                          background: hasWinner ? '#f0fdf4' : rowBg,
-                          borderLeft: hasWinner ? '3px solid #16a34a' : '3px solid #e2e8f0',
+                          background: hasWinner ? '#F4F5F7' : rowBg,
+                          borderLeft: hasWinner ? '3px solid #267F56' : '3px solid #E6E8EB',
                           paddingLeft: 10,
                         }}>
                           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <span style={{
                               display: 'inline-block', width: 18, height: 18, borderRadius: '50%',
-                              background: hasWinner ? '#dcfce7' : '#e2e8f0',
-                              color: hasWinner ? '#15803d' : '#94a3b8',
+                              background: '#E6E8EB',
+                              color: hasWinner ? '#1F7A50' : '#7A7E87',
                               fontSize: 10, fontWeight: 700, lineHeight: '18px', textAlign: 'center', flexShrink: 0,
                             }}>{pi + 1}</span>
                             {cotizaciones[0]?.rfq_cotizaciones_det?.[pi]?.descripcion}
@@ -672,8 +671,8 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                                 fontSize: 12,
                                 textAlign: 'right',
                                 fontVariantNumeric: 'tabular-nums',
-                                background: isWinner ? '#dcfce7' : rowBg,
-                                outline: isWinner ? '2px solid #16a34a' : undefined,
+                                background: isWinner ? '#E6E8EB' : rowBg,
+                                outline: isWinner ? '2px solid #267F56' : undefined,
                                 outlineOffset: -2,
                                 cursor: clickable ? 'pointer' : 'default',
                                 transition: 'background 0.12s',
@@ -682,7 +681,7 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                             >
                               {d?.precio_unitario != null && Number(d.precio_unitario) > 0 ? (
                                 <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
-                                  {isWinner && <CheckCircle size={11} color="#16a34a" />}
+                                  {isWinner && <CheckCircle size={11} color="#267F56" />}
                                   {fmt(d.precio_unitario)}
                                 </span>
                               ) : <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>}
@@ -692,7 +691,7 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                       </tr>
                       )
                     })}
-                    <tr style={{ borderTop: '2px solid #e2e8f0' }}>
+                    <tr style={{ borderTop: '2px solid #E6E8EB' }}>
                       <td style={{ fontWeight: 700 }}>Subtotal</td>
                       {cotizaciones.map(c => <td key={c.id} style={{ fontWeight: 700, textAlign: 'right' }}>{fmt(c.subtotal)}</td>)}
                     </tr>
@@ -700,7 +699,7 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                       <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>IVA</td>
                       {cotizaciones.map(c => <td key={c.id} style={{ fontSize: 12, textAlign: 'right' }}>{fmt(c.iva)}</td>)}
                     </tr>
-                    <tr style={{ background: '#f8fafc' }}>
+                    <tr style={{ background: '#F8F9FA' }}>
                       <td style={{ fontWeight: 700, color: 'var(--blue)' }}>TOTAL</td>
                       {cotizaciones.map(c => (
                         <td key={c.id} style={{ fontWeight: 700, color: 'var(--blue)', textAlign: 'right', fontSize: 15 }}>
@@ -738,15 +737,15 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
 
               {/* Barra de confirmación */}
               {rfq.status === 'Abierta' && assignedCount > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, padding: '10px 16px', background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0' }}>
-                  <div style={{ fontSize: 12, color: '#15803d' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, padding: '10px 16px', background: '#F4F5F7', borderRadius: 8, border: '1px solid #E6E8EB' }}>
+                  <div style={{ fontSize: 12, color: '#1F7A50' }}>
                     <strong>{assignedCount}</strong> de {requiredItems} producto{requiredItems !== 1 ? 's' : ''} con ganador asignado
                     {(() => {
                       const winningCotIds = new Set(Object.values(itemWinners))
                       const provNames = cotizaciones
                         .filter(c => winningCotIds.has(c.id))
                         .map(c => proveedores.find(p => p.id === c.id_proveedor_fk)?.nombre ?? `Prov #${c.id_proveedor_fk}`)
-                      return provNames.length > 0 ? <span style={{ color: '#166534', marginLeft: 6 }}>· {provNames.join(', ')}</span> : null
+                      return provNames.length > 0 ? <span style={{ color: '#17603F', marginLeft: 6 }}>· {provNames.join(', ')}</span> : null
                     })()}
                   </div>
                   <button className="btn-primary" onClick={confirmarSeleccion} disabled={confirmando || assignedCount < requiredItems}>
@@ -766,12 +765,12 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
 
           {/* Formulario edición cotización existente */}
           {editingCot && (
-            <div style={{ padding: '16px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e', marginBottom: 12 }}>
+            <div style={{ padding: '16px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#7A4B0C', marginBottom: 12 }}>
                 Editar precios — {proveedores.find(p => p.id === editingCot.id_proveedor_fk)?.nombre ?? `Proveedor #${editingCot.id_proveedor_fk}`}
               </div>
               {editError && (
-                <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, color: '#dc2626', fontSize: 12, marginBottom: 10 }}>
+                <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12, marginBottom: 10 }}>
                   {editError}
                 </div>
               )}
@@ -834,7 +833,7 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
 
           {/* Formulario nueva cotización */}
           {addingCot && (
-            <div style={{ padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+            <div style={{ padding: '16px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue)', marginBottom: 12 }}>Nueva Cotización — Proveedor {cotizaciones.length + 1}</div>
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
                 <div>

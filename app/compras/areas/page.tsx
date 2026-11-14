@@ -80,8 +80,8 @@ export default function AreasPage() {
               <tr key={r.id} style={{ opacity: r.activo ? 1 : 0.45 }}>
                 <td>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 28, height: 28, borderRadius: 7, background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Layers size={13} style={{ color: '#7c3aed' }} />
+                    <div style={{ width: 28, height: 28, borderRadius: 7, background: '#F4F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Layers size={13} style={{ color: '#62666E' }} />
                     </div>
                     <span style={{ fontWeight: 500 }}>{r.nombre}</span>
                   </div>
@@ -89,13 +89,13 @@ export default function AreasPage() {
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.responsable ?? '—'}</td>
                 <td style={{ textAlign: 'center' }}>
                   <button onClick={() => toggleActivo(r)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', margin: '0 auto' }}>
-                    {r.activo ? <ToggleRight size={20} style={{ color: '#15803d' }} /> : <ToggleLeft size={20} style={{ color: '#cbd5e1' }} />}
+                    {r.activo ? <ToggleRight size={20} style={{ color: '#1F7A50' }} /> : <ToggleLeft size={20} style={{ color: '#C9CCD3' }} />}
                   </button>
                 </td>
                 <td>
                   <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                     <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setModal(r)}><Edit2 size={13} /></button>
-                    {canDelete() && <button className="btn-ghost" style={{ padding: '4px 6px', color: '#dc2626' }} onClick={() => handleDelete(r.id)}><Trash2 size={13} /></button>}
+                    {canDelete() && <button className="btn-ghost" style={{ padding: '4px 6px', color: '#C23B3B' }} onClick={() => handleDelete(r.id)}><Trash2 size={13} /></button>}
                   </div>
                 </td>
               </tr>
@@ -143,7 +143,7 @@ function AreaModal({ row, onClose, onSaved }: { row: Area | null; onClose: () =>
       </>}
     >
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+          {error && <div style={{ padding: '10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
           <div><label className="label">Nombre del Área *</label>
             <input className="input" value={form.nombre} onChange={set('nombre')} placeholder="ej. Mantenimiento" />
           </div>

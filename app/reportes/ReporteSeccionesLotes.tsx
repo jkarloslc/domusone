@@ -67,7 +67,7 @@ export default function ReporteSeccionesLotes() {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
         {[
           { label: 'Secciones',   value: fmt(filas.length), color: 'var(--blue)' },
-          { label: 'Total Lotes', value: fmt(totalLotes),   color: '#15803d' },
+          { label: 'Total Lotes', value: fmt(totalLotes),   color: '#1F7A50' },
         ].map(k => (
           <div key={k.label} className="card"
             style={{ padding: '10px 20px', flex: '1 1 140px', maxWidth: 200, borderTop: `3px solid ${k.color}` }}>
@@ -78,8 +78,8 @@ export default function ReporteSeccionesLotes() {
       </div>
 
       {error && (
-        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8,
-          padding: '10px 14px', marginBottom: 12, fontSize: 12, color: '#dc2626' }}>
+        <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8,
+          padding: '10px 14px', marginBottom: 12, fontSize: 12, color: '#C23B3B' }}>
           Error: {error}
         </div>
       )}
@@ -128,11 +128,11 @@ export default function ReporteSeccionesLotes() {
                 ))}
 
                 {/* Total */}
-                <tr style={{ background: '#1e3a5f', fontWeight: 700 }}>
+                <tr style={{ background: '#26282D', fontWeight: 700 }}>
                   <td colSpan={5} style={{ color: '#fff', paddingLeft: 12 }}>
                     Total — {filas.length} sección{filas.length !== 1 ? 'es' : ''}
                   </td>
-                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#93c5fd' }}>
+                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#C9CCD3' }}>
                     {fmt(totalLotes)}
                   </td>
                 </tr>

@@ -19,8 +19,8 @@ const pagoVacio = (): PagoForm => ({ periodo: String(new Date().getFullYear()), 
 const fmt$ = (v: number | null) => v == null ? '—' : `$${Number(v).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
 const fmtF = (d: string | null) => d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : null
 
-const inputStyle = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none' }
-const labelStyle = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' as const }
+const inputStyle = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none' }
+const labelStyle = { fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' as const }
 
 function ComprobanteLink({ path }: { path: string }) {
   const [url, setUrl] = useState<string | null>(null)
@@ -30,7 +30,7 @@ function ComprobanteLink({ path }: { path: string }) {
   if (!url) return null
   return (
     <a href={url} target="_blank" rel="noopener noreferrer"
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#d97706', textDecoration: 'none', fontSize: 12, fontWeight: 600 }}>
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#B5761A', textDecoration: 'none', fontSize: 12, fontWeight: 600 }}>
       <ExternalLink size={11} /> Ver
     </a>
   )
@@ -125,21 +125,21 @@ export default function TabFederacion({ socioId, editable, onChange }: { socioId
     load()
   }
 
-  if (loading) return <div style={{ textAlign: 'center', padding: 24, color: '#94a3b8', fontSize: 13 }}>Cargando…</div>
+  if (loading) return <div style={{ textAlign: 'center', padding: 24, color: '#7A7E87', fontSize: 13 }}>Cargando…</div>
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Datos de federación */}
-      <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: 16 }}>
+      <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 10, padding: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-          <Award size={15} style={{ color: '#d97706' }} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>Federación Mexicana de Golf</span>
+          <Award size={15} style={{ color: '#62666E' }} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>Federación Mexicana de Golf</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, alignItems: 'end' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 8 }}>
             <input type="checkbox" id="fed_federado" checked={federado} disabled={!editable}
               onChange={e => { setFederado(e.target.checked); setOkDatos(false) }}
-              style={{ width: 16, height: 16, cursor: editable ? 'pointer' : 'default', accentColor: '#d97706' }} />
+              style={{ width: 16, height: 16, cursor: editable ? 'pointer' : 'default', accentColor: '#B5761A' }} />
             <label htmlFor="fed_federado" style={{ ...labelStyle, marginBottom: 0, cursor: editable ? 'pointer' : 'default' }}>¿Federado?</label>
           </div>
           <div>
@@ -153,10 +153,10 @@ export default function TabFederacion({ socioId, editable, onChange }: { socioId
         </div>
         {editable && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'flex-end', marginTop: 12 }}>
-            {errDatos && <span style={{ fontSize: 12, color: '#dc2626', marginRight: 'auto' }}>{errDatos}</span>}
-            {okDatos && <span style={{ fontSize: 12, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle size={12} /> Guardado</span>}
+            {errDatos && <span style={{ fontSize: 12, color: '#C23B3B', marginRight: 'auto' }}>{errDatos}</span>}
+            {okDatos && <span style={{ fontSize: 12, color: '#267F56', display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle size={12} /> Guardado</span>}
             <button onClick={guardarDatos} disabled={savingDatos}
-              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#d97706', color: '#fff', cursor: 'pointer', opacity: savingDatos ? 0.7 : 1 }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#B5761A', color: '#fff', cursor: 'pointer', opacity: savingDatos ? 0.7 : 1 }}>
               {savingDatos ? <Loader size={12} className="animate-spin" /> : <Save size={12} />} Guardar datos
             </button>
           </div>
@@ -165,18 +165,18 @@ export default function TabFederacion({ socioId, editable, onChange }: { socioId
 
       {/* Pagos por ciclo */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>Pagos a la federación por ciclo <span style={{ fontSize: 11, color: '#64748b', fontWeight: 400 }}>({pagos.length})</span></span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>Pagos a la federación por ciclo <span style={{ fontSize: 11, color: '#62666E', fontWeight: 400 }}>({pagos.length})</span></span>
         {editable && !showForm && (
           <button onClick={() => abrirForm()}
-            style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#7A4B0C', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
             <Plus size={13} /> Nuevo pago
           </button>
         )}
       </div>
 
       {showForm && (
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>{editId ? 'Editar pago' : 'Nuevo pago'}</div>
+        <div style={{ background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10, padding: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#26282D', marginBottom: 12 }}>{editId ? 'Editar pago' : 'Nuevo pago'}</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
             <div>
               <label style={labelStyle}>Año *</label>
@@ -198,21 +198,21 @@ export default function TabFederacion({ socioId, editable, onChange }: { socioId
               <label style={labelStyle}>Comprobante (PDF/imagen)</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <button onClick={() => fileRef.current?.click()} disabled={uploading}
-                  style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '7px 12px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', cursor: 'pointer', color: '#475569', opacity: uploading ? 0.6 : 1 }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '7px 12px', border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', cursor: 'pointer', color: '#4A4D54', opacity: uploading ? 0.6 : 1 }}>
                   {uploading ? <Loader size={12} className="animate-spin" /> : <Upload size={12} />}
                   {comprobante ? 'Cambiar archivo' : 'Subir comprobante'}
                 </button>
-                {comprobante && <span style={{ fontSize: 11, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle size={12} /> Archivo listo</span>}
+                {comprobante && <span style={{ fontSize: 11, color: '#267F56', display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle size={12} /> Archivo listo</span>}
               </div>
               <input ref={fileRef} type="file" accept="image/jpeg,image/png,application/pdf" style={{ display: 'none' }}
                 onChange={e => { const f = e.target.files?.[0]; if (f) subir(f); e.target.value = '' }} />
             </div>
           </div>
-          {error && <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{error}</div>}
+          {error && <div style={{ marginTop: 10, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>{error}</div>}
           <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
-            <button onClick={cerrarForm} style={{ padding: '7px 14px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cancelar</button>
+            <button onClick={cerrarForm} style={{ padding: '7px 14px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', cursor: 'pointer' }}>Cancelar</button>
             <button onClick={guardarPago} disabled={saving}
-              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#d97706', color: '#fff', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#B5761A', color: '#fff', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
               {saving ? <Loader size={12} className="animate-spin" /> : <Save size={12} />} Guardar
             </button>
           </div>
@@ -220,14 +220,14 @@ export default function TabFederacion({ socioId, editable, onChange }: { socioId
       )}
 
       {pagos.length === 0 && !showForm ? (
-        <div style={{ textAlign: 'center', padding: '28px 20px', background: '#f8fafc', borderRadius: 10, border: '1px dashed #e2e8f0', fontSize: 13, color: '#94a3b8' }}>
+        <div style={{ textAlign: 'center', padding: '28px 20px', background: '#F8F9FA', borderRadius: 10, border: '1px dashed #E6E8EB', fontSize: 13, color: '#7A7E87' }}>
           Sin pagos registrados a la federación
         </div>
       ) : pagos.length > 0 && (
-        <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflowX: 'auto' }}>
+        <div style={{ border: '1px solid #E6E8EB', borderRadius: 10, overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#f8fafc', color: '#64748b', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              <tr style={{ background: '#F8F9FA', color: '#62666E', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 <th style={{ textAlign: 'left', padding: '8px 12px' }}>Año</th>
                 <th style={{ textAlign: 'right', padding: '8px 12px' }}>Monto</th>
                 <th style={{ textAlign: 'left', padding: '8px 12px' }}>Pago</th>
@@ -238,18 +238,18 @@ export default function TabFederacion({ socioId, editable, onChange }: { socioId
             </thead>
             <tbody>
               {pagos.map(p => (
-                <tr key={p.id} style={{ borderTop: '1px solid #f1f5f9' }}>
+                <tr key={p.id} style={{ borderTop: '1px solid #F4F5F7' }}>
                   <td style={{ padding: '8px 12px', fontWeight: 700 }}>{p.periodo}</td>
                   <td style={{ padding: '8px 12px', textAlign: 'right' }}>{fmt$(p.monto)}</td>
                   <td style={{ padding: '8px 12px' }}>
-                    {p.fecha_pago ? fmtF(p.fecha_pago) : <span style={{ color: '#d97706', fontWeight: 600 }}>Pendiente</span>}
+                    {p.fecha_pago ? fmtF(p.fecha_pago) : <span style={{ color: '#B5761A', fontWeight: 600 }}>Pendiente</span>}
                   </td>
                   <td style={{ padding: '8px 12px' }}>{p.comprobante_url ? <ComprobanteLink path={p.comprobante_url} /> : '—'}</td>
-                  <td style={{ padding: '8px 12px', color: '#475569' }}>{p.beneficiarios || '—'}</td>
+                  <td style={{ padding: '8px 12px', color: '#4A4D54' }}>{p.beneficiarios || '—'}</td>
                   {editable && (
                     <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', textAlign: 'right' }}>
-                      <button onClick={() => abrirForm(p)} title="Editar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: 4 }}><Edit2 size={14} /></button>
-                      <button onClick={() => eliminar(p.id)} title="Eliminar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4 }}><Trash2 size={14} /></button>
+                      <button onClick={() => abrirForm(p)} title="Editar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#62666E', padding: 4 }}><Edit2 size={14} /></button>
+                      <button onClick={() => eliminar(p.id)} title="Eliminar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 4 }}><Trash2 size={14} /></button>
                     </td>
                   )}
                 </tr>

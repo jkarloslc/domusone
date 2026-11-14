@@ -66,22 +66,22 @@ function CentroModal({ centro, onClose, onSaved }: { centro: Centro | null; onCl
       </>}
     >
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {error && <div style={{ padding: '8px 12px', background: '#fef2f2', borderRadius: 6, fontSize: 12, color: '#dc2626' }}>{error}</div>}
+          {error && <div style={{ padding: '8px 12px', background: '#F4F5F7', borderRadius: 6, fontSize: 12, color: '#C23B3B' }}>{error}</div>}
 
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Nombre *</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#33363C', display: 'block', marginBottom: 4 }}>Nombre *</label>
             <input className="input" value={form.nombre ?? ''} onChange={e => set('nombre', e.target.value)} placeholder="ej. Golf" />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Código</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#33363C', display: 'block', marginBottom: 4 }}>Código</label>
               <input className="input" value={form.codigo ?? ''} onChange={e => set('codigo', e.target.value.toUpperCase())} placeholder="GOLF" maxLength={8} />
             </div>
           </div>
 
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Agrupador</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#33363C', display: 'block', marginBottom: 4 }}>Agrupador</label>
             <select className="select" value={form.id_agrupador_fk ?? ''} onChange={e => set('id_agrupador_fk', e.target.value)}>
               <option value="">Sin agrupador</option>
               {agrupadores.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
@@ -89,7 +89,7 @@ function CentroModal({ centro, onClose, onSaved }: { centro: Centro | null; onCl
           </div>
 
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>Tipo de captura</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#33363C', display: 'block', marginBottom: 6 }}>Tipo de captura</label>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {[
                 { val: 'unico',     label: 'Monto único',           desc: 'Un solo total por recibo' },
@@ -99,24 +99,24 @@ function CentroModal({ centro, onClose, onSaved }: { centro: Centro | null; onCl
               ].map(opt => (
                 <button key={opt.val} onClick={() => set('tipo_desglose', opt.val)}
                   style={{ flex: 1, minWidth: 130, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
-                    border: `2px solid ${form.tipo_desglose === opt.val ? '#2563eb' : '#e2e8f0'}`,
-                    background: form.tipo_desglose === opt.val ? '#eff6ff' : '#fff' }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: form.tipo_desglose === opt.val ? '#1d4ed8' : '#374151' }}>{opt.label}</div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{opt.desc}</div>
+                    border: `2px solid ${form.tipo_desglose === opt.val ? '#1C1D21' : '#E6E8EB'}`,
+                    background: form.tipo_desglose === opt.val ? '#F4F5F7' : '#fff' }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: form.tipo_desglose === opt.val ? '#26282D' : '#33363C' }}>{opt.label}</div>
+                  <div style={{ fontSize: 11, color: '#7A7E87', marginTop: 2 }}>{opt.desc}</div>
                 </button>
               ))}
             </div>
           </div>
 
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Notas</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#33363C', display: 'block', marginBottom: 4 }}>Notas</label>
             <textarea className="input" rows={2} value={form.notas ?? ''} onChange={e => set('notas', e.target.value)}
               style={{ resize: 'vertical', minHeight: 56 }} />
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <input type="checkbox" id="activo-chk" checked={form.activo ?? true} onChange={e => set('activo', e.target.checked)} />
-            <label htmlFor="activo-chk" style={{ fontSize: 13, color: '#374151' }}>Centro activo</label>
+            <label htmlFor="activo-chk" style={{ fontSize: 13, color: '#33363C' }}>Centro activo</label>
           </div>
         </div>
     </ModalShell>
@@ -154,7 +154,7 @@ export default function CentrosIngresoPage() {
       {/* Header */}
       <PageHeader backHref="/ingresos"
         icon={Tag}
-        color="#7c3aed"
+        color="#6B4E79"
         eyebrowLabel="Catálogo"
         variant="xl"
         title="Centros de Ingreso"
@@ -185,39 +185,39 @@ export default function CentrosIngresoPage() {
               return (
                 <div key={c.id} style={{
                   display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px',
-                  borderBottom: i < centros.length - 1 ? '1px solid #f1f5f9' : 'none',
+                  borderBottom: i < centros.length - 1 ? '1px solid #F4F5F7' : 'none',
                 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 10, background: color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Tag size={17} style={{ color }} />
+                  <div className="icon-chip" style={{ width: 40, height: 40, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Tag size={17} style={{ color: '#1C1D21' }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: '#1e293b' }}>{c.nombre}</span>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: '#26282D' }}>{c.nombre}</span>
                       {c.codigo && (
-                        <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 20, background: color + '15', color }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 20, background: color, color: '#fff' }}>
                           {c.codigo}
                         </span>
                       )}
                       {!c.activo && (
-                        <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 20, background: '#f1f5f9', color: '#94a3b8' }}>Inactivo</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 20, background: '#F4F5F7', color: '#7A7E87' }}>Inactivo</span>
                       )}
                     </div>
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                       {c.id_agrupador_fk && agrNombre[c.id_agrupador_fk] && (
-                        <><span style={{ fontSize: 11, fontWeight: 600, color: '#0d9488' }}>{agrNombre[c.id_agrupador_fk]}</span>
-                        <span style={{ fontSize: 10, color: '#94a3b8' }}>·</span></>
+                        <><span style={{ fontSize: 11, fontWeight: 600, color: '#178A80' }}>{agrNombre[c.id_agrupador_fk]}</span>
+                        <span style={{ fontSize: 10, color: '#7A7E87' }}>·</span></>
                       )}
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#64748b' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#62666E' }}>
                         {c.tipo_desglose === 'secciones'
-                          ? <><Layers size={11} style={{ color: '#7c3aed' }} /> Desglose por sección</>
+                          ? <><Layers size={11} style={{ color: '#62666E' }} /> Desglose por sección</>
                           : c.tipo_desglose === 'frentes'
-                          ? <><Layers size={11} style={{ color: '#0d9488' }} /> Desglose por frente</>
+                          ? <><Layers size={11} style={{ color: '#62666E' }} /> Desglose por frente</>
                           : c.tipo_desglose === 'conceptos'
-                          ? <><Layers size={11} style={{ color: '#d97706' }} /> Desglose por concepto</>
+                          ? <><Layers size={11} style={{ color: '#62666E' }} /> Desglose por concepto</>
                           : 'Monto único'
                         }
                       </span>
-                      {c.notas && <span style={{ fontSize: 11, color: '#94a3b8' }}>· {c.notas}</span>}
+                      {c.notas && <span style={{ fontSize: 11, color: '#7A7E87' }}>· {c.notas}</span>}
                     </div>
                   </div>
                   {puedeEscribir && (

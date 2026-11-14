@@ -33,8 +33,8 @@ type Ocup = {
 const TIPOS_LUGAR = ['Pista', 'Paddock', 'Salón', 'Área', 'Otro']
 const TIPOS_BLOQUEO = ['Mantenimiento', 'Clase / Entrenamiento', 'Uso de arrendatario', 'Bloqueo', 'Otro'] as const
 const COLOR_BLOQUEO: Record<string, string> = {
-  'Mantenimiento': '#7c3aed', 'Clase / Entrenamiento': '#0369a1', 'Uso de arrendatario': '#b45309',
-  'Bloqueo': '#dc2626', 'Otro': '#64748b',
+  'Mantenimiento': '#6B4E79', 'Clase / Entrenamiento': '#2A6582', 'Uso de arrendatario': '#96600F',
+  'Bloqueo': '#C23B3B', 'Otro': '#62666E',
 }
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 const EMPTY_LUGAR = { nombre: '', tipo: 'Pista', capacidad: '' as number | '', ubicacion: '', descripcion: '', activo: true }
@@ -98,13 +98,13 @@ export default function InstalacionesPage() {
       key: `e${ev.id}`, origen: 'evento', id: ev.id, id_lugar: ev.id_lugar_fk!, titulo: ev.nombre,
       detalle: `${ev.folio} · ${ev.cat_tipos_evento?.nombre ?? 'Evento'} · ${ev.status}`,
       ini: ev.fecha_inicio, fin: ev.fecha_fin ?? ev.fecha_inicio, horaIni: ev.hora_inicio, horaFin: ev.hora_fin,
-      color: ev.cat_tipos_evento?.color ?? '#9333ea', status: ev.status,
+      color: ev.cat_tipos_evento?.color ?? '#6B4E79', status: ev.status,
     }))
     const bls: Ocup[] = ((b as Bloqueo[]) ?? []).map(x => ({
       key: `b${x.id}`, origen: 'bloqueo', id: x.id, id_lugar: x.id_lugar_fk, titulo: x.titulo,
       detalle: [x.tipo, x.responsable, x.notas].filter(Boolean).join(' · '),
       ini: x.fecha_inicio, fin: x.fecha_fin, horaIni: x.hora_inicio, horaFin: x.hora_fin,
-      color: COLOR_BLOQUEO[x.tipo] ?? '#64748b',
+      color: COLOR_BLOQUEO[x.tipo] ?? '#62666E',
     }))
     setOcups([...evs, ...bls])
     setLoading(false)
@@ -260,15 +260,15 @@ export default function InstalacionesPage() {
                   return (
                     <tr key={l.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)', opacity: l.activo ? 1 : 0.55 }}>
                       <td style={td}>
-                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}><MapPin size={12} style={{ color: '#b45309' }} />{l.nombre}</div>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}><MapPin size={12} style={{ color: '#62666E' }} />{l.nombre}</div>
                         {l.ubicacion && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{l.ubicacion}</div>}
                       </td>
                       <td style={{ ...td, color: 'var(--text-secondary)' }}>{l.tipo ?? '—'}</td>
                       <td style={{ ...td, color: 'var(--text-muted)' }}>{l.capacidad ?? '—'}</td>
                       <td style={td}>
                         {hoyO
-                          ? <span title={hoyO.detalle} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: hoyO.color + '22', color: hoyO.color }}>Ocupada · {hoyO.titulo}</span>
-                          : <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: '#dcfce7', color: '#16a34a' }}>Libre</span>}
+                          ? <span title={hoyO.detalle} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: hoyO.color, color: '#fff'}}>Ocupada · {hoyO.titulo}</span>
+                          : <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: '#1F7A50', color: '#fff' }}>Libre</span>}
                       </td>
                       <td style={{ ...td, fontSize: 12, color: 'var(--text-secondary)' }}>
                         {prox ? <>{rango(prox)} <span style={{ color: 'var(--text-muted)' }}>· {prox.titulo}</span></> : '—'}
@@ -300,9 +300,9 @@ export default function InstalacionesPage() {
             <button className="btn-ghost" onClick={() => { setYear(hoy.getFullYear()); setMonth(hoy.getMonth()) }}>Hoy</button>
             <div style={{ flex: 1 }} />
             <div style={{ display: 'flex', gap: 10, fontSize: 11, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-              <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: '#9333ea', marginRight: 4 }} />Evento</span>
+              <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: '#6B4E79', marginRight: 4 }} />Evento</span>
               {TIPOS_BLOQUEO.map(t => <span key={t}><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: COLOR_BLOQUEO[t], marginRight: 4 }} />{t}</span>)}
-              <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: '#e2e8f0', marginRight: 4 }} />Preparación/limpieza</span>
+              <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: '#E6E8EB', marginRight: 4 }} />Preparación/limpieza</span>
             </div>
           </div>
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -314,7 +314,7 @@ export default function InstalacionesPage() {
                     {dias.map(d => {
                       const f = fechaDe(d)
                       const dow = new Date(f + 'T12:00:00').getDay()
-                      return <th key={d} style={{ padding: '6px 0', width: 30, minWidth: 30, textAlign: 'center', fontSize: 10, color: f === hoyStr ? '#fff' : dow === 0 || dow === 6 ? '#b45309' : 'var(--text-muted)', background: f === hoyStr ? '#b45309' : undefined }}>{d}</th>
+                      return <th key={d} style={{ padding: '6px 0', width: 30, minWidth: 30, textAlign: 'center', fontSize: 10, color: f === hoyStr ? '#fff' : dow === 0 || dow === 6 ? '#96600F' : 'var(--text-muted)', background: f === hoyStr ? '#96600F' : undefined }}>{d}</th>
                     })}
                   </tr>
                 </thead>
@@ -334,8 +334,8 @@ export default function InstalacionesPage() {
                             onClick={() => (primera || buffer) && openOcup(l)}
                             style={{
                               height: 30, padding: 0, borderLeft: '1px solid var(--border)',
-                              background: primera ? primera.color : buffer ? '#e2e8f0' : 'transparent',
-                              outline: ocup.length > 1 ? '2px solid #dc2626' : undefined, outlineOffset: -2,
+                              background: primera ? primera.color : buffer ? '#E6E8EB' : 'transparent',
+                              outline: ocup.length > 1 ? '2px solid #C23B3B' : undefined, outlineOffset: -2,
                               cursor: primera || buffer ? 'pointer' : 'default',
                             }} />
                         )
@@ -387,7 +387,7 @@ export default function InstalacionesPage() {
               <input type="checkbox" id="activo-lug" checked={lugarForm.activo} onChange={e => setLugarForm(f => ({ ...f, activo: e.target.checked }))} />
               <label htmlFor="activo-lug" style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Activa</label>
             </div>
-            {errLugar && <div style={{ gridColumn: 'span 2', fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{errLugar}</div>}
+            {errLugar && <div style={{ gridColumn: 'span 2', fontSize: 12, color: '#C23B3B', background: '#F4F5F7', padding: '8px 12px', borderRadius: 6 }}>{errLugar}</div>}
           </div>
         </ModalShell>
       )}
@@ -440,11 +440,11 @@ export default function InstalacionesPage() {
                 <textarea className="input" rows={2} value={bloqueoForm.notas} onChange={e => setBloqueoForm(f => ({ ...f, notas: e.target.value }))} style={{ resize: 'vertical', width: '100%' }} />
               </div>
               {conflictos.length > 0 && (
-                <div style={{ gridColumn: 'span 2', fontSize: 12, color: '#b45309', background: '#fffbeb', padding: '8px 12px', borderRadius: 6 }}>
-                  ⚠ Se empalma con: {conflictos.map(c => `${c.titulo} (${rango(c)})`).join('; ')}
+                <div style={{ gridColumn: 'span 2', fontSize: 12, color: '#96600F', background: '#F4F5F7', padding: '8px 12px', borderRadius: 6 }}>
+                  Se empalma con: {conflictos.map(c => `${c.titulo} (${rango(c)})`).join('; ')}
                 </div>
               )}
-              {errBloqueo && <div style={{ gridColumn: 'span 2', fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{errBloqueo}</div>}
+              {errBloqueo && <div style={{ gridColumn: 'span 2', fontSize: 12, color: '#C23B3B', background: '#F4F5F7', padding: '8px 12px', borderRadius: 6 }}>{errBloqueo}</div>}
               <div style={{ gridColumn: 'span 2', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button className="btn-ghost" onClick={() => setShowBloqueoForm(false)}>Cancelar</button>
                 <button className="btn-primary" onClick={saveBloqueo} disabled={savingBloqueo}>{savingBloqueo ? 'Guardando…' : 'Guardar'}</button>
@@ -469,7 +469,7 @@ export default function InstalacionesPage() {
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{rango(o)}{o.horaIni ? ` · ${horas(o.horaIni, o.horaFin)}` : ''}{o.detalle ? ` · ${o.detalle}` : ''}</div>
                   </div>
                   {o.origen === 'bloqueo' && puedeEscribir && puedeEliminar && (
-                    <button className="btn-ghost" style={{ padding: '4px 8px', color: '#dc2626' }} title="Eliminar" onClick={() => deleteBloqueo(o.id)}><Trash2 size={13} /></button>
+                    <button className="btn-ghost" style={{ padding: '4px 8px', color: '#C23B3B' }} title="Eliminar" onClick={() => deleteBloqueo(o.id)}><Trash2 size={13} /></button>
                   )}
                 </div>
               ))}

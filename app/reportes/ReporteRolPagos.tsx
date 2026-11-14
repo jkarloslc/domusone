@@ -8,9 +8,9 @@ import * as XLSX from 'xlsx'
 const STATUS_ROL = ['Capturado', 'Autorizado', 'Rechazado'] as const
 
 const statusColor = (s: string) =>
-  s === 'Autorizado' ? '#15803d' :
-  s === 'Capturado'  ? '#d97706' :
-  s === 'Rechazado'  ? '#dc2626' : '#64748b'
+  s === 'Autorizado' ? '#1F7A50' :
+  s === 'Capturado'  ? '#B5761A' :
+  s === 'Rechazado'  ? '#C23B3B' : '#62666E'
 
 type Lote = {
   id: number
@@ -258,9 +258,9 @@ export default function ReporteRolPagos() {
       {/* Totales generales */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
         {[
-          { label: 'Total del rango',    value: fmt(totalGeneral),       color: '#b45309' },
+          { label: 'Total del rango',    value: fmt(totalGeneral),       color: '#96600F' },
           { label: 'Periodos (roles)',   value: String(periodosN),       color: 'var(--blue)' },
-          { label: 'Colaboradores',      value: String(colaboradoresN),  color: '#7c3aed' },
+          { label: 'Colaboradores',      value: String(colaboradoresN),  color: '#6B4E79' },
         ].map(k => (
           <div key={k.label} className="card" style={{ padding: '12px 16px' }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
@@ -303,24 +303,24 @@ export default function ReporteRolPagos() {
                     : 'Sin centro de costo'
                 return (
                   <Fragment key={`periodo-frag-${p.id}`}>
-                    <tr style={{ background: '#fff7ed', cursor: 'pointer' }} onClick={() => togglePeriodo(p.id)}>
+                    <tr style={{ background: '#F4F5F7', cursor: 'pointer' }} onClick={() => togglePeriodo(p.id)}>
                       <td colSpan={3} style={{ padding: '10px 12px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          {open ? <ChevronDown size={14} style={{ color: '#b45309' }} /> : <ChevronRight size={14} style={{ color: '#b45309' }} />}
-                          <span style={{ fontSize: 14, fontWeight: 700, color: '#b45309', fontFamily: 'monospace' }}>{p.folio}</span>
+                          {open ? <ChevronDown size={14} style={{ color: '#62666E' }} /> : <ChevronRight size={14} style={{ color: '#62666E' }} />}
+                          <span style={{ fontSize: 14, fontWeight: 700, color: '#96600F', fontVariantNumeric: 'tabular-nums' }}>{p.folio}</span>
                           <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{fmtF(p.fecha_desde)} – {fmtF(p.fecha_hasta)}</span>
-                          <span style={{ fontSize: 11, color: 'var(--text-muted)', background: '#ffedd5', padding: '1px 8px', borderRadius: 20 }}>
+                          <span style={{ fontSize: 11, color: '#4A4D54', background: '#E6E8EB', padding: '1px 8px', borderRadius: 20 }}>
                             {p.colaboradores.length} colaborador{p.colaboradores.length !== 1 ? 'es' : ''}
                           </span>
                         </div>
                       </td>
                       <td style={{ textAlign: 'center' }}></td>
                       <td style={{ textAlign: 'right' }}></td>
-                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: '#b45309' }}>{fmt(p.total)}</td>
+                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: '#96600F' }}>{fmt(p.total)}</td>
                       <td>
                         <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                          color: statusColor(p.status), background: statusColor(p.status) + '15',
-                          border: `1px solid ${statusColor(p.status)}40` }}>
+                          color: '#fff', background: statusColor(p.status),
+                          border: `1px solid ${statusColor(p.status)}` }}>
                           {p.status}
                         </span>
                       </td>
@@ -349,7 +349,7 @@ export default function ReporteRolPagos() {
                           <td style={{ fontSize: 12 }}>
                             {tipo && (
                               <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 20, marginRight: 6,
-                                background: tipo === 'Externo' ? '#fff7ed' : '#eff6ff', color: tipo === 'Externo' ? '#c2410c' : '#0369a1' }}>
+                                background: '#F4F5F7', color: tipo === 'Externo' ? '#A8501F' : '#2A6582' }}>
                                 {tipo}
                               </span>
                             )}
@@ -357,7 +357,7 @@ export default function ReporteRolPagos() {
                           </td>
                           <td style={{ textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>{c.dias}</td>
                           <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(c.costo_dia)}</td>
-                          <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#15803d' }}>{fmt(c.costo)}</td>
+                          <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#1F7A50' }}>{fmt(c.costo)}</td>
                           <td></td>
                         </tr>
                       )
@@ -366,11 +366,11 @@ export default function ReporteRolPagos() {
                 )
               })}
 
-              <tr style={{ background: '#fef3c7', fontWeight: 700 }}>
-                <td colSpan={5} style={{ color: '#92400e', padding: '10px 12px' }}>
+              <tr style={{ background: '#E6E8EB', fontWeight: 700 }}>
+                <td colSpan={5} style={{ color: '#7A4B0C', padding: '10px 12px' }}>
                   TOTAL GENERAL ({periodosN} periodo{periodosN !== 1 ? 's' : ''} · {colaboradoresN} colaborador{colaboradoresN !== 1 ? 'es' : ''})
                 </td>
-                <td style={{ textAlign: 'right', color: '#92400e', fontVariantNumeric: 'tabular-nums', fontSize: 14 }}>{fmt(totalGeneral)}</td>
+                <td style={{ textAlign: 'right', color: '#7A4B0C', fontVariantNumeric: 'tabular-nums', fontSize: 14 }}>{fmt(totalGeneral)}</td>
                 <td></td>
               </tr>
             </tbody>

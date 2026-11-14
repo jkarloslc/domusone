@@ -151,19 +151,19 @@ export function aplanar<T>(ns: NodoArbol<T>[], abierto: (n: NodoArbol<T>) => boo
 export function ControlesArbol({ ui }: { ui: ReturnType<typeof useArbolUI> }) {
   return (
     <>
-      <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>Nivel de detalle</span>
-      <div style={{ display: 'flex', gap: 4, background: '#f1f5f9', borderRadius: 18, padding: 3 }}>
+      <span style={{ fontSize: 12, color: '#62666E', fontWeight: 600 }}>Nivel de detalle</span>
+      <div style={{ display: 'flex', gap: 4, background: '#F4F5F7', borderRadius: 18, padding: 3 }}>
         {([1, 2, 3] as const).map(v => (
           <button key={v} onClick={() => ui.cambiarNivel(v)}
             title={v === 1 ? 'Solo rubros' : v === 2 ? 'Rubro → Zona / Centro de ingreso / Tipo de gasto' : 'Todo abierto'}
             style={{ padding: '3px 12px', borderRadius: 14, border: 'none', cursor: 'pointer', fontSize: 12,
-              background: ui.nivel === v ? '#fff' : 'transparent', color: ui.nivel === v ? '#1e293b' : '#64748b',
+              background: ui.nivel === v ? '#fff' : 'transparent', color: ui.nivel === v ? '#26282D' : '#62666E',
               fontWeight: ui.nivel === v ? 600 : 400, boxShadow: ui.nivel === v ? '0 1px 3px rgba(0,0,0,.1)' : 'none' }}>
             {v}
           </button>
         ))}
       </div>
-      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#475569', cursor: 'pointer' }}>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#4A4D54', cursor: 'pointer' }}>
         <input type="checkbox" checked={ui.agruparMenores} onChange={e => ui.setAgruparMenores(e.target.checked)} />
         Agrupar partidas menores al 1% en “Otros menores”
       </label>
@@ -180,13 +180,13 @@ export function EtiquetaNodo<T>({ n, ui }: { n: NodoArbol<T>; ui: ReturnType<typ
       style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: expandible ? 'pointer' : 'default',
         paddingLeft: n.depth * 18,
         fontWeight: n.depth === 0 ? 700 : n.depth === 1 ? 600 : 500,
-        color: n.esMenores ? '#64748b' : '#1e293b', fontStyle: n.esMenores ? 'italic' : 'normal',
+        color: n.esMenores ? '#62666E' : '#26282D', fontStyle: n.esMenores ? 'italic' : 'normal',
         fontSize: n.depth === 0 ? 12.5 : 12 }}>
-      <span style={{ width: 14, flexShrink: 0, display: 'inline-flex', color: '#94a3b8' }}>
+      <span style={{ width: 14, flexShrink: 0, display: 'inline-flex', color: '#7A7E87' }}>
         {expandible ? (open ? <ChevronDown size={14} /> : <ChevronRight size={14} />) : null}
       </span>
       {n.nombre}
-      {expandible && !open && <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400 }}>· {n.hijos.length}</span>}
+      {expandible && !open && <span style={{ fontSize: 11, color: '#7A7E87', fontWeight: 400 }}>· {n.hijos.length}</span>}
     </span>
   )
 }

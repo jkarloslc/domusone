@@ -243,7 +243,7 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
                       if (propia) return zonasCat.zonas.find(z => z.id === propia)?.nombre ?? `#${propia}`
                       const zs = zonasCat.zonasDeSeccion(l.id_seccion_fk)
                       if (zs.length === 1) return zs[0].nombre
-                      if (zs.length > 1) return <span style={{ color: '#b45309', fontSize: 12 }} title={zs.map(z => z.nombre).join(', ')}>Sin asignar ({zs.length} zonas)</span>
+                      if (zs.length > 1) return <span style={{ color: '#96600F', fontSize: 12 }} title={zs.map(z => z.nombre).join(', ')}>Sin asignar ({zs.length} zonas)</span>
                       return '—'
                     })()}
                   </td>
@@ -326,9 +326,9 @@ function StatsRow({ lotes }: { lotes: Lote[] }) {
 
   const stats = [
     { label: 'En esta página', value: lotes.length,  color: 'var(--text-primary)' },
-    { label: 'Vendidos',       value: vendidos,       color: '#4ade80' },
-    { label: 'Libres',         value: libres,         color: '#60a5fa' },
-    { label: 'Bloqueados',     value: bloqueados,     color: '#f87171' },
+    { label: 'Vendidos',       value: vendidos,       color: '#1F7A50' },
+    { label: 'Libres',         value: libres,         color: '#9A9EA7' },
+    { label: 'Bloqueados',     value: bloqueados,     color: '#C23B3B' },
   ]
 
   return (

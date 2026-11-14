@@ -40,11 +40,11 @@ const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
-  'Cotización': { bg: '#f0fdf4', color: '#16a34a' },
-  'Confirmado': { bg: '#eff6ff', color: '#2563eb' },
-  'En curso':   { bg: '#fff7ed', color: '#ea580c' },
-  'Realizado':  { bg: '#f0fdf4', color: '#15803d' },
-  'Cancelado':  { bg: '#fef2f2', color: '#dc2626' },
+  'Cotización': { bg: '#F4F5F7', color: '#267F56' },
+  'Confirmado': { bg: '#F4F5F7', color: '#1C1D21' },
+  'En curso':   { bg: '#F4F5F7', color: '#C8642A' },
+  'Realizado':  { bg: '#F4F5F7', color: '#1F7A50' },
+  'Cancelado':  { bg: '#F4F5F7', color: '#C23B3B' },
 }
 
 const fmt$ = (v: number) => '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 })
@@ -229,7 +229,7 @@ export default function CalendarioPage() {
                       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                       width: 24, height: 24, borderRadius: '50%', marginBottom: 4,
                       fontSize: 12, fontWeight: isHoy ? 700 : 400,
-                      background: isHoy ? '#9333ea' : 'transparent',
+                      background: isHoy ? '#6B4E79' : 'transparent',
                       color: isHoy ? '#fff' : 'var(--text-primary)',
                     }}>
                       {dia}
@@ -237,16 +237,16 @@ export default function CalendarioPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                       {evsDia.map(ev => {
                         const tipo  = ev.cat_tipos_evento
-                        const color = tipo?.color ?? '#9333ea'
-                        const sc    = STATUS_COLORS[ev.status] ?? { color: '#64748b' }
+                        const color = tipo?.color ?? '#6B4E79'
+                        const sc    = STATUS_COLORS[ev.status] ?? { color: '#62666E' }
                         return (
                           <button
                             key={ev.id}
                             onClick={() => openDetalle(ev)}
                             style={{
                               display: 'block', width: '100%', textAlign: 'left',
-                              background: color + '18',
-                              border: `1px solid ${color}44`,
+                              background: '#F4F5F7',
+                              border: '1px solid #E6E8EB',
                               borderLeft: `3px solid ${color}`,
                               borderRadius: 5, padding: '3px 6px',
                               cursor: 'pointer', fontSize: 10, lineHeight: 1.3,
@@ -266,14 +266,14 @@ export default function CalendarioPage() {
                       })}
                       {bufferDia.map(ev => {
                         const tipo  = ev.cat_tipos_evento
-                        const color = tipo?.color ?? '#9333ea'
+                        const color = tipo?.color ?? '#6B4E79'
                         return (
                           <div
                             key={'buf-' + ev.id}
                             title={`Bloqueado por preparación/limpieza de "${ev.nombre}" (${ev.cat_lugares?.nombre ?? 'lugar'})`}
                             style={{
                               display: 'flex', alignItems: 'center', gap: 3, width: '100%',
-                              border: `1px dashed ${color}55`,
+                              border: '1px dashed #E6E8EB',
                               borderRadius: 5, padding: '3px 6px',
                               fontSize: 9, lineHeight: 1.3,
                               color: 'var(--text-muted)',
@@ -315,7 +315,7 @@ export default function CalendarioPage() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           footer={
-            <a href="/eventos/gestion" style={{ fontSize: 12, color: '#9333ea', textDecoration: 'none' }}>
+            <a href="/eventos/gestion" style={{ fontSize: 12, color: '#6B4E79', textDecoration: 'none' }}>
               Editar en gestión de eventos →
             </a>
           }
@@ -325,14 +325,14 @@ export default function CalendarioPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {/* Status badge */}
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                {(() => { const sc = STATUS_COLORS[selEvento.status] ?? { bg: '#f8fafc', color: '#64748b' }; return (
-                  <span style={{ fontSize: 12, padding: '4px 12px', borderRadius: 20, fontWeight: 700, background: sc.bg, color: sc.color }}>
+                {(() => { const sc = STATUS_COLORS[selEvento.status] ?? { bg: '#F8F9FA', color: '#62666E' }; return (
+                  <span style={{ fontSize: 12, padding: '4px 12px', borderRadius: 20, fontWeight: 700, background: sc.color, color: '#fff'}}>
                     {selEvento.status}
                   </span>
                 )})()}
                 {selEvento.cat_tipos_evento && (
                   <span style={{ fontSize: 12, padding: '4px 12px', borderRadius: 20, fontWeight: 600,
-                    background: selEvento.cat_tipos_evento.color + '18', color: selEvento.cat_tipos_evento.color }}>
+                    background: selEvento.cat_tipos_evento.color, color: '#fff'}}>
                     {selEvento.cat_tipos_evento.nombre}
                   </span>
                 )}
@@ -342,7 +342,7 @@ export default function CalendarioPage() {
                 <div>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Fecha</div>
                   <div style={{ fontSize: 13, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <Calendar size={13} style={{ color: '#9333ea' }} />
+                    <Calendar size={13} style={{ color: '#62666E' }} />
                     {fmtFecha(selEvento.fecha_inicio)}
                     {selEvento.fecha_fin && selEvento.fecha_fin !== selEvento.fecha_inicio && ` — ${fmtFecha(selEvento.fecha_fin)}`}
                   </div>
@@ -351,7 +351,7 @@ export default function CalendarioPage() {
                   <div>
                     <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Horario</div>
                     <div style={{ fontSize: 13, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <Clock size={13} style={{ color: '#9333ea' }} />
+                      <Clock size={13} style={{ color: '#6B4E79' }} />
                       {selEvento.hora_inicio?.slice(0,5) ?? '—'}
                       {selEvento.hora_fin && ` a ${selEvento.hora_fin.slice(0,5)}`}
                     </div>
@@ -361,7 +361,7 @@ export default function CalendarioPage() {
                   <div>
                     <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Lugar</div>
                     <div style={{ fontSize: 13, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <MapPin size={13} style={{ color: '#9333ea' }} />
+                      <MapPin size={13} style={{ color: '#62666E' }} />
                       {selEvento.cat_lugares.nombre}
                       {selEvento.cat_lugares.capacidad && <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>(cap. {selEvento.cat_lugares.capacidad})</span>}
                     </div>
@@ -371,7 +371,7 @@ export default function CalendarioPage() {
                   <div>
                     <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Asistentes</div>
                     <div style={{ fontSize: 13, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <Users size={13} style={{ color: '#9333ea' }} />
+                      <Users size={13} style={{ color: '#62666E' }} />
                       {selEvento.num_asistentes} personas
                     </div>
                   </div>
@@ -386,8 +386,8 @@ export default function CalendarioPage() {
 
               {/* Cliente */}
               {(selEvento.cliente_nombre || selEvento.cliente_telefono || selEvento.cliente_email) && (
-                <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 10, padding: '12px 16px' }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#9333ea', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Cliente</div>
+                <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 10, padding: '12px 16px' }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#6B4E79', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Cliente</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {selEvento.cliente_nombre && <div style={{ fontSize: 13, fontWeight: 600 }}>{selEvento.cliente_nombre}</div>}
                     {selEvento.cliente_telefono && (
@@ -433,16 +433,16 @@ export default function CalendarioPage() {
                       <tbody>
                         {ingresos.map((ing, i) => (
                           <tr key={ing.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
-                            <td style={{ padding: '8px 12px', fontWeight: 700, color: '#9333ea', fontFamily: 'monospace', fontSize: 10 }}>{ing.folio}</td>
+                            <td style={{ padding: '8px 12px', fontWeight: 700, color: '#6B4E79', fontVariantNumeric: 'tabular-nums', fontSize: 10 }}>{ing.folio}</td>
                             <td style={{ padding: '8px 12px' }}>{ing.descripcion}</td>
                             <td style={{ padding: '8px 12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{fmtFecha(ing.fecha_pago)}</td>
                             <td style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>{ing.forma_pago}</td>
-                            <td style={{ padding: '8px 12px', fontWeight: 700, color: '#16a34a' }}>{fmt$(ing.monto)}</td>
+                            <td style={{ padding: '8px 12px', fontWeight: 700, color: '#267F56' }}>{fmt$(ing.monto)}</td>
                           </tr>
                         ))}
                         <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
                           <td colSpan={4} style={{ padding: '8px 12px', fontWeight: 700, fontSize: 11, color: 'var(--text-muted)' }}>TOTAL</td>
-                          <td style={{ padding: '8px 12px', fontWeight: 700, color: '#16a34a' }}>{fmt$(ingresos.reduce((s, i) => s + i.monto, 0))}</td>
+                          <td style={{ padding: '8px 12px', fontWeight: 700, color: '#267F56' }}>{fmt$(ingresos.reduce((s, i) => s + i.monto, 0))}</td>
                         </tr>
                       </tbody>
                     </table>
@@ -472,20 +472,20 @@ export default function CalendarioPage() {
                     <tbody>
                       {ops.map((op, i) => (
                         <tr key={op.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
-                          <td style={{ padding: '8px 12px', fontWeight: 700, color: '#16a34a', fontFamily: 'monospace', fontSize: 10 }}>{op.folio}</td>
+                          <td style={{ padding: '8px 12px', fontWeight: 700, color: '#267F56', fontVariantNumeric: 'tabular-nums', fontSize: 10 }}>{op.folio}</td>
                           <td style={{ padding: '8px 12px' }}>{op.concepto}</td>
                           <td style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>{op.proveedor_nombre ?? '—'}</td>
                           <td style={{ padding: '8px 12px', fontWeight: 600 }}>{fmt$(op.monto)}</td>
-                          <td style={{ padding: '8px 12px', color: op.saldo > 0 ? '#dc2626' : '#16a34a', fontWeight: 600 }}>{fmt$(op.saldo)}</td>
+                          <td style={{ padding: '8px 12px', color: op.saldo > 0 ? '#C23B3B' : '#267F56', fontWeight: 600 }}>{fmt$(op.saldo)}</td>
                           <td style={{ padding: '8px 12px' }}>
-                            <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 8, background: '#f8fafc', color: '#64748b', fontWeight: 600 }}>{op.status}</span>
+                            <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 8, background: '#F8F9FA', color: '#62666E', fontWeight: 600 }}>{op.status}</span>
                           </td>
                         </tr>
                       ))}
                       <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
                         <td colSpan={3} style={{ padding: '8px 12px', fontWeight: 700, fontSize: 11, color: 'var(--text-muted)' }}>TOTAL</td>
                         <td style={{ padding: '8px 12px', fontWeight: 700 }}>{fmt$(ops.reduce((s, o) => s + o.monto, 0))}</td>
-                        <td style={{ padding: '8px 12px', fontWeight: 700, color: '#dc2626' }}>{fmt$(ops.reduce((s, o) => s + o.saldo, 0))}</td>
+                        <td style={{ padding: '8px 12px', fontWeight: 700, color: '#C23B3B' }}>{fmt$(ops.reduce((s, o) => s + o.saldo, 0))}</td>
                         <td></td>
                       </tr>
                     </tbody>

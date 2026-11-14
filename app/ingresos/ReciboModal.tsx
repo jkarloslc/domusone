@@ -71,12 +71,12 @@ const escapeHtml = (v: string | number | null | undefined) =>
     .replaceAll("'", '&#39;')
 
 export const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
-  Confirmado: { bg: '#f0fdf4', color: '#15803d' },
-  Borrador:   { bg: '#fffbeb', color: '#d97706' },
-  Cancelado:  { bg: '#f8fafc', color: '#94a3b8' },
+  Confirmado: { bg: '#F4F5F7', color: '#1F7A50' },
+  Borrador:   { bg: '#F4F5F7', color: '#B5761A' },
+  Cancelado:  { bg: '#F8F9FA', color: '#7A7E87' },
 }
 const CENTRO_COLOR: Record<string, string> = {
-  golf: '#059669', cuotas: '#2563eb', rentas_espacios: '#7c3aed', caballerizas: '#d97706', otro: '#64748b',
+  golf: '#267F56', cuotas: '#1C1D21', rentas_espacios: '#6B4E79', caballerizas: '#B5761A', otro: '#62666E',
 }
 
 
@@ -627,24 +627,24 @@ export default function ReciboModal({
       const fiscalImp = calcFiscal(recibo.monto_total ?? 0)
       const logoHtml = orgLogo
         ? `<img src="${escapeHtml(orgLogo)}" style="height:52px;max-width:160px;object-fit:contain;" />`
-        : '<div style="width:52px;height:52px;border-radius:8px;background:#e2e8f0;color:#64748b;display:flex;align-items:center;justify-content:center;font-weight:700">ORG</div>'
+        : '<div style="width:52px;height:52px;border-radius:8px;background:#E6E8EB;color:#62666E;display:flex;align-items:center;justify-content:center;font-weight:700">ORG</div>'
 
       const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Recibo ${escapeHtml(recibo.folio ?? `#${recibo.id}`)}</title>
       <style>
-        body { font-family: Arial, sans-serif; padding: 34px; font-size: 12px; color: #1e293b; }
-        .org-header { display:flex; align-items:center; gap:16px; padding-bottom:14px; border-bottom:2px solid #0D4F80; margin-bottom:18px; }
-        .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin:0 0 2px; }
-        .org-sub { font-size: 11px; color: #64748b; }
-        .doc-title { font-size: 14px; font-weight: 700; color: #0D4F80; margin-bottom: 3px; }
-        .meta { font-size: 11px; color: #64748b; }
+        body { font-family: Arial, sans-serif; padding: 34px; font-size: 12px; color: #26282D; }
+        .org-header { display:flex; align-items:center; gap:16px; padding-bottom:14px; border-bottom:2px solid #1C1D21; margin-bottom:18px; }
+        .org-nombre { font-size: 18px; font-weight: 700; color: #1C1D21; margin:0 0 2px; }
+        .org-sub { font-size: 11px; color: #62666E; }
+        .doc-title { font-size: 14px; font-weight: 700; color: #1C1D21; margin-bottom: 3px; }
+        .meta { font-size: 11px; color: #62666E; }
         .section { margin-bottom: 16px; }
-        .section-title { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; color: #0D4F80; margin-bottom: 8px; }
+        .section-title { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; color: #1C1D21; margin-bottom: 8px; }
         table { width: 100%; border-collapse: collapse; margin: 8px 0; }
-        th, td { border: 1px solid #e2e8f0; padding: 8px 10px; }
-        th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; text-align: left; }
-        .total { background: #eff6ff; font-weight: 700; color: #0D4F80; }
+        th, td { border: 1px solid #E6E8EB; padding: 8px 10px; }
+        th { background: #F4F5F7; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; text-align: left; }
+        .total { background: #F4F5F7; font-weight: 700; color: #1C1D21; }
         .firmas { display: flex; gap: 60px; margin-top: 52px; }
-        .firma { border-top: 1px solid #0f172a; width: 190px; padding-top: 6px; text-align: center; font-size: 11px; color: #64748b; }
+        .firma { border-top: 1px solid #1C1D21; width: 190px; padding-top: 6px; text-align: center; font-size: 11px; color: #62666E; }
         @page { margin: 1.2cm; }
       </style></head><body>
         <div class="org-header">
@@ -748,7 +748,7 @@ export default function ReciboModal({
       subtitulo={
         isView
           ? isEditMode
-            ? `✏️ Editando · ${fmtFecha(form.fecha)} · ${centroSel?.nombre ?? 'Sin centro'}`
+            ? `Editando · ${fmtFecha(form.fecha)} · ${centroSel?.nombre ?? 'Sin centro'}`
             : `${fmtFecha(form.fecha)} · ${centroSel?.nombre ?? 'Sin centro'}`
           : 'Captura manual de ingresos'
       }
@@ -760,14 +760,14 @@ export default function ReciboModal({
             {/* Superadmin: botón Editar (solo si no está en modo edición ni cancelación) */}
             {isView && isSuperAdmin && !isEditMode && !showCancel && recibo!.status !== 'Cancelado' && (
               <button onClick={() => setIsEditMode(true)}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: 'none', color: '#7c3aed', border: '1px solid #c4b5fd', borderRadius: 7, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: 'none', color: '#6B4E79', border: '1px solid #C9CCD3', borderRadius: 7, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
                 <Pencil size={13} /> Editar recibo
               </button>
             )}
             {/* Cancelar recibo (solo vista normal, no en modo edición) */}
             {isView && !isEditMode && recibo!.status === 'Confirmado' && !showCancel && canWrite('ingresos') && (
               <button onClick={() => setShowCancel(true)}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: 'none', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 7, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: 'none', color: '#C23B3B', border: '1px solid #C9CCD3', borderRadius: 7, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
                 <Ban size={13} /> Cancelar recibo
               </button>
             )}
@@ -785,7 +785,7 @@ export default function ReciboModal({
                   Descartar cambios
                 </button>
                 <button className="btn-primary" onClick={handleUpdate} disabled={saving}
-                  style={{ background: '#7c3aed', borderColor: '#7c3aed' }}>
+                  style={{ background: '#6B4E79', borderColor: '#6B4E79' }}>
                   {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
                   Guardar cambios
                 </button>
@@ -811,19 +811,19 @@ export default function ReciboModal({
         {isView && (
           <div>
             <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-              background: STATUS_STYLE[recibo!.status]?.bg ?? '#f8fafc',
-              color: STATUS_STYLE[recibo!.status]?.color ?? '#64748b',
+              background: STATUS_STYLE[recibo!.status]?.bg ?? '#F8F9FA',
+              color: STATUS_STYLE[recibo!.status]?.color ?? '#62666E',
               display: 'inline-block' }}>
               {recibo!.status}
             </span>
           </div>
         )}
-          {error && <div style={{ padding: '8px 12px', background: '#fef2f2', borderRadius: 6, fontSize: 12, color: '#dc2626' }}>{error}</div>}
+          {error && <div style={{ padding: '8px 12px', background: '#F4F5F7', borderRadius: 6, fontSize: 12, color: '#C23B3B' }}>{error}</div>}
 
           {/* Aviso del corte a ingreso derivado: se muestra ANTES de que el
               usuario capture todo y choque con el error al guardar. */}
           {bloqueadoPorCorte && (
-            <div style={{ padding: '10px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, fontSize: 12, color: '#92400e' }}>
+            <div style={{ padding: '10px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 6, fontSize: 12, color: '#7A4B0C' }}>
               <strong>Captura manual bloqueada para este centro.</strong>{' '}
               Desde el <strong>{corteDerivado}</strong> su ingreso se genera al hacer el corte de cobranza,
               con el desglose por sección y la clasificación vencido/corriente/anticipado calculados solos.
@@ -834,11 +834,11 @@ export default function ReciboModal({
           {/* Fecha + Centro */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12 }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Fecha *</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#33363C', display: 'block', marginBottom: 4 }}>Fecha *</label>
               <input className="input" type="date" value={form.fecha} onChange={e => set('fecha', e.target.value)} disabled={isView && !isEditMode} />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Centro de Ingreso *</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#33363C', display: 'block', marginBottom: 4 }}>Centro de Ingreso *</label>
               <select className="select" value={form.id_centro_ingreso_fk ?? ''} onChange={e => set('id_centro_ingreso_fk', e.target.value)} disabled={isView && !isEditMode}>
                 <option value="">Seleccionar…</option>
                 {centros.filter(c => c.activo).map(c => <option key={c.id} value={c.id}>{c.label ?? c.nombre}</option>)}
@@ -848,7 +848,7 @@ export default function ReciboModal({
 
           {/* Descripción */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Descripción / Concepto</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#33363C', display: 'block', marginBottom: 4 }}>Descripción / Concepto</label>
             <input className="input" value={form.descripcion} onChange={e => set('descripcion', e.target.value)} disabled={isView && !isEditMode}
               placeholder="ej. Ventas del día — green fees, carros, práctica" />
           </div>
@@ -856,7 +856,7 @@ export default function ReciboModal({
           {/* Cuenta bancaria — todas las formas de cobro del recibo entran a esta misma cuenta */}
           {cuentasBanc.length > 0 && (
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#33363C', display: 'block', marginBottom: 4 }}>
                 Cuenta Bancaria Destino
               </label>
               <select className="select" value={form.id_cuenta_bancaria_fk ?? ''}
@@ -869,7 +869,7 @@ export default function ReciboModal({
                   </option>
                 ))}
               </select>
-              <span style={{ fontSize: 11, color: '#94a3b8', display: 'block', marginTop: 3 }}>
+              <span style={{ fontSize: 11, color: '#7A7E87', display: 'block', marginTop: 3 }}>
                 Dónde entró el dinero de este recibo (todas las formas de cobro). Se usa para cuadrar el auxiliar de bancos.
               </span>
             </div>
@@ -878,9 +878,9 @@ export default function ReciboModal({
           {/* Montos: desglose por sección, frente, o monto único */}
           {esSecciones ? (
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <Layers size={13} style={{ color: '#7c3aed' }} /> Monto por sección residencial
-                <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 500, color: '#475569', cursor: (isView && !isEditMode) ? 'default' : 'pointer' }}
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#33363C', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <Layers size={13} style={{ color: '#62666E' }} /> Monto por sección residencial
+                <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 500, color: '#4A4D54', cursor: (isView && !isEditMode) ? 'default' : 'pointer' }}
                   title="Desglosa cada sección en cuotas vencidas, del mes corriente y anticipadas. Es lo que permite al Comparativo y al Estado de Resultados separar desempeño del mes de recuperación de cartera y de pagos adelantados.">
                   <input type="checkbox" checked={clasificando} disabled={isView && !isEditMode}
                     onChange={e => {
@@ -900,7 +900,7 @@ export default function ReciboModal({
                 </label>
               </div>
               {clasificando && (
-                <div style={{ fontSize: 10.5, color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '6px 9px', marginBottom: 8 }}>
+                <div style={{ fontSize: 10.5, color: '#7A4B0C', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 6, padding: '6px 9px', marginBottom: 8 }}>
                   El <strong>monto</strong> de cada fila es la suma de las tres bandas.{' '}
                   <strong>Vencida</strong>: cuotas de meses anteriores · <strong>Corriente</strong>: la cuota del propio mes del recibo ·{' '}
                   <strong>Anticipada</strong>: cuotas de meses futuros (pago anualizado).
@@ -909,32 +909,32 @@ export default function ReciboModal({
               {loadingSecs ? (
                 <div style={{ textAlign: 'center', padding: 20 }}><Loader size={16} className="animate-spin" /></div>
               ) : (
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: clasificando ? 'minmax(110px,1fr) 88px 88px 88px 104px' : '1fr 90px 90px 130px', padding: '7px 12px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>SECCIÓN</span>
+                <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: clasificando ? 'minmax(110px,1fr) 88px 88px 88px 104px' : '1fr 90px 90px 130px', padding: '7px 12px', background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#62666E' }}>SECCIÓN</span>
                     {clasificando ? (
                       <>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', textAlign: 'right' }}>VENCIDA</span>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: '#16a34a', textAlign: 'right' }}>CORRIENTE</span>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: '#2563eb', textAlign: 'right' }}>ANTICIP.</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: '#C23B3B', textAlign: 'right' }}>VENCIDA</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: '#267F56', textAlign: 'right' }}>CORRIENTE</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: '#1C1D21', textAlign: 'right' }}>ANTICIP.</span>
                       </>
                     ) : (
                       <>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textAlign: 'right' }}>SUBTOTAL</span>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textAlign: 'right' }}>IVA</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: '#62666E', textAlign: 'right' }}>SUBTOTAL</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: '#62666E', textAlign: 'right' }}>IVA</span>
                       </>
                     )}
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textAlign: 'right' }}>MONTO</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#62666E', textAlign: 'right' }}>MONTO</span>
                   </div>
                   {secRows.map((row, i) => {
                     const rowFiscal = calcFiscal(row.monto || 0)
                     return (
                     <div key={row.id_seccion_fk} style={{
                       display: 'grid', gridTemplateColumns: clasificando ? 'minmax(110px,1fr) 88px 88px 88px 104px' : '1fr 90px 90px 130px', padding: '8px 12px', alignItems: 'center', gap: 4,
-                      borderBottom: i < secRows.length - 1 ? '1px solid #f1f5f9' : 'none',
-                      background: row.monto > 0 ? '#f0fdf4' : '#fff',
+                      borderBottom: i < secRows.length - 1 ? '1px solid #F4F5F7' : 'none',
+                      background: row.monto > 0 ? '#F4F5F7' : '#fff',
                     }}>
-                      <span style={{ fontSize: 13, color: '#1e293b', fontWeight: row.monto > 0 ? 600 : 400 }}>{row.nombre_seccion}</span>
+                      <span style={{ fontSize: 13, color: '#26282D', fontWeight: row.monto > 0 ? 600 : 400 }}>{row.nombre_seccion}</span>
                       {clasificando ? (
                         <>
                           {(['monto_vencido', 'monto_corriente', 'monto_anticipado'] as const).map(campo => (
@@ -946,14 +946,14 @@ export default function ReciboModal({
                               style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', padding: '5px 6px', fontSize: 12 }}
                             />
                           ))}
-                          <span style={{ fontSize: 13, fontWeight: 700, color: row.monto > 0 ? '#15803d' : '#94a3b8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: row.monto > 0 ? '#1F7A50' : '#7A7E87', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                             {fmt(row.monto)}
                           </span>
                         </>
                       ) : (
                         <>
-                          <span style={{ fontSize: 12, color: '#64748b', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.subtotal)}</span>
-                          <span style={{ fontSize: 12, color: '#64748b', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.iva)}</span>
+                          <span style={{ fontSize: 12, color: '#62666E', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.subtotal)}</span>
+                          <span style={{ fontSize: 12, color: '#62666E', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.iva)}</span>
                           <div>
                             <input
                               className="input" type="number" min="0" step="0.01"
@@ -968,21 +968,21 @@ export default function ReciboModal({
                     </div>
                     )
                   })}
-                  <div style={{ display: 'grid', gridTemplateColumns: clasificando ? 'minmax(110px,1fr) 88px 88px 88px 104px' : '1fr 90px 90px 130px', padding: '9px 12px', background: '#f0fdf4', borderTop: '2px solid #bbf7d0', gap: 4 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>Subtotal secciones</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: clasificando ? 'minmax(110px,1fr) 88px 88px 88px 104px' : '1fr 90px 90px 130px', padding: '9px 12px', background: '#F4F5F7', borderTop: '2px solid #E6E8EB', gap: 4 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#1F7A50' }}>Subtotal secciones</span>
                     {clasificando ? (
                       <>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#dc2626', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSecsVencido)}</span>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#16a34a', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSecsCorriente)}</span>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#2563eb', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSecsAnticipado)}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#C23B3B', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSecsVencido)}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#267F56', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSecsCorriente)}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#1C1D21', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSecsAnticipado)}</span>
                       </>
                     ) : (
                       <>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#15803d', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalSecs).subtotal)}</span>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#15803d', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalSecs).iva)}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#1F7A50', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalSecs).subtotal)}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#1F7A50', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalSecs).iva)}</span>
                       </>
                     )}
-                    <span style={{ fontSize: 14, fontWeight: 700, color: '#15803d', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSecs)}</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: '#1F7A50', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSecs)}</span>
                   </div>
                 </div>
               )}
@@ -990,27 +990,27 @@ export default function ReciboModal({
               {/* Conceptos complementarios */}
               {esConceptos && conceptoRows.length > 0 && (
                 <div style={{ marginTop: 14 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <DollarSign size={13} style={{ color: '#7c3aed' }} /> Otros conceptos de cobro
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#33363C', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <DollarSign size={13} style={{ color: '#62666E' }} /> Otros conceptos de cobro
                   </div>
-                  <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '7px 12px', background: '#faf5ff', borderBottom: '1px solid #e2e8f0' }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed' }}>CONCEPTO</span>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: '#7c3aed', textAlign: 'right' }}>SUBTOTAL</span>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: '#7c3aed', textAlign: 'right' }}>IVA</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', textAlign: 'right' }}>MONTO</span>
+                  <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '7px 12px', background: '#F4F5F7', borderBottom: '1px solid #E6E8EB' }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#6B4E79' }}>CONCEPTO</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#6B4E79', textAlign: 'right' }}>SUBTOTAL</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#6B4E79', textAlign: 'right' }}>IVA</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#6B4E79', textAlign: 'right' }}>MONTO</span>
                     </div>
                     {conceptoRows.map((row, i) => {
                       const rowFiscal = calcFiscal(row.monto || 0)
                       return (
                       <div key={row.id_concepto_fk} style={{
                         display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '8px 12px', alignItems: 'center',
-                        borderBottom: i < conceptoRows.length - 1 ? '1px solid #f1f5f9' : 'none',
-                        background: row.monto > 0 ? '#faf5ff' : '#fff',
+                        borderBottom: i < conceptoRows.length - 1 ? '1px solid #F4F5F7' : 'none',
+                        background: row.monto > 0 ? '#F4F5F7' : '#fff',
                       }}>
-                        <span style={{ fontSize: 13, color: '#1e293b', fontWeight: row.monto > 0 ? 600 : 400 }}>{row.nombre_concepto}</span>
-                        <span style={{ fontSize: 12, color: '#64748b', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.subtotal)}</span>
-                        <span style={{ fontSize: 12, color: '#64748b', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.iva)}</span>
+                        <span style={{ fontSize: 13, color: '#26282D', fontWeight: row.monto > 0 ? 600 : 400 }}>{row.nombre_concepto}</span>
+                        <span style={{ fontSize: 12, color: '#62666E', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.subtotal)}</span>
+                        <span style={{ fontSize: 12, color: '#62666E', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.iva)}</span>
                         <div>
                           <input
                             className="input" type="number" min="0" step="0.01"
@@ -1023,11 +1023,11 @@ export default function ReciboModal({
                       </div>
                       )
                     })}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '9px 12px', background: '#faf5ff', borderTop: '2px solid #e9d5ff' }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed' }}>Subtotal conceptos</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalConceptos).subtotal)}</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalConceptos).iva)}</span>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: '#7c3aed', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalConceptos)}</span>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '9px 12px', background: '#F4F5F7', borderTop: '2px solid #E6E8EB' }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#6B4E79' }}>Subtotal conceptos</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#6B4E79', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalConceptos).subtotal)}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#6B4E79', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalConceptos).iva)}</span>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: '#6B4E79', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalConceptos)}</span>
                     </div>
                   </div>
                 </div>
@@ -1035,15 +1035,15 @@ export default function ReciboModal({
 
               {/* Total general secciones + conceptos */}
               {(esConceptos && conceptoRows.length > 0) && (
-                <div style={{ marginTop: 10, padding: '11px 14px', background: '#f0fdf4', borderRadius: 8, border: '2px solid #86efac', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>TOTAL GENERAL</span>
-                  <span style={{ fontSize: 17, fontWeight: 800, color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalFinal)}</span>
+                <div style={{ marginTop: 10, padding: '11px 14px', background: '#F4F5F7', borderRadius: 8, border: '2px solid #C9CCD3', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#1F7A50' }}>TOTAL GENERAL</span>
+                  <span style={{ fontSize: 17, fontWeight: 800, color: '#1F7A50', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalFinal)}</span>
                 </div>
               )}
               {(!esConceptos || conceptoRows.length === 0) && (
-                <div style={{ marginTop: 10, padding: '10px 14px', background: '#f0fdf4', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#15803d' }}>Total</span>
-                  <span style={{ fontSize: 16, fontWeight: 700, color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSecs)}</span>
+                <div style={{ marginTop: 10, padding: '10px 14px', background: '#F4F5F7', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#1F7A50' }}>Total</span>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: '#1F7A50', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSecs)}</span>
                 </div>
               )}
             </div>
@@ -1052,27 +1052,27 @@ export default function ReciboModal({
           {/* Desglose por concepto — solo para tipo_desglose = 'conceptos' (sin secciones) */}
           {!esSecciones && centroSel?.tipo_desglose === 'conceptos' && conceptoRows.length > 0 && (
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Layers size={13} style={{ color: '#d97706' }} /> Monto por concepto de cobro
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#33363C', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Layers size={13} style={{ color: '#62666E' }} /> Monto por concepto de cobro
               </div>
-              <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '7px 12px', background: '#fffbeb', borderBottom: '1px solid #e2e8f0' }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#92400e' }}>CONCEPTO</span>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#92400e', textAlign: 'right' }}>SUBTOTAL</span>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#92400e', textAlign: 'right' }}>IVA</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#92400e', textAlign: 'right' }}>MONTO</span>
+              <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '7px 12px', background: '#F4F5F7', borderBottom: '1px solid #E6E8EB' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#7A4B0C' }}>CONCEPTO</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#7A4B0C', textAlign: 'right' }}>SUBTOTAL</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#7A4B0C', textAlign: 'right' }}>IVA</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#7A4B0C', textAlign: 'right' }}>MONTO</span>
                 </div>
                 {conceptoRows.map((row, i) => {
                   const rowFiscal = calcFiscal(row.monto || 0)
                   return (
                   <div key={row.id_concepto_fk} style={{
                     display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '8px 12px', alignItems: 'center',
-                    borderBottom: i < conceptoRows.length - 1 ? '1px solid #f1f5f9' : 'none',
-                    background: row.monto > 0 ? '#fffbeb' : '#fff',
+                    borderBottom: i < conceptoRows.length - 1 ? '1px solid #F4F5F7' : 'none',
+                    background: row.monto > 0 ? '#F4F5F7' : '#fff',
                   }}>
-                    <span style={{ fontSize: 13, color: '#1e293b', fontWeight: row.monto > 0 ? 600 : 400 }}>{row.nombre_concepto}</span>
-                    <span style={{ fontSize: 12, color: '#92400e', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.subtotal)}</span>
-                    <span style={{ fontSize: 12, color: '#92400e', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.iva)}</span>
+                    <span style={{ fontSize: 13, color: '#26282D', fontWeight: row.monto > 0 ? 600 : 400 }}>{row.nombre_concepto}</span>
+                    <span style={{ fontSize: 12, color: '#7A4B0C', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.subtotal)}</span>
+                    <span style={{ fontSize: 12, color: '#7A4B0C', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.iva)}</span>
                     <input
                       className="input" type="number" min="0" step="0.01"
                       value={row.monto || ''}
@@ -1083,11 +1083,11 @@ export default function ReciboModal({
                   </div>
                   )
                 })}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '9px 12px', background: '#fffbeb', borderTop: '2px solid #fde68a' }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#92400e' }}>Total conceptos</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#92400e', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalConceptos).subtotal)}</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#92400e', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalConceptos).iva)}</span>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: '#92400e', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalConceptos)}</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '9px 12px', background: '#F4F5F7', borderTop: '2px solid #E6E8EB' }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#7A4B0C' }}>Total conceptos</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#7A4B0C', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalConceptos).subtotal)}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#7A4B0C', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalConceptos).iva)}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#7A4B0C', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalConceptos)}</span>
                 </div>
               </div>
             </div>
@@ -1096,15 +1096,15 @@ export default function ReciboModal({
           {/* Formas de pago — dinámicas desde cfg.formas_pago */}
           {formaPagoRows.length > 0 && (
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <DollarSign size={13} style={{ color: '#059669' }} /> Formas de cobro
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#33363C', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <DollarSign size={13} style={{ color: '#62666E' }} /> Formas de cobro
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 {formaPagoRows.map((row, i) => {
                   const rowFiscal = calcFiscal(row.monto || 0)
                   return (
                   <div key={row.id_forma_pago_fk}>
-                    <label style={{ fontSize: 11, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 3 }}>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: '#33363C', display: 'block', marginBottom: 3 }}>
                       {row.nombre_forma_pago}
                     </label>
                     <input
@@ -1115,7 +1115,7 @@ export default function ReciboModal({
                       style={{ fontVariantNumeric: 'tabular-nums' }}
                     />
                     {row.monto > 0 && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#94a3b8', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#7A7E87', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
                         <span>Subtotal {fmt(rowFiscal.subtotal)}</span>
                         <span>IVA {fmt(rowFiscal.iva)}</span>
                       </div>
@@ -1125,7 +1125,7 @@ export default function ReciboModal({
                 })}
                 {/* Condonación / Intercambio — suma al total, no entra a bancos */}
                 <div>
-                  <label style={{ fontSize: 11, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 3 }}>
+                  <label style={{ fontSize: 11, fontWeight: 600, color: '#33363C', display: 'block', marginBottom: 3 }}>
                     Condonación / Intercambio
                   </label>
                   <input
@@ -1136,16 +1136,16 @@ export default function ReciboModal({
                     style={{ fontVariantNumeric: 'tabular-nums' }}
                   />
                   {montoCondonacion > 0 && (
-                    <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>No es caja: no se abona a la cuenta bancaria</div>
+                    <div style={{ fontSize: 10, color: '#7A7E87', marginTop: 2 }}>No es caja: no se abona a la cuenta bancaria</div>
                   )}
                 </div>
               </div>
               {/* Sumatoria de formas de cobro — siempre visible */}
-              <div style={{ marginTop: 10, padding: '10px 14px', background: '#f0fdf4', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#15803d' }}>
+              <div style={{ marginTop: 10, padding: '10px 14px', background: '#F4F5F7', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#1F7A50' }}>
                   {esSecciones ? 'Total cobrado (formas)' : 'Total'}
                 </span>
-                <span style={{ fontSize: 16, fontWeight: 700, color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalFormasPago)}</span>
+                <span style={{ fontSize: 16, fontWeight: 700, color: '#1F7A50', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalFormasPago)}</span>
               </div>
 
               {/* Validación: total general vs total cobrado (solo Cuotas Residencial) */}
@@ -1156,15 +1156,15 @@ export default function ReciboModal({
                   return (
                     <div style={{
                       marginTop: 8, padding: '10px 14px', borderRadius: 8,
-                      background: ok ? '#f0fdf4' : '#fef2f2',
-                      border: `1px solid ${ok ? '#86efac' : '#fca5a5'}`,
+                      background: '#F4F5F7',
+                      border: '1px solid #E6E8EB', borderLeft: `3px solid ${ok ? '#1F7A50' : '#C23B3B'}`,
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
                     }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: ok ? '#15803d' : '#dc2626' }}>
-                        {ok ? '✓ Total cobrado coincide con el total general' : `⚠ Diferencia: ${fmt(Math.abs(diff))} ${diff > 0 ? '(falta por cobrar)' : '(excede el total)'}`}
+                      <span style={{ fontSize: 12, fontWeight: 600, color: ok ? '#1F7A50' : '#C23B3B' }}>
+                        {ok ? '✓ Total cobrado coincide con el total general' : `Diferencia: ${fmt(Math.abs(diff))} ${diff > 0 ? '(falta por cobrar)' : '(excede el total)'}`}
                       </span>
                       {!ok && (
-                        <span style={{ fontSize: 12, color: '#dc2626', fontVariantNumeric: 'tabular-nums', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: 12, color: '#C23B3B', fontVariantNumeric: 'tabular-nums', fontWeight: 700, whiteSpace: 'nowrap' }}>
                           {fmt(totalFinal)} esperado
                         </span>
                       )}
@@ -1176,19 +1176,19 @@ export default function ReciboModal({
           )}
 
           {/* Desglose fiscal: Subtotal + IVA se derivan del Monto (captura manual) */}
-          <div style={{ padding: '10px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+          <div style={{ padding: '10px 14px', background: '#F8F9FA', borderRadius: 8, border: '1px solid #E6E8EB' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#62666E', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.04em' }}>
               Desglose fiscal
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#374151', marginBottom: 3 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#33363C', marginBottom: 3 }}>
               <span>Subtotal</span>
               <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(fiscalFinal.subtotal)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#374151', marginBottom: 3 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#33363C', marginBottom: 3 }}>
               <span>IVA (16%)</span>
               <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(fiscalFinal.iva)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700, color: '#0D4F80', paddingTop: 6, borderTop: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700, color: '#1C1D21', paddingTop: 6, borderTop: '1px solid #E6E8EB' }}>
               <span>Monto</span>
               <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(totalFinal)}</span>
             </div>
@@ -1196,31 +1196,31 @@ export default function ReciboModal({
 
           {/* Notas */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Notas</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#33363C', display: 'block', marginBottom: 4 }}>Notas</label>
             <textarea className="input" rows={2} value={form.notas} onChange={e => set('notas', e.target.value)}
               disabled={isView && !isEditMode} style={{ resize: 'vertical', minHeight: 52 }} />
           </div>
 
           {/* Datos de auditoría (vista) */}
           {isView && (
-            <div style={{ padding: '10px 14px', background: '#f8fafc', borderRadius: 8, fontSize: 11, color: '#64748b' }}>
+            <div style={{ padding: '10px 14px', background: '#F8F9FA', borderRadius: 8, fontSize: 11, color: '#62666E' }}>
               Registrado por <strong>{recibo!.usuario_crea ?? '—'}</strong> · {fmtFecha(recibo!.created_at?.slice(0, 10))}
               {recibo!.status === 'Cancelado' && recibo!.motivo_cancelacion && (
-                <div style={{ marginTop: 4, color: '#dc2626' }}>Cancelación: {recibo!.motivo_cancelacion}</div>
+                <div style={{ marginTop: 4, color: '#C23B3B' }}>Cancelación: {recibo!.motivo_cancelacion}</div>
               )}
             </div>
           )}
 
           {/* Cancelar recibo */}
           {isView && recibo!.status === 'Confirmado' && showCancel && (
-            <div style={{ padding: '14px', background: '#fef2f2', borderRadius: 8, border: '1px solid #fecaca' }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#dc2626', marginBottom: 8 }}>Motivo de cancelación</div>
+            <div style={{ padding: '14px', background: '#F4F5F7', borderRadius: 8, border: '1px solid #E6E8EB' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#C23B3B', marginBottom: 8 }}>Motivo de cancelación</div>
               <textarea className="input" rows={2} value={cancelMotivo} onChange={e => setCancelMotivo(e.target.value)}
-                style={{ resize: 'vertical', borderColor: '#fca5a5' }} placeholder="Escribe el motivo…" />
+                style={{ resize: 'vertical', borderColor: '#C9CCD3' }} placeholder="Escribe el motivo…" />
               <div style={{ display: 'flex', gap: 8, marginTop: 8, justifyContent: 'flex-end' }}>
                 <button className="btn-secondary" onClick={() => setShowCancel(false)}>Volver</button>
                 <button onClick={handleCancel} disabled={cancelling}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: '#C23B3B', color: '#fff', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                   {cancelling ? <Loader size={13} className="animate-spin" /> : <Ban size={13} />}
                   Confirmar cancelación
                 </button>

@@ -7,11 +7,11 @@ export type KpiTone = 'success' | 'danger' | 'warning' | 'info' | 'neutral'
 // Se hardcodean aquí (en vez de var(--x)) porque se necesita el hex crudo para
 // derivar el tinte de fondo del chip (color + alpha hex).
 const TONE_HEX: Record<KpiTone, string> = {
-  success: '#15803d',
-  danger:  '#dc2626',
-  warning: '#d97706',
-  info:    '#0f766e',
-  neutral: '#3F4A75',
+  success: '#1F7A50',
+  danger:  '#C23B3B',
+  warning: '#B5761A',
+  info:    '#126B63',
+  neutral: '#1C1D21',
 }
 
 type Props = {
@@ -31,19 +31,19 @@ export default function KpiCard({ label, value, icon: Icon, tone = 'neutral', co
       className={onClick ? 'card card-hover' : 'card'}
       onClick={onClick}
       style={{
-        padding: '14px 18px', minWidth: 160, background: c + '0d',
+        padding: '14px 18px', minWidth: 160, background: '#fff',
         display: 'flex', alignItems: 'center', gap: 12,
         cursor: onClick ? 'pointer' : 'default',
       }}
     >
       <div style={{
-        width: 36, height: 36, borderRadius: 9, background: c + '20',
+        width: 36, height: 36, borderRadius: 9, background: '#F4F5F7',
         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}>
         <Icon size={16} style={{ color: c }} />
       </div>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700, color: c }}>{value}</div>
+        <div style={{ fontSize: 22, fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: 'var(--text-primary)' }}>{value}</div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{label}</div>
       </div>
     </div>

@@ -18,26 +18,26 @@ const TIPOS_MANT    = ['Preventivo', 'Correctivo', 'Reparación']
 const STATUS_MANT   = ['Abierto', 'En Proceso', 'Cerrado']
 
 const EQUIPO_STATUS_STYLE: Record<string, { color: string; bg: string; border: string }> = {
-  'Activo':           { color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
-  'En Mantenimiento': { color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-  'Baja':             { color: '#94a3b8', bg: '#f8fafc', border: '#e2e8f0' },
+  'Activo':           { color: '#1F7A50', bg: '#F4F5F7', border: '#E6E8EB' },
+  'En Mantenimiento': { color: '#B5761A', bg: '#F4F5F7', border: '#E6E8EB' },
+  'Baja':             { color: '#7A7E87', bg: '#F8F9FA', border: '#E6E8EB' },
 }
 const MANT_STATUS_STYLE: Record<string, { color: string; bg: string; border: string }> = {
-  'Abierto':    { color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
-  'En Proceso': { color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-  'Cerrado':    { color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
+  'Abierto':    { color: '#1C1D21', bg: '#F4F5F7', border: '#C9CCD3' },
+  'En Proceso': { color: '#B5761A', bg: '#F4F5F7', border: '#E6E8EB' },
+  'Cerrado':    { color: '#1F7A50', bg: '#F4F5F7', border: '#E6E8EB' },
 }
 const TIPO_MANT_STYLE: Record<string, { color: string; bg: string; border: string }> = {
-  'Preventivo': { color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
-  'Correctivo': { color: '#ea580c', bg: '#fff7ed', border: '#fed7aa' },
-  'Reparación': { color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
+  'Preventivo': { color: '#32789A', bg: '#F4F5F7', border: '#C9CCD3' },
+  'Correctivo': { color: '#C8642A', bg: '#F4F5F7', border: '#E6E8EB' },
+  'Reparación': { color: '#C23B3B', bg: '#F4F5F7', border: '#E6E8EB' },
 }
 
 const Badge = ({ text, map }: { text: string; map: Record<string, any> }) => {
-  const s = map[text] ?? { color: '#64748b', bg: '#f8fafc', border: '#e2e8f0' }
+  const s = map[text] ?? { color: '#62666E', bg: '#F8F9FA', border: '#E6E8EB' }
   return (
     <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-      color: s.color, background: s.bg, border: `1px solid ${s.border}`, whiteSpace: 'nowrap' }}>
+      color: '#fff', background: s.color, border: `1px solid ${s.color}`, whiteSpace: 'nowrap' }}>
       {text}
     </span>
   )
@@ -146,7 +146,7 @@ export default function EquipoFlotaTab() {
   return (
     <div>
       {/* Sub-tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 14 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', marginBottom: 14 }}>
         {([['catalogo', 'Catálogo de Equipos', Truck], ['bitacora', 'Bitácora de Servicios', Wrench], ['uso', 'Bitácora de Uso', Activity], ['combustible', 'Combustible', Fuel]] as const)
           .map(([key, label, Icon]) => (
           <button key={key} onClick={() => setSubTab(key)}
@@ -154,7 +154,7 @@ export default function EquipoFlotaTab() {
               background: 'none', border: 'none', cursor: 'pointer', fontSize: 12,
               fontWeight: subTab === key ? 600 : 400,
               color: subTab === key ? 'var(--blue)' : 'var(--text-muted)',
-              borderBottom: subTab === key ? '2px solid var(--blue)' : '2px solid transparent',
+              borderBottom: subTab === key ? '2px solid #19D3C5' : '2px solid transparent',
               marginBottom: -1 }}>
             <Icon size={12} /> {label}
           </button>
@@ -167,25 +167,25 @@ export default function EquipoFlotaTab() {
           {/* KPIs */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 14 }}>
             {[
-              { label: 'Activos',          value: kpiActivos,  color: '#15803d', bg: '#f0fdf4' },
-              { label: 'En Mantenimiento', value: kpiMantto,   color: '#d97706', bg: '#fffbeb' },
-              { label: 'Baja',             value: kpiBaja,     color: '#94a3b8', bg: '#f8fafc' },
-              { label: 'Valor Flota',      value: fmt$(costoFlota), color: '#2563eb', bg: '#eff6ff' },
+              { label: 'Activos',          value: kpiActivos,  color: '#1F7A50', bg: '#F4F5F7' },
+              { label: 'En Mantenimiento', value: kpiMantto,   color: '#B5761A', bg: '#F4F5F7' },
+              { label: 'Baja',             value: kpiBaja,     color: '#7A7E87', bg: '#F8F9FA' },
+              { label: 'Valor Flota',      value: fmt$(costoFlota), color: '#1C1D21', bg: '#F4F5F7' },
             ].map(k => (
-              <div key={k.label} className="card" style={{ padding: '10px 12px', background: k.bg }}>
-                <div style={{ fontSize: typeof k.value === 'number' ? 22 : 16, fontWeight: 700, color: k.color }}>{k.value}</div>
-                <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{k.label}</div>
+              <div key={k.label} className="card" style={{ padding: '10px 12px', background: '#fff' }}>
+                <div style={{ fontSize: typeof k.value === 'number' ? 22 : 16, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{k.value}</div>
+                <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
               </div>
             ))}
           </div>
 
           {/* Filtros */}
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 12,
-            padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, flexWrap: 'wrap' }}>
+            padding: '8px 12px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, flexWrap: 'wrap' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
               <Filter size={11} /> Filtros
             </span>
-            <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
+            <div style={{ width: 1, height: 18, background: '#E6E8EB', flexShrink: 0 }} />
             <div style={{ position: 'relative', flex: '1 1 160px', maxWidth: 220 }}>
               <Search size={11} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
               <input className="input" style={{ paddingLeft: 26, fontSize: 12, height: 28 }}
@@ -202,7 +202,7 @@ export default function EquipoFlotaTab() {
               {STATUS_EQUIPO.map(s => <option key={s}>{s}</option>)}
             </select>
             {(searchEq || filterTipo || filterStatus) && (
-              <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626', whiteSpace: 'nowrap' }}
+              <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#C23B3B', whiteSpace: 'nowrap' }}
                 onClick={() => { setSearchEq(''); setFilterTipo(''); setFilterStatus('') }}>
                 <X size={11} /> Limpiar
               </button>
@@ -242,8 +242,8 @@ export default function EquipoFlotaTab() {
                     <td style={{ padding: '8px 10px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {eq.foto_url
-                          ? <img src={eq.foto_url} alt="" style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 }} />
-                          : <div style={{ width: 32, height: 32, borderRadius: 6, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          ? <img src={eq.foto_url} alt="" style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover', border: '1px solid #E6E8EB', flexShrink: 0 }} />
+                          : <div style={{ width: 32, height: 32, borderRadius: 6, background: '#F4F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                               <Truck size={14} style={{ color: 'var(--text-muted)' }} />
                             </div>
                         }
@@ -280,7 +280,7 @@ export default function EquipoFlotaTab() {
                         </button>
                       )}
                       {canDelete() && (
-                        <button className="btn-ghost" style={{ padding: '3px 5px', color: '#dc2626' }} onClick={() => handleDeleteEq(eq.id)}>
+                        <button className="btn-ghost" style={{ padding: '3px 5px', color: '#C23B3B' }} onClick={() => handleDeleteEq(eq.id)}>
                           <Trash2 size={12} />
                         </button>
                       )}
@@ -299,24 +299,24 @@ export default function EquipoFlotaTab() {
           {/* KPIs */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 14 }}>
             {[
-              { label: 'Abiertos',   value: bitAbiertos,  color: '#2563eb', bg: '#eff6ff' },
-              { label: 'En Proceso', value: bitEnProceso, color: '#d97706', bg: '#fffbeb' },
-              { label: 'Costo Total',value: fmt$(costoTotal), color: '#059669', bg: '#f0fdf4' },
+              { label: 'Abiertos',   value: bitAbiertos,  color: '#1C1D21', bg: '#F4F5F7' },
+              { label: 'En Proceso', value: bitEnProceso, color: '#B5761A', bg: '#F4F5F7' },
+              { label: 'Costo Total',value: fmt$(costoTotal), color: '#267F56', bg: '#F4F5F7' },
             ].map(k => (
-              <div key={k.label} className="card" style={{ padding: '10px 12px', background: k.bg }}>
-                <div style={{ fontSize: typeof k.value === 'number' ? 22 : 16, fontWeight: 700, color: k.color }}>{k.value}</div>
-                <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{k.label}</div>
+              <div key={k.label} className="card" style={{ padding: '10px 12px', background: '#fff' }}>
+                <div style={{ fontSize: typeof k.value === 'number' ? 22 : 16, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{k.value}</div>
+                <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
               </div>
             ))}
           </div>
 
           {/* Filtros */}
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 12,
-            padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, flexWrap: 'wrap' }}>
+            padding: '8px 12px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, flexWrap: 'wrap' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
               <Filter size={11} /> Filtros
             </span>
-            <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
+            <div style={{ width: 1, height: 18, background: '#E6E8EB', flexShrink: 0 }} />
             <select className="select" style={{ flex: '1 1 150px', maxWidth: 220, fontSize: 12, padding: '3px 8px', height: 28 }}
               value={filterEquipo} onChange={e => setFilterEquipo(e.target.value)}>
               <option value="">Todos los equipos</option>
@@ -333,7 +333,7 @@ export default function EquipoFlotaTab() {
               {STATUS_MANT.map(s => <option key={s}>{s}</option>)}
             </select>
             {(filterEquipo || filterTipoM || filterStatusM) && (
-              <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626', whiteSpace: 'nowrap' }}
+              <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#C23B3B', whiteSpace: 'nowrap' }}
                 onClick={() => { setFilterEquipo(''); setFilterTipoM(''); setFilterStatusM('') }}>
                 <X size={11} /> Limpiar
               </button>
@@ -372,7 +372,7 @@ export default function EquipoFlotaTab() {
                   const eq = equipoMap[b.id_equipo_fk]
                   return (
                     <tr key={b.id}>
-                      <td style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)', fontWeight: 600, padding: '8px 10px' }}>{b.folio}</td>
+                      <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--blue)', fontWeight: 600, padding: '8px 10px' }}>{b.folio}</td>
                       <td style={{ padding: '8px 10px' }}>
                         <div style={{ fontSize: 12, fontWeight: 500 }}>{eq?.nombre ?? `#${b.id_equipo_fk}`}</div>
                         <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{eq?.placa ?? eq?.no_serie ?? ''}</div>
@@ -386,7 +386,7 @@ export default function EquipoFlotaTab() {
                       <td style={{ fontSize: 11, padding: '8px 10px' }}>{fmtF(b.fecha_inicio)}</td>
                       <td style={{ fontSize: 11, padding: '8px 10px', color: 'var(--text-muted)' }}>{fmtF(b.fecha_fin)}</td>
                       <td style={{ fontSize: 11, color: 'var(--text-secondary)', padding: '8px 10px' }}>{b.responsable ?? '—'}</td>
-                      <td style={{ fontSize: 12, fontWeight: 600, color: '#059669', padding: '8px 10px', textAlign: 'right' }}>{fmt$(b.costo_total)}</td>
+                      <td style={{ fontSize: 12, fontWeight: 600, color: '#267F56', padding: '8px 10px', textAlign: 'right' }}>{fmt$(b.costo_total)}</td>
                       <td style={{ padding: '8px 10px' }}><Badge text={b.status} map={MANT_STATUS_STYLE} /></td>
                       <td style={{ padding: '4px 6px', whiteSpace: 'nowrap' }}>
                         <button className="btn-ghost" style={{ padding: '3px 5px' }} onClick={() => setDetailBit(b)}>
@@ -398,7 +398,7 @@ export default function EquipoFlotaTab() {
                           </button>
                         )}
                         {canDelete() && (
-                          <button className="btn-ghost" style={{ padding: '3px 5px', color: '#dc2626' }} onClick={() => handleDeleteBit(b.id)}>
+                          <button className="btn-ghost" style={{ padding: '3px 5px', color: '#C23B3B' }} onClick={() => handleDeleteBit(b.id)}>
                             <Trash2 size={12} />
                           </button>
                         )}
@@ -542,12 +542,12 @@ function EquipoModal({ eq, areaMap, onClose, onSaved }: {
       </>}
     >
         <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+          {error && <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>{error}</div>}
 
           {/* Foto */}
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <div style={{ width: 72, height: 72, borderRadius: 10, border: '2px dashed #e2e8f0', overflow: 'hidden', flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+            <div style={{ width: 72, height: 72, borderRadius: 10, border: '2px dashed #E6E8EB', overflow: 'hidden', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8F9FA' }}>
               {form.foto_url
                 ? <img src={form.foto_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 : <Truck size={24} style={{ color: 'var(--text-muted)' }} />
@@ -667,7 +667,7 @@ function EquipoDetail({ eq, areaMap, bitacora, onClose, onNewBit }: {
     >
         <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {eq.foto_url && (
-            <div style={{ borderRadius: 10, overflow: 'hidden', background: '#f1f5f9', display: 'flex', justifyContent: 'center', maxHeight: 320 }}>
+            <div style={{ borderRadius: 10, overflow: 'hidden', background: '#F4F5F7', display: 'flex', justifyContent: 'center', maxHeight: 320 }}>
               <img src={eq.foto_url} alt="" style={{ maxWidth: '100%', maxHeight: 320, objectFit: 'contain', display: 'block' }} />
             </div>
           )}
@@ -686,26 +686,26 @@ function EquipoDetail({ eq, areaMap, bitacora, onClose, onNewBit }: {
             <DI label="Adquisición" value={fmtF(eq.fecha_adquisicion)} />
             <DI label="Costo adquisición" value={fmt$(eq.costo_adquisicion)} />
           </div>
-          {eq.notas && <div style={{ fontSize: 12, color: 'var(--text-secondary)', background: '#f8fafc', borderRadius: 8, padding: '10px 12px' }}>{eq.notas}</div>}
-          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
+          {eq.notas && <div style={{ fontSize: 12, color: 'var(--text-secondary)', background: '#F8F9FA', borderRadius: 8, padding: '10px 12px' }}>{eq.notas}</div>}
+          <div style={{ borderTop: '1px solid #F4F5F7', paddingTop: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                 Historial de Mantenimiento ({bitacora.length})
               </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#059669' }}>Costo total: {fmt$(costoTotal)}</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#267F56' }}>Costo total: {fmt$(costoTotal)}</div>
             </div>
             {bitacora.length === 0 ? (
               <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', padding: 16 }}>Sin registros</div>
             ) : bitacora.slice(0, 5).map(b => (
               <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: 12 }}>
+                padding: '6px 0', borderBottom: '1px solid #F4F5F7', fontSize: 12 }}>
                 <div>
-                  <span style={{ fontFamily: 'monospace', fontSize: 10, color: 'var(--blue)' }}>{b.folio}</span>
+                  <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 10, color: 'var(--blue)' }}>{b.folio}</span>
                   {' · '}<Badge text={b.tipo} map={TIPO_MANT_STYLE} />
                   {' · '}<span style={{ color: 'var(--text-muted)' }}>{fmtF(b.fecha_inicio)}</span>
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <span style={{ fontWeight: 600, color: '#059669' }}>{fmt$(b.costo_total)}</span>
+                  <span style={{ fontWeight: 600, color: '#267F56' }}>{fmt$(b.costo_total)}</span>
                   <Badge text={b.status} map={MANT_STATUS_STYLE} />
                 </div>
               </div>
@@ -898,7 +898,7 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
       </>}
     >
         <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+          {error && <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>{error}</div>}
 
           {/* Equipo + tipo + status */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
@@ -960,7 +960,7 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
           </div>
 
           {/* OPs vinculadas */}
-          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
+          <div style={{ borderTop: '1px solid #F4F5F7', paddingTop: 10 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
               Órdenes de Pago vinculadas
             </div>
@@ -968,25 +968,25 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
             {selectedOps.length > 0 && (
               <div style={{ marginBottom: 8 }}>
                 {selectedOps.map(op => (
-                  <div key={op.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', background: '#eff6ff', borderRadius: 6, marginBottom: 4 }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)', fontWeight: 600, flexShrink: 0 }}>{op.folio}</span>
+                  <div key={op.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', background: '#F4F5F7', borderRadius: 6, marginBottom: 4 }}>
+                    <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--blue)', fontWeight: 600, flexShrink: 0 }}>{op.folio}</span>
                     <span style={{ fontSize: 11, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto}</span>
                     <input type="number" step="0.01" className="input"
                       style={{ width: 90, fontSize: 11, textAlign: 'right', padding: '2px 6px' }}
                       value={op.monto} onChange={e => updateMonto(op.id, e.target.value)} />
-                    <button className="btn-ghost" style={{ padding: '2px 4px', color: '#dc2626', flexShrink: 0 }} onClick={() => toggleOp(op)}>
+                    <button className="btn-ghost" style={{ padding: '2px 4px', color: '#C23B3B', flexShrink: 0 }} onClick={() => toggleOp(op)}>
                       <X size={11} />
                     </button>
                   </div>
                 ))}
-                <div style={{ textAlign: 'right', fontSize: 12, fontWeight: 700, color: '#059669', marginTop: 4 }}>
+                <div style={{ textAlign: 'right', fontSize: 12, fontWeight: 700, color: '#267F56', marginTop: 4 }}>
                   Total: {fmt$(costoTotal)}
                 </div>
               </div>
             )}
             {/* OP Selector */}
-            <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
-              <div style={{ padding: '6px 10px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+            <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
+              <div style={{ padding: '6px 10px', background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
                 <div style={{ position: 'relative' }}>
                   <Search size={11} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
                   <input className="input" style={{ paddingLeft: 26, fontSize: 11, height: 26 }}
@@ -1002,17 +1002,17 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
                   return (
                     <div key={op.id} onClick={() => toggleOp(op)}
                       style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', cursor: 'pointer',
-                        background: isSelected ? '#eff6ff' : 'transparent',
-                        borderBottom: '1px solid #f1f5f9' }}
-                      onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#f8fafc' }}
+                        background: isSelected ? '#F4F5F7' : 'transparent',
+                        borderBottom: '1px solid #F4F5F7' }}
+                      onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#F8F9FA' }}
                       onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}>
-                      <div style={{ width: 14, height: 14, borderRadius: 3, border: `2px solid ${isSelected ? 'var(--blue)' : '#cbd5e1'}`,
+                      <div style={{ width: 14, height: 14, borderRadius: 3, border: `2px solid ${isSelected ? 'var(--blue)' : '#C9CCD3'}`,
                         background: isSelected ? 'var(--blue)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         {isSelected && <CheckCircle size={9} style={{ color: 'white' }} />}
                       </div>
-                      <span style={{ fontFamily: 'monospace', fontSize: 10, color: 'var(--blue)', fontWeight: 600, flexShrink: 0 }}>{op.folio}</span>
+                      <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 10, color: 'var(--blue)', fontWeight: 600, flexShrink: 0 }}>{op.folio}</span>
                       <span style={{ fontSize: 11, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</span>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: '#059669', flexShrink: 0 }}>{fmt$(op.monto)}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: '#267F56', flexShrink: 0 }}>{fmt$(op.monto)}</span>
                     </div>
                   )
                 })}
@@ -1021,7 +1021,7 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
           </div>
 
           {/* Evidencias */}
-          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
+          <div style={{ borderTop: '1px solid #F4F5F7', paddingTop: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                 Evidencia fotográfica
@@ -1034,7 +1034,7 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
             {evidencias.length > 0 && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
                 {evidencias.map((ev, i) => (
-                  <div key={i} style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                  <div key={i} style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid #E6E8EB' }}>
                     <img src={ev.url} alt={ev.nombre} style={{ width: '100%', height: 72, objectFit: 'cover', display: 'block' }} />
                     <button onClick={() => setEvidencias(p => p.filter((_,j) => j !== i))}
                       style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', width: 18, height: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1107,12 +1107,12 @@ function BitacoraDetail({ bit, equipoMap, onClose, onEdit }: {
             <DI label="F. Inicio"   value={fmtF(bit.fecha_inicio)} />
             <DI label="F. Fin"      value={fmtF(bit.fecha_fin)} />
             <DI label="Responsable" value={bit.responsable} />
-            <DI label="Costo total" value={<span style={{ fontWeight: 700, color: '#059669' }}>{fmt$(bit.costo_total)}</span>} />
+            <DI label="Costo total" value={<span style={{ fontWeight: 700, color: '#267F56' }}>{fmt$(bit.costo_total)}</span>} />
             {bit.odometro_inicio != null && <DI label="Odómetro inicio" value={`${Number(bit.odometro_inicio).toLocaleString('es-MX')} ${eq?.unidad_odometro ?? ''}`} />}
             {bit.odometro_fin    != null && <DI label="Odómetro fin"    value={`${Number(bit.odometro_fin).toLocaleString('es-MX')} ${eq?.unidad_odometro ?? ''}`} />}
           </div>
           {bit.descripcion && (
-            <div style={{ background: '#f8fafc', borderRadius: 8, padding: '10px 12px', fontSize: 12 }}>{bit.descripcion}</div>
+            <div style={{ background: '#F8F9FA', borderRadius: 8, padding: '10px 12px', fontSize: 12 }}>{bit.descripcion}</div>
           )}
 
           {/* OPs */}
@@ -1124,12 +1124,12 @@ function BitacoraDetail({ bit, equipoMap, onClose, onEdit }: {
                 </div>
                 {ops.map((o: any) => (
                   <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '6px 10px', background: '#f8fafc', borderRadius: 6, marginBottom: 4, fontSize: 12 }}>
+                    padding: '6px 10px', background: '#F8F9FA', borderRadius: 6, marginBottom: 4, fontSize: 12 }}>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)', fontWeight: 600 }}>{o.op?.folio}</span>
+                      <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--blue)', fontWeight: 600 }}>{o.op?.folio}</span>
                       <span style={{ color: 'var(--text-secondary)' }}>{o.op?.concepto ?? '—'}</span>
                     </div>
-                    <span style={{ fontWeight: 700, color: '#059669' }}>{fmt$(o.monto)}</span>
+                    <span style={{ fontWeight: 700, color: '#267F56' }}>{fmt$(o.monto)}</span>
                   </div>
                 ))}
               </div>
@@ -1145,7 +1145,7 @@ function BitacoraDetail({ bit, equipoMap, onClose, onEdit }: {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
                 {evidencias.map((ev: any) => (
                   <a key={ev.id} href={ev.url} target="_blank" rel="noreferrer"
-                    style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #e2e8f0', display: 'block' }}>
+                    style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #E6E8EB', display: 'block' }}>
                     <img src={ev.url} alt={ev.nombre} style={{ width: '100%', height: 90, objectFit: 'cover', display: 'block' }} />
                   </a>
                 ))}
@@ -1154,7 +1154,7 @@ function BitacoraDetail({ bit, equipoMap, onClose, onEdit }: {
           )}
 
           {bit.notas && (
-            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '10px 12px', fontSize: 12 }}>
+            <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8, padding: '10px 12px', fontSize: 12 }}>
               <strong>Notas:</strong> {bit.notas}
             </div>
           )}

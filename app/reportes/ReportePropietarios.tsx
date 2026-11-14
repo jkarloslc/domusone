@@ -84,7 +84,7 @@ export default function ReportePropietarios() {
                   {p.razon_social && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.razon_social}</div>}
                 </td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{p.tipo_persona ?? '—'}</td>
-                <td style={{ fontFamily: 'monospace', fontSize: 11 }}>{p.rfc ?? '—'}</td>
+                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>{p.rfc ?? '—'}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{p.estado_civil ?? '—'}</td>
                 <td style={{ fontSize: 11, color: 'var(--text-secondary)', maxWidth: 160 }}>
                   {[p.calle, p.colonia, p.ciudad, p.estado].filter(Boolean).join(', ') || '—'}
@@ -92,7 +92,7 @@ export default function ReportePropietarios() {
                 <td style={{ fontSize: 12 }}>{telefonos[p.id] ?? '—'}</td>
                 <td style={{ fontSize: 11, color: 'var(--blue)' }}>{correos[p.id] ?? '—'}</td>
                 <td>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: p.activo ? '#15803d' : '#dc2626' }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: p.activo ? '#1F7A50' : '#C23B3B' }}>
                     {p.activo ? 'Activo' : 'Inactivo'}
                   </span>
                 </td>

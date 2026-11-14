@@ -301,7 +301,7 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
 
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+      : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
 
     // Detalle/pagos reales guardados en BD (no el estado del formulario) — así el recibo
     // impreso siempre cuadra con lo realmente cobrado, incluso en pagos parciales.
@@ -334,29 +334,29 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
       <meta charset="utf-8"/><title>Recibo ${exito.folio}</title>
       <style>
         *{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:Arial,sans-serif;font-size:12px;color:#1e293b;padding:32px}
-        .org-header{display:flex;align-items:center;gap:16px;padding-bottom:14px;border-bottom:2px solid #0D4F80;margin-bottom:18px}
-        .org-nombre{font-size:18px;font-weight:700;color:#0D4F80}
-        .org-sub{font-size:11px;color:#64748b}
-        .doc-title{font-size:14px;font-weight:600;color:#0D4F80;margin-bottom:2px}
-        .section-title{font-size:10px;font-weight:700;color:#0D4F80;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;border-bottom:1px solid #bfdbfe;padding-bottom:4px;margin-top:16px}
+        body{font-family:Arial,sans-serif;font-size:12px;color:#26282D;padding:32px}
+        .org-header{display:flex;align-items:center;gap:16px;padding-bottom:14px;border-bottom:2px solid #1C1D21;margin-bottom:18px}
+        .org-nombre{font-size:18px;font-weight:700;color:#1C1D21}
+        .org-sub{font-size:11px;color:#62666E}
+        .doc-title{font-size:14px;font-weight:600;color:#1C1D21;margin-bottom:2px}
+        .section-title{font-size:10px;font-weight:700;color:#1C1D21;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;border-bottom:1px solid #C9CCD3;padding-bottom:4px;margin-top:16px}
         .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;margin-bottom:14px}
-        .info-item label{font-size:10px;color:#64748b;display:block;margin-bottom:1px}
+        .info-item label{font-size:10px;color:#62666E;display:block;margin-bottom:1px}
         .info-item span{font-size:12px;font-weight:500}
         table{width:100%;border-collapse:collapse;margin-bottom:16px}
-        th{padding:7px 10px;background:#f1f5f9;color:#0D4F80;font-size:10px;text-align:left;text-transform:uppercase;letter-spacing:.05em;border:1px solid #e2e8f0}
-        td{padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px}
+        th{padding:7px 10px;background:#F4F5F7;color:#1C1D21;font-size:10px;text-align:left;text-transform:uppercase;letter-spacing:.05em;border:1px solid #E6E8EB}
+        td{padding:8px 10px;border-bottom:1px solid #E6E8EB;font-size:12px}
         tr:last-child td{border-bottom:none}
         .right{text-align:right}
         .totales{margin-left:auto;width:260px}
         .totales-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px}
-        .totales-row.total{font-weight:700;font-size:15px;border-top:2px solid #0D4F80;padding-top:8px;margin-top:4px;color:#0D4F80}
-        .pago-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;margin-bottom:20px;display:flex;flex-direction:column;gap:8px}
+        .totales-row.total{font-weight:700;font-size:15px;border-top:2px solid #1C1D21;padding-top:8px;margin-top:4px;color:#1C1D21}
+        .pago-box{background:#F4F5F7;border:1px solid #C9CCD3;border-radius:8px;padding:12px 16px;margin-bottom:20px;display:flex;flex-direction:column;gap:8px}
         .pago-row{display:flex;justify-content:space-between;font-size:13px}
-        .pago-label{font-size:10px;color:#0D4F80;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+        .pago-label{font-size:10px;color:#1C1D21;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
         .firma-area{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:48px}
-        .firma-line{border-top:1px solid #1e293b;padding-top:4px;font-size:10px;color:#64748b;text-align:center}
-        .footer{margin-top:32px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:12px}
+        .firma-line{border-top:1px solid #26282D;padding-top:4px;font-size:10px;color:#62666E;text-align:center}
+        .footer{margin-top:32px;font-size:10px;color:#7A7E87;text-align:center;border-top:1px solid #E6E8EB;padding-top:12px}
         @page{margin:1.2cm}
       </style></head><body>
       <div class="org-header">
@@ -367,8 +367,8 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
         </div>
         <div style="margin-left:auto;text-align:right">
           <div class="doc-title">Recibo de Cobro</div>
-          <div style="font-size:11px;color:#64748b">Folio: <strong>${exito.folio}</strong></div>
-          <div style="font-size:11px;color:#64748b">${fechaLarga}</div>
+          <div style="font-size:11px;color:#62666E">Folio: <strong>${exito.folio}</strong></div>
+          <div style="font-size:11px;color:#62666E">${fechaLarga}</div>
         </div>
       </div>
       <div class="section-title">Datos del Recibo</div>
@@ -384,12 +384,12 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
         <tbody>${filas}</tbody>
       </table>
       <div class="totales">
-        ${esParcial ? `<div class="totales-row"><span>Saldo pendiente</span><span style="color:#d97706">${fmt(saldoRestante)}</span></div>` : ''}
+        ${esParcial ? `<div class="totales-row"><span>Saldo pendiente</span><span style="color:#B5761A">${fmt(saldoRestante)}</span></div>` : ''}
         <div class="totales-row total"><span>${esParcial ? 'COBRADO AHORA' : 'TOTAL'}</span><span>${fmt(totalImpreso)}</span></div>
       </div>
       <div class="pago-box">
         <div class="pago-label">Forma${pagosValidos.length > 1 ? 's' : ''} de pago</div>
-        ${pagosValidos.map(p => `<div class="pago-row"><span><strong>${formaNombre(p.id_forma_pago_fk)}</strong>${p.referencia ? ` · Ref: ${p.referencia}` : ''}</span><span style="font-weight:700;color:#0D4F80">${fmt(Number(p.monto))}</span></div>`).join('')}
+        ${pagosValidos.map(p => `<div class="pago-row"><span><strong>${formaNombre(p.id_forma_pago_fk)}</strong>${p.referencia ? ` · Ref: ${p.referencia}` : ''}</span><span style="font-weight:700;color:#1C1D21">${fmt(Number(p.monto))}</span></div>`).join('')}
       </div>
       <div class="firma-area">
         <div class="firma-line">Firma del Propietario</div>
@@ -586,34 +586,34 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
         footer={<div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}><button className="btn-ghost" onClick={onSaved}>Cerrar</button></div>}
       >
         <div style={{ textAlign: 'center', padding: '8px 0 16px' }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 4 }}>Cobro registrado</div>
-          <div style={{ fontFamily: 'monospace', fontSize: 20, fontWeight: 700, color: '#1e3a5f', letterSpacing: 1 }}>{exito.folio}</div>
-          <div style={{ fontSize: 13, color: '#64748b', marginTop: 6 }}>
+          <div style={{ fontSize: 40, color: '#1F7A50', lineHeight: 1, marginBottom: 8 }}>✓</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#26282D', marginBottom: 4 }}>Cobro registrado</div>
+          <div style={{ fontVariantNumeric: 'tabular-nums', fontSize: 20, fontWeight: 700, color: '#26282D', letterSpacing: 1 }}>{exito.folio}</div>
+          <div style={{ fontSize: 13, color: '#62666E', marginTop: 6 }}>
             {form.propietario || loteSearch || '—'}{' · '}{fmt(montoCobrar)}
-            {esParcial && <span style={{ marginLeft: 6, color: '#d97706', fontWeight: 600 }}>PAGO PARCIAL</span>}
+            {esParcial && <span style={{ marginLeft: 6, color: '#B5761A', fontWeight: 600 }}>PAGO PARCIAL</span>}
           </div>
           {esParcial && (
-            <div style={{ marginTop: 8, padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e', textAlign: 'left' }}>
+            <div style={{ marginTop: 8, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 8, fontSize: 12, color: '#7A4B0C', textAlign: 'left' }}>
               Se cobró {fmt(montoCobrar)} de {fmt(totalRecibo)} adeudado. Saldo pendiente: <strong>{fmt(saldoRestante)}</strong>.
             </div>
           )}
           {idVentaPos && (
-            <div style={{ fontSize: 12, color: '#15803d', fontWeight: 600, marginTop: 6 }}>Ticket POS #{String(idVentaPos).padStart(6, '0')}</div>
+            <div style={{ fontSize: 12, color: '#1F7A50', fontWeight: 600, marginTop: 6 }}>Ticket POS #{String(idVentaPos).padStart(6, '0')}</div>
           )}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <button onClick={handlePrint}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, border: 'none', borderRadius: 10, background: '#1e3a5f', color: '#fff', cursor: 'pointer' }}>
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, border: 'none', borderRadius: 10, background: '#26282D', color: '#fff', cursor: 'pointer' }}>
             <Printer size={16} /> Imprimir Recibo
           </button>
           <button onClick={handleTicketPOS} disabled={generandoTicket}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, border: '1px solid #a7f3d0', borderRadius: 10, background: '#ecfdf5', color: '#047857', cursor: 'pointer', opacity: generandoTicket ? 0.6 : 1 }}>
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, border: '1px solid #E6E8EB', borderRadius: 10, background: '#F4F5F7', color: '#1F7A50', cursor: 'pointer', opacity: generandoTicket ? 0.6 : 1 }}>
             {generandoTicket ? <Loader size={16} className="animate-spin" /> : <Receipt size={16} />}
             {generandoTicket ? 'Generando…' : idVentaPos ? 'Reimprimir Ticket POS' : 'Generar Ticket POS'}
           </button>
-          {ticketErr && <div style={{ fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{ticketErr}</div>}
-          {error && <div style={{ fontSize: 12, color: '#d97706', background: '#fffbeb', padding: '8px 12px', borderRadius: 6 }}>{error}</div>}
+          {ticketErr && <div style={{ fontSize: 12, color: '#C23B3B', background: '#F4F5F7', padding: '8px 12px', borderRadius: 6 }}>{ticketErr}</div>}
+          {error && <div style={{ fontSize: 12, color: '#B5761A', background: '#F4F5F7', padding: '8px 12px', borderRadius: 6 }}>{error}</div>}
         </div>
       </ModalShell>
     )
@@ -624,17 +624,17 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
       footer={
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%' }}>
           <div style={{ marginRight: 'auto' }}>
-            <div style={{ fontSize: 11, color: '#64748b' }}>{lineas.filter(l => l.concepto.trim() && l.total > 0).length} concepto{lineas.filter(l => l.concepto.trim() && l.total > 0).length !== 1 ? 's' : ''} · subtotal {fmt(totalLineas)}</div>
-            {cargoAdicional > 0 && <div style={{ fontSize: 11, color: '#059669' }}>+ cargo adicional {fmt(cargoAdicional)}</div>}
-            {descExtra > 0 && <div style={{ fontSize: 11, color: '#dc2626' }}>– descuento {fmt(descExtra)}</div>}
-            <span style={{ fontSize: 15, fontWeight: 700, color: esParcial ? '#d97706' : '#16a34a' }}>
+            <div style={{ fontSize: 11, color: '#62666E' }}>{lineas.filter(l => l.concepto.trim() && l.total > 0).length} concepto{lineas.filter(l => l.concepto.trim() && l.total > 0).length !== 1 ? 's' : ''} · subtotal {fmt(totalLineas)}</div>
+            {cargoAdicional > 0 && <div style={{ fontSize: 11, color: '#267F56' }}>+ cargo adicional {fmt(cargoAdicional)}</div>}
+            {descExtra > 0 && <div style={{ fontSize: 11, color: '#C23B3B' }}>– descuento {fmt(descExtra)}</div>}
+            <span style={{ fontSize: 15, fontWeight: 700, color: esParcial ? '#B5761A' : '#267F56' }}>
               {fmt(montoCobrar)}
-              {esParcial && <span style={{ fontSize: 11, color: '#64748b', marginLeft: 6, fontWeight: 400 }}>de {fmt(totalRecibo)}</span>}
+              {esParcial && <span style={{ fontSize: 11, color: '#62666E', marginLeft: 6, fontWeight: 400 }}>de {fmt(totalRecibo)}</span>}
             </span>
           </div>
           <button className="btn-secondary" onClick={onClose}>Cancelar</button>
           <button className="btn-primary" onClick={handleSubmit} disabled={saving}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: esParcial ? '#d97706' : undefined }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: esParcial ? '#B5761A' : undefined }}>
             {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
             {saving ? 'Guardando…' : esParcial ? 'Emitir Recibo Parcial' : 'Guardar Recibo'}
           </button>
@@ -642,7 +642,7 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
       }
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {error && <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+          {error && <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
 
           {/* Cabecera */}
           <Section label="Datos del Recibo">
@@ -650,7 +650,7 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
               <div>
                 <label className="label">Lote *</label>
                 {cargoInicial ? (
-                  <div className="input" style={{ background: '#eff6ff', color: 'var(--blue)', fontWeight: 600 }}>
+                  <div className="input" style={{ background: '#F4F5F7', color: 'var(--blue)', fontWeight: 600 }}>
                     {(cargoInicial as any).lotes?.cve_lote ?? `#${cargoInicial.id_lote_fk}`}
                   </div>
                 ) : (
@@ -662,7 +662,7 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
                         {filteredLotes.map(l => (
                           <button key={l.id} onClick={() => { setForm(f => ({ ...f, id_lote_fk: String(l.id) })); setLoteSearch(l.cve_lote ?? `#${l.lote}`) }}
                             style={{ display: 'flex', width: '100%', padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--blue)', fontWeight: 600, fontSize: 14 }}
-                            onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                            onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                             {l.cve_lote ?? `#${l.lote}`}
                           </button>
@@ -694,17 +694,17 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
                 const yaAgregado = lineas.some(l => (l as any).id_cargo_fk === c.id)
                 return (
                   <button key={c.id} onClick={() => !yaAgregado && agregarCargo(c)}
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 8, cursor: yaAgregado ? 'default' : 'pointer', background: yaAgregado ? '#f0fdf4' : '#f8fafc', border: `1px solid ${yaAgregado ? '#bbf7d0' : '#e2e8f0'}`, textAlign: 'left', width: '100%' }}>
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 8, cursor: yaAgregado ? 'default' : 'pointer', background: yaAgregado ? '#F4F5F7' : '#F8F9FA', border: '1px solid #E6E8EB', textAlign: 'left', width: '100%' }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: yaAgregado ? '#15803d' : 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: yaAgregado ? '#1F7A50' : 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
                         {yaAgregado && <CheckCircle size={12} />}{c.concepto}
                         {c.periodo_mes && <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>{c.periodo_mes} {c.periodo_anio}</span>}
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                        Cargo: {fmt(c.monto)} · Pagado: {fmt(c.monto_pagado)} · <strong style={{ color: '#dc2626' }}>Saldo: {fmt(c.saldo)}</strong>
+                        Cargo: {fmt(c.monto)} · Pagado: {fmt(c.monto_pagado)} · <strong style={{ color: '#C23B3B' }}>Saldo: {fmt(c.saldo)}</strong>
                       </div>
                     </div>
-                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: yaAgregado ? '#dcfce7' : '#dbeafe', color: yaAgregado ? '#15803d' : 'var(--blue)' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: yaAgregado ? '#1F7A50' : '#E6E8EB', color: yaAgregado ? '#fff' : 'var(--blue)' }}>
                       {yaAgregado ? '✓ Incluido' : '+ Agregar'}
                     </span>
                   </button>
@@ -723,7 +723,7 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
             {lineas.map((l, i) => (
               <div key={i} style={{ marginBottom: 6 }}>
                 {(l as any).id_cargo_fk && (l as any).cargo_saldo !== undefined && (
-                  <div style={{ fontSize: 11, marginBottom: 3, color: l.total >= ((l as any).cargo_saldo ?? 0) ? '#15803d' : '#d97706' }}>
+                  <div style={{ fontSize: 11, marginBottom: 3, color: l.total >= ((l as any).cargo_saldo ?? 0) ? '#1F7A50' : '#B5761A' }}>
                     Saldo del cargo: {fmt((l as any).cargo_saldo)} · {l.total >= ((l as any).cargo_saldo ?? 0) ? '✓ Pago completo' : '~ Pago parcial'}
                   </div>
                 )}
@@ -748,21 +748,21 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
                 <label className="label">Cargo adicional ($)</label>
                 <input className="input" type="number" min="0" step="0.01" value={cargoAdicionalStr}
                   onChange={e => setCargoAdicionalStr(e.target.value)} placeholder="0.00" />
-                {cargoAdicional > 0 && <div style={{ fontSize: 11, color: '#059669', marginTop: 3 }}>+ {fmt(cargoAdicional)} sobre el total</div>}
+                {cargoAdicional > 0 && <div style={{ fontSize: 11, color: '#267F56', marginTop: 3 }}>+ {fmt(cargoAdicional)} sobre el total</div>}
               </div>
               <div>
                 <label className="label">Descuento adicional ($)</label>
                 <input className="input" type="number" min="0" step="0.01" value={descuentoExtra}
                   onChange={e => setDescuentoExtra(e.target.value)} placeholder="0.00" />
-                {descExtra > 0 && <div style={{ fontSize: 11, color: '#dc2626', marginTop: 3 }}>– {fmt(descExtra)} sobre el total</div>}
+                {descExtra > 0 && <div style={{ fontSize: 11, color: '#C23B3B', marginTop: 3 }}>– {fmt(descExtra)} sobre el total</div>}
               </div>
             </div>
 
-            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, paddingTop: 10, borderTop: '1px solid #e2e8f0' }}>
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, paddingTop: 10, borderTop: '1px solid #E6E8EB' }}>
               {(cargoAdicional > 0 || descExtra > 0) && (
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Subtotal {fmt(totalLineas)}
-                  {cargoAdicional > 0 && <span style={{ color: '#059669' }}> + {fmt(cargoAdicional)}</span>}
-                  {descExtra > 0 && <span style={{ color: '#dc2626' }}> – {fmt(descExtra)}</span>}
+                  {cargoAdicional > 0 && <span style={{ color: '#267F56' }}> + {fmt(cargoAdicional)}</span>}
+                  {descExtra > 0 && <span style={{ color: '#C23B3B' }}> – {fmt(descExtra)}</span>}
                 </div>
               )}
               <div style={{ display: 'flex', gap: 24 }}>
@@ -773,15 +773,15 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
           </Section>
 
           {/* Cobro parcial — homologado con golf/hípico/locales */}
-          <div style={{ border: `1px solid ${parcialHabilitado ? '#fde68a' : '#e2e8f0'}`, borderRadius: 10, overflow: 'hidden', transition: 'border-color 0.2s' }}>
+          <div style={{ border: '1px solid #E6E8EB', borderRadius: 10, overflow: 'hidden', transition: 'border-color 0.2s' }}>
             <div
               onClick={toggleParcial}
-              style={{ padding: '10px 14px', background: parcialHabilitado ? '#fffbeb' : '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', borderBottom: parcialHabilitado ? '1px solid #fde68a' : 'none' }}>
+              style={{ padding: '10px 14px', background: parcialHabilitado ? '#F4F5F7' : '#F8F9FA', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', borderBottom: parcialHabilitado ? '1px solid #E6E8EB' : 'none' }}>
               <div>
-                <span style={{ fontSize: 12, fontWeight: 700, color: parcialHabilitado ? '#92400e' : '#475569' }}>Cobro parcial</span>
-                {!parcialHabilitado && <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 8 }}>Cobrar menos del total del recibo</span>}
+                <span style={{ fontSize: 12, fontWeight: 700, color: parcialHabilitado ? '#7A4B0C' : '#4A4D54' }}>Cobro parcial</span>
+                {!parcialHabilitado && <span style={{ fontSize: 11, color: '#7A7E87', marginLeft: 8 }}>Cobrar menos del total del recibo</span>}
               </div>
-              <div style={{ width: 40, height: 22, borderRadius: 11, background: parcialHabilitado ? '#d97706' : '#cbd5e1', position: 'relative', flexShrink: 0, transition: 'background 0.2s' }}>
+              <div style={{ width: 40, height: 22, borderRadius: 11, background: parcialHabilitado ? '#B5761A' : '#C9CCD3', position: 'relative', flexShrink: 0, transition: 'background 0.2s' }}>
                 <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: parcialHabilitado ? 20 : 2, transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
               </div>
             </div>
@@ -790,27 +790,27 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
               <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: 11, color: '#92400e', marginBottom: 4, display: 'block', fontWeight: 600 }}>Monto a cobrar ahora</label>
+                    <label style={{ fontSize: 11, color: '#7A4B0C', marginBottom: 4, display: 'block', fontWeight: 600 }}>Monto a cobrar ahora</label>
                     <input
                       // eslint-disable-next-line jsx-a11y/no-autofocus
                       autoFocus
                       className="input" type="number" min={0.01} step={0.01} max={totalRecibo}
                       value={montoParcialStr} onChange={e => setMontoParcialStr(e.target.value)}
                       placeholder={`Máx. ${fmt(totalRecibo)}`}
-                      style={{ width: '100%', fontWeight: 700, border: '1px solid #fbbf24' }} />
+                      style={{ width: '100%', fontWeight: 700, border: '1px solid #C9CCD3' }} />
                   </div>
                   <button
                     onClick={() => setMontoParcialStr(totalRecibo.toFixed(2))}
-                    style={{ padding: '8px 10px', fontSize: 11, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#64748b', cursor: 'pointer', flexShrink: 0, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                    style={{ padding: '8px 10px', fontSize: 11, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#62666E', cursor: 'pointer', flexShrink: 0, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
                     Total
                   </button>
                 </div>
                 {esParcial ? (
-                  <div style={{ padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
-                    ⚠ Saldo pendiente: <strong>{fmt(saldoRestante)}</strong>
+                  <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 8, fontSize: 12, color: '#7A4B0C' }}>
+                    Saldo pendiente: <strong>{fmt(saldoRestante)}</strong>
                   </div>
                 ) : montoParcialStr ? (
-                  <div style={{ fontSize: 11, color: '#15803d' }}>✓ Cubre el total del recibo</div>
+                  <div style={{ fontSize: 11, color: '#1F7A50' }}>✓ Cubre el total del recibo</div>
                 ) : null}
               </div>
             )}
@@ -844,11 +844,11 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
               onClick={() => setPagos(ps => [...ps, { monto: diferencia > 0 ? diferencia : 0, referencia: '', fecha: new Date().toISOString().split('T')[0], id_forma_pago_fk: null }])}>
               <Plus size={12} /> Agregar forma de pago
             </button>
-            <div style={{ marginTop: 10, padding: '10px 14px', background: Math.abs(diferencia) < 0.01 ? '#f0fdf4' : '#fef2f2', borderRadius: 6, display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+            <div style={{ marginTop: 10, padding: '10px 14px', background: '#F4F5F7', borderRadius: 6, display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
               <span style={{ color: 'var(--text-secondary)' }}>
                 {Math.abs(diferencia) < 0.01 ? '✓ Suma cuadrada' : diferencia > 0 ? 'Falta distribuir' : 'Exceso'}
               </span>
-              <span style={{ fontWeight: 700, color: Math.abs(diferencia) < 0.01 ? '#15803d' : '#dc2626' }}>
+              <span style={{ fontWeight: 700, color: Math.abs(diferencia) < 0.01 ? '#1F7A50' : '#C23B3B' }}>
                 {Math.abs(diferencia) < 0.01 ? fmt(montoCobrar) : fmt(Math.abs(diferencia))}
               </span>
             </div>
@@ -860,7 +860,7 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
 
 const Section = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div>
-    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12, paddingBottom: 6, borderBottom: '1px solid #e2e8f0' }}>{label}</div>
+    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12, paddingBottom: 6, borderBottom: '1px solid #E6E8EB' }}>{label}</div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{children}</div>
   </div>
 )

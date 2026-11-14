@@ -11,5 +11,5 @@ const ITEMS = [
 ]
 
 export default function MantenimientoHubPage() {
-  return <HubGrid icon={Wrench} title="Mantenimiento" subtitle="Mantenimiento, órdenes de trabajo, vehículos y herramienta" color="#b45309" items={ITEMS} />
+  return <HubGrid icon={Wrench} title="Mantenimiento" subtitle="Mantenimiento, órdenes de trabajo, vehículos y herramienta" color="#96600F" items={ITEMS} />
 }

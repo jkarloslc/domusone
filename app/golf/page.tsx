@@ -14,7 +14,7 @@ const MODULOS = [
     label: 'Reservaciones',
     desc: 'Reservas de canchas, rangos y espacios deportivos',
     icon: Calendar,
-    color: '#7c3aed',
+    color: '#6B4E79',
     href: '/golf/reservaciones',
     activo: true,
   },
@@ -23,7 +23,7 @@ const MODULOS = [
     label: 'Salidas al Campo',
     desc: 'Registro de entradas, hoyo de inicio y acompañantes',
     icon: MapPin,
-    color: '#16a34a',
+    color: '#267F56',
     href: '/golf/accesos',
     activo: true,
   },
@@ -32,7 +32,7 @@ const MODULOS = [
     label: 'Tee de Práctica',
     desc: 'Registro de entradas y emisión de tickets — área concesionada',
     icon: Target,
-    color: '#d97706',
+    color: '#B5761A',
     href: '/golf/tee-practica',
     activo: true,
   },
@@ -41,7 +41,7 @@ const MODULOS = [
     label: 'Intercambios',
     desc: 'Cartas de intercambio para socios y catálogo de clubes convenio',
     icon: ArrowRightLeft,
-    color: '#2563eb',
+    color: '#1C1D21',
     href: '/golf/intercambios',
     activo: true,
   },
@@ -50,7 +50,7 @@ const MODULOS = [
     label: 'Entrada / Salida y Bitácora de Carritos',
     desc: 'Salidas a ronda de juego, regresos y bitácora del carrito',
     icon: Car,
-    color: '#0d9488',
+    color: '#178A80',
     href: '/golf/salidas-carritos',
     activo: true,
   },
@@ -59,7 +59,7 @@ const MODULOS = [
     label: 'Torneos de Golf',
     desc: 'Organización de torneos, inscripciones y resultados',
     icon: Flag,
-    color: '#ca8a04',
+    color: '#A8821A',
     href: '/golf/torneos',
     activo: true,
   },
@@ -96,7 +96,7 @@ export default function GolfPage() {
                 padding: '18px 20px',
                 textAlign: 'left',
                 background: '#fff',
-                border: '1px solid #e2e8f0',
+                border: '1px solid #E6E8EB',
                 cursor: m.activo ? 'pointer' : 'default',
                 display: 'flex',
                 alignItems: 'center',
@@ -104,22 +104,21 @@ export default function GolfPage() {
                 opacity: m.activo ? 1 : 0.5,
               }}
             >
-              <div style={{
+              <div className="icon-chip" style={{
                 width: 40, height: 40, borderRadius: 10,
-                background: m.color + '15',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
               }}>
-                <Icon size={18} style={{ color: m.color }} />
+                <Icon size={18} style={{ color: '#1C1D21' }} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{m.label}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{m.desc}</div>
               </div>
               {m.activo
-                ? <ChevronRight size={14} style={{ color: '#cbd5e1', flexShrink: 0 }} />
+                ? <ChevronRight size={14} style={{ color: '#C9CCD3', flexShrink: 0 }} />
                 : <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                    background: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0',
+                    background: '#F4F5F7', color: '#7A7E87', border: '1px solid #E6E8EB',
                     flexShrink: 0, whiteSpace: 'nowrap' }}>PRÓXIMO</span>
               }
             </button>

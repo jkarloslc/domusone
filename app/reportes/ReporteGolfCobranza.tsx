@@ -31,9 +31,9 @@ const fmtNombreSocio = (s?: { numero_socio: string | null; nombre: string; apell
 }
 
 const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
-  'PENDIENTE': { bg: '#fef9c3', color: '#ca8a04' },
-  'PAGADO':    { bg: '#dcfce7', color: '#16a34a' },
-  'CANCELADO': { bg: '#f8fafc', color: '#64748b' },
+  'PENDIENTE': { bg: '#E6E8EB', color: '#A8821A' },
+  'PAGADO':    { bg: '#E6E8EB', color: '#267F56' },
+  'CANCELADO': { bg: '#F8F9FA', color: '#62666E' },
 }
 
 const TIPO_LABEL: Record<string, string> = {
@@ -174,11 +174,11 @@ export default function ReporteGolfCobranza() {
           {/* KPIs */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
             {[
-              { label: 'Total cuotas',  value: cuotas.length.toString(), color: '#2563eb', bg: '#eff6ff' },
-              { label: 'Total monto',   value: fmt$(totalCargado),       color: '#334155', bg: '#f8fafc' },
-              { label: 'Pendiente',     value: fmt$(totalPendiente),     color: '#ca8a04', bg: '#fefce8' },
-              { label: 'Cobrado',       value: fmt$(totalPagado),        color: '#16a34a', bg: '#f0fdf4' },
-              { label: 'Vencido',       value: fmt$(totalVencido),       color: '#dc2626', bg: '#fef2f2',
+              { label: 'Total cuotas',  value: cuotas.length.toString(), color: '#1C1D21', bg: '#F4F5F7' },
+              { label: 'Total monto',   value: fmt$(totalCargado),       color: '#33363C', bg: '#F8F9FA' },
+              { label: 'Pendiente',     value: fmt$(totalPendiente),     color: '#A8821A', bg: '#F4F5F7' },
+              { label: 'Cobrado',       value: fmt$(totalPagado),        color: '#267F56', bg: '#F4F5F7' },
+              { label: 'Vencido',       value: fmt$(totalVencido),       color: '#C23B3B', bg: '#F4F5F7',
                 sub: countVencido > 0 ? `${countVencido} cuota${countVencido !== 1 ? 's' : ''}` : undefined },
             ].map(k => (
               <div key={k.label} className="card" style={{ flex: '1 1 130px', padding: '12px 16px' }}>
@@ -209,16 +209,16 @@ export default function ReporteGolfCobranza() {
                       <tr key={cat} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                         <td style={{ padding: '9px 12px', fontWeight: 600, color: 'var(--text-primary)' }}>{cat}</td>
                         <td style={{ padding: '9px 12px', color: 'var(--text-muted)' }}>{vals.count}</td>
-                        <td style={{ padding: '9px 12px', fontWeight: 600, color: vals.pendiente > 0 ? '#ca8a04' : 'var(--text-muted)' }}>{fmt$(vals.pendiente)}</td>
-                        <td style={{ padding: '9px 12px', fontWeight: 600, color: '#16a34a' }}>{fmt$(vals.pagado)}</td>
+                        <td style={{ padding: '9px 12px', fontWeight: 600, color: vals.pendiente > 0 ? '#A8821A' : 'var(--text-muted)' }}>{fmt$(vals.pendiente)}</td>
+                        <td style={{ padding: '9px 12px', fontWeight: 600, color: '#267F56' }}>{fmt$(vals.pagado)}</td>
                         <td style={{ padding: '9px 12px', color: 'var(--text-muted)' }}>{vals.cancelado > 0 ? fmt$(vals.cancelado) : '—'}</td>
                       </tr>
                     ))}
                     <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
                       <td style={{ padding: '9px 12px', fontWeight: 700, fontSize: 11, color: 'var(--text-muted)' }}>TOTAL</td>
                       <td style={{ padding: '9px 12px', fontWeight: 700 }}>{cuotas.length}</td>
-                      <td style={{ padding: '9px 12px', fontWeight: 700, color: '#ca8a04' }}>{fmt$(totalPendiente)}</td>
-                      <td style={{ padding: '9px 12px', fontWeight: 700, color: '#16a34a' }}>{fmt$(totalPagado)}</td>
+                      <td style={{ padding: '9px 12px', fontWeight: 700, color: '#A8821A' }}>{fmt$(totalPendiente)}</td>
+                      <td style={{ padding: '9px 12px', fontWeight: 700, color: '#267F56' }}>{fmt$(totalPagado)}</td>
                       <td></td>
                     </tr>
                   </tbody>
@@ -245,7 +245,7 @@ export default function ReporteGolfCobranza() {
                   </thead>
                   <tbody>
                     {cuotas.map((c, i) => {
-                      const sc = STATUS_COLOR[c.status] ?? { bg: '#f8fafc', color: '#64748b' }
+                      const sc = STATUS_COLOR[c.status] ?? { bg: '#F8F9FA', color: '#62666E' }
                       const vencida = c.status === 'PENDIENTE' && c.fecha_vencimiento && new Date(c.fecha_vencimiento) < new Date()
                       return (
                         <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
@@ -254,19 +254,19 @@ export default function ReporteGolfCobranza() {
                             {(c.cat_socios?.cat_categorias_socios as any)?.nombre ?? '—'}
                           </td>
                           <td style={{ padding: '9px 12px' }}>
-                            <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 8, background: '#f1f5f9', color: '#475569', fontWeight: 600 }}>
+                            <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 8, background: '#F4F5F7', color: '#4A4D54', fontWeight: 600 }}>
                               {TIPO_LABEL[c.tipo] ?? c.tipo}
                             </span>
                           </td>
                           <td style={{ padding: '9px 12px', color: 'var(--text-primary)' }}>{c.concepto}</td>
-                          <td style={{ padding: '9px 12px', color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 11 }}>{c.periodo ?? '—'}</td>
+                          <td style={{ padding: '9px 12px', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>{c.periodo ?? '—'}</td>
                           <td style={{ padding: '9px 12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{fmtFecha(c.fecha_emision)}</td>
-                          <td style={{ padding: '9px 12px', whiteSpace: 'nowrap', color: vencida ? '#dc2626' : 'var(--text-muted)', fontWeight: vencida ? 600 : 400 }}>
+                          <td style={{ padding: '9px 12px', whiteSpace: 'nowrap', color: vencida ? '#C23B3B' : 'var(--text-muted)', fontWeight: vencida ? 600 : 400 }}>
                             {fmtFecha(c.fecha_vencimiento)}
                           </td>
                           <td style={{ padding: '9px 12px', fontWeight: 600, color: 'var(--text-primary)' }}>{fmt$(c.monto_final)}</td>
                           <td style={{ padding: '9px 12px' }}>
-                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 600, background: sc.bg, color: sc.color }}>{c.status}</span>
+                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 600, background: sc.color, color: '#fff'}}>{c.status}</span>
                           </td>
                         </tr>
                       )

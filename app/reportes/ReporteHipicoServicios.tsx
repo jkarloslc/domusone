@@ -20,18 +20,12 @@ type Servicio = {
   cat_tipos_servicio?: { nombre: string }
 }
 
-const TIPO_ICON: Record<string, string> = {
-  veterinario: '🩺',
-  herraje:     '🔨',
-  alimento:    '🌾',
-  otro:        '📋',
-}
 
 const TIPO_COLOR: Record<string, { bg: string; color: string }> = {
-  veterinario: { bg: '#eff6ff', color: '#2563eb' },
-  herraje:     { bg: '#fef9c3', color: '#ca8a04' },
-  alimento:    { bg: '#f0fdf4', color: '#16a34a' },
-  otro:        { bg: '#f8fafc', color: '#64748b' },
+  veterinario: { bg: '#F4F5F7', color: '#1C1D21' },
+  herraje:     { bg: '#E6E8EB', color: '#A8821A' },
+  alimento:    { bg: '#F4F5F7', color: '#267F56' },
+  otro:        { bg: '#F8F9FA', color: '#62666E' },
 }
 
 const TIPOS = ['veterinario', 'herraje', 'alimento', 'otro'] as const
@@ -171,7 +165,7 @@ export default function ReporteHipicoServicios() {
           <select className="input" value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)} style={{ fontSize: 12 }}>
             <option value="">Todos</option>
             {TIPOS.map(t => (
-              <option key={t} value={t}>{TIPO_ICON[t]} {labelTipo(t)}</option>
+              <option key={t} value={t}>{labelTipo(t)}</option>
             ))}
           </select>
         </div>
@@ -212,20 +206,20 @@ export default function ReporteHipicoServicios() {
             </div>
             <div className="card" style={{ flex: '1 1 140px', padding: '12px 16px' }}>
               <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>Caballos con servicios</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: '#0f766e' }}>{caballosConServicios}</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#126B63' }}>{caballosConServicios}</div>
             </div>
             <div className="card" style={{ flex: '1 1 140px', padding: '12px 16px' }}>
               <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>Costo total</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: '#2563eb' }}>{fmt$(totalCosto)}</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#1C1D21' }}>{fmt$(totalCosto)}</div>
             </div>
             <div className="card" style={{ flex: '1 1 140px', padding: '12px 16px' }}>
               <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>Facturable a arrendatario</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: '#b45309' }}>{fmt$(totalFacturable)}</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#96600F' }}>{fmt$(totalFacturable)}</div>
             </div>
             {TIPOS.map(t => (
               <div key={t} className="card" style={{ flex: '1 1 100px', padding: '12px 16px',
                 borderLeft: `3px solid ${TIPO_COLOR[t].color}` }}>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>{TIPO_ICON[t]} {labelTipo(t)}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>{labelTipo(t)}</div>
                 <div style={{ fontSize: 20, fontWeight: 700, color: TIPO_COLOR[t].color }}>{countPorTipo[t]}</div>
               </div>
             ))}
@@ -249,7 +243,7 @@ export default function ReporteHipicoServicios() {
                 <tbody>
                   {grupos.map((gc) => (
                     <Fragment key={`cab-group-${gc.caballoId}`}>
-                      <tr style={{ borderBottom: '1px solid var(--border)', background: '#f1f5f9' }}>
+                      <tr style={{ borderBottom: '1px solid var(--border)', background: '#F4F5F7' }}>
                         <td style={{ padding: '9px 12px', fontWeight: 700, color: 'var(--text-primary)' }}>
                           {gc.caballo}
                           <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, marginLeft: 6 }}>
@@ -266,8 +260,8 @@ export default function ReporteHipicoServicios() {
                           <Fragment key={`tipo-group-${gc.caballoId}-${gt.tipo}`}>
                             <tr style={{ borderBottom: '1px solid var(--border)', background: tc.bg }}>
                               <td style={{ padding: '8px 12px 8px 30px' }}>
-                                <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 700, background: '#fff', color: tc.color, border: `1px solid ${tc.color}33` }}>
-                                  {TIPO_ICON[gt.tipo] ?? '📋'} {labelTipo(gt.tipo)}
+                                <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 700, background: '#fff', color: tc.color, border: '1px solid #E6E8EB' }}>
+                                  {labelTipo(gt.tipo)}
                                 </span>
                                 <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>
                                   ({gt.servicios.length} servicio{gt.servicios.length !== 1 ? 's' : ''})
@@ -290,7 +284,7 @@ export default function ReporteHipicoServicios() {
                                 <td style={{ padding: '8px 12px', color: 'var(--text-muted)', fontSize: 11 }}>{sv.proveedor ?? '—'}</td>
                                 <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                                   {sv.cobrar_arrendatario
-                                    ? <span style={{ fontSize: 11, color: '#b45309', fontWeight: 700 }}>✓</span>
+                                    ? <span style={{ fontSize: 11, color: '#96600F', fontWeight: 700 }}>✓</span>
                                     : <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>—</span>}
                                 </td>
                                 <td style={{ padding: '8px 12px', fontWeight: 600, color: 'var(--text-primary)' }}>{fmt$(sv.costo)}</td>

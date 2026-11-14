@@ -12,7 +12,7 @@ const mesLabel = (k: string) => `${MESES[Number(k.slice(5, 7)) - 1]} ${k.slice(0
 const hoy = () => new Date().toISOString().slice(0, 10)
 
 const STATUS = ['Borrador', 'Vigente', 'Vencida', 'Convertida', 'Descartada'] as const
-const COLOR: Record<string, string> = { Borrador: '#64748b', Vigente: '#2563eb', Vencida: '#dc2626', Convertida: '#15803d', Descartada: '#94a3b8' }
+const COLOR: Record<string, string> = { Borrador: '#62666E', Vigente: '#1C1D21', Vencida: '#C23B3B', Convertida: '#1F7A50', Descartada: '#7A7E87' }
 
 type Pre = {
   id: number; folio: string; concepto: string; monto: number; status: string
@@ -146,7 +146,7 @@ export default function ReportePreOrdenes() {
                   </tr>
                   {Object.entries(g).map(([cc, l]) => (
                     <Fragment key={k + cc}>
-                      <tr style={{ background: 'var(--bg-secondary, #f8fafc)', fontWeight: 600 }}>
+                      <tr style={{ background: 'var(--bg-secondary, #F8F9FA)', fontWeight: 600 }}>
                         <td colSpan={8} style={{ paddingLeft: 24 }}>{cc}</td>
                         <td style={{ textAlign: 'right' }}>{fmt(sum(l))}</td>
                       </tr>
@@ -154,12 +154,12 @@ export default function ReportePreOrdenes() {
                         const s = statusDe(r)
                         return (
                           <tr key={r.id}>
-                            <td style={{ fontFamily: 'monospace', fontSize: 12, paddingLeft: 40 }}>{r.folio}</td>
+                            <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, paddingLeft: 40 }}>{r.folio}</td>
                             <td style={{ fontSize: 12 }}>{provDe(r)}</td>
                             <td style={{ fontSize: 12 }}>{r.concepto}</td>
                             <td style={{ fontSize: 12 }}>{r.id_area_fk ? (areas[r.id_area_fk] ?? '—') : '—'}</td>
                             <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{fmtF(r.fecha_estimada_pago)}</td>
-                            <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: s === 'Vencida' ? '#dc2626' : undefined }}>{fmtF(r.vigencia_cotizacion)}</td>
+                            <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: s === 'Vencida' ? '#C23B3B' : undefined }}>{fmtF(r.vigencia_cotizacion)}</td>
                             <td style={{ fontSize: 11 }}>{r.esquema_comprobante === 'Factura previa al pago' ? 'Previa' : 'Posterior'}</td>
                             <td style={{ fontSize: 11, fontWeight: 600, color: COLOR[s] }}>{s}</td>
                             <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(Number(r.monto))}</td>

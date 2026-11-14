@@ -90,15 +90,15 @@ export default function ReporteColaboradores() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
         <div className="card" style={{ padding: '10px 14px' }}>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Activos</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: '#15803d' }}>{activos}</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: '#1F7A50' }}>{activos}</div>
         </div>
         <div className="card" style={{ padding: '10px 14px' }}>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Asignables</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: '#0369a1' }}>{asignados}</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: '#2A6582' }}>{asignados}</div>
         </div>
         <div className="card" style={{ padding: '10px 14px' }}>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Supervisores</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: '#7c3aed' }}>{supervisores}</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: '#6B4E79' }}>{supervisores}</div>
         </div>
         <div className="card" style={{ padding: '10px 14px' }}>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Nómina Bruta Mensual</div>
@@ -139,13 +139,13 @@ export default function ReporteColaboradores() {
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{antiguedad(c.fecha_ingreso)}</td>
                   <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{fmt$(c.sueldo_bruto_mensual)}</td>
                   <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{fmt$(c.sueldo_neto_mensual)}</td>
-                  <td style={{ textAlign: 'center' }}>{c.es_asignado ? <CheckCircle size={14} style={{ color: '#0369a1' }} /> : '—'}</td>
-                  <td style={{ textAlign: 'center' }}>{c.es_supervisor ? <CheckCircle size={14} style={{ color: '#7c3aed' }} /> : '—'}</td>
+                  <td style={{ textAlign: 'center' }}>{c.es_asignado ? <CheckCircle size={14} style={{ color: '#2A6582' }} /> : '—'}</td>
+                  <td style={{ textAlign: 'center' }}>{c.es_supervisor ? <CheckCircle size={14} style={{ color: '#6B4E79' }} /> : '—'}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.id_cuadrante_fk ? (cuadMap[c.id_cuadrante_fk] ?? '—') : '—'}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.id_centro_costo_fk ? (ccMap[c.id_centro_costo_fk] ?? '—') : '—'}</td>
                   <td style={{ textAlign: 'center' }}>
                     <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                      color: c.activo ? '#15803d' : '#94a3b8', background: c.activo ? '#dcfce7' : '#f1f5f9' }}>
+                      color: c.activo ? '#fff' : '#7A7E87', background: c.activo ? '#1F7A50' : '#F4F5F7' }}>
                       {c.activo ? 'Activo' : 'Inactivo'}
                     </span>
                   </td>

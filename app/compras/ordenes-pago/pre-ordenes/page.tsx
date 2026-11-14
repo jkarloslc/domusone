@@ -13,7 +13,7 @@ import PageHeader from '@/components/layout/PageHeader'
 const ESQUEMAS = ['Factura previa al pago', 'Factura posterior al pago'] as const
 const URGENCIAS = ['Crítica', 'Alta', 'Media', 'Baja'] as const
 const STATUS_COLOR: Record<string, string> = {
-  Borrador: '#64748b', Vigente: '#2563eb', Convertida: '#15803d', Descartada: '#94a3b8', Vencida: '#dc2626',
+  Borrador: '#62666E', Vigente: '#1C1D21', Convertida: '#1F7A50', Descartada: '#7A7E87', Vencida: '#C23B3B',
 }
 const hoy = () => new Date().toISOString().slice(0, 10)
 const mesKey = (f: string) => f.slice(0, 7)
@@ -28,8 +28,8 @@ const statusVisible = (r: any) =>
     ? 'Vencida' : r.status
 
 const Badge = ({ s }: { s: string }) => (
-  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, color: STATUS_COLOR[s] ?? '#64748b',
-    background: `${STATUS_COLOR[s] ?? '#64748b'}14`, border: `1px solid ${STATUS_COLOR[s] ?? '#64748b'}40` }}>{s}</span>
+  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, color: '#fff',
+    background: STATUS_COLOR[s] ?? '#62666E', border: `1px solid ${STATUS_COLOR[s] ?? '#62666E'}` }}>{s}</span>
 )
 
 const FORM0 = {
@@ -196,7 +196,7 @@ export default function PreOrdenesPage() {
                 const editable = r.status === 'Borrador' || r.status === 'Vigente'
                 return (
                   <tr key={r.id} style={{ opacity: st === 'Descartada' ? 0.5 : 1 }}>
-                    <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{r.folio}</td>
+                    <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{r.folio}</td>
                     <td>{r.id_proveedor_fk ? provN[r.id_proveedor_fk] : <span style={{ fontStyle: 'italic' }}>{r.proveedor_prospecto} (prospecto)</span>}</td>
                     <td>{r.concepto}</td>
                     <td style={{ fontSize: 12 }}>{[ccN[r.id_centro_costo_fk], arN[r.id_area_fk]].filter(Boolean).join(' / ') || '—'}</td>
@@ -216,10 +216,10 @@ export default function PreOrdenesPage() {
                             onClick={() => cambiarStatus(r, { status: 'Vigente', autorizado_por: authUser?.nombre ?? null, fecha_autorizacion: new Date().toISOString() }, `¿Marcar ${r.folio} como Vigente?`)}><CheckCircle size={13} /></button>
                         )}
                         {r.status === 'Vigente' && canAuth() && (
-                          <button className="btn-ghost" title="Convertir a OP" style={{ padding: '4px 6px', color: '#15803d' }} onClick={() => convertir(r)}><Send size={13} /></button>
+                          <button className="btn-ghost" title="Convertir a OP" style={{ padding: '4px 6px', color: '#1F7A50' }} onClick={() => convertir(r)}><Send size={13} /></button>
                         )}
                         {editable && canAuth() && (
-                          <button className="btn-ghost" title="Descartar" style={{ padding: '4px 6px', color: '#dc2626' }} onClick={() => descartar(r)}><Ban size={13} /></button>
+                          <button className="btn-ghost" title="Descartar" style={{ padding: '4px 6px', color: '#C23B3B' }} onClick={() => descartar(r)}><Ban size={13} /></button>
                         )}
                       </div>
                     </td>
@@ -380,8 +380,8 @@ function PreOrdenModal({ row, soloVer, provs, ccs, areas, frentes, tiposGasto, p
         </Field>
         <Field label="Notas" w="1 1 100%"><textarea className="input" rows={2} disabled={ro} value={form.notas} onChange={e => set('notas', e.target.value)} /></Field>
         {ro && row?.id_op_fk && <div style={{ fontSize: 12 }}>Convertida a OP (id {row.id_op_fk}) por {row.convertido_por}</div>}
-        {ro && row?.motivo_descarte && <div style={{ fontSize: 12, color: '#dc2626' }}>Descartada: {row.motivo_descarte}</div>}
-        {error && <div style={{ color: '#dc2626', fontSize: 12, display: 'flex', gap: 4, alignItems: 'center' }}><AlertTriangle size={13} /> {error}</div>}
+        {ro && row?.motivo_descarte && <div style={{ fontSize: 12, color: '#C23B3B' }}>Descartada: {row.motivo_descarte}</div>}
+        {error && <div style={{ color: '#C23B3B', fontSize: 12, display: 'flex', gap: 4, alignItems: 'center' }}><AlertTriangle size={13} /> {error}</div>}
       </div>
     </ModalShell>
   )

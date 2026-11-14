@@ -63,7 +63,7 @@ export default function CuotasTab() {
     <div>
       {/* Aviso contextual */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '12px 16px',
-        background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, marginBottom: 20, fontSize: 13, color: '#92400e' }}>
+        background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 10, marginBottom: 20, fontSize: 13, color: '#7A4B0C' }}>
         <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
         <span>
           Las tarifas aquí registradas <strong>sobreescriben el monto estándar</strong> de la cuota para ese lote específico
@@ -90,8 +90,8 @@ export default function CuotasTab() {
       {/* Stats */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
         {[
-          { label: 'Excepciones activas',   value: activas,   color: '#d97706' },
-          { label: 'Excepciones inactivas', value: inactivas, color: '#94a3b8' },
+          { label: 'Excepciones activas',   value: activas,   color: '#B5761A' },
+          { label: 'Excepciones inactivas', value: inactivas, color: '#7A7E87' },
         ].map(s => (
           <div key={s.label} className="card" style={{ padding: '10px 16px', minWidth: 140 }}>
             <div style={{ fontSize: 20, fontFamily: 'var(--font-display)', color: s.color }}>{s.value}</div>
@@ -127,9 +127,9 @@ export default function CuotasTab() {
                   {loteMap[c.id_lote_fk as any] ?? `#${c.id_lote_fk}`}
                 </td>
                 <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                  {cuotaEstMap[c.id_cuota_estandar_fk as any] ?? <span style={{ color: '#dc2626', fontSize: 12 }}>Sin cuota asignada</span>}
+                  {cuotaEstMap[c.id_cuota_estandar_fk as any] ?? <span style={{ color: '#C23B3B', fontSize: 12 }}>Sin cuota asignada</span>}
                 </td>
-                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#d97706' }}>
+                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#B5761A' }}>
                   {fmt(c.monto)}
                 </td>
                 <td style={{ fontSize: 12, color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -254,7 +254,7 @@ function ExcepcionModal({ cuota, onClose, onSaved }: { cuota: CuotaLote | null; 
                   onClick={() => { setForm(f => ({ ...f, id_lote_fk: String(l.id) })); setLoteSearch(l.cve_lote ?? `#${l.lote}`); setLotes([]) }}
                   style={{ display: 'flex', width: '100%', padding: '7px 12px', background: 'none', border: 'none',
                     cursor: 'pointer', color: 'var(--blue)', fontWeight: 600, fontSize: 14 }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                   {l.cve_lote ?? `#${l.lote}`}
                 </button>

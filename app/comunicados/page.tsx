@@ -19,17 +19,17 @@ const TIPOS = ['Aviso', 'Comunicado', 'Urgente'] as const
 type Tipo = typeof TIPOS[number]
 
 const TIPO_COLOR: Record<Tipo, { bg: string; color: string; border: string }> = {
-  Aviso:       { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
-  Comunicado:  { bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
-  Urgente:     { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
+  Aviso:       { bg: '#F4F5F7', color: '#1C1D21', border: '#C9CCD3' },
+  Comunicado:  { bg: '#F4F5F7', color: '#1F7A50', border: '#E6E8EB' },
+  Urgente:     { bg: '#F4F5F7', color: '#C23B3B', border: '#E6E8EB' },
 }
 
 const TipoBadge = ({ tipo }: { tipo: string }) => {
   const t = tipo as Tipo
-  const c = TIPO_COLOR[t] ?? { bg: '#f1f5f9', color: '#64748b', border: '#e2e8f0' }
+  const c = TIPO_COLOR[t] ?? { bg: '#F4F5F7', color: '#62666E', border: '#E6E8EB' }
   return (
     <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20,
-      background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>
+      background: c.color, color: '#fff', border: `1px solid ${c.color}` }}>
       {tipo}
     </span>
   )
@@ -41,13 +41,13 @@ const buildEmailHtml = (titulo: string, cuerpo: string, tipo: string, fromName: 
 <html>
 <head><meta charset="UTF-8">
 <style>
-  body { font-family: Arial, sans-serif; background: #f8fafc; margin: 0; padding: 0; }
-  .wrap { max-width: 600px; margin: 32px auto; background: #fff; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; }
-  .header { background: ${tipo === 'Urgente' ? '#dc2626' : tipo === 'Comunicado' ? '#15803d' : '#1d4ed8'}; padding: 24px 32px; color: #fff; }
+  body { font-family: Arial, sans-serif; background: #F8F9FA; margin: 0; padding: 0; }
+  .wrap { max-width: 600px; margin: 32px auto; background: #fff; border-radius: 10px; overflow: hidden; border: 1px solid #E6E8EB; }
+  .header { background: ${tipo === 'Urgente' ? '#C23B3B' : tipo === 'Comunicado' ? '#1F7A50' : '#26282D'}; padding: 24px 32px; color: #fff; }
   .header h1 { margin: 0; font-size: 22px; font-weight: 700; }
   .header .tipo { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; opacity: .8; margin-bottom: 6px; }
-  .body { padding: 28px 32px; font-size: 14px; color: #374151; line-height: 1.7; white-space: pre-wrap; }
-  .footer { padding: 16px 32px; background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; }
+  .body { padding: 28px 32px; font-size: 14px; color: #33363C; line-height: 1.7; white-space: pre-wrap; }
+  .footer { padding: 16px 32px; background: #F8F9FA; border-top: 1px solid #E6E8EB; font-size: 11px; color: #7A7E87; }
 </style>
 </head>
 <body>
@@ -119,17 +119,17 @@ export default function ComunicadosPage() {
 
       {/* KPIs */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
-        <div className="card" style={{ padding: '12px 20px', background: '#f0fdf4', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <CheckCircle size={15} style={{ color: '#15803d' }} />
+        <div className="card" style={{ padding: '12px 20px', background: '#fff', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <CheckCircle size={15} style={{ color: '#1F7A50' }} />
           <div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#15803d' }}>{enviados}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{enviados}</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Enviados</div>
           </div>
         </div>
-        <div className="card" style={{ padding: '12px 20px', background: '#fff7ed', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Clock size={15} style={{ color: '#d97706' }} />
+        <div className="card" style={{ padding: '12px 20px', background: '#fff', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Clock size={15} style={{ color: '#B5761A' }} />
           <div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#d97706' }}>{borradores}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{borradores}</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Borradores</div>
           </div>
         </div>
@@ -174,9 +174,9 @@ export default function ComunicadosPage() {
                 <td>
                   <span style={{
                     fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                    background: c.estado === 'Enviado' ? '#f0fdf4' : '#fff7ed',
-                    color: c.estado === 'Enviado' ? '#15803d' : '#d97706',
-                    border: `1px solid ${c.estado === 'Enviado' ? '#bbf7d0' : '#fed7aa'}`,
+                    background: c.estado === 'Enviado' ? '#1F7A50' : '#C8642A',
+                    color: '#fff',
+                    border: `1px solid ${c.estado === 'Enviado' ? '#1F7A50' : '#C8642A'}`,
                   }}>{c.estado}</span>
                 </td>
                 <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--blue)' }}>
@@ -186,7 +186,7 @@ export default function ComunicadosPage() {
                 <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{fmtFecha(c.created_at)}</td>
                 <td>
                   <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
-                    <button className="btn-ghost" style={{ padding: '4px 6px', color: '#0891b2' }}
+                    <button className="btn-ghost" style={{ padding: '4px 6px', color: '#32789A' }}
                       onClick={() => setDetailModal(c)} title="Ver envíos">
                       <Eye size={13} />
                     </button>
@@ -195,7 +195,7 @@ export default function ComunicadosPage() {
                       <Send size={12} /> Enviar
                     </button>
                     {c.estado === 'Borrador' && (
-                      <button className="btn-ghost" style={{ padding: '4px 6px', color: '#dc2626' }}
+                      <button className="btn-ghost" style={{ padding: '4px 6px', color: '#C23B3B' }}
                         onClick={() => handleDelete(c.id)} title="Eliminar">
                         <Trash2 size={13} />
                       </button>
@@ -262,9 +262,9 @@ function NuevoComunicadoModal({ authUser, onClose, onSaved }:
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 600 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #E6E8EB' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: '#F4F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <MessageSquare size={14} style={{ color: 'var(--blue)' }} />
             </div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600 }}>Nuevo Comunicado</h2>
@@ -274,7 +274,7 @@ function NuevoComunicadoModal({ authUser, onClose, onSaved }:
 
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {error && (
-            <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>
+            <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>
           )}
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 10, alignItems: 'end' }}>
@@ -304,7 +304,7 @@ function NuevoComunicadoModal({ authUser, onClose, onSaved }:
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #E6E8EB' }}>
           <button className="btn-secondary" onClick={onClose}>Cancelar</button>
           <button className="btn-primary" onClick={handleSave} disabled={saving}>
             {saving ? <Loader size={13} className="animate-spin" /> : <FileText size={13} />}
@@ -477,7 +477,7 @@ function EnvioModal({ comunicado, authUser, onClose }:
   return (
     <div className="modal-overlay" onClick={e => !sending && e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 560 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #E6E8EB' }}>
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', marginBottom: 2 }}>{comunicado.titulo}</div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -490,8 +490,8 @@ function EnvioModal({ comunicado, authUser, onClose }:
 
         {done ? (
           <div style={{ padding: '40px 24px', textAlign: 'center' }}>
-            <CheckCircle size={48} style={{ color: '#15803d', margin: '0 auto 16px' }} />
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#15803d', marginBottom: 6 }}>¡Enviado correctamente!</div>
+            <CheckCircle size={48} style={{ color: '#1F7A50', margin: '0 auto 16px' }} />
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#1F7A50', marginBottom: 6 }}>¡Enviado correctamente!</div>
             <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
               {tab === 'individual'
                 ? `El comunicado fue enviado a ${selectedCorreo}`
@@ -502,13 +502,13 @@ function EnvioModal({ comunicado, authUser, onClose }:
         ) : (
           <>
             {/* Tabs */}
-            <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB' }}>
               {(['individual', 'masivo'] as const).map(t => (
                 <button key={t} onClick={() => !sending && setTab(t)}
                   style={{ flex: 1, padding: '11px 16px', background: 'none', border: 'none', cursor: 'pointer',
                     fontSize: 13, fontWeight: tab === t ? 600 : 400,
                     color: tab === t ? 'var(--blue)' : 'var(--text-muted)',
-                    borderBottom: tab === t ? '2px solid var(--blue)' : '2px solid transparent', marginBottom: -1 }}>
+                    borderBottom: tab === t ? '2px solid #19D3C5' : '2px solid transparent', marginBottom: -1 }}>
                   {t === 'individual' ? <><Mail size={13} style={{ verticalAlign: 'middle', marginRight: 5 }} />Individual</>
                     : <><Users size={13} style={{ verticalAlign: 'middle', marginRight: 5 }} />Envío Masivo</>}
                 </button>
@@ -517,7 +517,7 @@ function EnvioModal({ comunicado, authUser, onClose }:
 
             <div style={{ padding: '20px 24px', minHeight: 240 }}>
               {error && (
-                <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13, marginBottom: 14 }}>
+                <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13, marginBottom: 14 }}>
                   {error}
                 </div>
               )}
@@ -538,7 +538,7 @@ function EnvioModal({ comunicado, authUser, onClose }:
                         {results.map(p => (
                           <button key={p.id} onClick={() => selectPropietario(p)}
                             style={{ width: '100%', padding: '8px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 13 }}
-                            onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                            onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                             {nombreProp(p)}
                           </button>
@@ -549,14 +549,14 @@ function EnvioModal({ comunicado, authUser, onClose }:
 
                   {selectedProp && (
                     <>
-                      <div style={{ padding: '10px 14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
                         <CheckCircle size={14} style={{ color: 'var(--blue)' }} />
-                        <span style={{ fontSize: 13, fontWeight: 600, color: '#1d4ed8' }}>{nombreProp(selectedProp)}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>{nombreProp(selectedProp)}</span>
                       </div>
 
                       {correos.length === 0 ? (
-                        <div style={{ padding: '12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 13, color: '#92400e' }}>
-                          ⚠ Este propietario no tiene correos registrados
+                        <div style={{ padding: '12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 8, fontSize: 13, color: '#7A4B0C' }}>
+                          Este propietario no tiene correos registrados
                         </div>
                       ) : (
                         <div>
@@ -582,19 +582,19 @@ function EnvioModal({ comunicado, authUser, onClose }:
                     </div>
                   ) : (
                     <>
-                      <div style={{ padding: '14px 18px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, marginBottom: 14 }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: '#1d4ed8' }}>
+                      <div style={{ padding: '14px 18px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8, marginBottom: 14 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#26282D' }}>
                           <Users size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />
                           {masivoList.length} destinatarios
                         </div>
-                        <div style={{ fontSize: 12, color: '#3b82f6', marginTop: 2 }}>
+                        <div style={{ fontSize: 12, color: '#33363C', marginTop: 2 }}>
                           Se enviará un correo a cada dirección registrada en propietarios activos
                         </div>
                       </div>
 
                       {/* Preview de destinatarios (los primeros 5) */}
                       {masivoList.slice(0, 5).map((d, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: 12 }}>
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid #F4F5F7', fontSize: 12 }}>
                           <Mail size={11} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
                           <span style={{ fontWeight: 500 }}>{d.nombre}</span>
                           <span style={{ color: 'var(--text-muted)', flex: 1 }}>{d.correo}</span>
@@ -612,7 +612,7 @@ function EnvioModal({ comunicado, authUser, onClose }:
                             <span>Enviando…</span>
                             <span>{progress}%</span>
                           </div>
-                          <div style={{ height: 8, background: '#e2e8f0', borderRadius: 4, overflow: 'hidden' }}>
+                          <div style={{ height: 8, background: '#E6E8EB', borderRadius: 4, overflow: 'hidden' }}>
                             <div style={{ height: '100%', width: `${progress}%`, background: 'var(--blue)', transition: 'width 0.3s ease' }} />
                           </div>
                         </div>
@@ -623,7 +623,7 @@ function EnvioModal({ comunicado, authUser, onClose }:
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #E6E8EB' }}>
               <button className="btn-secondary" onClick={onClose} disabled={sending}>Cancelar</button>
               <button className="btn-primary"
                 onClick={tab === 'individual' ? sendIndividual : sendMasivo}
@@ -660,7 +660,7 @@ function EnviosDetailModal({ comunicado, onClose }: { comunicado: any; onClose: 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 680 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #E6E8EB' }}>
           <div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{comunicado.titulo}</div>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -672,9 +672,9 @@ function EnviosDetailModal({ comunicado, onClose }: { comunicado: any; onClose: 
         </div>
 
         {envios.length > 0 && (
-          <div style={{ display: 'flex', gap: 10, padding: '12px 24px', borderBottom: '1px solid #f1f5f9' }}>
-            <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>✓ {exitosos} enviados</span>
-            {errores > 0 && <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>✗ {errores} con error</span>}
+          <div style={{ display: 'flex', gap: 10, padding: '12px 24px', borderBottom: '1px solid #F4F5F7' }}>
+            <span style={{ fontSize: 12, color: '#1F7A50', fontWeight: 600 }}>✓ {exitosos} enviados</span>
+            {errores > 0 && <span style={{ fontSize: 12, color: '#C23B3B', fontWeight: 600 }}>✗ {errores} con error</span>}
           </div>
         )}
 
@@ -699,16 +699,16 @@ function EnviosDetailModal({ comunicado, onClose }: { comunicado: any; onClose: 
                 {envios.map(e => (
                   <tr key={e.id}>
                     <td style={{ fontSize: 13 }}>{e.nombre_destino ?? '—'}</td>
-                    <td style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{e.correo_destino}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{e.correo_destino}</td>
                     <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{fmtFecha(e.fecha_envio)}</td>
                     <td style={{ textAlign: 'center' }}>
                       <span style={{
                         fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                        background: e.status === 'Enviado' ? '#f0fdf4' : '#fef2f2',
-                        color: e.status === 'Enviado' ? '#15803d' : '#dc2626',
-                        border: `1px solid ${e.status === 'Enviado' ? '#bbf7d0' : '#fecaca'}`,
+                        background: e.status === 'Enviado' ? '#1F7A50' : '#C23B3B',
+                        color: '#fff',
+                        border: `1px solid ${e.status === 'Enviado' ? '#1F7A50' : '#C23B3B'}`,
                       }}>{e.status}</span>
-                      {e.error_msg && <div style={{ fontSize: 10, color: '#dc2626', marginTop: 2 }}>{e.error_msg}</div>}
+                      {e.error_msg && <div style={{ fontSize: 10, color: '#C23B3B', marginTop: 2 }}>{e.error_msg}</div>}
                     </td>
                   </tr>
                 ))}
@@ -717,7 +717,7 @@ function EnviosDetailModal({ comunicado, onClose }: { comunicado: any; onClose: 
           )}
         </div>
 
-        <div style={{ padding: '12px 24px', borderTop: '1px solid #e2e8f0', textAlign: 'right' }}>
+        <div style={{ padding: '12px 24px', borderTop: '1px solid #E6E8EB', textAlign: 'right' }}>
           <button className="btn-secondary" onClick={onClose}>Cerrar</button>
         </div>
       </div>

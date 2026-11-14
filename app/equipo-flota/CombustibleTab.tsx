@@ -27,23 +27,23 @@ const STATUS_VALE      = ['Solicitado', 'Emitido', 'Parcial', 'Completado', 'Can
 const ROLES_EMITE_VALE = ['superadmin', 'admin', 'usuariomantto', 'mantenimiento', 'tesoreria']
 
 const VALE_STATUS_STYLE: Record<string, { color: string; bg: string; border: string }> = {
-  'Solicitado': { color: '#64748b', bg: '#f8fafc', border: '#e2e8f0' },
-  'Emitido':    { color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
-  'Parcial':    { color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-  'Completado': { color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
-  'Cancelado':  { color: '#94a3b8', bg: '#f8fafc', border: '#e2e8f0' },
+  'Solicitado': { color: '#62666E', bg: '#F8F9FA', border: '#E6E8EB' },
+  'Emitido':    { color: '#1C1D21', bg: '#F4F5F7', border: '#C9CCD3' },
+  'Parcial':    { color: '#B5761A', bg: '#F4F5F7', border: '#E6E8EB' },
+  'Completado': { color: '#1F7A50', bg: '#F4F5F7', border: '#E6E8EB' },
+  'Cancelado':  { color: '#7A7E87', bg: '#F8F9FA', border: '#E6E8EB' },
 }
 const CARGA_TIPO_STYLE: Record<string, { color: string; bg: string; border: string }> = {
-  'Gasolinería':       { color: '#ea580c', bg: '#fff7ed', border: '#fed7aa' },
-  'Entrega Garrafa':   { color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
-  'Consumo Garrafa':   { color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+  'Gasolinería':       { color: '#C8642A', bg: '#F4F5F7', border: '#E6E8EB' },
+  'Entrega Garrafa':   { color: '#32789A', bg: '#F4F5F7', border: '#C9CCD3' },
+  'Consumo Garrafa':   { color: '#6B4E79', bg: '#F4F5F7', border: '#E6E8EB' },
 }
 
 const Badge = ({ text, map }: { text: string; map: Record<string, any> }) => {
-  const s = map[text] ?? { color: '#64748b', bg: '#f8fafc', border: '#e2e8f0' }
+  const s = map[text] ?? { color: '#62666E', bg: '#F8F9FA', border: '#E6E8EB' }
   return (
     <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-      color: s.color, background: s.bg, border: `1px solid ${s.border}`, whiteSpace: 'nowrap' }}>
+      color: '#fff', background: s.color, border: `1px solid ${s.color}`, whiteSpace: 'nowrap' }}>
       {text}
     </span>
   )
@@ -80,42 +80,42 @@ async function imprimirVale(
   })
   const logoHtml = orgLogo
     ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-    : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+    : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
 
   const pct = vale.litros_autorizados > 0 ? (vale.litros_usados / vale.litros_autorizados) * 100 : 0
 
   const filasCargas = (cargas ?? []).map((c: any) => `
     <tr>
-      <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:12px">${fmtF(c.fecha)}</td>
-      <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:12px">${c.tipo_carga ?? ''}</td>
-      <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:12px">${c.id_equipo_fk ? (equipoMap[c.id_equipo_fk] ?? '—') : '—'}</td>
-      <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;font-size:12px;font-weight:600">${fmtL(c.litros)}</td>
-      <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;font-size:12px">${c.precio_unitario ? `$${Number(c.precio_unitario).toFixed(4)}` : '—'}</td>
-      <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;font-size:12px;font-weight:700;color:#059669">${fmt$(c.monto_total)}</td>
+      <td style="padding:7px 10px;border:1px solid #E6E8EB;font-size:12px">${fmtF(c.fecha)}</td>
+      <td style="padding:7px 10px;border:1px solid #E6E8EB;font-size:12px">${c.tipo_carga ?? ''}</td>
+      <td style="padding:7px 10px;border:1px solid #E6E8EB;font-size:12px">${c.id_equipo_fk ? (equipoMap[c.id_equipo_fk] ?? '—') : '—'}</td>
+      <td style="padding:7px 10px;border:1px solid #E6E8EB;text-align:right;font-size:12px;font-weight:600">${fmtL(c.litros)}</td>
+      <td style="padding:7px 10px;border:1px solid #E6E8EB;text-align:right;font-size:12px">${c.precio_unitario ? `$${Number(c.precio_unitario).toFixed(4)}` : '—'}</td>
+      <td style="padding:7px 10px;border:1px solid #E6E8EB;text-align:right;font-size:12px;font-weight:700;color:#267F56">${fmt$(c.monto_total)}</td>
     </tr>`
   ).join('')
 
   const html = `<!DOCTYPE html><html><head><title>Vale ${vale.folio ?? ''}</title>
     <style>
-      body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
-      .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #7c3aed; margin-bottom: 18px; }
-      .org-nombre { font-size: 18px; font-weight: 700; color: #4c1d95; margin: 0 0 2px; }
-      .org-sub { font-size: 11px; color: #64748b; }
-      .doc-title { font-size: 14px; font-weight: 600; color: #4c1d95; margin-bottom: 2px; }
+      body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #26282D; }
+      .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #6B4E79; margin-bottom: 18px; }
+      .org-nombre { font-size: 18px; font-weight: 700; color: #3D2A45; margin: 0 0 2px; }
+      .org-sub { font-size: 11px; color: #62666E; }
+      .doc-title { font-size: 14px; font-weight: 600; color: #3D2A45; margin-bottom: 2px; }
       .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; margin-bottom: 18px; }
-      .info-item label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 2px; }
-      .info-item span { font-size: 13px; color: #1e293b; }
+      .info-item label { font-size: 10px; color: #7A7E87; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 2px; }
+      .info-item span { font-size: 13px; color: #26282D; }
       .progreso { margin: 14px 0 18px; }
-      .progreso-bar { height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; }
-      .progreso-fill { height: 100%; background: ${pct >= 100 ? '#dc2626' : pct >= 80 ? '#d97706' : '#10b981'}; width: ${Math.min(pct, 100)}%; }
+      .progreso-bar { height: 10px; background: #E6E8EB; border-radius: 5px; overflow: hidden; }
+      .progreso-fill { height: 100%; background: ${pct >= 100 ? '#C23B3B' : pct >= 80 ? '#B5761A' : '#2E9E6B'}; width: ${Math.min(pct, 100)}%; }
       table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-      thead th { background: #f1f5f9; padding: 8px 10px; font-size: 10px; text-transform: uppercase;
-        letter-spacing: 0.05em; text-align: left; border: 1px solid #e2e8f0; color: #64748b; }
+      thead th { background: #F4F5F7; padding: 8px 10px; font-size: 10px; text-transform: uppercase;
+        letter-spacing: 0.05em; text-align: left; border: 1px solid #E6E8EB; color: #62666E; }
       .firmas { display: flex; gap: 40px; margin-top: 64px; justify-content: space-around; }
       .firma { text-align: center; min-width: 160px; }
-      .firma-linea { border-top: 1px solid #1e293b; padding-top: 8px; margin-top: 48px; font-size: 11px; color: #64748b; }
-      .firma-nombre { font-size: 12px; font-weight: 600; color: #1e293b; margin-bottom: 2px; }
-      .nota { font-size: 11px; color: #94a3b8; font-style: italic; margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 8px; }
+      .firma-linea { border-top: 1px solid #26282D; padding-top: 8px; margin-top: 48px; font-size: 11px; color: #62666E; }
+      .firma-nombre { font-size: 12px; font-weight: 600; color: #26282D; margin-bottom: 2px; }
+      .nota { font-size: 11px; color: #7A7E87; font-style: italic; margin-top: 20px; border-top: 1px solid #F4F5F7; padding-top: 8px; }
       @page { margin: 1.2cm; }
     </style></head><body>
     <div class="org-header">
@@ -126,8 +126,8 @@ async function imprimirVale(
       </div>
       <div style="margin-left:auto;text-align:right">
         <div class="doc-title">Vale de Combustible</div>
-        <div style="font-size:16px;font-weight:700;color:#4c1d95;font-family:monospace">${vale.folio ?? 'Borrador'}</div>
-        <div style="font-size:11px;color:#64748b;margin-top:2px">Status: <strong>${vale.status ?? '—'}</strong> &nbsp;·&nbsp; ${vale.tipo_suministro ?? ''}</div>
+        <div style="font-size:16px;font-weight:700;color:#3D2A45;font-variant-numeric:tabular-nums">${vale.folio ?? 'Borrador'}</div>
+        <div style="font-size:11px;color:#62666E;margin-top:2px">Status: <strong>${vale.status ?? '—'}</strong> &nbsp;·&nbsp; ${vale.tipo_suministro ?? ''}</div>
       </div>
     </div>
 
@@ -146,7 +146,7 @@ async function imprimirVale(
     </div>
 
     <div class="progreso">
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:#64748b;margin-bottom:4px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#62666E;margin-bottom:4px">
         <span>Consumo del vale</span><span>${pct.toFixed(1)}%</span>
       </div>
       <div class="progreso-bar"><div class="progreso-fill"></div></div>
@@ -156,7 +156,7 @@ async function imprimirVale(
       <thead>
         <tr><th>Fecha</th><th>Tipo</th><th>Equipo</th><th style="text-align:right">Litros</th><th style="text-align:right">Precio/L</th><th style="text-align:right">Total</th></tr>
       </thead>
-      <tbody>${filasCargas || '<tr><td colspan="6" style="padding:14px;text-align:center;color:#94a3b8;border:1px solid #e2e8f0;font-size:12px">Sin cargas registradas</td></tr>'}</tbody>
+      <tbody>${filasCargas || '<tr><td colspan="6" style="padding:14px;text-align:center;color:#7A7E87;border:1px solid #E6E8EB;font-size:12px">Sin cargas registradas</td></tr>'}</tbody>
     </table>
 
     <div class="firmas">
@@ -323,12 +323,12 @@ export default function CombustibleTab() {
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
         {[
-          { label: 'Litros este mes',    value: fmtL(kpiLitrosMes),      color: '#0891b2', icon: <Droplets size={16} /> },
-          { label: 'Costo este mes',     value: fmt$(kpiCostoMes),       color: '#ea580c', icon: <Fuel size={16} /> },
-          { label: 'Vales abiertos',     value: kpiValesAbiertos,        color: '#2563eb', icon: <FileText size={16} /> },
-          { label: 'Vales por vencer',   value: kpiValesPorVencer,       color: kpiValesPorVencer > 0 ? '#dc2626' : '#15803d', icon: <AlertTriangle size={16} /> },
+          { label: 'Litros este mes',    value: fmtL(kpiLitrosMes),      color: '#32789A', icon: <Droplets size={16} /> },
+          { label: 'Costo este mes',     value: fmt$(kpiCostoMes),       color: '#C8642A', icon: <Fuel size={16} /> },
+          { label: 'Vales abiertos',     value: kpiValesAbiertos,        color: '#1C1D21', icon: <FileText size={16} /> },
+          { label: 'Vales por vencer',   value: kpiValesPorVencer,       color: kpiValesPorVencer > 0 ? '#C23B3B' : '#1F7A50', icon: <AlertTriangle size={16} /> },
         ].map(k => (
-          <div key={k.label} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: '12px 14px' }}>
+          <div key={k.label} style={{ background: '#fff', border: '1px solid #E6E8EB', borderRadius: 10, padding: '12px 14px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: k.color, marginBottom: 4 }}>
               {k.icon}<span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.label}</span>
             </div>
@@ -338,13 +338,13 @@ export default function CombustibleTab() {
       </div>
 
       {/* Sub-tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 14 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', marginBottom: 14 }}>
         <button onClick={() => setSubTab('vales')}
           style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px',
             background: 'none', border: 'none', cursor: 'pointer', fontSize: 12,
             fontWeight: subTab === 'vales' ? 600 : 400,
             color: subTab === 'vales' ? 'var(--blue)' : 'var(--text-muted)',
-            borderBottom: subTab === 'vales' ? '2px solid var(--blue)' : '2px solid transparent', marginBottom: -1 }}>
+            borderBottom: subTab === 'vales' ? '2px solid #19D3C5' : '2px solid transparent', marginBottom: -1 }}>
           <FileText size={12} /> Vales
         </button>
         <button onClick={() => setSubTab('cargas')}
@@ -352,7 +352,7 @@ export default function CombustibleTab() {
             background: 'none', border: 'none', cursor: 'pointer', fontSize: 12,
             fontWeight: subTab === 'cargas' ? 600 : 400,
             color: subTab === 'cargas' ? 'var(--blue)' : 'var(--text-muted)',
-            borderBottom: subTab === 'cargas' ? '2px solid var(--blue)' : '2px solid transparent', marginBottom: -1 }}>
+            borderBottom: subTab === 'cargas' ? '2px solid #19D3C5' : '2px solid transparent', marginBottom: -1 }}>
           <Fuel size={12} /> Cargas
         </button>
       </div>
@@ -386,10 +386,10 @@ export default function CombustibleTab() {
           ) : filteredVales.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 13 }}>Sin vales registrados</div>
           ) : (
-            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden' }}>
+            <div style={{ background: '#fff', border: '1px solid #E6E8EB', borderRadius: 10, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  <tr style={{ background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
                     {['Folio', 'Tipo', 'Combustible', 'Centro de Costo', 'Periodo', 'Litros Auth.', 'Litros Usados', 'Monto Auth.', 'Vigencia', 'Status', ''].map(h => (
                       <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
@@ -399,8 +399,8 @@ export default function CombustibleTab() {
                   {valesPag.map((v, i) => {
                     const pct = v.litros_autorizados > 0 ? (v.litros_usados / v.litros_autorizados) * 100 : 0
                     return (
-                      <tr key={v.id} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                        <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{v.folio}</td>
+                      <tr key={v.id} style={{ borderBottom: '1px solid #F4F5F7', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                        <td style={{ padding: '8px 10px', fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{v.folio}</td>
                         <td style={{ padding: '8px 10px' }}><Badge text={v.tipo_suministro} map={CARGA_TIPO_STYLE} /></td>
                         <td style={{ padding: '8px 10px', fontSize: 12 }}>{v.tipo_combustible ?? '—'}</td>
                         <td style={{ padding: '8px 10px', fontSize: 12 }}>{ccMap[v.id_centro_costo_fk] ?? '—'}</td>
@@ -408,9 +408,9 @@ export default function CombustibleTab() {
                         <td style={{ padding: '8px 10px', fontSize: 12, textAlign: 'right' }}>{fmtL(v.litros_autorizados)}</td>
                         <td style={{ padding: '8px 10px', fontSize: 12 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <div style={{ flex: 1, height: 6, background: '#e2e8f0', borderRadius: 3, minWidth: 50 }}>
+                            <div style={{ flex: 1, height: 6, background: '#E6E8EB', borderRadius: 3, minWidth: 50 }}>
                               <div style={{ height: '100%', borderRadius: 3, width: `${Math.min(pct, 100)}%`,
-                                background: pct >= 100 ? '#dc2626' : pct >= 80 ? '#d97706' : '#10b981' }} />
+                                background: pct >= 100 ? '#C23B3B' : pct >= 80 ? '#B5761A' : '#2E9E6B' }} />
                             </div>
                             <span style={{ fontSize: 11, whiteSpace: 'nowrap' }}>{fmtL(v.litros_usados)}</span>
                           </div>
@@ -467,10 +467,10 @@ export default function CombustibleTab() {
           ) : filteredCargas.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 13 }}>Sin cargas registradas</div>
           ) : (
-            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden' }}>
+            <div style={{ background: '#fff', border: '1px solid #E6E8EB', borderRadius: 10, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  <tr style={{ background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
                     {['Fecha', 'Tipo', 'Vale', 'Área', 'Equipo', 'Litros', 'Precio/L', 'Total', 'Odómetro', 'Ticket', ''].map(h => (
                       <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
@@ -478,15 +478,15 @@ export default function CombustibleTab() {
                 </thead>
                 <tbody>
                   {cargasPag.map((c, i) => (
-                    <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                    <tr key={c.id} style={{ borderBottom: '1px solid #F4F5F7', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                       <td style={{ padding: '8px 10px', fontSize: 12, whiteSpace: 'nowrap' }}>{fmtF(c.fecha)}</td>
                       <td style={{ padding: '8px 10px' }}><Badge text={c.tipo_carga} map={CARGA_TIPO_STYLE} /></td>
-                      <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)' }}>{c.vales?.folio ?? '—'}</td>
+                      <td style={{ padding: '8px 10px', fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--blue)' }}>{c.vales?.folio ?? '—'}</td>
                       <td style={{ padding: '8px 10px', fontSize: 12 }}>{areaMap[c.id_area_fk] ?? '—'}</td>
                       <td style={{ padding: '8px 10px', fontSize: 12 }}>{c.id_equipo_fk ? (equipoMap[c.id_equipo_fk] ?? '—') : '—'}</td>
                       <td style={{ padding: '8px 10px', fontSize: 12, fontWeight: 600, textAlign: 'right' }}>{fmtL(c.litros)}</td>
                       <td style={{ padding: '8px 10px', fontSize: 12, textAlign: 'right' }}>{c.precio_unitario ? `$${Number(c.precio_unitario).toFixed(4)}` : '—'}</td>
-                      <td style={{ padding: '8px 10px', fontSize: 12, fontWeight: 700, textAlign: 'right', color: '#059669' }}>{fmt$(c.monto_total)}</td>
+                      <td style={{ padding: '8px 10px', fontSize: 12, fontWeight: 700, textAlign: 'right', color: '#267F56' }}>{fmt$(c.monto_total)}</td>
                       <td style={{ padding: '8px 10px', fontSize: 12, textAlign: 'right' }}>{c.odometro != null ? Number(c.odometro).toLocaleString('es-MX') : '—'}</td>
                       <td style={{ padding: '8px 10px' }}>
                         {c.comprobante_url
@@ -689,7 +689,7 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
         <div style={{ marginRight: 'auto', display: 'flex', gap: 8 }}>
           {!isNew && !soloLectura && (
             <button className="btn-ghost" onClick={handleCancelar} disabled={saving}
-              style={{ fontSize: 12, color: '#dc2626' }}>
+              style={{ fontSize: 12, color: '#C23B3B' }}>
               Cancelar Vale
             </button>
           )}
@@ -708,7 +708,7 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
         )}
         {!isNew && status === 'Solicitado' && puedeEmitir && (
           <button className="btn-primary" onClick={handleEmitir} disabled={saving}
-            style={{ fontSize: 12, background: '#15803d' }}>
+            style={{ fontSize: 12, background: '#1F7A50' }}>
             {saving ? <Loader size={12} className="animate-spin" /> : <CheckCircle size={12} />}
             {saving ? 'Emitiendo…' : 'Emitir Vale'}
           </button>
@@ -716,9 +716,9 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
       </>}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+        {error && <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>{error}</div>}
         {soloLectura && (
-          <div style={{ padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, color: 'var(--text-muted)', fontSize: 12 }}>
+          <div style={{ padding: '8px 12px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 6, color: 'var(--text-muted)', fontSize: 12 }}>
             Este vale está {status.toLowerCase()} y ya no se puede modificar.
           </div>
         )}
@@ -746,7 +746,7 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
             />
             {solicitanteOpen && solicitanteOptions.length > 0 && (
               <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
-                background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+                background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8,
                 boxShadow: '0 4px 20px rgba(0,0,0,0.12)', maxHeight: 200, overflowY: 'auto' }}>
                 {solicitanteOptions.map(c => (
                   <button key={c.id} type="button"
@@ -758,8 +758,8 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
                     }}
                     style={{ display: 'block', width: '100%', textAlign: 'left',
                       padding: '8px 12px', background: 'none', border: 'none', fontSize: 12,
-                      cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                      cursor: 'pointer', borderBottom: '1px solid #F4F5F7' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                     {c.nombre}
                   </button>
@@ -768,7 +768,7 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
             )}
             {solicitanteOpen && solicitanteQ && solicitanteOptions.length === 0 && (
               <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
-                background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+                background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8,
                 boxShadow: '0 4px 20px rgba(0,0,0,0.12)', padding: '8px 12px', fontSize: 11, color: 'var(--text-muted)' }}>
                 Sin coincidencias en Colaboradores
               </div>
@@ -809,13 +809,13 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
         </div>
 
         {!isNew && vale?.id_op_fk && (
-          <div style={{ padding: '6px 10px', background: '#eff6ff', borderRadius: 6, fontSize: 11, color: 'var(--blue)' }}>
+          <div style={{ padding: '6px 10px', background: '#F4F5F7', borderRadius: 6, fontSize: 11, color: 'var(--blue)' }}>
             Vinculado a la OP #{vale.id_op_fk} — se emitirá automáticamente cuando esa OP se pague.
           </div>
         )}
 
         {/* Documento del vale */}
-        <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
+        <div style={{ borderTop: '1px solid #F4F5F7', paddingTop: 10 }}>
           <label className="label" style={{ fontSize: 11 }}>Documento del Vale (PDF / imagen)</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
             {form.comprobante_url && (
@@ -948,14 +948,14 @@ function CargaModal({ carga, equipos, areas, centrosCosto, vales, onClose, onSav
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 520 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #E6E8EB' }}>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600 }}>
             {carga ? 'Editar Carga' : 'Registrar Carga'}
           </h2>
           <button className="btn-ghost" onClick={onClose}><X size={14} /></button>
         </div>
         <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+          {error && <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>{error}</div>}
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <div>
@@ -1042,7 +1042,7 @@ function CargaModal({ carga, equipos, areas, centrosCosto, vales, onClose, onSav
             <textarea className="input" rows={2} style={{ fontSize: 12, resize: 'vertical' }} value={form.notas} onChange={setF('notas')} />
           </div>
         </div>
-        <div style={{ padding: '12px 20px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+        <div style={{ padding: '12px 20px', borderTop: '1px solid #E6E8EB', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button className="btn-secondary" onClick={onClose} style={{ fontSize: 12 }}>Cancelar</button>
           <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ fontSize: 12 }}>
             {saving ? <Loader size={12} className="animate-spin" /> : <Save size={12} />}
@@ -1104,14 +1104,14 @@ function ValeDetail({ vale, ccMap, equipoMap, onClose }: {
           <Badge text={vale.status} map={VALE_STATUS_STYLE} />
         </div>
         {/* Progreso litros */}
-        <div style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px' }}>
+        <div style={{ background: '#F8F9FA', borderRadius: 10, padding: '12px 14px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
             <span style={{ fontSize: 12, fontWeight: 600 }}>Litros usados</span>
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{fmtL(vale.litros_usados)} / {fmtL(vale.litros_autorizados)}</span>
           </div>
-          <div style={{ height: 10, background: '#e2e8f0', borderRadius: 5 }}>
+          <div style={{ height: 10, background: '#E6E8EB', borderRadius: 5 }}>
             <div style={{ height: '100%', borderRadius: 5, width: `${Math.min(pct, 100)}%`,
-              background: pct >= 100 ? '#dc2626' : pct >= 80 ? '#d97706' : '#10b981',
+              background: pct >= 100 ? '#C23B3B' : pct >= 80 ? '#B5761A' : '#2E9E6B',
               transition: 'width 0.3s' }} />
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, textAlign: 'right' }}>{pct.toFixed(1)}%</div>
@@ -1132,7 +1132,7 @@ function ValeDetail({ vale, ccMap, equipoMap, onClose }: {
             </div>
           ))}
         </div>
-        {vale.notas && <div style={{ fontSize: 12, color: 'var(--text-secondary)', background: '#f8fafc', borderRadius: 8, padding: '10px 12px' }}>{vale.notas}</div>}
+        {vale.notas && <div style={{ fontSize: 12, color: 'var(--text-secondary)', background: '#F8F9FA', borderRadius: 8, padding: '10px 12px' }}>{vale.notas}</div>}
         {vale.comprobante_url && (
           <a href={vale.comprobante_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--blue)' }}>
             Ver documento del vale
@@ -1140,7 +1140,7 @@ function ValeDetail({ vale, ccMap, equipoMap, onClose }: {
         )}
 
         {/* Cargas del vale */}
-        <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
+        <div style={{ borderTop: '1px solid #F4F5F7', paddingTop: 12 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
             Cargas registradas ({cargas.length})
           </div>
@@ -1148,14 +1148,14 @@ function ValeDetail({ vale, ccMap, equipoMap, onClose }: {
           : cargas.length === 0 ? <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', padding: 12 }}>Sin cargas</div>
           : cargas.map(c => (
             <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px',
-              background: '#f8fafc', borderRadius: 8, marginBottom: 6, fontSize: 12 }}>
+              background: '#F8F9FA', borderRadius: 8, marginBottom: 6, fontSize: 12 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600 }}>{fmtF(c.fecha)}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.id_equipo_fk ? (equipoMap[c.id_equipo_fk] ?? c.tipo_carga) : c.tipo_carga}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontWeight: 700 }}>{fmtL(c.litros)}</div>
-                <div style={{ fontSize: 11, color: '#059669' }}>{fmt$(c.monto_total)}</div>
+                <div style={{ fontSize: 11, color: '#267F56' }}>{fmt$(c.monto_total)}</div>
               </div>
               {c.comprobante_url && (
                 <a href={c.comprobante_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: 'var(--blue)' }}>Ticket</a>

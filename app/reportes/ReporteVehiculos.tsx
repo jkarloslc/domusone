@@ -85,7 +85,7 @@ export default function ReporteVehiculos() {
               {lotes.map((l: any) => (
                 <button key={l.id} onClick={() => selectLote(l)}
                   style={{ display: 'flex', width: '100%', padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--blue)', fontSize: 14, fontWeight: 600 }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                   {l.cve_lote ?? `#${l.lote}`}
                 </button>
@@ -128,10 +128,10 @@ export default function ReporteVehiculos() {
               return (
               <tr key={i}>
                 <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{loteMap[r.id_lote_fk]?.cve_lote ?? '—'}</td>
-                <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{v?.placas ?? '—'}</td>
-                <td style={{ fontFamily: 'monospace', fontSize: 12 }}>
+                <td style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{v?.placas ?? '—'}</td>
+                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>
                   {v?.tag
-                    ? <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '1px 7px', borderRadius: 4, fontWeight: 600 }}>{v.tag}</span>
+                    ? <span style={{ background: '#E6E8EB', color: '#26282D', padding: '1px 7px', borderRadius: 4, fontWeight: 600 }}>{v.tag}</span>
                     : '—'
                   }
                 </td>
@@ -140,9 +140,9 @@ export default function ReporteVehiculos() {
                   {[v?.marca, v?.modelo].filter(Boolean).join(' ') || '—'}
                 </td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{v?.color ?? '—'}</td>
-                <td style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-muted)' }}>{v?.num_serie ?? '—'}</td>
+                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--text-muted)' }}>{v?.num_serie ?? '—'}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{fmtFecha(r.vigencia_desde)}</td>
-                <td style={{ fontSize: 12, color: r.vigencia_hasta ? '#15803d' : 'var(--text-muted)' }}>{fmtFecha(r.vigencia_hasta)}</td>
+                <td style={{ fontSize: 12, color: r.vigencia_hasta ? '#1F7A50' : 'var(--text-muted)' }}>{fmtFecha(r.vigencia_hasta)}</td>
               </tr>
             )})}
           </tbody>

@@ -19,9 +19,9 @@ const fmt$ = (v: number) => `$${Number(v).toLocaleString('es-MX', { minimumFract
 const hoy = new Date().toISOString().split('T')[0]
 
 const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
-  <div style={{ display: 'flex', gap: 12, padding: '9px 0', borderBottom: '1px solid #f1f5f9' }}>
-    <span style={{ fontSize: 12, color: '#94a3b8', width: 150, flexShrink: 0 }}>{label}</span>
-    <span style={{ fontSize: 13, color: '#1e293b', flex: 1 }}>{value ?? '—'}</span>
+  <div style={{ display: 'flex', gap: 12, padding: '9px 0', borderBottom: '1px solid #F4F5F7' }}>
+    <span style={{ fontSize: 12, color: '#7A7E87', width: 150, flexShrink: 0 }}>{label}</span>
+    <span style={{ fontSize: 13, color: '#26282D', flex: 1 }}>{value ?? '—'}</span>
   </div>
 )
 
@@ -54,14 +54,14 @@ function TabFamiliares({ socioId }: { socioId: number }) {
   }, [socioId])
 
   const PARENTESCO_COLOR: Record<string, string> = {
-    Cónyuge: '#7c3aed', Hijo: '#2563eb', Hija: '#db2777',
-    Padre: '#d97706', Madre: '#d97706', Hermano: '#059669',
-    Hermana: '#059669', Otro: '#64748b',
+    Cónyuge: '#6B4E79', Hijo: '#1C1D21', Hija: '#B34D72',
+    Padre: '#B5761A', Madre: '#B5761A', Hermano: '#267F56',
+    Hermana: '#267F56', Otro: '#62666E',
   }
 
-  if (loading) return <div style={{ textAlign: 'center', padding: 32, color: '#94a3b8', fontSize: 13 }}>Cargando…</div>
+  if (loading) return <div style={{ textAlign: 'center', padding: 32, color: '#7A7E87', fontSize: 13 }}>Cargando…</div>
   if (rows.length === 0) return (
-    <div style={{ textAlign: 'center', padding: 32, color: '#94a3b8' }}>
+    <div style={{ textAlign: 'center', padding: 32, color: '#7A7E87' }}>
       <Users size={28} style={{ margin: '0 auto 8px', opacity: 0.3 }} />
       <div style={{ fontSize: 13 }}>Sin familiares registrados</div>
     </div>
@@ -70,26 +70,26 @@ function TabFamiliares({ socioId }: { socioId: number }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {rows.map(f => (
-        <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 8, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-          <div style={{ width: 34, height: 34, borderRadius: '50%', background: (PARENTESCO_COLOR[f.parentesco] ?? '#64748b') + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <User size={15} style={{ color: PARENTESCO_COLOR[f.parentesco] ?? '#64748b' }} />
+        <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 8, background: '#F8F9FA', border: '1px solid #E6E8EB' }}>
+          <div style={{ width: 34, height: 34, borderRadius: '50%', background: (PARENTESCO_COLOR[f.parentesco] ?? '#62666E') + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <User size={15} style={{ color: PARENTESCO_COLOR[f.parentesco] ?? '#62666E' }} />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{f.nombre}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>{f.nombre}</div>
             <div style={{ display: 'flex', gap: 8, marginTop: 3, flexWrap: 'wrap' }}>
               {f.parentesco && (
-                <span style={{ fontSize: 11, fontWeight: 600, padding: '1px 7px', borderRadius: 20, background: (PARENTESCO_COLOR[f.parentesco] ?? '#64748b') + '15', color: PARENTESCO_COLOR[f.parentesco] ?? '#64748b' }}>
+                <span style={{ fontSize: 11, fontWeight: 600, padding: '1px 7px', borderRadius: 20, background: (PARENTESCO_COLOR[f.parentesco] ?? '#62666E'), color: '#fff'}}>
                   {f.parentesco}
                 </span>
               )}
-              {f.fecha_nacimiento && <span style={{ fontSize: 11, color: '#94a3b8' }}>Nac. {new Date(f.fecha_nacimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}</span>}
-              {f.telefono && <span style={{ fontSize: 11, color: '#94a3b8' }}>📞 {f.telefono}</span>}
+              {f.fecha_nacimiento && <span style={{ fontSize: 11, color: '#7A7E87' }}>Nac. {new Date(f.fecha_nacimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}</span>}
+              {f.telefono && <span style={{ fontSize: 11, color: '#7A7E87' }}>{f.telefono}</span>}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
             {f.activo !== false
-              ? <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' }}>Activo</span>
-              : <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#f8fafc', color: '#94a3b8', border: '1px solid #e2e8f0' }}>Inactivo</span>}
+              ? <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#1F7A50', color: '#fff', border: '1px solid #1F7A50' }}>Activo</span>
+              : <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#F8F9FA', color: '#7A7E87', border: '1px solid #E6E8EB' }}>Inactivo</span>}
           </div>
         </div>
       ))}
@@ -133,7 +133,7 @@ function TabAccesos({ socioId }: { socioId: number }) {
   }, [socioId])
 
   if (loading) return <Empty text="Cargando…" />
-  if (rows.length === 0) return <Empty text="Sin accesos registrados" emoji="⛳" />
+  if (rows.length === 0) return <Empty text="Sin accesos registrados" />
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -141,12 +141,12 @@ function TabAccesos({ socioId }: { socioId: number }) {
         const entrada = new Date(r.fecha_entrada)
         const numAcomp = acomps[r.id] ?? 0
         return (
-          <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+          <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#F8F9FA', borderRadius: 8, border: '1px solid #E6E8EB' }}>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: '#26282D' }}>
                 {entrada.toLocaleDateString('es-MX', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
               </div>
-              <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <div style={{ fontSize: 11, color: '#62666E', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <span>{entrada.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</span>
                 {r.hoyo_inicio  && <span>Hoyo {r.hoyo_inicio}</span>}
                 {r.cat_espacios_deportivos?.nombre && <span>{r.cat_espacios_deportivos.nombre}</span>}
@@ -154,13 +154,13 @@ function TabAccesos({ socioId }: { socioId: number }) {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {numAcomp > 0 && (
-                <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#eff6ff', color: '#2563eb' }}>
+                <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#F4F5F7', color: '#1C1D21' }}>
                   +{numAcomp} acomp.
                 </span>
               )}
               {r.fecha_salida
-                ? <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: '#64748b', fontWeight: 500 }}>Completado</span>
-                : <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#dcfce7', color: '#16a34a', fontWeight: 600 }}>En campo</span>
+                ? <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#F4F5F7', color: '#62666E', fontWeight: 500 }}>Completado</span>
+                : <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#1F7A50', color: '#fff', fontWeight: 600 }}>En campo</span>
               }
             </div>
           </div>
@@ -185,15 +185,15 @@ function TabTeePractica({ socioId }: { socioId: number }) {
   }, [socioId])
 
   if (loading) return <Empty text="Cargando…" />
-  if (rows.length === 0) return <Empty text="Sin entradas registradas" emoji="🎯" />
+  if (rows.length === 0) return <Empty text="Sin entradas registradas" />
 
   const totalBolas = rows.reduce((a, r) => a + (r.num_bolas ?? 0), 0)
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
-        <span style={{ fontSize: 12, color: '#64748b' }}>
-          Total bolas: <strong style={{ color: '#d97706' }}>{totalBolas.toLocaleString('es-MX')}</strong>
+        <span style={{ fontSize: 12, color: '#62666E' }}>
+          Total bolas: <strong style={{ color: '#B5761A' }}>{totalBolas.toLocaleString('es-MX')}</strong>
           <span style={{ marginLeft: 10 }}>Visitas: <strong>{rows.length}</strong></span>
         </span>
       </div>
@@ -201,20 +201,20 @@ function TabTeePractica({ socioId }: { socioId: number }) {
         {rows.map(r => {
           const dt = new Date(r.fecha)
           return (
-            <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#fff', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+            <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#fff', borderRadius: 8, border: '1px solid #E6E8EB' }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: '#26282D' }}>
                   {dt.toLocaleDateString('es-MX', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
                 </div>
-                <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, display: 'flex', gap: 10 }}>
+                <div style={{ fontSize: 11, color: '#62666E', marginTop: 2, display: 'flex', gap: 10 }}>
                   <span>{dt.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</span>
                   {r.notas && <span style={{ fontStyle: 'italic' }}>{r.notas}</span>}
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#94a3b8' }}>#{String(r.id).padStart(6, '0')}</span>
-                <span style={{ fontSize: 15, fontWeight: 800, color: '#d97706', marginLeft: 8 }}>{r.num_bolas}</span>
-                <span style={{ fontSize: 11, color: '#92400e' }}>bolas</span>
+                <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 10, color: '#7A7E87' }}>#{String(r.id).padStart(6, '0')}</span>
+                <span style={{ fontSize: 15, fontWeight: 800, color: '#B5761A', marginLeft: 8 }}>{r.num_bolas}</span>
+                <span style={{ fontSize: 11, color: '#7A4B0C' }}>bolas</span>
               </div>
             </div>
           )
@@ -226,9 +226,9 @@ function TabTeePractica({ socioId }: { socioId: number }) {
 
 // ── Tab Torneos ──────────────────────────────────────────────
 const TORNEO_STATUS_COLORS: Record<string, { bg: string; color: string }> = {
-  Pagado:    { bg: '#dcfce7', color: '#16a34a' },
-  Pendiente: { bg: '#fef3c7', color: '#d97706' },
-  Cancelado: { bg: '#fee2e2', color: '#dc2626' },
+  Pagado:    { bg: '#E6E8EB', color: '#267F56' },
+  Pendiente: { bg: '#E6E8EB', color: '#B5761A' },
+  Cancelado: { bg: '#E6E8EB', color: '#C23B3B' },
 }
 
 function TabTorneos({ socioId }: { socioId: number }) {
@@ -244,7 +244,7 @@ function TabTorneos({ socioId }: { socioId: number }) {
   }, [socioId])
 
   if (loading) return <Empty text="Cargando…" />
-  if (rows.length === 0) return <Empty text="Sin torneos registrados" emoji="🏌️" />
+  if (rows.length === 0) return <Empty text="Sin torneos registrados" />
 
   const sorted = [...rows].sort((a, b) => (b.eventos?.fecha_inicio ?? '').localeCompare(a.eventos?.fecha_inicio ?? ''))
   const totalPorCobrar = rows.reduce((a, r) => a + (r.por_cobrar ?? 0), 0)
@@ -252,20 +252,20 @@ function TabTorneos({ socioId }: { socioId: number }) {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
-        <span style={{ fontSize: 12, color: '#64748b' }}>
+        <span style={{ fontSize: 12, color: '#62666E' }}>
           Torneos jugados: <strong>{rows.length}</strong>
-          {totalPorCobrar > 0 && <span style={{ marginLeft: 10 }}>Por cobrar: <strong style={{ color: '#d97706' }}>{fmt$(totalPorCobrar)}</strong></span>}
+          {totalPorCobrar > 0 && <span style={{ marginLeft: 10 }}>Por cobrar: <strong style={{ color: '#B5761A' }}>{fmt$(totalPorCobrar)}</strong></span>}
         </span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {sorted.map(r => {
-          const sc = TORNEO_STATUS_COLORS[r.status] ?? { bg: '#f1f5f9', color: '#64748b' }
+          const sc = TORNEO_STATUS_COLORS[r.status] ?? { bg: '#F4F5F7', color: '#62666E' }
           return (
-            <div key={r.id} style={{ padding: '10px 14px', background: '#fff', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+            <div key={r.id} style={{ padding: '10px 14px', background: '#fff', borderRadius: 8, border: '1px solid #E6E8EB' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{r.eventos?.nombre ?? '—'}</div>
-                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>{r.eventos?.nombre ?? '—'}</div>
+                  <div style={{ fontSize: 11, color: '#62666E', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     {r.eventos?.fecha_inicio && <span>{fmt(r.eventos.fecha_inicio)}</span>}
                     {r.eventos?.folio && <span>{r.eventos.folio}</span>}
                     {r.hoyo && <span>Hoyo {r.hoyo}</span>}
@@ -273,8 +273,8 @@ function TabTorneos({ socioId }: { socioId: number }) {
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, marginLeft: 12 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: '#1e293b' }}>{fmt$(r.inscripcion ?? 0)}</span>
-                  <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 20, background: sc.bg, color: sc.color }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#26282D' }}>{fmt$(r.inscripcion ?? 0)}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 20, background: sc.color, color: '#fff'}}>
                     {r.status}
                   </span>
                 </div>
@@ -302,36 +302,36 @@ function TabPOS({ socioId }: { socioId: number }) {
   }, [socioId])
 
   if (loading) return <Empty text="Cargando…" />
-  if (rows.length === 0) return <Empty text="Sin compras registradas" emoji="🛒" />
+  if (rows.length === 0) return <Empty text="Sin compras registradas" />
 
   const total = rows.filter(r => r.status !== 'CANCELADA').reduce((a, r) => a + (r.total ?? 0), 0)
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
-        <span style={{ fontSize: 12, color: '#64748b' }}>
-          Total histórico: <strong style={{ color: '#16a34a' }}>{fmt$(total)}</strong>
+        <span style={{ fontSize: 12, color: '#62666E' }}>
+          Total histórico: <strong style={{ color: '#267F56' }}>{fmt$(total)}</strong>
         </span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {rows.map(r => (
-          <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: r.status === 'CANCELADA' ? '#f8fafc' : '#fff', borderRadius: 8, border: '1px solid #e2e8f0', opacity: r.status === 'CANCELADA' ? 0.6 : 1 }}>
+          <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: r.status === 'CANCELADA' ? '#F8F9FA' : '#fff', borderRadius: 8, border: '1px solid #E6E8EB', opacity: r.status === 'CANCELADA' ? 0.6 : 1 }}>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: '#26282D' }}>
                 {r.fecha ? new Date(r.fecha.substring(0, 10) + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
-                {r.folio_dia && <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 8 }}>#{r.folio_dia}</span>}
+                {r.folio_dia && <span style={{ fontSize: 11, color: '#7A7E87', marginLeft: 8 }}>#{r.folio_dia}</span>}
               </div>
               {(r.ctrl_ventas_det ?? []).length > 0 && (
-                <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                <div style={{ fontSize: 11, color: '#62666E', marginTop: 2 }}>
                   {(r.ctrl_ventas_det as { concepto: string }[]).map(d => d.concepto).filter(Boolean).join(' · ')}
                 </div>
               )}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               {r.status === 'CANCELADA' && (
-                <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 20, background: '#fee2e2', color: '#dc2626' }}>CANCELADA</span>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 20, background: '#C23B3B', color: '#fff' }}>CANCELADA</span>
               )}
-              <span style={{ fontSize: 14, fontWeight: 700, color: r.status === 'CANCELADA' ? '#94a3b8' : '#16a34a' }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: r.status === 'CANCELADA' ? '#7A7E87' : '#267F56' }}>
                 {fmt$(r.total ?? 0)}
               </span>
             </div>
@@ -349,12 +349,12 @@ const esPensionCuota   = (tipo: string) => tipo === 'PENSION_CARRITO'
 function GridCuotas({ label, rows, filtro }: { label: string; rows: any[]; filtro: 'TODOS' | 'PENDIENTE' | 'PAGADO' }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>
-        {label} <span style={{ fontWeight: 500, color: '#94a3b8' }}>({rows.length})</span>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#4A4D54' }}>
+        {label} <span style={{ fontWeight: 500, color: '#7A7E87' }}>({rows.length})</span>
       </div>
       {rows.length === 0 ? (
-        <div style={{ padding: '14px', background: '#f8fafc', borderRadius: 8, border: '1px dashed #e2e8f0', textAlign: 'center' }}>
-          <span style={{ fontSize: 12, color: '#94a3b8' }}>
+        <div style={{ padding: '14px', background: '#F8F9FA', borderRadius: 8, border: '1px dashed #E6E8EB', textAlign: 'center' }}>
+          <span style={{ fontSize: 12, color: '#7A7E87' }}>
             {filtro === 'PENDIENTE' ? 'Sin cuotas pendientes' : filtro === 'PAGADO' ? 'Sin cuotas pagadas' : 'Sin cuotas registradas'}
           </span>
         </div>
@@ -363,28 +363,28 @@ function GridCuotas({ label, rows, filtro }: { label: string; rows: any[]; filtr
           {rows.map(r => {
             const vence = r.fecha_vencimiento && r.fecha_vencimiento < hoy && r.status === 'PENDIENTE'
             return (
-              <div key={r.id} style={{ padding: '10px 14px', background: vence ? '#fff5f5' : '#fff', borderRadius: 8, border: `1px solid ${vence ? '#fecaca' : '#e2e8f0'}` }}>
+              <div key={r.id} style={{ padding: '10px 14px', background: vence ? '#F4F5F7' : '#fff', borderRadius: 8, border: '1px solid #E6E8EB' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>{r.concepto}</div>
-                    <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: '#26282D' }}>{r.concepto}</div>
+                    <div style={{ fontSize: 11, color: '#62666E', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                       {r.periodo && <span>{r.periodo}</span>}
                       {r.fecha_vencimiento && (
-                        <span style={{ color: vence ? '#dc2626' : '#64748b' }}>
+                        <span style={{ color: vence ? '#C23B3B' : '#62666E' }}>
                           Vence: {new Date(r.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </span>
                       )}
-                      {r.fecha_pago && <span style={{ color: '#16a34a' }}>Pagado: {new Date(r.fecha_pago + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}</span>}
+                      {r.fecha_pago && <span style={{ color: '#267F56' }}>Pagado: {new Date(r.fecha_pago + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}</span>}
                       {r.forma_pago && <span>{r.forma_pago}</span>}
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, marginLeft: 12 }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: r.status === 'PAGADO' ? '#16a34a' : vence ? '#dc2626' : '#d97706' }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: r.status === 'PAGADO' ? '#267F56' : vence ? '#C23B3B' : '#B5761A' }}>
                       {fmt$(r.monto_final ?? r.monto_original ?? 0)}
                     </span>
                     <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 20,
-                      background: r.status === 'PAGADO' ? '#dcfce7' : vence ? '#fee2e2' : '#fef3c7',
-                      color:      r.status === 'PAGADO' ? '#16a34a' : vence ? '#dc2626' : '#d97706',
+                      background: r.status === 'PAGADO' ? '#1F7A50' : vence ? '#C23B3B' : '#B5761A',
+                      color:      '#fff',
                     }}>
                       {r.status === 'PAGADO' ? 'PAGADO' : vence ? 'VENCIDA' : 'PENDIENTE'}
                     </span>
@@ -413,7 +413,7 @@ function TabCuotas({ socioId }: { socioId: number }) {
   }, [socioId])
 
   if (loading) return <Empty text="Cargando…" />
-  if (rows.length === 0) return <Empty text="Sin cuotas registradas" emoji="💳" />
+  if (rows.length === 0) return <Empty text="Sin cuotas registradas" />
 
   const filtered = filtro === 'TODOS' ? rows : rows.filter(r => r.status === filtro)
   const pendMonto = rows.filter(r => r.status === 'PENDIENTE').reduce((a, r) => a + (r.monto_final ?? 0), 0)
@@ -426,13 +426,13 @@ function TabCuotas({ socioId }: { socioId: number }) {
     <div>
       {/* Mini stats */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <div style={{ flex: 1, padding: '8px 12px', background: '#fffbeb', borderRadius: 8, border: '1px solid #fde68a', textAlign: 'center' }}>
-          <div style={{ fontSize: 10, color: '#d97706', fontWeight: 600, marginBottom: 2 }}>POR PAGAR</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#d97706' }}>{fmt$(pendMonto)}</div>
+        <div style={{ flex: 1, padding: '8px 12px', background: '#F4F5F7', borderRadius: 8, border: '1px solid #E6E8EB', textAlign: 'center' }}>
+          <div style={{ fontSize: 10, color: '#B5761A', fontWeight: 600, marginBottom: 2 }}>POR PAGAR</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#B5761A' }}>{fmt$(pendMonto)}</div>
         </div>
-        <div style={{ flex: 1, padding: '8px 12px', background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0', textAlign: 'center' }}>
-          <div style={{ fontSize: 10, color: '#16a34a', fontWeight: 600, marginBottom: 2 }}>PAGADO</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#16a34a' }}>{fmt$(pagMonto)}</div>
+        <div style={{ flex: 1, padding: '8px 12px', background: '#F4F5F7', borderRadius: 8, border: '1px solid #E6E8EB', textAlign: 'center' }}>
+          <div style={{ fontSize: 10, color: '#267F56', fontWeight: 600, marginBottom: 2 }}>PAGADO</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#267F56' }}>{fmt$(pagMonto)}</div>
         </div>
       </div>
 
@@ -440,7 +440,7 @@ function TabCuotas({ socioId }: { socioId: number }) {
       <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
         {(['TODOS', 'PENDIENTE', 'PAGADO'] as const).map(f => (
           <button key={f} onClick={() => setFiltro(f)}
-            style={{ padding: '4px 12px', fontSize: 11, fontWeight: 600, borderRadius: 20, cursor: 'pointer', border: '1px solid', borderColor: filtro === f ? '#2563eb' : '#e2e8f0', background: filtro === f ? '#eff6ff' : '#fff', color: filtro === f ? '#1d4ed8' : '#64748b' }}>
+            style={{ padding: '4px 12px', fontSize: 11, fontWeight: 600, borderRadius: 20, cursor: 'pointer', border: '1px solid', borderColor: filtro === f ? '#1C1D21' : '#E6E8EB', background: filtro === f ? '#F4F5F7' : '#fff', color: filtro === f ? '#26282D' : '#62666E' }}>
             {f === 'TODOS' ? 'Todos' : f === 'PENDIENTE' ? 'Pendientes' : 'Pagados'} ({f === 'TODOS' ? rows.length : rows.filter(r => r.status === f).length})
           </button>
         ))}
@@ -476,18 +476,18 @@ function TabDatosFiscales({ socioId }: { socioId: number }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ padding: '10px 14px', background: '#faf5ff', border: '1px solid #ddd6fe', borderRadius: 8, fontSize: 12, color: '#6d28d9' }}>
+      <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #5C4268', borderRadius: 8, fontSize: 12, color: '#5C4268' }}>
         Datos utilizados para pre-llenar el formulario CFDI al emitir recibos. Al facturar se puede elegir cuál usar.
       </div>
       {rows.length === 0 ? (
-        <Empty text="Sin datos fiscales registrados" emoji="🧾" />
+        <Empty text="Sin datos fiscales registrados" />
       ) : (
         rows.map(f => (
-          <div key={f.id} style={{ border: `1px solid ${f.es_principal ? '#ddd6fe' : '#e2e8f0'}`, background: f.es_principal ? '#faf5ff' : '#f8fafc', borderRadius: 10, padding: '12px 16px' }}>
+          <div key={f.id} style={{ border: '1px solid #E6E8EB', background: f.es_principal ? '#F4F5F7' : '#F8F9FA', borderRadius: 10, padding: '12px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{f.alias || f.razon_social_fiscal}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#26282D' }}>{f.alias || f.razon_social_fiscal}</span>
               {f.es_principal && (
-                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#7c3aed', color: '#fff', letterSpacing: '0.04em' }}>PRINCIPAL</span>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#6B4E79', color: '#fff', letterSpacing: '0.04em' }}>PRINCIPAL</span>
               )}
             </div>
             <Row label="RFC"                value={f.rfc} />
@@ -550,25 +550,25 @@ function TabFacturas({ socioId }: { socioId: number }) {
   if (loading) return <Empty text="Cargando…" />
 
   const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
-    Vigente:   { bg: '#dcfce7', color: '#15803d' },
-    Cancelada: { bg: '#fee2e2', color: '#dc2626' },
-    Simulada:  { bg: '#fef9c3', color: '#92400e' },
+    Vigente:   { bg: '#E6E8EB', color: '#1F7A50' },
+    Cancelada: { bg: '#E6E8EB', color: '#C23B3B' },
+    Simulada:  { bg: '#E6E8EB', color: '#7A4B0C' },
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ padding: '10px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, fontSize: 12, color: '#166534' }}>
+      <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #17603F', borderRadius: 8, fontSize: 12, color: '#17603F' }}>
         Tickets POS de este socio que fueron facturados (Golf → POS).
       </div>
       {rows.length === 0 ? (
-        <Empty text="Sin facturas emitidas" emoji="🧾" />
+        <Empty text="Sin facturas emitidas" />
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+              <tr style={{ background: '#F8F9FA', borderBottom: '2px solid #E6E8EB' }}>
                 {['Folio', 'RFC Receptor', 'Razón Social', 'Total', 'Status', 'Fecha', ''].map(h => (
-                  <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap' }}>{h}</th>
+                  <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: '#4A4D54', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -576,33 +576,33 @@ function TabFacturas({ socioId }: { socioId: number }) {
               {rows.map(v => {
                 const cfdi = v._cfdi
                 const status = cfdi?.status ?? 'Vigente'
-                const sc = STATUS_COLOR[status] ?? { bg: '#f1f5f9', color: '#475569' }
+                const sc = STATUS_COLOR[status] ?? { bg: '#F4F5F7', color: '#4A4D54' }
                 return (
-                  <tr key={v.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap' }}>
+                  <tr key={v.id} style={{ borderBottom: '1px solid #F4F5F7' }}>
+                    <td style={{ padding: '8px 10px', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: '#26282D', whiteSpace: 'nowrap' }}>
                       {cfdi?.folio_factura ?? '—'}
                     </td>
-                    <td style={{ padding: '8px 10px', fontFamily: 'monospace', color: '#475569', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '8px 10px', fontVariantNumeric: 'tabular-nums', color: '#4A4D54', whiteSpace: 'nowrap' }}>
                       {cfdi?.receptor_rfc ?? '—'}
                     </td>
-                    <td style={{ padding: '8px 10px', color: '#475569', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '8px 10px', color: '#4A4D54', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {cfdi?.receptor_nombre ?? '—'}
                     </td>
-                    <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '8px 10px', fontWeight: 600, color: '#26282D', whiteSpace: 'nowrap' }}>
                       {v.total != null ? '$' + Number(v.total).toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'}
                     </td>
                     <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: sc.bg, color: sc.color }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: sc.color, color: '#fff'}}>
                         {status}
                       </span>
                     </td>
-                    <td style={{ padding: '8px 10px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '8px 10px', color: '#62666E', whiteSpace: 'nowrap' }}>
                       {cfdi?.fecha_timbrado ? new Date(cfdi.fecha_timbrado).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : (v.fecha ? new Date(v.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—')}
                     </td>
                     <td style={{ padding: '8px 10px' }}>
                       {cfdi?.pdf_b64 && (
                         <button onClick={() => verPdfFactura(cfdi.pdf_b64)}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: '#2563eb', textDecoration: 'none', fontWeight: 600, fontSize: 12 }}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: '#1C1D21', textDecoration: 'none', fontWeight: 600, fontSize: 12 }}
                           title="Ver PDF">
                           <ExternalLink size={12} /> PDF
                         </button>
@@ -619,10 +619,9 @@ function TabFacturas({ socioId }: { socioId: number }) {
   )
 }
 
-function Empty({ text, emoji }: { text: string; emoji?: string }) {
+function Empty({ text }: { text: string }) {
   return (
-    <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
-      {emoji && <div style={{ fontSize: 28, marginBottom: 8 }}>{emoji}</div>}
+    <div style={{ textAlign: 'center', padding: '40px 20px', color: '#7A7E87' }}>
       <div style={{ fontSize: 13 }}>{text}</div>
     </div>
   )
@@ -631,7 +630,7 @@ function Empty({ text, emoji }: { text: string; emoji?: string }) {
 // ── Tab Membresía ────────────────────────────────────────────
 function TabMembresia({ socio, vencido, puedeEscribir }: { socio: Socio; vencido: boolean; puedeEscribir: boolean }) {
   const titulo = (t: string, first = false) => (
-    <div style={{ margin: first ? '4px 0 6px' : '18px 0 6px', fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{t}</div>
+    <div style={{ margin: first ? '4px 0 6px' : '18px 0 6px', fontSize: 11, fontWeight: 700, color: '#7A7E87', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{t}</div>
   )
 
   return (
@@ -641,7 +640,7 @@ function TabMembresia({ socio, vencido, puedeEscribir }: { socio: Socio; vencido
       <Row label="Categoría"        value={socio.cat_categorias_socios?.nombre} />
       <Row label="Ghin"             value={socio.numero_tarjeta} />
       <Row label="Fecha de alta"    value={fmt(socio.fecha_alta)} />
-      <Row label="Vencimiento"      value={<span style={{ color: vencido ? '#dc2626' : 'inherit' }}>{fmt(socio.fecha_vencimiento)}</span>} />
+      <Row label="Vencimiento"      value={<span style={{ color: vencido ? '#C23B3B' : 'inherit' }}>{fmt(socio.fecha_vencimiento)}</span>} />
       <Row label="Estatus"          value={!socio.activo ? 'Inactivo' : vencido ? 'Vencido' : 'Activo'} />
       <Row label="Derecho a intercambios" value={socio.derecho_intercambios ? 'Sí' : 'No'} />
 
@@ -669,14 +668,13 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
           </span>
         )}
         <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20,
-          background: socio.activo && !vencido ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)',
-          color: socio.activo && !vencido ? '#86efac' : '#fca5a5',
-          border: `1px solid ${socio.activo && !vencido ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
+          background: socio.activo && !vencido ? '#1F7A50' : '#C23B3B',
+          color: '#fff',
         }}>
           {!socio.activo ? 'Inactivo' : vencido ? 'Vencido' : 'Activo'}
         </span>
         {socio.cat_categorias_socios?.nombre && (
-          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 20, background: 'rgba(167,139,250,0.25)', color: '#c4b5fd', border: '1px solid rgba(167,139,250,0.35)' }}>
+          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 20, background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.9)' }}>
             {socio.cat_categorias_socios.nombre}
           </span>
         )}
@@ -688,7 +686,7 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
       activeTab={tab}
       onTabChange={setTab}
       footer={<>
-        <span style={{ fontSize: 11, color: '#94a3b8', marginRight: 'auto' }}>Solo lectura · para editar usa el botón Editar</span>
+        <span style={{ fontSize: 11, color: '#7A7E87', marginRight: 'auto' }}>Solo lectura · para editar usa el botón Editar</span>
         {canWrite('golf-miembros') && (
           <button className="btn-secondary" onClick={onEdit} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Edit2 size={13} /> Editar
@@ -701,7 +699,7 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
           {/* ── Información ── */}
           {tab === 'info' && (
             <>
-              <div style={{ margin: '4px 0 6px', fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Datos Personales</div>
+              <div style={{ margin: '4px 0 6px', fontSize: 11, fontWeight: 700, color: '#7A7E87', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Datos Personales</div>
               <Row label="Fecha de nacimiento" value={fmt(socio.fecha_nacimiento)} />
               <Row label="RFC"    value={socio.rfc} />
               <Row label="CURP"   value={socio.curp} />
@@ -710,8 +708,8 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
 
               {socio.observaciones && (
                 <>
-                  <div style={{ margin: '18px 0 6px', fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Observaciones</div>
-                  <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.6 }}>{socio.observaciones}</div>
+                  <div style={{ margin: '18px 0 6px', fontSize: 11, fontWeight: 700, color: '#7A7E87', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Observaciones</div>
+                  <div style={{ fontSize: 13, color: '#4A4D54', lineHeight: 1.6 }}>{socio.observaciones}</div>
                 </>
               )}
             </>
@@ -736,15 +734,15 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
           {/* ── Notas ── */}
           {tab === 'notas' && (
             <div>
-              <div style={{ marginBottom: 10, fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Observaciones internas</div>
+              <div style={{ marginBottom: 10, fontSize: 11, fontWeight: 700, color: '#7A7E87', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Observaciones internas</div>
               {socio.observaciones ? (
-                <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.7, whiteSpace: 'pre-wrap', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '14px 16px' }}>
+                <div style={{ fontSize: 13, color: '#4A4D54', lineHeight: 1.7, whiteSpace: 'pre-wrap', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10, padding: '14px 16px' }}>
                   {socio.observaciones}
                 </div>
               ) : (
-                <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: 10, border: '1px dashed #e2e8f0' }}>
-                  <NotebookText size={28} style={{ color: '#cbd5e1', margin: '0 auto 8px' }} />
-                  <div style={{ fontSize: 13, color: '#94a3b8' }}>Sin notas registradas</div>
+                <div style={{ textAlign: 'center', padding: '40px 20px', background: '#F8F9FA', borderRadius: 10, border: '1px dashed #E6E8EB' }}>
+                  <NotebookText size={28} style={{ color: '#C9CCD3', margin: '0 auto 8px' }} />
+                  <div style={{ fontSize: 13, color: '#7A7E87' }}>Sin notas registradas</div>
                 </div>
               )}
             </div>

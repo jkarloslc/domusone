@@ -141,7 +141,7 @@ export default function ContratosPage() {
                 <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Sin contratos registrados</td></tr>
               ) : contratos.map(c => (
                 <tr key={c.id}>
-                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--gold-light)' }}>{c.sucesivo ?? `#${c.id}`}</td>
+                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--gold-light)' }}>{c.sucesivo ?? `#${c.id}`}</td>
                   <td style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--text-secondary)' }}>
                     {loteMap[c.id_lote_fk] ?? `#${c.id_lote_fk}`}
                   </td>

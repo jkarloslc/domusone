@@ -49,8 +49,8 @@ const fechaFmt = (d: string) =>
   new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
 
 const inp: React.CSSProperties = {
-  padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8,
-  background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+  padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8,
+  background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
 }
 
 export default function MesaControl() {
@@ -219,24 +219,24 @@ export default function MesaControl() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
       {/* Aviso */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, fontSize: 12, color: '#92400e' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 10, fontSize: 12, color: '#7A4B0C' }}>
         <AlertTriangle size={16} style={{ flexShrink: 0 }} />
         Herramienta de administración: los cambios afectan recibos ya emitidos y eliminan registros de forma permanente.
       </div>
 
       {/* ── SECCIÓN 1: Corrección de pagos en recibos ────── */}
       <div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Receipt size={14} style={{ color: '#0891b2' }} /> Corrección de pagos en recibos
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#26282D', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Receipt size={14} style={{ color: '#62666E' }} /> Corrección de pagos en recibos
         </div>
         <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 340 }}>
-            <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+            <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
             <input style={{ ...inp, width: '100%', paddingLeft: 30 }}
               placeholder="Buscar por folio o socio…" value={busquedaR} onChange={e => setBusquedaR(e.target.value)} />
-            {busquedaR && <button onClick={() => setBusquedaR('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+            {busquedaR && <button onClick={() => setBusquedaR('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2 }}><X size={12} /></button>}
           </div>
-          <button onClick={fetchRecibos} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#64748b', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '7px 12px', cursor: 'pointer' }}>
+          <button onClick={fetchRecibos} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#62666E', background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8, padding: '7px 12px', cursor: 'pointer' }}>
             <RefreshCw size={12} /> Actualizar
           </button>
         </div>
@@ -257,18 +257,18 @@ export default function MesaControl() {
                   <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Sin recibos vigentes con ese criterio</td></tr>
                 ) : recibosF.map(r => (
                   <tr key={r.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '10px 14px', fontWeight: 700, color: '#0891b2', whiteSpace: 'nowrap' }}>{r.folio}</td>
+                    <td style={{ padding: '10px 14px', fontWeight: 700, color: '#32789A', whiteSpace: 'nowrap' }}>{r.folio}</td>
                     <td style={{ padding: '10px 14px' }}>
                       <div style={{ fontWeight: 500 }}>{nc(r.cat_socios)}</div>
                       {r.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>#{r.cat_socios.numero_socio}</div>}
                     </td>
                     <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{fechaFmt(r.fecha_recibo)}</td>
-                    <td style={{ padding: '10px 14px', fontWeight: 700, color: '#059669', whiteSpace: 'nowrap' }}>{fmt$(r.total)}</td>
+                    <td style={{ padding: '10px 14px', fontWeight: 700, color: '#267F56', whiteSpace: 'nowrap' }}>{fmt$(r.total)}</td>
                     <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-secondary)' }}>{r.forma_pago_nombre ?? '—'}</td>
                     <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)' }}>{r.referencia_pago ?? '—'}</td>
                     <td style={{ padding: '10px 14px' }}>
                       <button onClick={() => abrirEdicion(r)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#1C1D21', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                         Corregir pagos
                       </button>
                     </td>
@@ -282,32 +282,32 @@ export default function MesaControl() {
 
       {/* ── SECCIÓN 2: Eliminar cuotas de pensión ────────── */}
       <div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Trash2 size={14} style={{ color: '#dc2626' }} /> Eliminar cuotas de pensión
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#26282D', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Trash2 size={14} style={{ color: '#C23B3B' }} /> Eliminar cuotas de pensión
         </div>
-        <div style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>
+        <div style={{ fontSize: 12, color: '#62666E', marginBottom: 12 }}>
           Solo se pueden eliminar cuotas sin pagos aplicados (pendientes o canceladas). Las pagadas o con pago parcial deben cancelarse desde su recibo.
         </div>
         <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 340 }}>
-            <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+            <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
             <input style={{ ...inp, width: '100%', paddingLeft: 30 }}
               placeholder="Buscar socio…" value={busquedaQ} onChange={e => setBusquedaQ(e.target.value)} />
-            {busquedaQ && <button onClick={() => setBusquedaQ('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+            {busquedaQ && <button onClick={() => setBusquedaQ('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2 }}><X size={12} /></button>}
           </div>
-          <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', gap: 0, border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
             {(['PENDIENTE', 'CANCELADO'] as const).map(s => (
               <button key={s} onClick={() => setStatusQ(s)} style={{
                 padding: '7px 14px', fontSize: 12, fontWeight: statusQ === s ? 600 : 400,
-                background: statusQ === s ? '#059669' : '#fff',
-                color: statusQ === s ? '#fff' : '#94a3b8',
+                background: statusQ === s ? '#267F56' : '#fff',
+                color: statusQ === s ? '#fff' : '#7A7E87',
                 border: 'none', cursor: 'pointer', fontFamily: 'inherit',
               }}>
                 {s === 'PENDIENTE' ? 'Pendientes' : 'Canceladas'}
               </button>
             ))}
           </div>
-          <button onClick={fetchCuotas} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#64748b', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '7px 12px', cursor: 'pointer' }}>
+          <button onClick={fetchCuotas} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#62666E', background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8, padding: '7px 12px', cursor: 'pointer' }}>
             <RefreshCw size={12} /> Actualizar
           </button>
         </div>
@@ -339,13 +339,13 @@ export default function MesaControl() {
                     </td>
                     <td style={{ padding: '10px 14px', fontWeight: 600, whiteSpace: 'nowrap' }}>{fmt$(c.monto_final)}</td>
                     <td style={{ padding: '10px 14px' }}>
-                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: c.status === 'PENDIENTE' ? '#fffbeb' : '#f1f5f9', color: c.status === 'PENDIENTE' ? '#d97706' : '#64748b' }}>
+                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: c.status === 'PENDIENTE' ? '#B5761A' : '#F4F5F7', color: c.status === 'PENDIENTE' ? '#fff' : '#62666E' }}>
                         {c.status === 'PENDIENTE' ? 'Pendiente' : 'Cancelada'}
                       </span>
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       <button onClick={() => eliminarCuota(c)} disabled={borrandoQ === c.id}
-                        style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: borrandoQ === c.id ? 0.5 : 1 }}>
+                        style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#fff', background: '#C23B3B', border: '1px solid #C23B3B', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: borrandoQ === c.id ? 0.5 : 1 }}>
                         {borrandoQ === c.id ? <Loader size={12} className="animate-spin" /> : <Trash2 size={12} />} Eliminar
                       </button>
                     </td>
@@ -372,10 +372,10 @@ export default function MesaControl() {
           </>}
         >
               {loadingPagos ? (
-                <div style={{ padding: 32, textAlign: 'center', color: '#94a3b8' }}>Cargando pagos…</div>
+                <div style={{ padding: 32, textAlign: 'center', color: '#7A7E87' }}>Cargando pagos…</div>
               ) : (
                 <>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
                     Formas de pago del recibo
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -398,28 +398,28 @@ export default function MesaControl() {
                           placeholder="Referencia (opcional)" value={p.referencia} onChange={e => setPago(i, { referencia: e.target.value })} />
                         <button onClick={() => p.id ? setPago(i, { _delete: true }) : setPagos(prev => prev.filter((_, idx) => idx !== i))}
                           title="Quitar forma de pago"
-                          style={{ padding: '7px 9px', border: '1px solid #fecaca', borderRadius: 8, background: '#fef2f2', cursor: 'pointer', color: '#dc2626', display: 'flex', alignItems: 'center' }}>
+                          style={{ padding: '7px 9px', border: '1px solid #E6E8EB', borderRadius: 8, background: '#F4F5F7', cursor: 'pointer', color: '#C23B3B', display: 'flex', alignItems: 'center' }}>
                           <Trash2 size={13} />
                         </button>
                       </div>
                     ))}
                   </div>
                   <button onClick={agregarPago}
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#059669', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', marginTop: 12 }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#267F56', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', marginTop: 12 }}>
                     <Plus size={12} /> Agregar forma de pago
                   </button>
 
                   {/* Cuadre */}
                   <div style={{ marginTop: 16, padding: '10px 14px', borderRadius: 8, fontSize: 13,
-                    background: Math.abs(diff) < 0.01 ? '#f0fdf4' : '#fef2f2',
-                    border: `1px solid ${Math.abs(diff) < 0.01 ? '#bbf7d0' : '#fecaca'}`,
-                    color: Math.abs(diff) < 0.01 ? '#15803d' : '#dc2626' }}>
+                    background: '#F4F5F7',
+                    border: '1px solid #E6E8EB',
+                    color: Math.abs(diff) < 0.01 ? '#1F7A50' : '#C23B3B' }}>
                     Suma de pagos: <strong>{fmt$(sumaPagos)}</strong> · Total del recibo: <strong>{fmt$(editRecibo.total)}</strong>
                     {Math.abs(diff) >= 0.01 && <span> · Diferencia: <strong>{fmt$(diff)}</strong> — los pagos deben cuadrar con el total</span>}
                   </div>
 
                   {errPagos && (
-                    <div style={{ marginTop: 12, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+                    <div style={{ marginTop: 12, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>
                       {errPagos}
                     </div>
                   )}

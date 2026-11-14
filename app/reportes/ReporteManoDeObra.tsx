@@ -22,8 +22,8 @@ const TIPOS_OT: { value: string; label: string }[] = [
   { value: 'generales',     label: "OT's Generales" },
 ]
 const statusColor = (s: string) =>
-  s === 'Completada' ? '#15803d' : s === 'En Proceso' ? '#2563eb' :
-  s === 'En Pausa' ? '#7c3aed' : s === 'Cancelada' ? '#94a3b8' : '#d97706'
+  s === 'Completada' ? '#1F7A50' : s === 'En Proceso' ? '#1C1D21' :
+  s === 'En Pausa' ? '#6B4E79' : s === 'Cancelada' ? '#7A7E87' : '#B5761A'
 
 type OT = {
   id: number; folio: string; titulo: string; status: string; empresa: string; modulo: string
@@ -37,7 +37,7 @@ type MORow = {
 }
 type MORowOT = MORow & { ot: OT }
 
-const th: React.CSSProperties = { padding: '5px 10px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em', color: 'var(--text-muted)', background: '#f8fafc', textAlign: 'center' }
+const th: React.CSSProperties = { padding: '5px 10px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em', color: 'var(--text-muted)', background: '#F8F9FA', textAlign: 'center' }
 const thLeft: React.CSSProperties = { ...th, textAlign: 'left' }
 const td: React.CSSProperties = { padding: '6px 10px', fontSize: 12, textAlign: 'center' }
 const tdLeft: React.CSSProperties = { ...td, textAlign: 'left' }
@@ -161,7 +161,7 @@ export default function ReporteManoDeObra() {
     <div>
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16, padding: '12px 16px',
-        background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        background: '#F8F9FA', borderRadius: 10, border: '1px solid #E6E8EB' }}>
         <select className="select" style={{ fontSize: 12, height: 28, padding: '2px 8px', minWidth: 170 }}
           value={fModulo} onChange={e => setFModulo(e.target.value)}>
           <option value="">Tipo de OT</option>
@@ -200,19 +200,19 @@ export default function ReporteManoDeObra() {
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
         {[
           { label: 'OTs con Mano de Obra', value: otsConMO,          color: 'var(--blue)', bg: 'var(--blue-pale)' },
-          { label: 'Trabajadores',         value: trabajadoresSet,   color: '#7c3aed',     bg: '#f5f3ff' },
-          { label: 'Jornales',             value: fmtJor(totalJornales), color: '#0891b2', bg: '#ecfeff' },
-          { label: 'Monto Total',          value: fmt$(totalMonto),  color: '#b45309',     bg: '#fef3c7' },
+          { label: 'Trabajadores',         value: trabajadoresSet,   color: '#6B4E79',     bg: '#F4F5F7' },
+          { label: 'Jornales',             value: fmtJor(totalJornales), color: '#32789A', bg: '#F4F5F7' },
+          { label: 'Monto Total',          value: fmt$(totalMonto),  color: '#96600F',     bg: '#E6E8EB' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '10px 16px', background: k.bg, flex: '1 1 130px', maxWidth: 220 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{k.label}</div>
+          <div key={k.label} className="card" style={{ padding: '10px 16px', background: '#fff', flex: '1 1 130px', maxWidth: 220 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)',  }}>{k.value}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
           </div>
         ))}
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 14 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', marginBottom: 14 }}>
         {([
           { key: 'ot',         label: 'Por OT (Zona / Área)' },
           { key: 'trabajador', label: 'Por Trabajador' },
@@ -220,8 +220,8 @@ export default function ReporteManoDeObra() {
           <button key={t.key} onClick={() => setTab(t.key)}
             style={{ padding: '9px 16px', background: 'none', border: 'none', cursor: 'pointer',
               fontSize: 13, fontWeight: tab === t.key ? 600 : 400,
-              color: tab === t.key ? '#7c3aed' : 'var(--text-muted)',
-              borderBottom: tab === t.key ? '2px solid #7c3aed' : '2px solid transparent', marginBottom: -1 }}>
+              color: tab === t.key ? '#1C1D21' : 'var(--text-muted)',
+              borderBottom: tab === t.key ? '2px solid #19D3C5' : '2px solid transparent', marginBottom: -1 }}>
             {t.label}
           </button>
         ))}
@@ -244,15 +244,15 @@ export default function ReporteManoDeObra() {
               const isOpenC = openCuad[cKey] !== false
               return (
                 <div key={cKey} className="card" style={{ overflow: 'hidden', padding: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#4c1d95' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#3D2A45' }}>
                     <button onClick={() => setOpenCuad(p => ({ ...p, [cKey]: !isOpenC }))}
                       style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                      {isOpenC ? <ChevronDown size={13} style={{ color: '#d8b4fe', flexShrink: 0 }} /> : <ChevronRight size={13} style={{ color: '#d8b4fe', flexShrink: 0 }} />}
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#f3e8ff', flex: 1, textAlign: 'left' }}>{cGrp.label}</span>
+                      {isOpenC ? <ChevronDown size={13} style={{ color: '#C9CCD3', flexShrink: 0 }} /> : <ChevronRight size={13} style={{ color: '#C9CCD3', flexShrink: 0 }} />}
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#E6E8EB', flex: 1, textAlign: 'left' }}>{cGrp.label}</span>
                     </button>
-                    <span style={{ fontSize: 11, color: '#d8b4fe' }}>Jornales: {fmtJor(cSum.jornales)}</span>
+                    <span style={{ fontSize: 11, color: '#C9CCD3' }}>Jornales: {fmtJor(cSum.jornales)}</span>
                     <button onClick={() => setDrill({ label: cGrp.label, rows: cRows })}
-                      style={{ fontSize: 13, fontWeight: 700, color: '#f3e8ff', background: 'none', border: 'none', cursor: 'pointer',
+                      style={{ fontSize: 13, fontWeight: 700, color: '#E6E8EB', background: 'none', border: 'none', cursor: 'pointer',
                         textDecoration: 'underline', textUnderlineOffset: 3, marginLeft: 16, minWidth: 110, textAlign: 'right' }}
                       title="Ver detalle">
                       {fmt$(cSum.monto)}
@@ -267,15 +267,15 @@ export default function ReporteManoDeObra() {
                     return (
                       <div key={aKey}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px 8px 28px',
-                          background: '#f5f3ff', borderBottom: '1px solid #e2e8f0' }}>
+                          background: '#F4F5F7', borderBottom: '1px solid #E6E8EB' }}>
                           <button onClick={() => setOpenArea(p => ({ ...p, [groupKey]: !isOpenA }))}
                             style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                            {isOpenA ? <ChevronDown size={12} style={{ color: '#7c3aed', flexShrink: 0 }} /> : <ChevronRight size={12} style={{ color: '#7c3aed', flexShrink: 0 }} />}
-                            <span style={{ fontSize: 12, fontWeight: 700, color: '#4c1d95', flex: 1, textAlign: 'left' }}>{aGrp.label}</span>
+                            {isOpenA ? <ChevronDown size={12} style={{ color: '#62666E', flexShrink: 0 }} /> : <ChevronRight size={12} style={{ color: '#62666E', flexShrink: 0 }} />}
+                            <span style={{ fontSize: 12, fontWeight: 700, color: '#3D2A45', flex: 1, textAlign: 'left' }}>{aGrp.label}</span>
                           </button>
-                          <span style={{ fontSize: 11, color: '#7c3aed' }}>Jornales: {fmtJor(aSum.jornales)}</span>
+                          <span style={{ fontSize: 11, color: '#6B4E79' }}>Jornales: {fmtJor(aSum.jornales)}</span>
                           <button onClick={() => setDrill({ label: `${cGrp.label} · ${aGrp.label}`, rows: aRows })}
-                            style={{ fontSize: 12, fontWeight: 700, color: '#6d28d9', background: 'none', border: 'none', cursor: 'pointer',
+                            style={{ fontSize: 12, fontWeight: 700, color: '#5C4268', background: 'none', border: 'none', cursor: 'pointer',
                               textDecoration: 'underline', textUnderlineOffset: 3, marginLeft: 16, minWidth: 110, textAlign: 'right' }}
                             title="Ver detalle">
                             {fmt$(aSum.monto)}
@@ -285,7 +285,7 @@ export default function ReporteManoDeObra() {
                         {isOpenA && (
                           <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                             <thead>
-                              <tr style={{ background: '#f1f5f9' }}>
+                              <tr style={{ background: '#F4F5F7' }}>
                                 <th style={{ ...thLeft, padding: '5px 10px 5px 56px' }}>Folio</th>
                                 <th style={thLeft}>Título</th>
                                 <th style={th}>Status</th>
@@ -296,10 +296,10 @@ export default function ReporteManoDeObra() {
                             </thead>
                             <tbody>
                               {Object.values(aGrp.ots).flatMap(({ ot, rows }) => rows.map((r, i) => (
-                                <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                <tr key={r.id} style={{ borderBottom: '1px solid #F4F5F7' }}>
                                   {i === 0 ? (
                                     <>
-                                      <td rowSpan={rows.length} style={{ padding: '6px 10px 6px 56px', fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)', fontWeight: 600, verticalAlign: 'top' }}>{ot.folio}</td>
+                                      <td rowSpan={rows.length} style={{ padding: '6px 10px 6px 56px', fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--blue)', fontWeight: 600, verticalAlign: 'top' }}>{ot.folio}</td>
                                       <td rowSpan={rows.length} style={{ padding: '6px 10px', fontSize: 12, verticalAlign: 'top' }}>{ot.titulo}</td>
                                       <td rowSpan={rows.length} style={{ padding: '6px 10px', verticalAlign: 'top' }}><span style={{ fontSize: 10, fontWeight: 700, color: statusColor(ot.status) }}>{ot.status}</span></td>
                                     </>
@@ -319,26 +319,26 @@ export default function ReporteManoDeObra() {
                   })}
 
                   {isOpenC && (
-                    <div style={{ display: 'flex', gap: 10, padding: '8px 14px', background: '#ede9fe',
-                      borderTop: '1px solid #ddd6fe', justifyContent: 'flex-end' }}>
-                      <span style={{ fontSize: 11, color: '#4c1d95' }}>Jornales: {fmtJor(cSum.jornales)}</span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#4c1d95', marginLeft: 16 }}>Total {cGrp.label}: {fmt$(cSum.monto)}</span>
+                    <div style={{ display: 'flex', gap: 10, padding: '8px 14px', background: '#E6E8EB',
+                      borderTop: '1px solid #E6E8EB', justifyContent: 'flex-end' }}>
+                      <span style={{ fontSize: 11, color: '#3D2A45' }}>Jornales: {fmtJor(cSum.jornales)}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#3D2A45', marginLeft: 16 }}>Total {cGrp.label}: {fmt$(cSum.monto)}</span>
                     </div>
                   )}
                 </div>
               )
             })}
 
-            <div style={{ display: 'flex', gap: 10, padding: '12px 16px', background: '#4c1d95',
+            <div style={{ display: 'flex', gap: 10, padding: '12px 16px', background: '#3D2A45',
               borderRadius: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-              <span style={{ fontSize: 12, color: '#d8b4fe' }}>Jornales: {fmtJor(totalJornales)}</span>
+              <span style={{ fontSize: 12, color: '#C9CCD3' }}>Jornales: {fmtJor(totalJornales)}</span>
               <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginLeft: 20 }}>Gran Total: {fmt$(totalMonto)}</span>
             </div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {sinIdentificar.length > 0 && (
-              <div style={{ padding: '8px 14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 11.5, color: '#92400e' }}>
+              <div style={{ padding: '8px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 8, fontSize: 11.5, color: '#7A4B0C' }}>
                 {fmt$(montoSinIdentificar)} en capturas anteriores (categoría genérica, sin trabajador identificado) no se incluyen aquí — sí aparecen en la vista "Por OT".
               </div>
             )}
@@ -354,30 +354,30 @@ export default function ReporteManoDeObra() {
                     <button onClick={() => setOpenTrab(p => ({ ...p, [tKey]: !isOpenT }))}
                       style={{ display: 'flex', width: '100%', alignItems: 'center', gap: 10, padding: '10px 14px',
                         background: '#fff', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
-                      {isOpenT ? <ChevronDown size={13} style={{ color: '#b45309', flexShrink: 0 }} /> : <ChevronRight size={13} style={{ color: '#b45309', flexShrink: 0 }} />}
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', flex: 1 }}>{tGrp.nombre}</span>
+                      {isOpenT ? <ChevronDown size={13} style={{ color: '#62666E', flexShrink: 0 }} /> : <ChevronRight size={13} style={{ color: '#62666E', flexShrink: 0 }} />}
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#26282D', flex: 1 }}>{tGrp.nombre}</span>
                       <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{otsCount} OT{otsCount !== 1 ? 's' : ''}</span>
-                      <span style={{ fontSize: 11, color: '#0891b2', marginLeft: 12 }}>Jornales: {fmtJor(tSum.jornales)}</span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#b45309', marginLeft: 16, minWidth: 110, textAlign: 'right' }}>{fmt$(tSum.monto)}</span>
+                      <span style={{ fontSize: 11, color: '#32789A', marginLeft: 12 }}>Jornales: {fmtJor(tSum.jornales)}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#96600F', marginLeft: 16, minWidth: 110, textAlign: 'right' }}>{fmt$(tSum.monto)}</span>
                     </button>
 
                     {isOpenT && Object.entries(tGrp.cuadrantes).map(([cKey, cGrp]) => (
                       <div key={cKey}>
-                        <div style={{ padding: '6px 14px 6px 28px', background: '#faf5ff', borderTop: '1px solid #f1f5f9', fontSize: 11, fontWeight: 700, color: '#7c3aed' }}>
+                        <div style={{ padding: '6px 14px 6px 28px', background: '#F4F5F7', borderTop: '1px solid #F4F5F7', fontSize: 11, fontWeight: 700, color: '#6B4E79' }}>
                           {cGrp.label}
                         </div>
                         {Object.entries(cGrp.areas).map(([aKey, aGrp]) => {
                           const aSum = sumRows(aGrp.rows)
                           return (
                             <div key={aKey}>
-                              <div style={{ display: 'flex', padding: '5px 14px 5px 44px', background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
-                                <span style={{ fontSize: 11, fontWeight: 600, color: '#475569', flex: 1 }}>⬦ {aGrp.label}</span>
+                              <div style={{ display: 'flex', padding: '5px 14px 5px 44px', background: '#F8F9FA', borderBottom: '1px solid #F4F5F7' }}>
+                                <span style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', flex: 1 }}>⬦ {aGrp.label}</span>
                                 <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Jornales: {fmtJor(aSum.jornales)}</span>
-                                <span style={{ fontSize: 11, fontWeight: 600, color: '#334155', marginLeft: 14, minWidth: 90, textAlign: 'right' }}>{fmt$(aSum.monto)}</span>
+                                <span style={{ fontSize: 11, fontWeight: 600, color: '#33363C', marginLeft: 14, minWidth: 90, textAlign: 'right' }}>{fmt$(aSum.monto)}</span>
                               </div>
                               <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                                 <thead>
-                                  <tr style={{ background: '#f1f5f9' }}>
+                                  <tr style={{ background: '#F4F5F7' }}>
                                     <th style={{ ...thLeft, padding: '5px 10px 5px 56px' }}>Folio</th>
                                     <th style={thLeft}>Título</th>
                                     <th style={th}>Status</th>
@@ -387,8 +387,8 @@ export default function ReporteManoDeObra() {
                                 </thead>
                                 <tbody>
                                   {aGrp.rows.map(r => (
-                                    <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                      <td style={{ padding: '6px 10px 6px 56px', fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)', fontWeight: 600 }}>{r.ot.folio}</td>
+                                    <tr key={r.id} style={{ borderBottom: '1px solid #F4F5F7' }}>
+                                      <td style={{ padding: '6px 10px 6px 56px', fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--blue)', fontWeight: 600 }}>{r.ot.folio}</td>
                                       <td style={{ padding: '6px 10px', fontSize: 12 }}>{r.ot.titulo}</td>
                                       <td style={{ padding: '6px 10px' }}><span style={{ fontSize: 10, fontWeight: 700, color: statusColor(r.ot.status) }}>{r.ot.status}</span></td>
                                       <td style={{ padding: '6px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtJor(Number(r.jornales || 0))}</td>
@@ -406,9 +406,9 @@ export default function ReporteManoDeObra() {
                 )
               })}
 
-            <div style={{ display: 'flex', gap: 10, padding: '12px 16px', background: '#b45309',
+            <div style={{ display: 'flex', gap: 10, padding: '12px 16px', background: '#96600F',
               borderRadius: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-              <span style={{ fontSize: 12, color: '#fde68a' }}>Jornales: {fmtJor(filtered.filter(r => r.id_colaborador_fk).reduce((a, r) => a + Number(r.jornales || 0), 0))}</span>
+              <span style={{ fontSize: 12, color: '#E6E8EB' }}>Jornales: {fmtJor(filtered.filter(r => r.id_colaborador_fk).reduce((a, r) => a + Number(r.jornales || 0), 0))}</span>
               <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginLeft: 20 }}>
                 Gran Total: {fmt$(filtered.filter(r => r.id_colaborador_fk).reduce((a, r) => a + Number(r.costo_total || 0), 0))}
               </span>
@@ -458,13 +458,13 @@ function DetalleDrillModal({ label, rows, onClose }: { label: string; rows: MORo
           <span>Jornales: <strong>{fmtJor(totalJornales)}</strong></span>
           <span>Monto: <strong>{fmt$(totalMonto)}</strong></span>
         </div>
-        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 10 }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', marginBottom: 10 }}>
           {([{ key: 'ots', label: 'Por OT' }, { key: 'trabajadores', label: 'Por Trabajador' }] as const).map(t => (
             <button key={t.key} onClick={() => setSub(t.key)}
               style={{ padding: '7px 14px', background: 'none', border: 'none', cursor: 'pointer',
                 fontSize: 12.5, fontWeight: sub === t.key ? 600 : 400,
-                color: sub === t.key ? '#7c3aed' : 'var(--text-muted)',
-                borderBottom: sub === t.key ? '2px solid #7c3aed' : '2px solid transparent', marginBottom: -1 }}>
+                color: sub === t.key ? '#1C1D21' : 'var(--text-muted)',
+                borderBottom: sub === t.key ? '2px solid #19D3C5' : '2px solid transparent', marginBottom: -1 }}>
               {t.label}
             </button>
           ))}
@@ -474,15 +474,15 @@ function DetalleDrillModal({ label, rows, onClose }: { label: string; rows: MORo
           {sub === 'ots' ? (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
-                <tr style={{ background: '#f8fafc' }}>
+                <tr style={{ background: '#F8F9FA' }}>
                   <th style={thLeft}>Folio</th><th style={thLeft}>Título</th><th style={th}>Status</th>
                   <th style={{ ...th, textAlign: 'right' }}>Jornales</th><th style={{ ...th, textAlign: 'right' }}>Monto</th>
                 </tr>
               </thead>
               <tbody>
                 {porOT.map(r => (
-                  <tr key={r.ot.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '6px 10px', fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)', fontWeight: 600 }}>{r.ot.folio}</td>
+                  <tr key={r.ot.id} style={{ borderBottom: '1px solid #F4F5F7' }}>
+                    <td style={{ padding: '6px 10px', fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--blue)', fontWeight: 600 }}>{r.ot.folio}</td>
                     <td style={tdLeft}>{r.ot.titulo}</td>
                     <td style={td}><span style={{ fontSize: 10, fontWeight: 700, color: statusColor(r.ot.status) }}>{r.ot.status}</span></td>
                     <td style={{ ...td, textAlign: 'right' }}>{fmtJor(r.jornales)}</td>
@@ -494,14 +494,14 @@ function DetalleDrillModal({ label, rows, onClose }: { label: string; rows: MORo
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
-                <tr style={{ background: '#f8fafc' }}>
+                <tr style={{ background: '#F8F9FA' }}>
                   <th style={thLeft}>Trabajador</th><th style={th}>OTs</th>
                   <th style={{ ...th, textAlign: 'right' }}>Jornales</th><th style={{ ...th, textAlign: 'right' }}>Monto</th>
                 </tr>
               </thead>
               <tbody>
                 {porTrabajador.map(t => (
-                  <tr key={t.nombre} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <tr key={t.nombre} style={{ borderBottom: '1px solid #F4F5F7' }}>
                     <td style={tdLeft}>{t.nombre}</td>
                     <td style={td}>{t.ots.size}</td>
                     <td style={{ ...td, textAlign: 'right' }}>{fmtJor(t.jornales)}</td>

@@ -58,7 +58,7 @@ export default function ReporteIncidencias() {
   }
 
   const STATUS_COLOR: Record<string, string> = {
-    'Abierta': '#dc2626', 'En Proceso': '#1d4ed8', 'En Espera': '#94a3b8', 'Cerrada': '#15803d', 'Cancelada': '#94a3b8',
+    'Abierta': '#C23B3B', 'En Proceso': '#26282D', 'En Espera': '#7A7E87', 'Cerrada': '#1F7A50', 'Cancelada': '#7A7E87',
   }
 
   const filtered = incidencias.filter(i => {
@@ -80,7 +80,7 @@ export default function ReporteIncidencias() {
               {lotes.map((l: any) => (
                 <button key={l.id} onClick={() => selectLote(l)}
                   style={{ display: 'flex', width: '100%', padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--blue)', fontSize: 14, fontWeight: 600 }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                   {l.cve_lote ?? `#${l.lote}`}
                 </button>
@@ -133,14 +133,14 @@ export default function ReporteIncidencias() {
               <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin incidencias</td></tr>
             ) : filtered.map(i => (
               <tr key={i.id}>
-                <td style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-muted)' }}>#{i.id}</td>
+                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--text-muted)' }}>#{i.id}</td>
                 <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{loteMap[i.id_lote_fk] ?? (i.id_lote_fk ? `#${i.id_lote_fk}` : '—')}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{i.tipo ?? '—'}</td>
                 <td style={{ fontSize: 12, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.descripcion ?? '—'}</td>
                 <td style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{i.area_responsable ?? '—'}</td>
                 <td style={{ fontSize: 12 }}>{i.responsable ?? '—'}</td>
                 <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{fmtFecha(i.fecha)}</td>
-                <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: i.fecha_cierre ? '#15803d' : 'var(--text-muted)' }}>{fmtFecha(i.fecha_cierre)}</td>
+                <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: i.fecha_cierre ? '#1F7A50' : 'var(--text-muted)' }}>{fmtFecha(i.fecha_cierre)}</td>
                 <td style={{ fontSize: 11, fontWeight: 600, color: STATUS_COLOR[i.status ?? ''] ?? 'var(--text-muted)' }}>{i.status ?? '—'}</td>
               </tr>
             ))}

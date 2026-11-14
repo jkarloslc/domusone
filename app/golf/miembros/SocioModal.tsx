@@ -594,11 +594,11 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   const isTabDisabled = (i: number) => (i === 2 || i === 3 || i === 4 || i === 6 || i === 7 || i === 8 || i === 9 || i === 10) && isNew
 
   const inputStyle = {
-    width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0',
-    borderRadius: 8, background: '#fff', color: '#1e293b',
+    width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB',
+    borderRadius: 8, background: '#fff', color: '#26282D',
     fontFamily: 'inherit', outline: 'none',
   }
-  const labelStyle = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' as const }
+  const labelStyle = { fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' as const }
 
   // Footer: ocultar guardar en tabs Familiares (2), Identificación (3), Contratos (4), Datos Fiscales (6), Federación (7), Facturas (8), Cobranza (9), Recibos (10)
   const showSaveBtn = tab !== 2 && tab !== 3 && tab !== 4 && tab !== 6 && tab !== 7 && tab !== 8 && tab !== 9 && tab !== 10
@@ -738,8 +738,8 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                     <input type="checkbox" id="derecho_intercambios"
                       checked={(form as any).derecho_intercambios ?? false}
                       onChange={e => set('derecho_intercambios' as any, e.target.checked)}
-                      style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#2563eb' }} />
-                    <label htmlFor="derecho_intercambios" style={{ ...labelStyle, marginBottom: 0, cursor: 'pointer', color: '#2563eb' }}>
+                      style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#1C1D21' }} />
+                    <label htmlFor="derecho_intercambios" style={{ ...labelStyle, marginBottom: 0, cursor: 'pointer', color: '#1C1D21' }}>
                       Derecho a intercambios
                     </label>
                   </div>
@@ -754,20 +754,20 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Users size={15} style={{ color: '#2563eb' }} />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>Familiares del socio</span>
-                  {!loadingFam && <span style={{ fontSize: 11, color: '#64748b' }}>({familiares.length})</span>}
+                  <Users size={15} style={{ color: '#1C1D21' }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>Familiares del socio</span>
+                  {!loadingFam && <span style={{ fontSize: 11, color: '#62666E' }}>({familiares.length})</span>}
                 </div>
                 {!showFormFam && (
                   <button onClick={() => { setShowFormFam(true); setErrorFam('') }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#1C1D21', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
                     <Plus size={13} /> Agregar familiar
                   </button>
                 )}
               </div>
               {showFormFam && (
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px' }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>Nuevo familiar</div>
+                <div style={{ background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10, padding: '16px' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#26282D', marginBottom: 12 }}>Nuevo familiar</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     <div style={{ gridColumn: '1 / -1' }}>
                       <label style={labelStyle}>Nombre *</label>
@@ -804,15 +804,15 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                     </div>
                   </div>
                   {errorFam && (
-                    <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{errorFam}</div>
+                    <div style={{ marginTop: 10, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>{errorFam}</div>
                   )}
                   <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
                     <button onClick={() => { setShowFormFam(false); setNuevoFam(FAMILIAR_VACIO); setErrorFam('') }}
-                      style={{ padding: '7px 14px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
+                      style={{ padding: '7px 14px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', cursor: 'pointer' }}>
                       Cancelar
                     </button>
                     <button onClick={handleGuardarFamiliar} disabled={savingFam}
-                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#2563eb', color: '#fff', cursor: 'pointer', opacity: savingFam ? 0.7 : 1 }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#1C1D21', color: '#fff', cursor: 'pointer', opacity: savingFam ? 0.7 : 1 }}>
                       {savingFam ? <Loader size={12} className="animate-spin" /> : <Save size={12} />}
                       Guardar
                     </button>
@@ -820,28 +820,27 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                 </div>
               )}
               {loadingFam ? (
-                <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: 13 }}>Cargando…</div>
+                <div style={{ textAlign: 'center', padding: '24px', color: '#7A7E87', fontSize: 13 }}>Cargando…</div>
               ) : familiares.length === 0 && !showFormFam ? (
-                <div style={{ textAlign: 'center', padding: '32px 20px', background: '#f8fafc', borderRadius: 10, border: '1px dashed #e2e8f0' }}>
-                  <div style={{ fontSize: 28, marginBottom: 8 }}>👨‍👩‍👧‍👦</div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#475569', marginBottom: 4 }}>Sin familiares registrados</div>
-                  <div style={{ fontSize: 12, color: '#94a3b8' }}>Agrega cónyuge, hijos u otros familiares del socio</div>
+                <div style={{ textAlign: 'center', padding: '32px 20px', background: '#F8F9FA', borderRadius: 10, border: '1px dashed #E6E8EB' }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: '#4A4D54', marginBottom: 4 }}>Sin familiares registrados</div>
+                  <div style={{ fontSize: 12, color: '#7A7E87' }}>Agrega cónyuge, hijos u otros familiares del socio</div>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {familiares.map(f => (
-                    <div key={f.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: f.activo ? '#fff' : '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, gap: 12, opacity: f.activo ? 1 : 0.6 }}>
+                    <div key={f.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: f.activo ? '#fff' : '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, gap: 12, opacity: f.activo ? 1 : 0.6 }}>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{nombreCompleto(f)}</div>
-                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, display: 'flex', gap: 10 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>{nombreCompleto(f)}</div>
+                        <div style={{ fontSize: 11, color: '#62666E', marginTop: 2, display: 'flex', gap: 10 }}>
                           {f.parentesco && <span>{f.parentesco}</span>}
                           {f.fecha_nacimiento && <span>{new Date(f.fecha_nacimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
                           {f.nacionalidad && <span>{f.nacionalidad}</span>}
-                          {!f.activo && <span style={{ color: '#dc2626', fontWeight: 600 }}>Inactivo</span>}
+                          {!f.activo && <span style={{ color: '#C23B3B', fontWeight: 600 }}>Inactivo</span>}
                         </div>
                       </div>
                       <button onClick={() => handleEliminarFamiliar(f.id)} disabled={eliminando === f.id}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4, opacity: eliminando === f.id ? 0.5 : 1 }} title="Eliminar">
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 4, opacity: eliminando === f.id ? 0.5 : 1 }} title="Eliminar">
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -855,43 +854,43 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
           {tab === 3 && !isNew && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <FileText size={15} style={{ color: '#2563eb' }} />
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>Identificación oficial</span>
+                <FileText size={15} style={{ color: '#1C1D21' }} />
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>Identificación oficial</span>
               </div>
-              <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>
+              <p style={{ fontSize: 12, color: '#62666E', margin: 0 }}>
                 Sube una foto o PDF de la identificación del socio (INE, pasaporte, etc.). Máximo 5 MB. Formatos: JPG, PNG, PDF.
               </p>
 
               {/* Si ya hay archivo */}
               {idUrl ? (
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+                <div style={{ border: '1px solid #E6E8EB', borderRadius: 12, overflow: 'hidden' }}>
                   {/* Preview */}
                   {idSignedUrl ? (
                     idUrl.match(/\.(jpg|jpeg|png)$/i) ? (
-                      <img src={idSignedUrl} alt="Identificación" style={{ width: '100%', maxHeight: 300, objectFit: 'contain', background: '#f8fafc', display: 'block' }} />
+                      <img src={idSignedUrl} alt="Identificación" style={{ width: '100%', maxHeight: 300, objectFit: 'contain', background: '#F8F9FA', display: 'block' }} />
                     ) : (
-                      <div style={{ padding: '32px 20px', textAlign: 'center', background: '#f8fafc' }}>
-                        <FileText size={40} style={{ color: '#2563eb', marginBottom: 10 }} />
-                        <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b', marginBottom: 6 }}>Documento PDF</div>
+                      <div style={{ padding: '32px 20px', textAlign: 'center', background: '#F8F9FA' }}>
+                        <FileText size={40} style={{ color: '#1C1D21', marginBottom: 10 }} />
+                        <div style={{ fontSize: 13, fontWeight: 500, color: '#26282D', marginBottom: 6 }}>Documento PDF</div>
                         <a href={idSignedUrl} target="_blank" rel="noopener noreferrer"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '6px 14px', textDecoration: 'none' }}>
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#1C1D21', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8, padding: '6px 14px', textDecoration: 'none' }}>
                           <ExternalLink size={12} /> Abrir PDF
                         </a>
                       </div>
                     )
                   ) : (
-                    <div style={{ padding: '20px', textAlign: 'center', background: '#f8fafc' }}>
-                      <Loader size={20} style={{ color: '#94a3b8' }} className="animate-spin" />
+                    <div style={{ padding: '20px', textAlign: 'center', background: '#F8F9FA' }}>
+                      <Loader size={20} style={{ color: '#7A7E87' }} className="animate-spin" />
                     </div>
                   )}
                   {/* Acciones */}
-                  <div style={{ padding: '12px 16px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                  <div style={{ padding: '12px 16px', borderTop: '1px solid #E6E8EB', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                     <button onClick={() => fileInputRef.current?.click()}
-                      style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '6px 12px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', cursor: 'pointer', color: '#475569' }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '6px 12px', border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', cursor: 'pointer', color: '#4A4D54' }}>
                       <Upload size={12} /> Reemplazar
                     </button>
                     <button onClick={handleRemoveId}
-                      style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '6px 12px', border: '1px solid #fecaca', borderRadius: 8, background: '#fef2f2', cursor: 'pointer', color: '#dc2626' }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '6px 12px', border: '1px solid #E6E8EB', borderRadius: 8, background: '#F4F5F7', cursor: 'pointer', color: '#C23B3B' }}>
                       <Trash2 size={12} /> Eliminar
                     </button>
                   </div>
@@ -907,29 +906,29 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                     if (file) handleUploadId(file)
                   }}
                   style={{
-                    border: '2px dashed #bfdbfe', borderRadius: 12, padding: '48px 24px',
+                    border: '2px dashed #C9CCD3', borderRadius: 12, padding: '48px 24px',
                     textAlign: 'center', cursor: uploadingId ? 'wait' : 'pointer',
-                    background: '#f8fafc', transition: 'border-color 0.15s',
+                    background: '#F8F9FA', transition: 'border-color 0.15s',
                   }}>
                   {uploadingId ? (
                     <>
-                      <Loader size={28} style={{ color: '#2563eb', marginBottom: 10 }} className="animate-spin" />
-                      <div style={{ fontSize: 13, color: '#2563eb' }}>Subiendo…</div>
+                      <Loader size={28} style={{ color: '#1C1D21', marginBottom: 10 }} className="animate-spin" />
+                      <div style={{ fontSize: 13, color: '#1C1D21' }}>Subiendo…</div>
                     </>
                   ) : (
                     <>
-                      <Upload size={28} style={{ color: '#93c5fd', marginBottom: 10 }} />
-                      <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 4 }}>
+                      <Upload size={28} style={{ color: '#C9CCD3', marginBottom: 10 }} />
+                      <div style={{ fontSize: 14, fontWeight: 600, color: '#26282D', marginBottom: 4 }}>
                         Haz clic o arrastra el archivo aquí
                       </div>
-                      <div style={{ fontSize: 12, color: '#94a3b8' }}>JPG, PNG o PDF · máx. 5 MB</div>
+                      <div style={{ fontSize: 12, color: '#7A7E87' }}>JPG, PNG o PDF · máx. 5 MB</div>
                     </>
                   )}
                 </div>
               )}
 
               {uploadError && (
-                <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{uploadError}</div>
+                <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>{uploadError}</div>
               )}
 
               {/* Input oculto */}
@@ -964,18 +963,18 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
           {/* ── Tab 6: Datos Fiscales ── */}
           {tab === 6 && !isNew && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ padding: '10px 14px', background: '#faf5ff', border: '1px solid #ddd6fe', borderRadius: 8, fontSize: 12, color: '#6d28d9' }}>
+              <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #5C4268', borderRadius: 8, fontSize: 12, color: '#5C4268' }}>
                 Un socio puede tener varios datos fiscales (p. ej. personal y de empresa). Al facturar, se podrá elegir a cuál de ellos se factura.
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <FileText size={15} style={{ color: '#7c3aed' }} />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>Datos fiscales registrados</span>
-                  {!loadingFiscal && <span style={{ fontSize: 11, color: '#64748b' }}>({fiscales.length})</span>}
+                  <FileText size={15} style={{ color: '#62666E' }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>Datos fiscales registrados</span>
+                  {!loadingFiscal && <span style={{ fontSize: 11, color: '#62666E' }}>({fiscales.length})</span>}
                 </div>
                 {!showFormFiscal && (
                   <button onClick={() => { setShowFormFiscal(true); setErrorFiscal(''); setNuevoFiscal(DATO_FISCAL_VACIO); setEditandoFiscalId(null) }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#7c3aed', background: '#faf5ff', border: '1px solid #ddd6fe', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#6B4E79', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
                     <Plus size={13} /> Agregar dato fiscal
                   </button>
                 )}
@@ -983,8 +982,8 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
 
               {/* Formulario nuevo/editar dato fiscal */}
               {showFormFiscal && (
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px' }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>
+                <div style={{ background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10, padding: '16px' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#26282D', marginBottom: 12 }}>
                     {editandoFiscalId ? 'Editar dato fiscal' : 'Nuevo dato fiscal'}
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -995,7 +994,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                     </div>
                     <div>
                       <label style={labelStyle}>RFC *</label>
-                      <input style={{ ...inputStyle, fontFamily: 'monospace', textTransform: 'uppercase' }}
+                      <input style={{ ...inputStyle, fontVariantNumeric: 'tabular-nums', textTransform: 'uppercase' }}
                         value={nuevoFiscal.rfc} onChange={e => setFiscal('rfc', e.target.value.toUpperCase())}
                         placeholder="XAXX010101000" />
                     </div>
@@ -1030,15 +1029,15 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                     </div>
                   </div>
                   {errorFiscal && (
-                    <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{errorFiscal}</div>
+                    <div style={{ marginTop: 10, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>{errorFiscal}</div>
                   )}
                   <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
                     <button onClick={() => { setShowFormFiscal(false); setNuevoFiscal(DATO_FISCAL_VACIO); setErrorFiscal(''); setEditandoFiscalId(null) }}
-                      style={{ padding: '7px 14px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
+                      style={{ padding: '7px 14px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', cursor: 'pointer' }}>
                       Cancelar
                     </button>
                     <button onClick={handleGuardarFiscal} disabled={savingFiscal}
-                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: 'pointer', opacity: savingFiscal ? 0.7 : 1 }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#6B4E79', color: '#fff', cursor: 'pointer', opacity: savingFiscal ? 0.7 : 1 }}>
                       {savingFiscal ? <Loader size={12} className="animate-spin" /> : <Save size={12} />}
                       Guardar
                     </button>
@@ -1048,33 +1047,32 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
 
               {/* Lista de datos fiscales */}
               {loadingFiscal ? (
-                <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: 13 }}>Cargando…</div>
+                <div style={{ textAlign: 'center', padding: '24px', color: '#7A7E87', fontSize: 13 }}>Cargando…</div>
               ) : fiscales.length === 0 && !showFormFiscal ? (
-                <div style={{ textAlign: 'center', padding: '32px 20px', background: '#f8fafc', borderRadius: 10, border: '1px dashed #e2e8f0' }}>
-                  <div style={{ fontSize: 28, marginBottom: 8 }}>🧾</div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#475569', marginBottom: 4 }}>Sin datos fiscales registrados</div>
-                  <div style={{ fontSize: 12, color: '#94a3b8' }}>Agrega el RFC y razón social que se usarán al facturar</div>
+                <div style={{ textAlign: 'center', padding: '32px 20px', background: '#F8F9FA', borderRadius: 10, border: '1px dashed #E6E8EB' }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: '#4A4D54', marginBottom: 4 }}>Sin datos fiscales registrados</div>
+                  <div style={{ fontSize: 12, color: '#7A7E87' }}>Agrega el RFC y razón social que se usarán al facturar</div>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {fiscales.map(f => (
                     <div key={f.id} style={{
-                      border: `1px solid ${f.es_principal ? '#ddd6fe' : '#e2e8f0'}`,
-                      background: f.es_principal ? '#faf5ff' : '#fff',
+                      border: '1px solid #E6E8EB',
+                      background: f.es_principal ? '#F4F5F7' : '#fff',
                       borderRadius: 10, padding: '12px 16px',
                       display: 'flex', alignItems: 'center', gap: 12,
                     }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                          <span style={{ fontSize: 14, fontWeight: 700, color: '#1e293b' }}>{f.alias || f.razon_social_fiscal}</span>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: '#26282D' }}>{f.alias || f.razon_social_fiscal}</span>
                           {f.es_principal && (
-                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#7c3aed', color: '#fff', letterSpacing: '0.04em' }}>
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#6B4E79', color: '#fff', letterSpacing: '0.04em' }}>
                               PRINCIPAL
                             </span>
                           )}
                         </div>
-                        <div style={{ fontSize: 11, color: '#64748b', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-                          <span style={{ fontFamily: 'monospace' }}>{f.rfc}</span>
+                        <div style={{ fontSize: 11, color: '#62666E', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                          <span style={{ fontVariantNumeric: 'tabular-nums' }}>{f.rfc}</span>
                           {f.alias && <span>{f.razon_social_fiscal}</span>}
                           {f.cp_fiscal && <span>CP {f.cp_fiscal}</span>}
                           {f.regimen_fiscal && <span>Rég. {f.regimen_fiscal}</span>}
@@ -1088,7 +1086,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                             onClick={() => handleMarcarPrincipal(f.id)}
                             disabled={marcandoPrincipal === f.id}
                             title="Marcar como principal"
-                            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '5px 10px', border: '1px solid #ddd6fe', borderRadius: 7, background: '#faf5ff', color: '#6d28d9', cursor: 'pointer', opacity: marcandoPrincipal === f.id ? 0.6 : 1 }}>
+                            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '5px 10px', border: '1px solid #6B4E79', borderRadius: 7, background: '#6B4E79', color: '#fff', cursor: 'pointer', opacity: marcandoPrincipal === f.id ? 0.6 : 1 }}>
                             {marcandoPrincipal === f.id ? <Loader size={10} className="animate-spin" /> : <CheckCircle size={11} />}
                             Principal
                           </button>
@@ -1096,14 +1094,14 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                         <button
                           onClick={() => handleEditarFiscal(f)}
                           title="Editar"
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', padding: 4 }}>
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B4E79', padding: 4 }}>
                           <Edit2 size={14} />
                         </button>
                         <button
                           onClick={() => handleEliminarFiscal(f.id)}
                           disabled={eliminandoFiscal === f.id}
                           title="Eliminar"
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4, opacity: eliminandoFiscal === f.id ? 0.5 : 1 }}>
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 4, opacity: eliminandoFiscal === f.id ? 0.5 : 1 }}>
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -1134,28 +1132,27 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
           {tab === 8 && !isNew && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Receipt size={15} style={{ color: '#15803d' }} />
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>Facturas emitidas al socio</span>
-                {!loadingFact && <span style={{ fontSize: 11, color: '#64748b' }}>({facturasSocio.length})</span>}
+                <Receipt size={15} style={{ color: '#62666E' }} />
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>Facturas emitidas al socio</span>
+                {!loadingFact && <span style={{ fontSize: 11, color: '#62666E' }}>({facturasSocio.length})</span>}
               </div>
-              <div style={{ padding: '10px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, fontSize: 12, color: '#166534' }}>
+              <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #17603F', borderRadius: 8, fontSize: 12, color: '#17603F' }}>
                 Se muestran los tickets POS de este socio que fueron facturados (Golf → POS).
               </div>
               {loadingFact ? (
-                <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: 13 }}>Cargando…</div>
+                <div style={{ textAlign: 'center', padding: '24px', color: '#7A7E87', fontSize: 13 }}>Cargando…</div>
               ) : facturasSocio.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '32px 20px', background: '#f8fafc', borderRadius: 10, border: '1px dashed #e2e8f0' }}>
-                  <div style={{ fontSize: 28, marginBottom: 8 }}>🧾</div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#475569', marginBottom: 4 }}>Sin facturas emitidas</div>
-                  <div style={{ fontSize: 12, color: '#94a3b8' }}>No se encontraron CFDIs asociados a las ventas POS de este socio</div>
+                <div style={{ textAlign: 'center', padding: '32px 20px', background: '#F8F9FA', borderRadius: 10, border: '1px dashed #E6E8EB' }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: '#4A4D54', marginBottom: 4 }}>Sin facturas emitidas</div>
+                  <div style={{ fontSize: 12, color: '#7A7E87' }}>No se encontraron CFDIs asociados a las ventas POS de este socio</div>
                 </div>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                     <thead>
-                      <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                      <tr style={{ background: '#F8F9FA', borderBottom: '2px solid #E6E8EB' }}>
                         {['Folio', 'RFC Receptor', 'Razón Social', 'Total', 'Status', 'Fecha', ''].map(h => (
-                          <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap' }}>{h}</th>
+                          <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: '#4A4D54', whiteSpace: 'nowrap' }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -1163,38 +1160,38 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                       {facturasSocio.map(v => {
                         const cfdi = v._cfdi
                         const statusColor: Record<string, { bg: string; color: string }> = {
-                          Vigente:   { bg: '#dcfce7', color: '#15803d' },
-                          Cancelada: { bg: '#fee2e2', color: '#dc2626' },
-                          Simulada:  { bg: '#fef9c3', color: '#92400e' },
+                          Vigente:   { bg: '#E6E8EB', color: '#1F7A50' },
+                          Cancelada: { bg: '#E6E8EB', color: '#C23B3B' },
+                          Simulada:  { bg: '#E6E8EB', color: '#7A4B0C' },
                         }
                         const status = cfdi?.status ?? 'Vigente'
-                        const sc = statusColor[status] ?? { bg: '#f1f5f9', color: '#475569' }
+                        const sc = statusColor[status] ?? { bg: '#F4F5F7', color: '#4A4D54' }
                         return (
-                          <tr key={v.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap' }}>
+                          <tr key={v.id} style={{ borderBottom: '1px solid #F4F5F7' }}>
+                            <td style={{ padding: '8px 10px', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: '#26282D', whiteSpace: 'nowrap' }}>
                               {cfdi?.folio_factura ?? '—'}
                             </td>
-                            <td style={{ padding: '8px 10px', fontFamily: 'monospace', color: '#475569', whiteSpace: 'nowrap' }}>
+                            <td style={{ padding: '8px 10px', fontVariantNumeric: 'tabular-nums', color: '#4A4D54', whiteSpace: 'nowrap' }}>
                               {cfdi?.receptor_rfc ?? '—'}
                             </td>
-                            <td style={{ padding: '8px 10px', color: '#475569', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <td style={{ padding: '8px 10px', color: '#4A4D54', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {cfdi?.receptor_nombre ?? '—'}
                             </td>
-                            <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>
+                            <td style={{ padding: '8px 10px', fontWeight: 600, color: '#26282D', whiteSpace: 'nowrap' }}>
                               {v.total != null ? '$' + Number(v.total).toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'}
                             </td>
                             <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
-                              <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: sc.bg, color: sc.color }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: sc.color, color: '#fff'}}>
                                 {status}
                               </span>
                             </td>
-                            <td style={{ padding: '8px 10px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                            <td style={{ padding: '8px 10px', color: '#62666E', whiteSpace: 'nowrap' }}>
                               {cfdi?.fecha_timbrado ? new Date(cfdi.fecha_timbrado).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : (v.fecha ? new Date(v.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—')}
                             </td>
                             <td style={{ padding: '8px 10px' }}>
                               {cfdi?.pdf_b64 && (
                                 <button onClick={() => verPdfFactura(cfdi.pdf_b64)}
-                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: '#2563eb', textDecoration: 'none', fontWeight: 600, fontSize: 12 }}
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: '#1C1D21', textDecoration: 'none', fontWeight: 600, fontSize: 12 }}
                                   title="Ver PDF">
                                   <ExternalLink size={12} /> PDF
                                 </button>
@@ -1211,7 +1208,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
           )}
 
           {error && (
-            <div style={{ marginTop: 12, padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>
+            <div style={{ marginTop: 12, padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 13, color: '#C23B3B' }}>
               {error}
             </div>
           )}
@@ -1229,7 +1226,7 @@ function ContratoLink({ path }: { path: string }) {
   if (!url) return null
   return (
     <a href={url} target="_blank" rel="noopener noreferrer"
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#2563eb', textDecoration: 'none', fontSize: 11 }}>
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#1C1D21', textDecoration: 'none', fontSize: 11 }}>
       <ExternalLink size={10} /> Ver archivo
     </a>
   )

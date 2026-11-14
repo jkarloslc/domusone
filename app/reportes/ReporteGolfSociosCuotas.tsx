@@ -45,11 +45,11 @@ type SocioRow = {
 
 const TIPO_LABEL: Record<TipoCuota, string> = { INSCRIPCION: 'Inscripción', MENSUALIDAD: 'Mensualidad', PENSION_CARRITO: 'Pensión carrito' }
 const INSC_META: Record<EstInsc, { label: string; color: string; bg: string }> = {
-  PAGADA:    { label: 'Pagada',            color: '#15803d', bg: '#dcfce7' },
-  POR_PAGAR: { label: 'Por pagar',         color: '#d97706', bg: '#fef3c7' },
-  CONDONADA: { label: 'Condonada',         color: '#7c3aed', bg: '#ede9fe' },
-  CANCELADA: { label: 'Cuota cancelada',   color: '#64748b', bg: '#f1f5f9' },
-  SIN_CARGO: { label: 'Sin cargo',         color: '#dc2626', bg: '#fee2e2' },
+  PAGADA:    { label: 'Pagada',            color: '#1F7A50', bg: '#E6E8EB' },
+  POR_PAGAR: { label: 'Por pagar',         color: '#B5761A', bg: '#E6E8EB' },
+  CONDONADA: { label: 'Condonada',         color: '#6B4E79', bg: '#E6E8EB' },
+  CANCELADA: { label: 'Cuota cancelada',   color: '#62666E', bg: '#F4F5F7' },
+  SIN_CARGO: { label: 'Sin cargo',         color: '#C23B3B', bg: '#E6E8EB' },
 }
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
 
@@ -321,7 +321,7 @@ export default function ReporteGolfSociosCuotas() {
       </div>
 
       {error && (
-        <div className="card" style={{ padding: '14px 18px', marginBottom: 16, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: 13 }}>{error}</div>
+        <div className="card" style={{ padding: '14px 18px', marginBottom: 16, background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', color: '#C23B3B', fontSize: 13 }}>{error}</div>
       )}
 
       {!buscado && (
@@ -337,20 +337,20 @@ export default function ReporteGolfSociosCuotas() {
             {(['PAGADA', 'POR_PAGAR', 'CONDONADA', 'CANCELADA', 'SIN_CARGO'] as EstInsc[]).map(e => {
               const m = INSC_META[e]
               return (
-                <div key={e} className="card" style={{ flex: '1 1 150px', padding: '10px 14px', background: m.bg, cursor: 'pointer' }}
+                <div key={e} className="card" style={{ flex: '1 1 150px', padding: '10px 14px', background: '#fff', cursor: 'pointer' }}
                   onClick={() => setFiltroInsc(filtroInsc === e ? '' : e)}>
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Inscripción · {m.label}</div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: m.color }}>{cuentaInsc(e)}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: m.color, marginRight: 6, verticalAlign: 'middle' }} />Inscripción · {m.label}</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{cuentaInsc(e)}</div>
                 </div>
               )
             })}
-            <div className="card" style={{ flex: '1 1 170px', padding: '10px 14px', background: '#f0fdf4' }}>
+            <div className="card" style={{ flex: '1 1 170px', padding: '10px 14px', background: '#fff' }}>
               <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Cuotas pagadas</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: '#15803d' }}>{fmt$(totPagado)}</div>
+              <div style={{ fontSize: 18, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{fmt$(totPagado)}</div>
             </div>
-            <div className="card" style={{ flex: '1 1 170px', padding: '10px 14px', background: '#fffbeb' }}>
+            <div className="card" style={{ flex: '1 1 170px', padding: '10px 14px', background: '#fff' }}>
               <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Cuotas por pagar</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: '#d97706' }}>{fmt$(totPorPagar)}</div>
+              <div style={{ fontSize: 18, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{fmt$(totPorPagar)}</div>
             </div>
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
@@ -386,18 +386,18 @@ export default function ReporteGolfSociosCuotas() {
                         <Fragment key={r.socio.id}>
                           <tr onClick={() => toggle(r.socio.id)} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                             <td style={{ padding: '8px', width: 20, color: 'var(--text-muted)' }}>{abierto ? '▾' : '▸'}</td>
-                            <td style={{ padding: '8px', fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)', fontWeight: 600 }}>{r.socio.numero_socio || '—'}</td>
+                            <td style={{ padding: '8px', fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--blue)', fontWeight: 600 }}>{r.socio.numero_socio || '—'}</td>
                             <td style={{ padding: '8px', color: 'var(--text-primary)' }}>
-                              {r.nombre}{!r.socio.activo && <span style={{ fontSize: 10, color: '#64748b', marginLeft: 6 }}>(inactivo)</span>}
+                              {r.nombre}{!r.socio.activo && <span style={{ fontSize: 10, color: '#62666E', marginLeft: 6 }}>(inactivo)</span>}
                             </td>
                             <td style={{ padding: '8px', color: 'var(--text-muted)', fontSize: 11 }}>{r.categoria}</td>
                             <td style={{ padding: '8px' }}>
-                              <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: im.bg, color: im.color, fontWeight: 700, whiteSpace: 'nowrap' }}>{im.label}</span>
+                              <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: im.color, color: '#fff', fontWeight: 700, whiteSpace: 'nowrap' }}>{im.label}</span>
                             </td>
                             <td style={{ padding: '8px', textAlign: 'right' }}>{r.nPagMens}</td>
                             <td style={{ padding: '8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt$(r.pagadoMens)}</td>
-                            <td style={{ padding: '8px', textAlign: 'right', color: r.nPorMens ? '#d97706' : undefined, fontWeight: r.nPorMens ? 600 : 400 }}>{r.nPorMens}</td>
-                            <td style={{ padding: '8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: r.porPagarMens ? '#d97706' : undefined }}>{fmt$(r.porPagarMens)}</td>
+                            <td style={{ padding: '8px', textAlign: 'right', color: r.nPorMens ? '#B5761A' : undefined, fontWeight: r.nPorMens ? 600 : 400 }}>{r.nPorMens}</td>
+                            <td style={{ padding: '8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: r.porPagarMens ? '#B5761A' : undefined }}>{fmt$(r.porPagarMens)}</td>
                           </tr>
                           {abierto && (
                             <tr style={{ borderBottom: '1px solid var(--border)' }}>
@@ -423,13 +423,13 @@ export default function ReporteGolfSociosCuotas() {
                                           <tr key={l.id} style={{ borderTop: '1px solid var(--border)' }}>
                                             <td style={{ padding: '5px 8px' }}>{TIPO_LABEL[l.tipo]}</td>
                                             <td style={{ padding: '5px 8px' }}>{l.mes}</td>
-                                            <td style={{ padding: '5px 8px', fontWeight: 600, color: l.pagada ? '#15803d' : '#d97706' }}>{l.pagada ? 'Pagada' : 'Por pagar'}</td>
+                                            <td style={{ padding: '5px 8px', fontWeight: 600, color: l.pagada ? '#1F7A50' : '#B5761A' }}>{l.pagada ? 'Pagada' : 'Por pagar'}</td>
                                             <td style={{ padding: '5px 8px', textAlign: 'right' }}>{fmt$(l.monto)}</td>
                                             <td style={{ padding: '5px 8px', textAlign: 'right' }}>{l.saldo ? fmt$(l.saldo) : '—'}</td>
                                             <td style={{ padding: '5px 8px' }}>{fmtFecha(l.vence)}</td>
                                             <td style={{ padding: '5px 8px' }}>{fmtFecha(l.fechaPago)}</td>
                                             <td style={{ padding: '5px 8px' }}>{l.forma || '—'}</td>
-                                            <td style={{ padding: '5px 8px', fontFamily: 'monospace', fontSize: 10 }}>{l.folio || '—'}</td>
+                                            <td style={{ padding: '5px 8px', fontVariantNumeric: 'tabular-nums', fontSize: 10 }}>{l.folio || '—'}</td>
                                           </tr>
                                         ))}
                                       </tbody>

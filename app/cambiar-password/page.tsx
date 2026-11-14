@@ -60,7 +60,7 @@ export default function CambiarPasswordPage() {
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(135deg, #eff6ff 0%, #f1f5f9 50%, #e0f2fe 100%)',
+      background: '#F4F5F7',
       fontFamily: 'var(--font-body)',
     }}>
       <div style={{ width: '100%', maxWidth: 400, padding: '0 20px' }}>
@@ -71,8 +71,8 @@ export default function CambiarPasswordPage() {
 
         <div style={{
           background: '#fff', borderRadius: 16, padding: 32,
-          boxShadow: '0 4px 24px rgba(37,99,235,0.08), 0 1px 3px rgba(0,0,0,0.06)',
-          border: '1px solid #e2e8f0',
+          boxShadow: '0 4px 24px rgba(28,29,33,0.08), 0 1px 3px rgba(0,0,0,0.06)',
+          border: '1px solid #E6E8EB',
         }}>
           <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
             <KeyRound size={18} /> Cambiar contraseña
@@ -97,7 +97,7 @@ export default function CambiarPasswordPage() {
 
           {haySesion && listo && (
             <div style={{ textAlign: 'center', fontSize: 14, color: 'var(--text-primary)' }}>
-              <CheckCircle size={36} style={{ color: '#15803d', marginBottom: 10 }} />
+              <CheckCircle size={36} style={{ color: '#1F7A50', marginBottom: 10 }} />
               <div>Tu contraseña se actualizó correctamente.</div>
               <button className="btn-primary" onClick={irAInicio}
                 style={{ width: '100%', justifyContent: 'center', marginTop: 18 }}>
@@ -109,7 +109,7 @@ export default function CambiarPasswordPage() {
           {haySesion && !listo && (
             <form onSubmit={guardar} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {error && (
-                <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, color: '#dc2626', fontSize: 13 }}>
+                <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, color: '#C23B3B', fontSize: 13 }}>
                   {error}
                 </div>
               )}

@@ -88,15 +88,15 @@ export default function FacturaDetail({ factura: f, onClose, onCanceled }: Props
       <p>Estimado cliente,</p>
       <p>Adjuntamos su factura electrónica con los siguientes datos:</p>
       <table style="border-collapse:collapse;font-size:14px">
-        <tr><td style="padding:4px 12px 4px 0;color:#64748b">Folio fiscal (UUID):</td><td><strong style="font-family:monospace">${f.folio_fiscal}</strong></td></tr>
-        <tr><td style="padding:4px 12px 4px 0;color:#64748b">Folio interno:</td><td><strong>${f.serie ?? ''}${f.folio_interno ?? ''}</strong></td></tr>
-        <tr><td style="padding:4px 12px 4px 0;color:#64748b">Receptor:</td><td>${f.razon_social_receptor ?? ''} (${f.rfc_receptor ?? ''})</td></tr>
-        <tr><td style="padding:4px 12px 4px 0;color:#64748b">Total:</td><td><strong>$${Number(f.total ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong></td></tr>
-        <tr><td style="padding:4px 12px 4px 0;color:#64748b">Fecha emisión:</td><td>${f.fecha_emision ? new Date(f.fecha_emision).toLocaleDateString('es-MX') : ''}</td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#62666E">Folio fiscal (UUID):</td><td><strong style="font-variant-numeric:tabular-nums">${f.folio_fiscal}</strong></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#62666E">Folio interno:</td><td><strong>${f.serie ?? ''}${f.folio_interno ?? ''}</strong></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#62666E">Receptor:</td><td>${f.razon_social_receptor ?? ''} (${f.rfc_receptor ?? ''})</td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#62666E">Total:</td><td><strong>$${Number(f.total ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#62666E">Fecha emisión:</td><td>${f.fecha_emision ? new Date(f.fecha_emision).toLocaleDateString('es-MX') : ''}</td></tr>
       </table>
       <p style="margin-top:16px">Los archivos XML y PDF de la factura se encuentran adjuntos a este correo.</p>
       <p>Para cualquier aclaración, comuníquese con administración.</p>
-      <p style="color:#64748b;font-size:12px">${f.razon_social_emisor ?? ''} · RFC: ${f.rfc_emisor ?? ''}</p>
+      <p style="color:#62666E;font-size:12px">${f.razon_social_emisor ?? ''} · RFC: ${f.rfc_emisor ?? ''}</p>
     `
 
     try {
@@ -141,7 +141,7 @@ export default function FacturaDetail({ factura: f, onClose, onCanceled }: Props
     <ModalShell modulo="facturas" titulo="Modal" onClose={onClose} maxWidth={600}
     >
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #E6E8EB' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
               <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--blue)' }}>
@@ -149,14 +149,14 @@ export default function FacturaDetail({ factura: f, onClose, onCanceled }: Props
               </span>
               <span style={{
                 fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
-                background: f.status === 'Vigente' ? '#f0fdf4' : f.status === 'Cancelada' ? '#fef2f2' : '#fffbeb',
-                color:      f.status === 'Vigente' ? '#15803d' : f.status === 'Cancelada' ? '#dc2626' : '#d97706',
-                border:     `1px solid ${f.status === 'Vigente' ? '#bbf7d0' : f.status === 'Cancelada' ? '#fecaca' : '#fde68a'}`,
+                background: f.status === 'Vigente' ? '#1F7A50' : f.status === 'Cancelada' ? '#C23B3B' : '#B5761A',
+                color:      '#fff',
+                border:     `1px solid ${f.status === 'Vigente' ? '#1F7A50' : f.status === 'Cancelada' ? '#C23B3B' : '#B5761A'}`,
               }}>
                 {f.status}
               </span>
             </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
               {f.folio_fiscal ?? 'Sin folio fiscal'}
             </div>
           </div>
@@ -184,7 +184,7 @@ export default function FacturaDetail({ factura: f, onClose, onCanceled }: Props
                   <Mail size={13} /> Enviar
                 </button>
                 {canDelete() && (
-                  <button className="btn-ghost" onClick={() => setShowCancelar(e => !e)} style={{ color: '#dc2626', fontSize: 12 }}>
+                  <button className="btn-ghost" onClick={() => setShowCancelar(e => !e)} style={{ color: '#C23B3B', fontSize: 12 }}>
                     <XCircle size={13} /> Cancelar
                   </button>
                 )}
@@ -197,14 +197,14 @@ export default function FacturaDetail({ factura: f, onClose, onCanceled }: Props
         <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(88vh - 80px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {msg && (
-            <div style={{ padding: '10px 14px', background: msg.startsWith('✓') ? '#f0fdf4' : '#fef2f2', border: `1px solid ${msg.startsWith('✓') ? '#bbf7d0' : '#fecaca'}`, borderRadius: 6, fontSize: 13, color: msg.startsWith('✓') ? '#15803d' : '#dc2626' }}>
+            <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 6, fontSize: 13, color: msg.startsWith('✓') ? '#1F7A50' : '#C23B3B' }}>
               {msg}
             </div>
           )}
 
           {/* Panel envío por correo */}
           {showEmail && (
-            <div style={{ padding: '14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, display: 'flex', flex: 'column', gap: 8 }}>
+            <div style={{ padding: '14px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8, display: 'flex', flex: 'column', gap: 8 }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--blue)', marginBottom: 8 }}>Enviar por correo electrónico</div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <input className="input" type="email" placeholder="correo@ejemplo.com" value={correoEnvio}
@@ -215,7 +215,7 @@ export default function FacturaDetail({ factura: f, onClose, onCanceled }: Props
                 </button>
               </div>
               {f.correo_enviado_a && (
-                <div style={{ fontSize: 11, color: '#1d4ed8', marginTop: 4 }}>
+                <div style={{ fontSize: 11, color: '#26282D', marginTop: 4 }}>
                   ✓ Enviado anteriormente a: {f.correo_enviado_a} — {fmtFecha(f.fecha_envio)}
                 </div>
               )}
@@ -224,8 +224,8 @@ export default function FacturaDetail({ factura: f, onClose, onCanceled }: Props
 
           {/* Panel cancelación */}
           {showCancelar && f.status === 'Vigente' && (
-            <div style={{ padding: '14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#dc2626', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ padding: '14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#C23B3B', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <AlertTriangle size={13} /> Cancelar Factura
               </div>
               <div style={{ marginBottom: 10 }}>
@@ -234,13 +234,13 @@ export default function FacturaDetail({ factura: f, onClose, onCanceled }: Props
                   {MOTIVOS_CANCELACION.map(m => <option key={m.clave} value={m.clave}>{m.clave} — {m.desc}</option>)}
                 </select>
               </div>
-              <div style={{ fontSize: 12, color: '#7f1d1d', marginBottom: 10 }}>
+              <div style={{ fontSize: 12, color: '#8C2A2A', marginBottom: 10 }}>
                 Esta acción no puede deshacerse. La cancelación se envía al SAT a través del PAC.
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn-secondary" onClick={() => setShowCancelar(false)} style={{ fontSize: 12 }}>Cancelar</button>
                 <button onClick={handleCancelar} disabled={cancelando}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 7, background: '#dc2626', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, fontFamily: 'var(--font-body)' }}>
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 7, background: '#C23B3B', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, fontFamily: 'var(--font-body)' }}>
                   {cancelando ? <Loader size={13} className="animate-spin" /> : <XCircle size={13} />}
                   {cancelando ? 'Cancelando…' : 'Confirmar Cancelación'}
                 </button>
@@ -308,7 +308,7 @@ export default function FacturaDetail({ factura: f, onClose, onCanceled }: Props
 
 const Section = ({ label, children }: { children: React.ReactNode; label: string }) => (
   <div>
-    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, paddingBottom: 5, borderBottom: '1px solid #e2e8f0' }}>{label}</div>
+    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, paddingBottom: 5, borderBottom: '1px solid #E6E8EB' }}>{label}</div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>{children}</div>
   </div>
 )

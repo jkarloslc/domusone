@@ -22,10 +22,10 @@ type Props = {
 }
 
 const inputStyle = {
-  width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0',
-  borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none',
+  width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB',
+  borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none',
 }
-const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }
+const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }
 
 export default function InvitadoModal({ invitado, onClose, onSaved }: Props) {
   const [saving, setSaving] = useState(false)
@@ -81,7 +81,7 @@ export default function InvitadoModal({ invitado, onClose, onSaved }: Props) {
       footer={<>
         <button className="btn-ghost" onClick={onClose}>Cancelar</button>
         <button onClick={handleSave} disabled={saving}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#d97706', color: '#fff', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#B5761A', color: '#fff', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
           {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
           Guardar
         </button>
@@ -121,14 +121,14 @@ export default function InvitadoModal({ invitado, onClose, onSaved }: Props) {
         </div>
 
         {invitado && (
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#475569', cursor: 'pointer' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#4A4D54', cursor: 'pointer' }}>
             <input type="checkbox" checked={form.activo} onChange={e => set('activo', e.target.checked)} />
             Activo (visible al buscar invitados en Accesos)
           </label>
         )}
 
         {error && (
-          <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>
+          <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 13, color: '#C23B3B' }}>
             {error}
           </div>
         )}

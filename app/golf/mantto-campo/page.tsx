@@ -10,7 +10,7 @@ const MODULOS = [
     label: 'Riego',
     desc: 'Programa de riego, ejecución semanal y consumo de agua',
     icon: Droplets,
-    color: '#0ea5e9',
+    color: '#4E97B8',
     href: '/golf/riego',
   },
   {
@@ -18,7 +18,7 @@ const MODULOS = [
     label: 'Mantenimiento de Campo',
     desc: 'Aplicaciones, agroquímicos y bitácora de mantenimiento del campo',
     icon: Leaf,
-    color: '#16a34a',
+    color: '#267F56',
     href: '/golf/mantenimiento-campo',
   },
   {
@@ -26,7 +26,7 @@ const MODULOS = [
     label: 'Estatus del Campo',
     desc: 'Bitácora de apertura / cierre del campo y de los caminos',
     icon: CloudRain,
-    color: '#7c3aed',
+    color: '#6B4E79',
     href: '/golf/estatus-campo',
   },
 ] as { key: string; label: string; desc: string; icon: any; color: string; href: string; perm?: string }[]
@@ -58,7 +58,7 @@ export default function GolfManttoCampoPage() {
                 padding: '18px 20px',
                 textAlign: 'left',
                 background: '#fff',
-                border: '1px solid #e2e8f0',
+                border: '1px solid #E6E8EB',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -66,19 +66,18 @@ export default function GolfManttoCampoPage() {
                 textDecoration: 'none',
               }}
             >
-              <div style={{
+              <div className="icon-chip" style={{
                 width: 40, height: 40, borderRadius: 10,
-                background: m.color + '15',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
               }}>
-                <Icon size={18} style={{ color: m.color }} />
+                <Icon size={18} style={{ color: '#1C1D21' }} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{m.label}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{m.desc}</div>
               </div>
-              <ChevronRight size={14} style={{ color: '#cbd5e1', flexShrink: 0 }} />
+              <ChevronRight size={14} style={{ color: '#C9CCD3', flexShrink: 0 }} />
             </Link>
           )
         })}

@@ -33,11 +33,11 @@ type Props = {
 }
 
 const TIPOS: { value: TipoEvento; label: string; color: string; bg: string; full?: boolean }[] = [
-  { value: 'SALIDA_TALLER',      label: '🔧 Salida a Taller',    color: '#d97706', bg: '#fffbeb' },
-  { value: 'REGRESO_TALLER',     label: '✅ Regreso de Taller',   color: '#15803d', bg: '#f0fdf4' },
-  { value: 'PRESTAMO_TERCERO',   label: '🤝 Préstamo a Tercero',  color: '#2563eb', bg: '#eff6ff' },
-  { value: 'INCIDENCIA',         label: '⚠️ Incidencia',          color: '#dc2626', bg: '#fef2f2' },
-  { value: 'SALIDA_DEFINITIVA',  label: '🚗 Salida Definitiva',   color: '#7c3aed', bg: '#f5f3ff', full: true },
+  { value: 'SALIDA_TALLER',      label: 'Salida a Taller',    color: '#B5761A', bg: '#F4F5F7' },
+  { value: 'REGRESO_TALLER',     label: 'Regreso de Taller',   color: '#1F7A50', bg: '#F4F5F7' },
+  { value: 'PRESTAMO_TERCERO',   label: 'Préstamo a Tercero',  color: '#1C1D21', bg: '#F4F5F7' },
+  { value: 'INCIDENCIA',         label: 'Incidencia',          color: '#C23B3B', bg: '#F4F5F7' },
+  { value: 'SALIDA_DEFINITIVA',  label: 'Salida Definitiva',   color: '#6B4E79', bg: '#F4F5F7', full: true },
 ]
 
 const nc = (s: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null } | null) =>
@@ -45,11 +45,11 @@ const nc = (s: { nombre: string; apellido_paterno: string | null; apellido_mater
 
 const inp: React.CSSProperties = {
   width: '100%', padding: '8px 12px', fontSize: 13,
-  border: '1px solid #e2e8f0', borderRadius: 8,
-  background: '#fff', color: '#1e293b',
+  border: '1px solid #E6E8EB', borderRadius: 8,
+  background: '#fff', color: '#26282D',
   fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
 }
-const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }
+const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }
 
 export default function BitacoraModal({
   idCarrito, idPension, idSlot, idSocio, nombreSocio, descCarrito,
@@ -174,10 +174,10 @@ export default function BitacoraModal({
       maxWidth={560}
       onClose={onClose}
       footer={<>
-        <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer', fontFamily: 'inherit' }}>
+        <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', cursor: 'pointer', fontFamily: 'inherit' }}>
           Cancelar
         </button>
-        <button onClick={handleSave} disabled={saving || !puedeGuardar} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: tipo === 'SALIDA_DEFINITIVA' ? '#7c3aed' : '#059669', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', opacity: (saving || !puedeGuardar) ? 0.6 : 1 }}>
+        <button onClick={handleSave} disabled={saving || !puedeGuardar} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: tipo === 'SALIDA_DEFINITIVA' ? '#6B4E79' : '#267F56', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', opacity: (saving || !puedeGuardar) ? 0.6 : 1 }}>
           {saving ? <Loader size={14} /> : <Save size={14} />}
           {tipo === 'SALIDA_DEFINITIVA' ? 'Confirmar Salida Definitiva' : 'Guardar Registro'}
         </button>
@@ -218,9 +218,9 @@ export default function BitacoraModal({
             {TIPOS.map(t => (
               <button key={t.value} onClick={() => setTipo(t.value)} style={{
                 padding: '10px 12px', borderRadius: 10, fontSize: 13, fontWeight: tipo === t.value ? 700 : 400,
-                border: `2px solid ${tipo === t.value ? t.color : '#e2e8f0'}`,
+                border: `2px solid ${tipo === t.value ? t.color : '#E6E8EB'}`,
                 background: tipo === t.value ? t.bg : '#fff',
-                color: tipo === t.value ? t.color : '#64748b',
+                color: tipo === t.value ? t.color : '#62666E',
                 cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
                 gridColumn: t.full ? '1 / -1' : undefined,
               }}>
@@ -232,14 +232,13 @@ export default function BitacoraModal({
 
         {/* Panel de advertencia — Salida Definitiva */}
         {tipo === 'SALIDA_DEFINITIVA' && (
-          <div style={{ padding: '14px 16px', background: '#f5f3ff', border: '2px solid #c4b5fd', borderRadius: 10 }}>
+          <div style={{ padding: '14px 16px', background: '#F4F5F7', border: '2px solid #C9CCD3', borderRadius: 10 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-              <span style={{ fontSize: 22, lineHeight: 1 }}>⚠️</span>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#6d28d9', marginBottom: 6 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#5C4268', marginBottom: 6 }}>
                   Esta acción realizará los siguientes cambios de forma permanente:
                 </div>
-                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: '#5b21b6', lineHeight: 1.8 }}>
+                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: '#4E3758', lineHeight: 1.8 }}>
                   <li>La <strong>pensión quedará cerrada</strong> (inactiva) con fecha de salida hoy.</li>
                   <li>El <strong>slot asignado será liberado</strong> para un nuevo carrito.</li>
                   <li>Las <strong>cuotas futuras pendientes serán canceladas</strong> con saldo $0.</li>
@@ -300,14 +299,14 @@ export default function BitacoraModal({
             <label style={lbl}>Nivel de Urgencia</label>
             <div style={{ display: 'flex', gap: 8 }}>
               {(['BAJA', 'MEDIA', 'ALTA'] as const).map(u => {
-                const colors = { BAJA: { c: '#15803d', bg: '#f0fdf4' }, MEDIA: { c: '#d97706', bg: '#fffbeb' }, ALTA: { c: '#dc2626', bg: '#fef2f2' } }
+                const colors = { BAJA: { c: '#1F7A50', bg: '#F4F5F7' }, MEDIA: { c: '#B5761A', bg: '#F4F5F7' }, ALTA: { c: '#C23B3B', bg: '#F4F5F7' } }
                 const col = colors[u]
                 return (
                   <button key={u} onClick={() => setUrgencia(u)} style={{
                     flex: 1, padding: '8px', borderRadius: 8, fontSize: 12, fontWeight: urgencia === u ? 700 : 400,
-                    border: `2px solid ${urgencia === u ? col.c : '#e2e8f0'}`,
+                    border: `2px solid ${urgencia === u ? col.c : '#E6E8EB'}`,
                     background: urgencia === u ? col.bg : '#fff',
-                    color: urgencia === u ? col.c : '#64748b',
+                    color: urgencia === u ? col.c : '#62666E',
                     cursor: 'pointer', fontFamily: 'inherit',
                   }}>{u}</button>
                 )
@@ -337,7 +336,7 @@ export default function BitacoraModal({
         </div>
 
         {error && (
-          <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, color: '#dc2626', fontSize: 13 }}>
+          <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, color: '#C23B3B', fontSize: 13 }}>
             {error}
           </div>
         )}

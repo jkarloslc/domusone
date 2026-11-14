@@ -29,10 +29,10 @@ const TIPOS = ['Familiar', 'Invitado · Pase', 'Green Fee', 'Intercambio'] as co
 type Tipo = typeof TIPOS[number]
 
 const COLOR: Record<Tipo, { bg: string; color: string }> = {
-  'Familiar':        { bg: '#eff6ff', color: '#1d4ed8' },
-  'Invitado · Pase': { bg: '#fffbeb', color: '#d97706' },
-  'Green Fee':       { bg: '#f0fdf4', color: '#16a34a' },
-  'Intercambio':     { bg: '#fdf4ff', color: '#a21caf' },
+  'Familiar':        { bg: '#F4F5F7', color: '#26282D' },
+  'Invitado · Pase': { bg: '#F4F5F7', color: '#B5761A' },
+  'Green Fee':       { bg: '#F4F5F7', color: '#267F56' },
+  'Intercambio':     { bg: '#F4F5F7', color: '#6B4E79' },
 }
 
 function tipoAcomp(a: Acomp): Tipo {
@@ -215,7 +215,7 @@ export default function ReporteGolfAcompanantes() {
         )}
       </div>
 
-      {error && <div style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{error}</div>}
+      {error && <div style={{ color: '#C23B3B', fontSize: 13, marginBottom: 12 }}>{error}</div>}
 
       {buscado && !loading && !error && (
         <>
@@ -227,7 +227,7 @@ export default function ReporteGolfAcompanantes() {
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{pct(porTipo[t])} del total</div>
               </div>
             ))}
-            <div className="card" style={{ flex: '1 1 160px', maxWidth: 240, padding: '12px 16px', borderLeft: '4px solid #0f172a' }}>
+            <div className="card" style={{ flex: '1 1 160px', maxWidth: 240, padding: '12px 16px', borderLeft: '4px solid #1C1D21' }}>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Total acompañantes</div>
               <div style={{ fontSize: 24, fontWeight: 700 }}>{totalGlobal}</div>
             </div>
@@ -257,7 +257,7 @@ export default function ReporteGolfAcompanantes() {
                   </tr>
                 ))}
                 {mesRows.length > 0 && (
-                  <tr style={{ fontWeight: 700, background: 'var(--bg-subtle, #f8fafc)' }}>
+                  <tr style={{ fontWeight: 700, background: 'var(--bg-subtle, #F8F9FA)' }}>
                     <td>Total</td>
                     <td style={th}>{totSalidas}</td>
                     {TIPOS.map(t => <td key={t} style={th}>{totFiltrado[t]}</td>)}
@@ -285,7 +285,7 @@ export default function ReporteGolfAcompanantes() {
                     <td style={{ ...th, fontWeight: 600 }}>{total(v)}</td>
                   </tr>
                 ))}
-                <tr style={{ fontWeight: 700, background: 'var(--bg-subtle, #f8fafc)' }}>
+                <tr style={{ fontWeight: 700, background: 'var(--bg-subtle, #F8F9FA)' }}>
                   <td>Total</td>
                   {TIPOS.map(t => <td key={t} style={th}>{totFiltrado[t]}</td>)}
                   <td style={th}>{total(totFiltrado)}</td>

@@ -26,15 +26,15 @@ interface Movimiento {
 }
 
 const COMBUSTIBLES: { key: TipoComb; label: string; color: string; bg: string }[] = [
-  { key: 'magna',   label: 'Gasolina Magna',   color: '#16a34a', bg: '#f0fdf4' },
-  { key: 'premium', label: 'Gasolina Premium', color: '#d97706', bg: '#fffbeb' },
-  { key: 'diesel',  label: 'Diesel',           color: '#2563eb', bg: '#eff6ff' },
+  { key: 'magna',   label: 'Gasolina Magna',   color: '#267F56', bg: '#F4F5F7' },
+  { key: 'premium', label: 'Gasolina Premium', color: '#B5761A', bg: '#F4F5F7' },
+  { key: 'diesel',  label: 'Diesel',           color: '#1C1D21', bg: '#F4F5F7' },
 ]
 
 const MOV_META: Record<TipoMov, { label: string; color: string; bg: string; signo: 1 | -1 }> = {
-  ENTRADA: { label: 'Entrada', color: '#15803d', bg: '#dcfce7', signo:  1 },
-  SALIDA:  { label: 'Salida',  color: '#dc2626', bg: '#fee2e2', signo: -1 },
-  AJUSTE:  { label: 'Ajuste',  color: '#7c3aed', bg: '#ede9fe', signo:  1 },
+  ENTRADA: { label: 'Entrada', color: '#1F7A50', bg: '#E6E8EB', signo:  1 },
+  SALIDA:  { label: 'Salida',  color: '#C23B3B', bg: '#E6E8EB', signo: -1 },
+  AJUSTE:  { label: 'Ajuste',  color: '#6B4E79', bg: '#E6E8EB', signo:  1 },
 }
 
 const BLANK = {
@@ -184,8 +184,8 @@ export default function CombustiblePage() {
                 <span style={{ fontSize: 13, fontWeight: 500, marginLeft: 4 }}>L</span>
               </div>
               <div style={{ display: 'flex', gap: 14, marginTop: 6 }}>
-                <span style={{ fontSize: 11, color: '#15803d' }}>↑ {entradas.toLocaleString('es-MX', { maximumFractionDigits: 1 })} L</span>
-                <span style={{ fontSize: 11, color: '#dc2626' }}>↓ {salidas.toLocaleString('es-MX',  { maximumFractionDigits: 1 })} L</span>
+                <span style={{ fontSize: 11, color: '#1F7A50' }}>↑ {entradas.toLocaleString('es-MX', { maximumFractionDigits: 1 })} L</span>
+                <span style={{ fontSize: 11, color: '#C23B3B' }}>↓ {salidas.toLocaleString('es-MX',  { maximumFractionDigits: 1 })} L</span>
               </div>
             </button>
           )
@@ -196,7 +196,7 @@ export default function CombustiblePage() {
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
 
         {/* Tab bar */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', padding: '0 20px' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', padding: '0 20px' }}>
           {COMBUSTIBLES.map(c => (
             <button key={c.key} onClick={() => setTab(c.key)}
               style={{
@@ -217,7 +217,7 @@ export default function CombustiblePage() {
         </div>
 
         {/* Filtro tipo */}
-        <div style={{ display: 'flex', gap: 10, padding: '10px 20px', borderBottom: '1px solid #f1f5f9', background: '#fafbfc', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 10, padding: '10px 20px', borderBottom: '1px solid #F4F5F7', background: '#F8F9FA', alignItems: 'center' }}>
           <SlidersHorizontal size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
           <select value={filterMov} onChange={e => setFilterMov(e.target.value as any)}
             className="input" style={{ fontSize: 12, padding: '4px 8px', height: 30, width: 180, flexShrink: 0 }}>
@@ -242,9 +242,9 @@ export default function CombustiblePage() {
           <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Cargando...</div>
         ) : movsConSaldo.length === 0 ? (
           <div style={{ padding: 48, textAlign: 'center' }}>
-            <Fuel size={36} style={{ color: '#cbd5e1', marginBottom: 12 }} />
+            <Fuel size={36} style={{ color: '#C9CCD3', marginBottom: 12 }} />
             <div style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 600 }}>Sin movimientos</div>
-            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: '#7A7E87', marginTop: 4 }}>
               Registra la primera entrada de {combActiva.label}
             </div>
             <button className="btn-primary" style={{ marginTop: 16 }} onClick={() => openForm(tab)}>
@@ -256,13 +256,13 @@ export default function CombustiblePage() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#f8fafc' }}>
+                <tr style={{ background: '#F8F9FA' }}>
                   {['Fecha', 'Tipo', 'Litros', 'Precio / L', 'Monto', 'Referencia', 'Observaciones', 'Saldo (L)'].map(h => (
                     <th key={h} style={{
                       padding: '10px 14px', textAlign: h === 'Litros' || h === 'Precio / L' || h === 'Monto' || h === 'Saldo (L)' ? 'right' : 'left',
                       fontWeight: 600, fontSize: 11, color: 'var(--text-muted)',
                       textTransform: 'uppercase', letterSpacing: '0.05em',
-                      whiteSpace: 'nowrap', borderBottom: '1px solid #e2e8f0',
+                      whiteSpace: 'nowrap', borderBottom: '1px solid #E6E8EB',
                     }}>
                       {h}
                     </th>
@@ -274,21 +274,21 @@ export default function CombustiblePage() {
                   const meta  = MOV_META[m.tipo_mov]
                   const delta = meta.signo * m.litros
                   return (
-                    <tr key={m.id} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? 'white' : '#fafbfc' }}>
+                    <tr key={m.id} style={{ borderBottom: '1px solid #F4F5F7', background: i % 2 === 0 ? 'white' : '#F8F9FA' }}>
                       <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', fontWeight: 500 }}>
                         {fmtFecha(m.fecha)}
                       </td>
                       <td style={{ padding: '10px 14px' }}>
-                        <span style={{ padding: '2px 9px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: meta.bg, color: meta.color }}>
+                        <span style={{ padding: '2px 9px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: meta.color, color: '#fff'}}>
                           {meta.label}
                         </span>
                       </td>
                       <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700 }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
                           {delta > 0
-                            ? <TrendingUp   size={13} style={{ color: '#15803d' }} />
-                            : <TrendingDown size={13} style={{ color: '#dc2626' }} />}
-                          <span style={{ color: delta > 0 ? '#15803d' : '#dc2626' }}>
+                            ? <TrendingUp   size={13} style={{ color: '#1F7A50' }} />
+                            : <TrendingDown size={13} style={{ color: '#C23B3B' }} />}
+                          <span style={{ color: delta > 0 ? '#1F7A50' : '#C23B3B' }}>
                             {delta > 0 ? '+' : ''}{fmt3(delta)}
                           </span>
                         </span>
@@ -333,7 +333,7 @@ export default function CombustiblePage() {
                   onClick={() => setForm(f => ({ ...f, tipo_combustible: c.key }))}
                   style={{
                     flex: 1, padding: '9px 0', borderRadius: 8, border: '2px solid',
-                    borderColor:  form.tipo_combustible === c.key ? c.color : '#e2e8f0',
+                    borderColor:  form.tipo_combustible === c.key ? c.color : '#E6E8EB',
                     background:   form.tipo_combustible === c.key ? c.bg    : 'white',
                     color:        form.tipo_combustible === c.key ? c.color : 'var(--text-muted)',
                     fontWeight: 700, fontSize: 12, cursor: 'pointer',
@@ -353,7 +353,7 @@ export default function CombustiblePage() {
                     onClick={() => setForm(f => ({ ...f, tipo_mov: t }))}
                     style={{
                       flex: 1, padding: '9px 0', borderRadius: 8, border: '2px solid',
-                      borderColor: form.tipo_mov === t ? meta.color : '#e2e8f0',
+                      borderColor: form.tipo_mov === t ? meta.color : '#E6E8EB',
                       background:  form.tipo_mov === t ? meta.bg    : 'white',
                       color:       form.tipo_mov === t ? meta.color : 'var(--text-muted)',
                       fontWeight: 700, fontSize: 12, cursor: 'pointer',
@@ -364,12 +364,12 @@ export default function CombustiblePage() {
               })}
             </div>
 
-            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#2563eb' }}>
+            <div style={{ background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#1C1D21' }}>
               Las salidas se registran automáticamente desde la Bitácora de Uso del módulo de Vehículos y Maquinaria.
             </div>
 
             {form.tipo_mov === 'AJUSTE' && (
-              <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#7c3aed' }}>
+              <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #6B4E79', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#6B4E79' }}>
                 Ajuste: usa litros positivos para aumentar el stock, negativos para reducirlo.
               </div>
             )}
@@ -432,7 +432,7 @@ export default function CombustiblePage() {
             </div>
 
             {error && (
-              <div style={{ background: '#fee2e2', color: '#dc2626', borderRadius: 8, padding: '8px 12px', fontSize: 13 }}>
+              <div style={{ background: '#E6E8EB', color: '#C23B3B', borderRadius: 8, padding: '8px 12px', fontSize: 13 }}>
                 {error}
               </div>
             )}

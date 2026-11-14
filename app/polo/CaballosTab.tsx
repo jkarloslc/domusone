@@ -50,9 +50,9 @@ const fmtNombreArr = (a?: { nombre: string; apellido_paterno: string | null; raz
 }
 
 const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
-  'Activo':        { bg: '#dcfce7', color: '#16a34a' },
-  'Baja temporal': { bg: '#fef9c3', color: '#ca8a04' },
-  'Dado de baja':  { bg: '#fee2e2', color: '#dc2626' },
+  'Activo':        { bg: '#E6E8EB', color: '#267F56' },
+  'Baja temporal': { bg: '#E6E8EB', color: '#A8821A' },
+  'Dado de baja':  { bg: '#E6E8EB', color: '#C23B3B' },
 }
 
 const fmtFecha = (d: string | null) => d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
@@ -144,10 +144,10 @@ export default function CaballosTab() {
   }, [detailItem])
 
   const TIPO_COLOR: Record<string, { bg: string; color: string }> = {
-    'veterinario': { bg: '#ecfeff', color: '#0891b2' },
-    'herraje':     { bg: '#fffbeb', color: '#b45309' },
-    'alimento':    { bg: '#f0fdf4', color: '#16a34a' },
-    'otro':        { bg: '#f8fafc', color: '#64748b' },
+    'veterinario': { bg: '#F4F5F7', color: '#32789A' },
+    'herraje':     { bg: '#F4F5F7', color: '#96600F' },
+    'alimento':    { bg: '#F4F5F7', color: '#267F56' },
+    'otro':        { bg: '#F8F9FA', color: '#62666E' },
   }
   const fmt$ = (v: number | null) => v != null ? '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'
 
@@ -226,15 +226,15 @@ export default function CaballosTab() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(120px, 1fr))', gap: 10, marginBottom: 18 }}>
         {[
-          { label: 'Total', value: total, color: '#1d4ed8', bg: '#eff6ff' },
-          { label: 'Activos', value: kpis.activos, color: '#15803d', bg: '#f0fdf4' },
-          { label: 'Baja temporal', value: kpis.bajasTemporales, color: '#ca8a04', bg: '#fefce8' },
-          { label: 'Dados de baja', value: kpis.dadosBaja, color: '#dc2626', bg: '#fef2f2' },
-          { label: 'Sin caballeriza', value: kpis.sinCaballeriza, color: '#7c3aed', bg: '#f5f3ff' },
+          { label: 'Total', value: total, color: '#26282D', bg: '#F4F5F7' },
+          { label: 'Activos', value: kpis.activos, color: '#1F7A50', bg: '#F4F5F7' },
+          { label: 'Baja temporal', value: kpis.bajasTemporales, color: '#A8821A', bg: '#F4F5F7' },
+          { label: 'Dados de baja', value: kpis.dadosBaja, color: '#C23B3B', bg: '#F4F5F7' },
+          { label: 'Sin caballeriza', value: kpis.sinCaballeriza, color: '#6B4E79', bg: '#F4F5F7' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '12px 14px', background: k.bg }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>{k.label}</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: k.color }}>{k.value}</div>
+          <div key={k.label} className="card" style={{ padding: '12px 14px', background: '#fff' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{k.value}</div>
           </div>
         ))}
       </div>
@@ -273,7 +273,7 @@ export default function CaballosTab() {
             ) : items.length === 0 ? (
               <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Sin registros</td></tr>
             ) : items.map((c, i) => {
-              const sc = STATUS_COLOR[c.status] ?? { bg: '#f8fafc', color: '#64748b' }
+              const sc = STATUS_COLOR[c.status] ?? { bg: '#F8F9FA', color: '#62666E' }
               return (
                 <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                   <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)' }}>{c.nombre}</td>
@@ -281,18 +281,18 @@ export default function CaballosTab() {
                     {[c.raza, c.color].filter(Boolean).join(' · ') || '—'}
                   </td>
                   <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>{fmtNombreArr(c.cat_arrendatarios)}</td>
-                  <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: 'var(--gold-light)', fontWeight: 600 }}>
+                  <td style={{ padding: '10px 14px', fontVariantNumeric: 'tabular-nums', color: 'var(--gold-light)', fontWeight: 600 }}>
                     {c.cat_caballerizas?.clave ?? '—'}
                   </td>
                   <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12 }}>{fmtFecha(c.fecha_ingreso)}</td>
                   <td style={{ padding: '10px 14px' }}>
-                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: sc.bg, color: sc.color }}>{c.status}</span>
+                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: sc.color, color: '#fff'}}>{c.status}</span>
                   </td>
                   <td style={{ padding: '10px 14px' }}>
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                       <button className="btn-ghost" style={{ padding: '4px 8px' }} onClick={() => setDetailItem(c)}><Eye size={13} /></button>
                       {puedeEscribir && <button className="btn-ghost" style={{ padding: '4px 8px' }} onClick={() => openEdit(c)}><Edit2 size={13} /></button>}
-                      {puedeEliminar && <button className="btn-ghost" style={{ padding: '4px 8px', color: '#dc2626' }} disabled={deleting === c.id} onClick={() => handleDelete(c.id)}><Trash2 size={13} /></button>}
+                      {puedeEliminar && <button className="btn-ghost" style={{ padding: '4px 8px', color: '#C23B3B' }} disabled={deleting === c.id} onClick={() => handleDelete(c.id)}><Trash2 size={13} /></button>}
                     </div>
                   </td>
                 </tr>
@@ -355,12 +355,12 @@ export default function CaballosTab() {
                   </thead>
                   <tbody>
                     {detailServicios.map((s: any, i: number) => {
-                      const tc = TIPO_COLOR[s.tipo] ?? { bg: '#f8fafc', color: '#64748b' }
+                      const tc = TIPO_COLOR[s.tipo] ?? { bg: '#F8F9FA', color: '#62666E' }
                       return (
                         <tr key={s.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                           <td style={{ padding: '7px 10px', whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{fmtFecha(s.fecha)}</td>
                           <td style={{ padding: '7px 10px' }}>
-                            <span style={{ background: tc.bg, color: tc.color, borderRadius: 4, padding: '2px 6px', fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                            <span style={{ background: tc.color, color: '#fff', borderRadius: 4, padding: '2px 6px', fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>
                               {s.cat_tipos_servicio?.nombre ?? s.tipo}
                             </span>
                           </td>
@@ -453,7 +453,7 @@ export default function CaballosTab() {
               <textarea className="input" rows={2} value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} style={{ resize: 'vertical', width: '100%' }} />
             </div>
 
-            {err && <div style={{ gridColumn: 'span 2', fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{err}</div>}
+            {err && <div style={{ gridColumn: 'span 2', fontSize: 12, color: '#C23B3B', background: '#F4F5F7', padding: '8px 12px', borderRadius: 6 }}>{err}</div>}
           </div>
         </ModalShell>
       )}

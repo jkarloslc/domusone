@@ -853,7 +853,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           padding: '8px 10px', background: 'rgba(255,255,255,0.07)', borderRadius: 8,
         }}>
           <div style={{ width: 30, height: 30, borderRadius: '50%', background: acento, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <User size={14} style={{ color: '#1a1f3e' }} />
+            <User size={14} style={{ color: '#1C1D21' }} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -884,7 +884,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
             padding: '7px 10px', background: 'none', border: 'none', cursor: 'pointer',
             color: 'rgba(255,255,255,0.45)', fontSize: 12, borderRadius: 6, transition: 'all 0.15s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; e.currentTarget.style.color = '#f87171' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; e.currentTarget.style.color = '#E08A8A' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)' }}
         >
           <LogOut size={13} />

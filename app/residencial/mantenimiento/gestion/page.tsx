@@ -17,17 +17,17 @@ const MESES       = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct'
 const DIAS        = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']
 
 const STATUS_STYLE: Record<string, { color: string; bg: string; border: string }> = {
-  'Pendiente':  { color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-  'En Proceso': { color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
-  'Completada': { color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
-  'Omitida':    { color: '#94a3b8', bg: '#f8fafc', border: '#e2e8f0' },
+  'Pendiente':  { color: '#B5761A', bg: '#F4F5F7', border: '#E6E8EB' },
+  'En Proceso': { color: '#1C1D21', bg: '#F4F5F7', border: '#C9CCD3' },
+  'Completada': { color: '#1F7A50', bg: '#F4F5F7', border: '#E6E8EB' },
+  'Omitida':    { color: '#7A7E87', bg: '#F8F9FA', border: '#E6E8EB' },
 }
 
 const Badge = ({ text }: { text: string }) => {
   const s = STATUS_STYLE[text] ?? STATUS_STYLE['Pendiente']
   return (
     <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-      color: s.color, background: s.bg, border: `1px solid ${s.border}`, whiteSpace: 'nowrap' }}>
+      color: '#fff', background: s.color, border: `1px solid ${s.color}`, whiteSpace: 'nowrap' }}>
       {text}
     </span>
   )
@@ -342,7 +342,7 @@ export default function MantenimientoPage() {
                 .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
             </select>
             {(filterCuad || filterArea || filterAC) && (
-              <button className="btn-ghost" style={{ color: '#dc2626' }}
+              <button className="btn-ghost" style={{ color: '#C23B3B' }}
                 onClick={() => { setFilterCuad(''); setFilterArea(''); setFilterAC('') }}>
                 <X size={13} /> Limpiar
               </button>
@@ -368,16 +368,16 @@ export default function MantenimientoPage() {
               <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
                 {[
                   { label: 'Programas',   value: programas.length, color: 'var(--blue)', bg: 'var(--blue-pale)' },
-                  { label: 'Registradas', value: registradasTotal, color: '#374151',     bg: '#f1f5f9' },
-                  { label: 'Completadas', value: completadasTotal, color: '#15803d',     bg: '#f0fdf4' },
+                  { label: 'Registradas', value: registradasTotal, color: '#33363C',     bg: '#F4F5F7' },
+                  { label: 'Completadas', value: completadasTotal, color: '#1F7A50',     bg: '#F4F5F7' },
                   { label: 'Cumplimiento',value: `${cumplimientoTotal}%`,
-                    color: cumplimientoTotal >= 80 ? '#15803d' : cumplimientoTotal >= 50 ? '#d97706' : '#dc2626', bg: '#fff' },
+                    color: cumplimientoTotal >= 80 ? '#1F7A50' : cumplimientoTotal >= 50 ? '#B5761A' : '#C23B3B', bg: '#fff' },
                 ].map(k => (
-                  <div key={k.label} className="card" style={{ padding: '12px 18px', background: k.bg, minWidth: 120 }}>
-                    <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>
+                  <div key={k.label} className="card" style={{ padding: '12px 18px', background: '#fff', minWidth: 120 }}>
+                    <div style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)',  }}>
                       {k.value}
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{k.label}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
                   </div>
                 ))}
               </div>
@@ -414,7 +414,7 @@ export default function MantenimientoPage() {
                       return (
                         <tr key={prog.id} style={rowColor ? {
                           borderLeft:  `5px solid ${rowColor}`,
-                          background:  `${rowColor}12`,
+                          background:  '#F8F9FA',
                         } : undefined}>
                           <td>
                             <div style={{ fontWeight: 600, fontSize: 13 }}>{prog.nombre}</div>
@@ -475,7 +475,7 @@ export default function MantenimientoPage() {
                                 </button>
                               )}
                               {canDelete() && (
-                                <button className="btn-ghost" style={{ padding: '4px 6px', color: '#dc2626' }}
+                                <button className="btn-ghost" style={{ padding: '4px 6px', color: '#C23B3B' }}
                                   onClick={() => handleDelete(prog.id)} title="Eliminar">
                                   <Trash2 size={13} />
                                 </button>
@@ -605,7 +605,7 @@ function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap
         </div>
       ) : activos.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)',
-          background: '#f8fafc', borderRadius: 12, border: '1px dashed #e2e8f0' }}>
+          background: '#F8F9FA', borderRadius: 12, border: '1px dashed #E6E8EB' }}>
           Sin programas activos esta semana.
         </div>
       ) : (
@@ -630,7 +630,7 @@ function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap
                 const isExpanded = multi && !esRutinarioMulti && !!expanded[prog.id]
                 return (
                   <Fragment key={prog.id}>
-                    <tr style={rowColor ? { borderLeft: `5px solid ${rowColor}`, background: `${rowColor}0a` } : undefined}>
+                    <tr style={rowColor ? { borderLeft: `5px solid ${rowColor}`, background: '#F8F9FA' } : undefined}>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           {multi && !esRutinarioMulti && (
@@ -650,7 +650,7 @@ function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap
                         </div>
                       </td>
                       {celdas.map((c, i) => {
-                        if (!c) return <td key={i} style={{ textAlign: 'center', color: '#e2e8f0' }}>·</td>
+                        if (!c) return <td key={i} style={{ textAlign: 'center', color: '#E6E8EB' }}>·</td>
                         const key = `${prog.id}-${i}`
                         if (esRutinarioMulti) {
                           const rc = STATUS_STYLE[c.ronda.status] ?? STATUS_STYLE['Pendiente']
@@ -661,21 +661,21 @@ function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap
                                   <button onClick={() => handle(key, () => onRegistrarRonda(prog, c.fecha, { status: 'Completada' }))}
                                     disabled={busy === key} title="Marcar ronda completada (todas las áreas de este programa)"
                                     style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
-                                      border: '1.5px solid #bbf7d0', background: '#f0fdf4', color: '#15803d', cursor: 'pointer',
+                                      border: '1.5px solid #1F7A50', background: '#1F7A50', color: '#fff', cursor: 'pointer',
                                       opacity: busy === key ? 0.5 : 1 }}>
                                     ✓ Ronda
                                   </button>
                                 ) : (
                                   <span style={{ fontSize: 10.5, fontWeight: 600, padding: '3px 6px', borderRadius: 5,
-                                    background: rc.bg, color: rc.color, border: `1.5px solid ${rc.border}` }}>
+                                    background: rc.color, color: '#fff', border: `1.5px solid ${rc.color}` }}>
                                     {c.ronda.status}
                                   </span>
                                 )}
                                 <button onClick={() => setExcepcion({ prog, fecha: c.fecha })}
                                   title="Reportar excepción / hallazgo de la ronda"
-                                  style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, border: '1px solid #fde68a',
-                                    background: c.ronda.hallazgo ? '#fffbeb' : 'transparent', color: '#d97706', cursor: 'pointer' }}>
-                                  {c.ronda.hallazgo ? '⚠ Hallazgo' : '⚠ Reportar'}
+                                  style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, border: '1px solid #B5761A',
+                                    background: c.ronda.hallazgo ? '#B5761A' : 'transparent', color: '#fff', cursor: 'pointer' }}>
+                                  {c.ronda.hallazgo ? 'Hallazgo' : 'Reportar'}
                                 </button>
                                 {c.ronda.id_ot_fk && <span style={{ fontSize: 9, color: 'var(--blue)' }}>OT ✓</span>}
                               </div>
@@ -694,7 +694,7 @@ function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap
                                   onChange={e => handle(key, () => onCambiarStatus(prog, cell.areaId, c.fecha, e.target.value))}
                                   style={{
                                     fontSize: 10.5, fontWeight: 600, padding: '3px 4px', borderRadius: 5,
-                                    background: sc.bg, color: sc.color, border: `1.5px solid ${sc.border}`,
+                                    background: sc.color, color: '#fff', border: `1.5px solid ${sc.color}`,
                                     cursor: 'pointer', outline: 'none', opacity: busy === key ? 0.5 : 1,
                                   }}>
                                   <option value="Pendiente">Pendiente</option>
@@ -707,8 +707,8 @@ function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap
                                 ) : (
                                   <button onClick={() => handle(key, () => onGenerarOT(prog, cell.areaId, c.fecha))} disabled={busy === key}
                                     title="Crear Orden de Trabajo"
-                                    style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, border: '1px solid #bfdbfe',
-                                      background: '#eff6ff', color: 'var(--blue)', cursor: 'pointer' }}>
+                                    style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, border: '1px solid #C9CCD3',
+                                      background: '#F4F5F7', color: 'var(--blue)', cursor: 'pointer' }}>
                                     + OT
                                   </button>
                                 )}
@@ -723,14 +723,14 @@ function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap
                           <td key={i} style={{ textAlign: 'center' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
                               <span style={{ fontSize: 11, fontWeight: 700,
-                                color: allDone ? '#15803d' : completas > 0 ? '#d97706' : 'var(--text-muted)' }}>
+                                color: allDone ? '#1F7A50' : completas > 0 ? '#B5761A' : 'var(--text-muted)' }}>
                                 {completas}/{total}
                               </span>
                               {!allDone && (
                                 <button onClick={() => handle(key, () => onCambiarStatusBulk(prog, areaSlots, c.fecha, 'Completada'))}
                                   disabled={busy === key} title="Marcar todas las áreas como completadas"
-                                  style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, border: '1px solid #bbf7d0',
-                                    background: '#f0fdf4', color: '#15803d', cursor: 'pointer' }}>
+                                  style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, border: '1px solid #1F7A50',
+                                    background: '#1F7A50', color: '#fff', cursor: 'pointer' }}>
                                   ✓ Todas
                                 </button>
                               )}
@@ -740,12 +740,12 @@ function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap
                       })}
                     </tr>
                     {isExpanded && areaSlots.map(areaId => (
-                      <tr key={`${prog.id}-${areaId}`} style={{ background: '#f8fafc' }}>
+                      <tr key={`${prog.id}-${areaId}`} style={{ background: '#F8F9FA' }}>
                         <td style={{ paddingLeft: 30, fontSize: 11.5, color: 'var(--text-secondary)' }}>
                           {acMap[areaId as number] ?? '—'}
                         </td>
                         {celdas.map((c, i) => {
-                          if (!c) return <td key={i} style={{ textAlign: 'center', color: '#e2e8f0' }}>·</td>
+                          if (!c) return <td key={i} style={{ textAlign: 'center', color: '#E6E8EB' }}>·</td>
                           const cell = c.celdas.find((x: any) => x.areaId === areaId)
                           if (!cell) return <td key={i} />
                           const key = `${prog.id}-${areaId}-${i}`
@@ -759,7 +759,7 @@ function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap
                                   onChange={e => handle(key, () => onCambiarStatus(prog, areaId, c.fecha, e.target.value))}
                                   style={{
                                     fontSize: 10, fontWeight: 600, padding: '2px 4px', borderRadius: 5,
-                                    background: sc.bg, color: sc.color, border: `1.5px solid ${sc.border}`,
+                                    background: sc.color, color: '#fff', border: `1.5px solid ${sc.color}`,
                                     cursor: 'pointer', outline: 'none', opacity: busy === key ? 0.5 : 1,
                                   }}>
                                   <option value="Pendiente">Pendiente</option>
@@ -772,8 +772,8 @@ function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap
                                 ) : (
                                   <button onClick={() => handle(key, () => onGenerarOT(prog, areaId, c.fecha))} disabled={busy === key}
                                     title="Crear Orden de Trabajo"
-                                    style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, border: '1px solid #bfdbfe',
-                                      background: '#eff6ff', color: 'var(--blue)', cursor: 'pointer' }}>
+                                    style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, border: '1px solid #C9CCD3',
+                                      background: '#F4F5F7', color: 'var(--blue)', cursor: 'pointer' }}>
                                     + OT
                                   </button>
                                 )}
@@ -849,8 +849,8 @@ function ExcepcionModal({ prog, fecha, onClose, onGuardar }: {
   return (
     <ModalShell modulo="mantenimiento" titulo="Reportar excepción de ronda" onClose={onClose} maxWidth={440}>
       <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca',
-          borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+        {error && <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B',
+          borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>{error}</div>}
         <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>
           <strong>{prog.nombre}</strong> · {fmtDate(fecha)}
         </div>
@@ -859,14 +859,14 @@ function ExcepcionModal({ prog, fecha, onClose, onGuardar }: {
           <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
             <button type="button" onClick={() => setSeRealizo(true)}
               style={{ flex: 1, padding: '7px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                border: seRealizo ? '1.5px solid #15803d' : '1px solid var(--border)',
-                background: seRealizo ? '#f0fdf4' : '#fff', color: seRealizo ? '#15803d' : 'var(--text-secondary)' }}>
+                border: seRealizo ? '1.5px solid #1F7A50' : '1px solid var(--border)',
+                background: seRealizo ? '#F4F5F7' : '#fff', color: seRealizo ? '#1F7A50' : 'var(--text-secondary)' }}>
               Sí, con hallazgo
             </button>
             <button type="button" onClick={() => setSeRealizo(false)}
               style={{ flex: 1, padding: '7px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                border: !seRealizo ? '1.5px solid #dc2626' : '1px solid var(--border)',
-                background: !seRealizo ? '#fef2f2' : '#fff', color: !seRealizo ? '#dc2626' : 'var(--text-secondary)' }}>
+                border: !seRealizo ? '1.5px solid #C23B3B' : '1px solid var(--border)',
+                background: !seRealizo ? '#F4F5F7' : '#fff', color: !seRealizo ? '#C23B3B' : 'var(--text-secondary)' }}>
               No, omitida
             </button>
           </div>
@@ -894,7 +894,7 @@ function ExcepcionModal({ prog, fecha, onClose, onGuardar }: {
           </div>}
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '12px 20px', borderTop: '1px solid #e2e8f0' }}>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '12px 20px', borderTop: '1px solid #E6E8EB' }}>
         <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
         <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleGuardar} disabled={saving || uploading}>
           {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11} />}
@@ -1027,8 +1027,8 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, areaToCuadr
     >
         <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10,
           overflowY: 'auto', maxHeight: 'calc(90vh - 110px)' }}>
-          {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca',
-            borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+          {error && <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B',
+            borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>{error}</div>}
           <div>
             <label className="label" style={{ fontSize: 11 }}>Nombre *</label>
             <input className="input" style={{ fontSize: 13 }} value={form.nombre} onChange={setF('nombre')} placeholder="ej. Barrido y soplado St. Andrews" />
@@ -1076,9 +1076,9 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, areaToCuadr
               <button type="button"
                 onClick={() => setForm(f => ({ ...f, criticidad: 'critico', areasComunes: f.areasComunes.filter(id => (acCritById[id] ?? 'rutinario') === 'critico') }))}
                 style={{ flex: 1, padding: '7px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                  border: form.criticidad === 'critico' ? '1.5px solid #dc2626' : '1px solid var(--border)',
-                  background: form.criticidad === 'critico' ? '#fef2f2' : '#fff',
-                  color: form.criticidad === 'critico' ? '#dc2626' : 'var(--text-secondary)' }}>
+                  border: form.criticidad === 'critico' ? '1.5px solid #C23B3B' : '1px solid var(--border)',
+                  background: form.criticidad === 'critico' ? '#F4F5F7' : '#fff',
+                  color: form.criticidad === 'critico' ? '#C23B3B' : 'var(--text-secondary)' }}>
                 Crítico — check-off individual
               </button>
             </div>
@@ -1086,8 +1086,8 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, areaToCuadr
               Un programa solo puede tener áreas de un mismo tipo (no se pueden mezclar).
             </div>
             {depuradasAlAbrir > 0 && (
-              <div style={{ padding: '6px 10px', background: '#fffbeb', border: '1px solid #fde68a',
-                borderRadius: 6, fontSize: 11, color: '#92400e', marginBottom: 8 }}>
+              <div style={{ padding: '6px 10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C',
+                borderRadius: 6, fontSize: 11, color: '#7A4B0C', marginBottom: 8 }}>
                 Este programa tenía {depuradasAlAbrir} área{depuradasAlAbrir === 1 ? '' : 's'} de criticidad distinta — se quitó del set para mantenerlo homogéneo. Revisa la selección.
               </div>
             )}
@@ -1145,7 +1145,7 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, areaToCuadr
               <input className="input" type="date" style={{ fontSize: 13 }} value={form.fecha_fin} onChange={setF('fecha_fin')} />
             </div>
           </div>
-          <div style={{ padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe',
+          <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #C9CCD3',
             borderRadius: 6, fontSize: 12, color: 'var(--blue)' }}>
             {previewFechas.length > 0
               ? <>Próximas ocurrencias: {previewFechas.map(d => fmtDate(d)).join(' · ')}{form.frecuencia === 'Diario' ? ' …' : ''}</>
@@ -1174,7 +1174,7 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, areaToCuadr
               style={{ fontSize: 13, resize: 'vertical' }} />
           </div>
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '8px 10px',
-            background: '#f8fafc', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer' }}>
+            background: '#F8F9FA', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer' }}>
             <input type="checkbox" checked={form.genera_ot_automatica} style={{ marginTop: 2 }}
               onChange={e => setForm(f => ({ ...f, genera_ot_automatica: e.target.checked }))} />
             <span style={{ fontSize: 12 }}>
@@ -1184,7 +1184,7 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, areaToCuadr
           </label>
         </div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end',
-          padding: '12px 20px', borderTop: '1px solid #e2e8f0' }}>
+          padding: '12px 20px', borderTop: '1px solid #E6E8EB' }}>
           <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
           <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleSave} disabled={saving}>
             {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11} />}
@@ -1296,7 +1296,7 @@ function ProgramaDetail({ prog, cuadMap, areaMap, acMap, acCritMap, onClose, onE
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                 {localProg.areasComunes.map((id: number) => (
-                  <span key={id} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: 'var(--text-secondary)' }}>
+                  <span key={id} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#F4F5F7', color: 'var(--text-secondary)' }}>
                     {acMap[id] ?? `#${id}`}
                   </span>
                 ))}
@@ -1304,7 +1304,7 @@ function ProgramaDetail({ prog, cuadMap, areaMap, acMap, acCritMap, onClose, onE
             </div>
           )}
           {prog.descripcion && (
-            <p style={{ background: '#f8fafc', borderLeft: '3px solid var(--blue)', padding: '8px 12px', fontSize: 13, marginBottom: 16 }}>
+            <p style={{ background: '#F8F9FA', borderLeft: '3px solid var(--blue)', padding: '8px 12px', fontSize: 13, marginBottom: 16 }}>
               {prog.descripcion}
             </p>
           )}
@@ -1335,23 +1335,23 @@ function ProgramaDetail({ prog, cuadMap, areaMap, acMap, acCritMap, onClose, onE
                 const key = fechaISO
                 return (
                   <div key={fechaISO} style={{ display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '6px 10px', border: '1px solid #f1f5f9', borderRadius: 6 }}>
+                    padding: '6px 10px', border: '1px solid #F4F5F7', borderRadius: 6 }}>
                     <span style={{ fontSize: 12.5, minWidth: 110 }}>{fmtDate(fecha)}</span>
                     {rStatus === 'Pendiente' ? (
                       <button onClick={() => handle(key, () => rondaYReflejar(fecha, { status: 'Completada' }))} disabled={busy === key}
                         style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 6,
-                          border: '1.5px solid #bbf7d0', background: '#f0fdf4', color: '#15803d', cursor: 'pointer' }}>
+                          border: '1.5px solid #1F7A50', background: '#1F7A50', color: '#fff', cursor: 'pointer' }}>
                         ✓ Ronda ({areaSlots.length} áreas)
                       </button>
                     ) : (
                       <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 6,
-                        background: rc.bg, color: rc.color, border: `1px solid ${rc.border}` }}>
+                        background: rc.color, color: '#fff', border: `1px solid ${rc.color}` }}>
                         {rStatus} · {areaSlots.length} áreas
                       </span>
                     )}
-                    <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', color: '#d97706' }}
+                    <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', color: '#B5761A' }}
                       onClick={() => setExcepcionFecha(fecha)}>
-                      {rondaEjec?.hallazgo ? '⚠ Hallazgo' : '⚠ Reportar'}
+                      {rondaEjec?.hallazgo ? 'Hallazgo' : 'Reportar'}
                     </button>
                     {rondaEjec?.id_ot_fk && <span style={{ fontSize: 11, color: 'var(--blue)' }}>OT ✓</span>}
                   </div>
@@ -1364,12 +1364,12 @@ function ProgramaDetail({ prog, cuadMap, areaMap, acMap, acCritMap, onClose, onE
                 const key = fechaISO
                 return (
                   <div key={fechaISO} style={{ display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '6px 10px', border: '1px solid #f1f5f9', borderRadius: 6 }}>
+                    padding: '6px 10px', border: '1px solid #F4F5F7', borderRadius: 6 }}>
                     <span style={{ fontSize: 12.5, minWidth: 110 }}>{fmtDate(fecha)}</span>
                     <select value={cell.status} disabled={busy === key}
                       onChange={e => handle(key, () => cambiarYReflejar(cell.areaId, fecha, e.target.value))}
                       style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 6,
-                        background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, cursor: 'pointer' }}>
+                        background: sc.color, color: '#fff', border: `1px solid ${sc.color}`, cursor: 'pointer' }}>
                       <option value="Pendiente">Pendiente</option>
                       <option value="En Proceso">En Proceso</option>
                       <option value="Completada">Completada</option>
@@ -1392,10 +1392,10 @@ function ProgramaDetail({ prog, cuadMap, areaMap, acMap, acCritMap, onClose, onE
                 const key = fechaISO
                 return (
                   <div key={fechaISO} style={{ display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '6px 10px', border: '1px solid #f1f5f9', borderRadius: 6 }}>
+                    padding: '6px 10px', border: '1px solid #F4F5F7', borderRadius: 6 }}>
                     <span style={{ fontSize: 12.5, minWidth: 110 }}>{fmtDate(fecha)}</span>
                     <span style={{ fontSize: 11, fontWeight: 700,
-                      color: completasFecha === cells.length ? '#15803d' : completasFecha > 0 ? '#d97706' : 'var(--text-muted)' }}>
+                      color: completasFecha === cells.length ? '#1F7A50' : completasFecha > 0 ? '#B5761A' : 'var(--text-muted)' }}>
                       {completasFecha}/{cells.length} áreas completadas
                     </span>
                     {completasFecha < cells.length && (
@@ -1409,7 +1409,7 @@ function ProgramaDetail({ prog, cuadMap, areaMap, acMap, acCritMap, onClose, onE
               }
 
               return (
-                <div key={fechaISO} style={{ border: '1px solid #f1f5f9', borderRadius: 6, padding: '6px 10px' }}>
+                <div key={fechaISO} style={{ border: '1px solid #F4F5F7', borderRadius: 6, padding: '6px 10px' }}>
                   <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 4 }}>{fmtDate(fecha)}</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {cells.map(cell => {
@@ -1421,7 +1421,7 @@ function ProgramaDetail({ prog, cuadMap, areaMap, acMap, acCritMap, onClose, onE
                           <select value={cell.status} disabled={busy === key}
                             onChange={e => handle(key, () => cambiarYReflejar(cell.areaId, fecha, e.target.value))}
                             style={{ fontSize: 10.5, fontWeight: 600, padding: '2px 6px', borderRadius: 5,
-                              background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, cursor: 'pointer' }}>
+                              background: sc.color, color: '#fff', border: `1px solid ${sc.color}`, cursor: 'pointer' }}>
                             <option value="Pendiente">Pendiente</option>
                             <option value="En Proceso">En Proceso</option>
                             <option value="Completada">Completada</option>
@@ -1464,7 +1464,7 @@ function ProgramaDetail({ prog, cuadMap, areaMap, acMap, acCritMap, onClose, onE
           )}
         </div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center',
-          padding: '10px 16px', borderTop: '1px solid #e2e8f0' }}>
+          padding: '10px 16px', borderTop: '1px solid #E6E8EB' }}>
           <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
             {completadas}/{total} ejecuciones completadas (histórico registrado)
           </div>
@@ -1540,7 +1540,7 @@ function ColaboradorPopup({ value, onChange }: {
         <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999,
           background: '#fff', border: '1px solid var(--border)', borderRadius: 8,
           boxShadow: '0 8px 24px rgba(0,0,0,.12)', marginTop: 4, overflow: 'hidden' }}>
-          <div style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ padding: '8px 10px', borderBottom: '1px solid #F4F5F7', display: 'flex', alignItems: 'center', gap: 6 }}>
             <Search size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
             <input autoFocus value={query} onChange={e => setQuery(e.target.value)}
               placeholder="Buscar colaborador…"
@@ -1556,7 +1556,7 @@ function ColaboradorPopup({ value, onChange }: {
                 <button key={c.id} type="button"
                   onClick={() => { onChange({ id: c.id, nombre }); setOpen(false); setQuery('') }}
                   style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 12px',
-                    fontSize: 13, background: selected ? '#eff6ff' : 'transparent',
+                    fontSize: 13, background: selected ? '#F4F5F7' : 'transparent',
                     color: selected ? 'var(--blue)' : 'var(--text)',
                     border: 'none', cursor: 'pointer' }}>
                   {nombre}

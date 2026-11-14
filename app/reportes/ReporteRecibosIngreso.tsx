@@ -22,7 +22,7 @@ type Totales = { subtotal: number; iva: number; total: number; n: number }
 type CentroGrupo = { id: number; nombre: string; recibos: ReciboFiscal[] } & Totales
 type AgrGrupo = { clave: string; nombre: string; centros: CentroGrupo[] } & Totales
 
-const STATUS_COLOR: Record<string, string> = { Confirmado: '#15803d', Borrador: '#d97706', Cancelado: '#dc2626' }
+const STATUS_COLOR: Record<string, string> = { Confirmado: '#1F7A50', Borrador: '#B5761A', Cancelado: '#C23B3B' }
 
 const sumar = (rs: ReciboFiscal[]): Totales => ({
   subtotal: rs.reduce((s, r) => s + r.subtotal, 0),
@@ -201,9 +201,9 @@ export default function ReporteRecibosIngreso() {
 
       {/* KPIs */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-        {kpi('Subtotal', fmt(general.subtotal), '#2563eb')}
-        {kpi('IVA', fmt(general.iva), '#d97706')}
-        {kpi('Total', fmt(general.total), '#059669')}
+        {kpi('Subtotal', fmt(general.subtotal), '#1C1D21')}
+        {kpi('IVA', fmt(general.iva), '#B5761A')}
+        {kpi('Total', fmt(general.total), '#267F56')}
         {kpi('Recibos', String(general.n))}
       </div>
 
@@ -241,7 +241,7 @@ export default function ReporteRecibosIngreso() {
           <div id="reporte-print-area" className="card" style={{ overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }} id="reporte-table">
               <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                <tr style={{ background: '#F8F9FA', borderBottom: '2px solid #E6E8EB' }}>
                   {['Agrupador / Centro / Folio', 'Fecha', 'Descripción', 'Subtotal', 'IVA', 'Total'].map((h, i) => (
                     <th key={h} style={th(i)}>{h}</th>
                   ))}
@@ -253,7 +253,7 @@ export default function ReporteRecibosIngreso() {
                   const openA = expanded.has(keyA)
                   return (
                     <Fragment key={keyA}>
-                      <tr onClick={() => toggle(keyA)} style={{ background: '#f1f5f9', cursor: 'pointer', borderBottom: '1px solid #e2e8f0' }}>
+                      <tr onClick={() => toggle(keyA)} style={{ background: '#F4F5F7', cursor: 'pointer', borderBottom: '1px solid #E6E8EB' }}>
                         <td style={{ padding: '10px 14px', fontWeight: 700 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             {openA ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -266,7 +266,7 @@ export default function ReporteRecibosIngreso() {
                         <td colSpan={2} />
                         <td style={num(a.subtotal, { fontWeight: 700 })}>{fmt(a.subtotal)}</td>
                         <td style={num(a.iva, { fontWeight: 700 })}>{fmt(a.iva)}</td>
-                        <td style={num(a.total, { fontWeight: 700, color: '#059669' })}>{fmt(a.total)}</td>
+                        <td style={num(a.total, { fontWeight: 700, color: '#267F56' })}>{fmt(a.total)}</td>
                       </tr>
 
                       {openA && a.centros.map(c => {
@@ -274,10 +274,10 @@ export default function ReporteRecibosIngreso() {
                         const openC = expanded.has(keyC)
                         return (
                           <Fragment key={keyC}>
-                            <tr onClick={() => toggle(keyC)} style={{ background: '#fafbfc', cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}>
+                            <tr onClick={() => toggle(keyC)} style={{ background: '#F8F9FA', cursor: 'pointer', borderBottom: '1px solid #F4F5F7' }}>
                               <td style={{ padding: '9px 14px 9px 36px', fontWeight: 600 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  {openC ? <ChevronDown size={12} style={{ color: '#64748b' }} /> : <ChevronRight size={12} style={{ color: '#64748b' }} />}
+                                  {openC ? <ChevronDown size={12} style={{ color: '#62666E' }} /> : <ChevronRight size={12} style={{ color: '#62666E' }} />}
                                   <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{c.nombre}</span>
                                   <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>({c.n})</span>
                                 </div>
@@ -285,15 +285,15 @@ export default function ReporteRecibosIngreso() {
                               <td colSpan={2} />
                               <td style={num(c.subtotal, { fontWeight: 600, fontSize: 12 })}>{fmt(c.subtotal)}</td>
                               <td style={num(c.iva, { fontWeight: 600, fontSize: 12 })}>{fmt(c.iva)}</td>
-                              <td style={num(c.total, { fontWeight: 600, fontSize: 12, color: '#059669' })}>{fmt(c.total)}</td>
+                              <td style={num(c.total, { fontWeight: 600, fontSize: 12, color: '#267F56' })}>{fmt(c.total)}</td>
                             </tr>
 
                             {openC && c.recibos.map(r => (
-                              <tr key={`r-${r.id}`} style={{ borderBottom: '1px solid #f8fafc' }}>
-                                <td style={{ padding: '7px 14px 7px 62px', fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)' }}>
+                              <tr key={`r-${r.id}`} style={{ borderBottom: '1px solid #F8F9FA' }}>
+                                <td style={{ padding: '7px 14px 7px 62px', fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)' }}>
                                   {r.folio ?? `ING-${r.id}`}
                                   {r.status !== 'Confirmado' && (
-                                    <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, color: STATUS_COLOR[r.status] ?? '#64748b' }}>{r.status}</span>
+                                    <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, color: STATUS_COLOR[r.status] ?? '#62666E' }}>{r.status}</span>
                                   )}
                                 </td>
                                 <td style={{ padding: '7px 14px', fontSize: 12, color: 'var(--text-secondary)' }}>{fmtF(r.fecha)}</td>
@@ -312,13 +312,13 @@ export default function ReporteRecibosIngreso() {
                   )
                 })}
 
-                <tr style={{ background: '#0f172a', borderTop: '2px solid #334155' }}>
-                  <td colSpan={3} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#f8fafc' }}>
+                <tr style={{ background: '#1C1D21', borderTop: '2px solid #33363C' }}>
+                  <td colSpan={3} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#F8F9FA' }}>
                     Total General · {general.n} recibos
                   </td>
-                  <td style={num(general.subtotal, { fontWeight: 700, color: '#f8fafc' })}>{fmt(general.subtotal)}</td>
-                  <td style={num(general.iva, { fontWeight: 700, color: '#f8fafc' })}>{fmt(general.iva)}</td>
-                  <td style={num(general.total, { fontWeight: 700, fontSize: 14, color: '#6ee7b7' })}>{fmt(general.total)}</td>
+                  <td style={num(general.subtotal, { fontWeight: 700, color: '#F8F9FA' })}>{fmt(general.subtotal)}</td>
+                  <td style={num(general.iva, { fontWeight: 700, color: '#F8F9FA' })}>{fmt(general.iva)}</td>
+                  <td style={num(general.total, { fontWeight: 700, fontSize: 14, color: '#7CC9A3' })}>{fmt(general.total)}</td>
                 </tr>
               </tbody>
             </table>

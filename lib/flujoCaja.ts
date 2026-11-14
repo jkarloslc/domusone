@@ -16,10 +16,10 @@ export type Concepto = {
 
 export const GRUPOS: { id: GrupoId; nombre: string; color: string }[] = [
   { id: 'nom',  nombre: 'Nómina (NS + NQ + PPE)', color: '#2563A8' },
-  { id: 'imss', nombre: 'IMSS',                   color: '#0E8A6B' },
-  { id: 'imp',  nombre: 'Impuestos',               color: '#E0A028' },
-  { id: 'prov', nombre: 'Proveedores',              color: '#C2437A' },
-  { id: 'agu',  nombre: "Aguinaldos (AG + AGQ)",    color: '#6B4FA8' },
+  { id: 'imss', nombre: 'IMSS',                   color: '#267F56' },
+  { id: 'imp',  nombre: 'Impuestos',               color: '#B5761A' },
+  { id: 'prov', nombre: 'Proveedores',              color: '#B34D72' },
+  { id: 'agu',  nombre: "Aguinaldos (AG + AGQ)",    color: '#6B4E79' },
   { id: 'ops',  nombre: 'CFE + combustible',        color: '#8A8F98' },
 ]
 export const GCOLOR: Record<GrupoId, string> = Object.fromEntries(GRUPOS.map(g => [g.id, g.color])) as Record<GrupoId, string>

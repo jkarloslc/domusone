@@ -595,34 +595,34 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
       <title>Recibo ${recibo?.folio}</title>
       <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: Arial, sans-serif; font-size: 12px; color: #1e293b; padding: 32px; }
-        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
+        body { font-family: Arial, sans-serif; font-size: 12px; color: #26282D; padding: 32px; }
+        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #1C1D21; margin-bottom: 18px; }
         .org-header img { height: 52px; max-width: 160px; object-fit: contain; }
-        .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
-        .org-sub  { font-size: 11px; color: #64748b; }
-        .doc-title { font-size: 14px; font-weight: 600; color: #0D4F80; margin-bottom: 2px; }
+        .org-nombre { font-size: 18px; font-weight: 700; color: #1C1D21; margin: 0 0 2px; }
+        .org-sub  { font-size: 11px; color: #62666E; }
+        .doc-title { font-size: 14px; font-weight: 600; color: #1C1D21; margin-bottom: 2px; }
         .section   { margin-bottom: 18px; }
-        .section-title { font-size: 10px; font-weight: 700; color: #0D4F80; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; border-bottom: 1px solid #bfdbfe; padding-bottom: 4px; }
+        .section-title { font-size: 10px; font-weight: 700; color: #1C1D21; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; border-bottom: 1px solid #C9CCD3; padding-bottom: 4px; }
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; }
-        .info-item label { font-size: 10px; color: #64748b; display: block; margin-bottom: 1px; }
+        .info-item label { font-size: 10px; color: #62666E; display: block; margin-bottom: 1px; }
         .info-item span  { font-size: 12px; font-weight: 500; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-        th { padding: 7px 10px; background: #f1f5f9; color: #0D4F80; font-size: 10px; text-align: left; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid #e2e8f0; }
-        td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
+        th { padding: 7px 10px; background: #F4F5F7; color: #1C1D21; font-size: 10px; text-align: left; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid #E6E8EB; }
+        td { padding: 8px 10px; border-bottom: 1px solid #E6E8EB; font-size: 12px; }
         tr:last-child td { border-bottom: none; }
         .right { text-align: right; }
         .totales { margin-left: auto; width: 260px; }
         .totales-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12px; }
-        .totales-row.total { font-weight: 700; font-size: 15px; border-top: 2px solid #0D4F80; padding-top: 8px; margin-top: 4px; color: #0D4F80; }
-        .pago-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
-        .pago-label { font-size: 10px; color: #0D4F80; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
-        .pago-val   { font-size: 14px; font-weight: 700; color: #0D4F80; }
-        .parcial-box { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 11px; color: #92400e; }
+        .totales-row.total { font-weight: 700; font-size: 15px; border-top: 2px solid #1C1D21; padding-top: 8px; margin-top: 4px; color: #1C1D21; }
+        .pago-box { background: #F4F5F7; border: 1px solid #C9CCD3; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+        .pago-label { font-size: 10px; color: #1C1D21; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+        .pago-val   { font-size: 14px; font-weight: 700; color: #1C1D21; }
+        .parcial-box { background: #F4F5F7; border: 1px solid #E6E8EB; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 11px; color: #7A4B0C; }
         .firma-area { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 48px; }
-        .firma-line { border-top: 1px solid #1e293b; padding-top: 4px; font-size: 10px; color: #64748b; text-align: center; }
+        .firma-line { border-top: 1px solid #26282D; padding-top: 4px; font-size: 10px; color: #62666E; text-align: center; }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
-        .badge-fact { background: #eff6ff; color: #1d4ed8; }
-        .footer { margin-top: 32px; font-size: 10px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+        .badge-fact { background: #F4F5F7; color: #26282D; }
+        .footer { margin-top: 32px; font-size: 10px; color: #7A7E87; text-align: center; border-top: 1px solid #E6E8EB; padding-top: 12px; }
         @page { margin: 1.2cm; }
       </style></head><body>
       ${printRef.current.innerHTML}
@@ -641,47 +641,47 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     return (
     <>
       <ModalShell modulo="golf-carritos" titulo="Cobro registrado" subtitulo={`Folio: ${recibo.folio}`} maxWidth={680} icono={CheckCircle} onClose={onSaved} footer={<>
-        <div style={{ fontSize: 12, color: '#64748b' }}>
+        <div style={{ fontSize: 12, color: '#62666E' }}>
           {cuotasSelec.length} cuota{cuotasSelec.length !== 1 ? 's' : ''} cobrada{cuotasSelec.length !== 1 ? 's' : ''} · {fmt$(montoParcial)}
-          {esParcial && <span style={{ marginLeft: 6, color: '#d97706', fontWeight: 600 }}>PAGO PARCIAL</span>}
-          {idVentaPos && <span style={{ marginLeft: 8, color: '#15803d', fontWeight: 600 }}>Ticket POS #{String(idVentaPos).padStart(6, '0')}</span>}
+          {esParcial && <span style={{ marginLeft: 6, color: '#B5761A', fontWeight: 600 }}>PAGO PARCIAL</span>}
+          {idVentaPos && <span style={{ marginLeft: 8, color: '#1F7A50', fontWeight: 600 }}>Ticket POS #{String(idVentaPos).padStart(6, '0')}</span>}
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-          <button onClick={onSaved} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cerrar</button>
+          <button onClick={onSaved} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', cursor: 'pointer' }}>Cerrar</button>
           <button onClick={generarTicketPOS} disabled={generandoTicket}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #a7f3d0', borderRadius: 8, background: '#ecfdf5', color: '#047857', cursor: 'pointer', opacity: generandoTicket ? 0.6 : 1 }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #E6E8EB', borderRadius: 8, background: '#F4F5F7', color: '#1F7A50', cursor: 'pointer', opacity: generandoTicket ? 0.6 : 1 }}>
             {generandoTicket ? <Loader size={14} className="animate-spin" /> : <Receipt size={14} />}
             {idVentaPos ? 'Reimprimir Ticket POS' : 'Generar Ticket POS'}
           </button>
           <button onClick={handlePrint}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#1e3a5f', color: '#fff', cursor: 'pointer' }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#26282D', color: '#fff', cursor: 'pointer' }}>
             <Printer size={14} /> Imprimir Recibo
           </button>
         </div>
       </>}>
         {/* ¿Cargar Pases para Invitados? */}
         {!pasesOmitidos && pasesSugeridos.length > 0 && (
-          <div style={{ marginBottom: 18, padding: '14px 16px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10 }}>
+          <div style={{ marginBottom: 18, padding: '14px 16px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <Gift size={16} color="#d97706" />
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#92400e' }}>¿Cargar Pases para Invitados?</span>
+              <Gift size={16} color="#62666E" />
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#7A4B0C' }}>¿Cargar Pases para Invitados?</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {pasesSugeridos.map((s, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '8px 12px', background: '#fff', border: '1px solid #fde68a', borderRadius: 8 }}>
-                  <div style={{ fontSize: 12, color: '#78716c' }}>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '8px 12px', background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8 }}>
+                  <div style={{ fontSize: 12, color: '#62666E' }}>
                     {s.label}<br />
-                    <strong style={{ color: '#92400e', fontSize: 13 }}>{s.cantidad} pase{s.cantidad !== 1 ? 's' : ''}</strong>
+                    <strong style={{ color: '#7A4B0C', fontSize: 13 }}>{s.cantidad} pase{s.cantidad !== 1 ? 's' : ''}</strong>
                   </div>
                   <button onClick={() => setPaseAasignar(s)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#fff', background: '#d97706', border: 'none', borderRadius: 8, padding: '7px 12px', cursor: 'pointer', flexShrink: 0 }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#fff', background: '#B5761A', border: 'none', borderRadius: 8, padding: '7px 12px', cursor: 'pointer', flexShrink: 0 }}>
                     <Gift size={12} /> Cargar pases
                   </button>
                 </div>
               ))}
             </div>
             <button onClick={() => setPasesOmitidos(true)}
-              style={{ marginTop: 8, fontSize: 11, color: '#92400e', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+              style={{ marginTop: 8, fontSize: 11, color: '#7A4B0C', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
               Ahora no
             </button>
           </div>
@@ -693,7 +693,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
               <div className="org-header">
                 {orgLogo
                   ? <img src={orgLogo} style={{ height: 52, maxWidth: 160, objectFit: 'contain' }} alt="" />
-                  : <div style={{ width: 52, height: 52, background: '#e2e8f0', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: '#94a3b8' }}>🏢</div>
+                  : <div style={{ width: 52, height: 52, background: '#E6E8EB', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: '#7A7E87' }}></div>
                 }
                 <div>
                   <div className="org-nombre">{orgNombre}</div>
@@ -701,8 +701,8 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                 </div>
                 <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
                   <div className="doc-title">Recibo de Cobro</div>
-                  <div style={{ fontSize: 11, color: '#64748b' }}>Folio: <strong>{recibo.folio}</strong></div>
-                  <div style={{ fontSize: 11, color: '#64748b' }}>{fechaFmt(fechaPago)}</div>
+                  <div style={{ fontSize: 11, color: '#62666E' }}>Folio: <strong>{recibo.folio}</strong></div>
+                  <div style={{ fontSize: 11, color: '#62666E' }}>{fechaFmt(fechaPago)}</div>
                 </div>
               </div>
 
@@ -778,7 +778,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                   {esParcial && (
                     <div className="totales-row">
                       <span>Saldo pendiente</span>
-                      <span style={{ color: '#d97706' }}>{fmt$(saldoQuedara)}</span>
+                      <span style={{ color: '#B5761A' }}>{fmt$(saldoQuedara)}</span>
                     </div>
                   )}
                   <div className="totales-row total">
@@ -791,24 +791,24 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
               <div className="pago-box" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div className="pago-label">Formas de pago</div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: '#15803d' }}>{authUser?.nombre ?? '—'}</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#1F7A50' }}>{authUser?.nombre ?? '—'}</div>
                 </div>
                 {pagosLineas.filter(p => p.id_forma_pago_fk > 0 && parseFloat(p.monto) > 0).map((p, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                     <span><strong>{p.forma_nombre}</strong>{p.referencia ? ` · Ref: ${p.referencia}` : ''}</span>
-                    <span style={{ fontWeight: 700, color: '#15803d' }}>{fmt$(parseFloat(p.monto))}</span>
+                    <span style={{ fontWeight: 700, color: '#1F7A50' }}>{fmt$(parseFloat(p.monto))}</span>
                   </div>
                 ))}
               </div>
 
               {ticketErr && (
-                <div style={{ marginBottom: 14, padding: '10px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+                <div style={{ marginBottom: 14, padding: '10px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 12, color: '#C23B3B' }}>
                   {ticketErr}
                 </div>
               )}
 
               {observaciones && (
-                <div style={{ fontSize: 11, color: '#64748b', padding: '8px 12px', background: '#f8fafc', borderRadius: 6, marginBottom: 16 }}>
+                <div style={{ fontSize: 11, color: '#62666E', padding: '8px 12px', background: '#F8F9FA', borderRadius: 6, marginBottom: 16 }}>
                   <strong>Observaciones:</strong> {observaciones}
                 </div>
               )}
@@ -849,18 +849,18 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   return (
     <ModalShell modulo="golf-carritos" titulo="Cobrar Cuotas" subtitulo={nombreSocio} maxWidth={520} icono={Receipt} onClose={onClose} footer={<>
       <div>
-        <div style={{ fontSize: 11, color: '#64748b' }}>{cuotasSelec.length} cuota{cuotasSelec.length !== 1 ? 's' : ''} · subtotal {fmt$(subtotalBruto)}</div>
-        {cargoAdicional > 0 && <div style={{ fontSize: 11, color: '#059669' }}>+ cargo adicional {fmt$(cargoAdicional)}</div>}
-        {descExtra > 0 && <div style={{ fontSize: 11, color: '#dc2626' }}>– descuento {fmt$(descExtra)}</div>}
-        <div style={{ fontSize: 22, fontWeight: 700, color: esParcial ? '#d97706' : '#059669' }}>
+        <div style={{ fontSize: 11, color: '#62666E' }}>{cuotasSelec.length} cuota{cuotasSelec.length !== 1 ? 's' : ''} · subtotal {fmt$(subtotalBruto)}</div>
+        {cargoAdicional > 0 && <div style={{ fontSize: 11, color: '#267F56' }}>+ cargo adicional {fmt$(cargoAdicional)}</div>}
+        {descExtra > 0 && <div style={{ fontSize: 11, color: '#C23B3B' }}>– descuento {fmt$(descExtra)}</div>}
+        <div style={{ fontSize: 22, fontWeight: 700, color: esParcial ? '#B5761A' : '#267F56' }}>
           {fmt$(montoParcial)}
-          {esParcial && <span style={{ fontSize: 12, marginLeft: 6, color: '#64748b' }}>de {fmt$(totalCobro)}</span>}
+          {esParcial && <span style={{ fontSize: 12, marginLeft: 6, color: '#62666E' }}>de {fmt$(totalCobro)}</span>}
         </div>
       </div>
       <div style={{ display: 'flex', gap: 10, marginLeft: 'auto' }}>
-        <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cancelar</button>
+        <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#4A4D54', cursor: 'pointer' }}>Cancelar</button>
         <button onClick={handleSave} disabled={saving || cuotasSelec.length === 0 || pagosValidos.length === 0}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: esParcial ? '#d97706' : '#059669', color: '#fff', cursor: 'pointer', opacity: (saving || cuotasSelec.length === 0 || pagosValidos.length === 0) ? 0.6 : 1 }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: esParcial ? '#B5761A' : '#267F56', color: '#fff', cursor: 'pointer', opacity: (saving || cuotasSelec.length === 0 || pagosValidos.length === 0) ? 0.6 : 1 }}>
           {saving ? <Loader size={14} className="animate-spin" /> : <Receipt size={14} />}
           {esParcial ? 'Registrar pago parcial' : 'Registrar cobro'}
         </button>
@@ -868,18 +868,18 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     </>}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {loadingInit ? (
-            <div style={{ textAlign: 'center', padding: 32, color: '#94a3b8' }}><Loader size={20} className="animate-spin" /></div>
+            <div style={{ textAlign: 'center', padding: 32, color: '#7A7E87' }}><Loader size={20} className="animate-spin" /></div>
           ) : (
             <>
               {/* Lista de cuotas con checkboxes */}
-              <div style={{ border: '1px solid #e2e8f0', borderRadius: 10 }}>
-                <div style={{ padding: '10px 14px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>
+              <div style={{ border: '1px solid #E6E8EB', borderRadius: 10 }}>
+                <div style={{ padding: '10px 14px', background: '#F8F9FA', borderBottom: '1px solid #E6E8EB', borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54' }}>
                     {cuotasSelec.length} / {cuotas.length} cuota{cuotas.length !== 1 ? 's' : ''} seleccionada{cuotasSelec.length !== 1 ? 's' : ''}
                   </span>
                   <button
                     onClick={() => setSeleccionadas(seleccionadas.size === cuotas.length ? new Set() : new Set(cuotas.map(c => c.id)))}
-                    style={{ fontSize: 11, color: '#7c3aed', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                    style={{ fontSize: 11, color: '#6B4E79', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
                     {seleccionadas.size === cuotas.length ? 'Desmarcar todo' : 'Marcar todo'}
                   </button>
                 </div>
@@ -892,25 +892,25 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                     return (
                       <div key={c.id}
                         onClick={() => toggleCuota(c.id)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: i < cuotas.length - 1 ? '1px solid #f1f5f9' : 'none', background: sel ? (venc ? '#fff5f5' : '#f0fdf4') : '#fafafa', cursor: 'pointer', transition: 'background 0.1s' }}>
+                        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: i < cuotas.length - 1 ? '1px solid #F4F5F7' : 'none', background: sel ? '#F4F5F7' : '#fafafa', cursor: 'pointer', transition: 'background 0.1s' }}>
                         {/* checkbox visual */}
-                        <div style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${sel ? '#059669' : '#cbd5e1'}`, background: sel ? '#059669' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <div style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${sel ? '#267F56' : '#C9CCD3'}`, background: sel ? '#267F56' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                           {sel && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                         </div>
                         <div style={{ flex: 1, opacity: sel ? 1 : 0.45 }}>
-                          <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>{c.concepto}</div>
-                          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <div style={{ fontSize: 13, fontWeight: 500, color: '#26282D' }}>{c.concepto}</div>
+                          <div style={{ fontSize: 11, color: '#7A7E87', marginTop: 1, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                             {c.periodo && <span>{c.periodo}</span>}
                             {c.fecha_vencimiento && (
-                              <span style={{ color: venc ? '#dc2626' : '#94a3b8' }}>
-                                {venc ? '⚠ Vencida' : 'Vence'} {new Date(c.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                              <span style={{ color: venc ? '#C23B3B' : '#7A7E87' }}>
+                                {venc ? 'Vencida' : 'Vence'} {new Date(c.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
                               </span>
                             )}
-                            <span style={{ padding: '1px 6px', borderRadius: 20, background: '#f1f5f9', color: '#475569', fontSize: 10, fontWeight: 600 }}>
+                            <span style={{ padding: '1px 6px', borderRadius: 20, background: '#F4F5F7', color: '#4A4D54', fontSize: 10, fontWeight: 600 }}>
                               {TIPOS_LABEL[c.tipo] ?? c.tipo}
                             </span>
                             {isParcialCuota && (
-                              <span style={{ padding: '1px 6px', borderRadius: 20, background: '#fffbeb', color: '#d97706', fontSize: 10, fontWeight: 600 }}>
+                              <span style={{ padding: '1px 6px', borderRadius: 20, background: '#B5761A', color: '#fff', fontSize: 10, fontWeight: 600 }}>
                                 Pago Parcial
                               </span>
                             )}
@@ -918,12 +918,12 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                         </div>
                         <div style={{ textAlign: 'right', flexShrink: 0, opacity: sel ? 1 : 0.4 }}>
                           {isParcialCuota && c.monto_final !== displaySaldo && (
-                            <div style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through' }}>{fmt$(c.monto_final)}</div>
+                            <div style={{ fontSize: 10, color: '#7A7E87', textDecoration: 'line-through' }}>{fmt$(c.monto_final)}</div>
                           )}
                           {!isParcialCuota && c.descuento > 0 && (
-                            <div style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through' }}>{fmt$(c.monto_original)}</div>
+                            <div style={{ fontSize: 10, color: '#7A7E87', textDecoration: 'line-through' }}>{fmt$(c.monto_original)}</div>
                           )}
-                          <div style={{ fontSize: 14, fontWeight: 700, color: venc ? '#dc2626' : (isParcialCuota ? '#d97706' : '#1e293b') }}>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: venc ? '#C23B3B' : (isParcialCuota ? '#B5761A' : '#26282D') }}>
                             {fmt$(displaySaldo)}
                           </div>
                         </div>
@@ -936,22 +936,22 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
               {/* Cargo adicional + Descuento adicional */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Cargo adicional ($)</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>Cargo adicional ($)</label>
                   <input
-                    style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
+                    style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
                     type="number" min="0" step="0.01"
                     value={cargoAdicionalStr}
                     onChange={e => setCargoAdicionalStr(e.target.value)}
                     placeholder="0.00"
                   />
                   {cargoAdicional > 0 && (
-                    <div style={{ fontSize: 11, color: '#059669', marginTop: 3 }}>+ {fmt$(cargoAdicional)} sobre el total</div>
+                    <div style={{ fontSize: 11, color: '#267F56', marginTop: 3 }}>+ {fmt$(cargoAdicional)} sobre el total</div>
                   )}
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Descuento adicional ($)</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>Descuento adicional ($)</label>
                   <input
-                    style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
+                    style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
                     type="number" min="0" step="0.01"
                     value={descuentoExtra}
                     onChange={e => setDescuentoExtra(e.target.value)}
@@ -960,30 +960,30 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                     placeholder="0.00"
                   />
                   {descExtra > 0 && (
-                    <div style={{ fontSize: 11, color: '#dc2626', marginTop: 3 }}>– {fmt$(descExtra)} sobre el total</div>
+                    <div style={{ fontSize: 11, color: '#C23B3B', marginTop: 3 }}>– {fmt$(descExtra)} sobre el total</div>
                   )}
                 </div>
               </div>
 
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Fecha de pago</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>Fecha de pago</label>
                 <input
-                  style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
+                  style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
                   type="date" value={fechaPago} onChange={e => setFechaPago(e.target.value)}
                 />
               </div>
 
               {/* ── Cobro parcial ───────────────────────────────── */}
-              <div style={{ border: `1px solid ${parcialHabilitado ? '#fde68a' : '#e2e8f0'}`, borderRadius: 10, overflow: 'hidden', transition: 'border-color 0.2s' }}>
+              <div style={{ border: '1px solid #E6E8EB', borderRadius: 10, overflow: 'hidden', transition: 'border-color 0.2s' }}>
                 <div
                   onClick={toggleParcial}
-                  style={{ padding: '10px 14px', background: parcialHabilitado ? '#fffbeb' : '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', borderBottom: parcialHabilitado ? '1px solid #fde68a' : 'none' }}>
+                  style={{ padding: '10px 14px', background: parcialHabilitado ? '#F4F5F7' : '#F8F9FA', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', borderBottom: parcialHabilitado ? '1px solid #E6E8EB' : 'none' }}>
                   <div>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: parcialHabilitado ? '#92400e' : '#475569' }}>Cobro parcial</span>
-                    {!parcialHabilitado && <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 8 }}>Cobrar menos del total adeudado</span>}
+                    <span style={{ fontSize: 12, fontWeight: 700, color: parcialHabilitado ? '#7A4B0C' : '#4A4D54' }}>Cobro parcial</span>
+                    {!parcialHabilitado && <span style={{ fontSize: 11, color: '#7A7E87', marginLeft: 8 }}>Cobrar menos del total adeudado</span>}
                   </div>
                   {/* Toggle switch */}
-                  <div style={{ width: 40, height: 22, borderRadius: 11, background: parcialHabilitado ? '#d97706' : '#cbd5e1', position: 'relative', flexShrink: 0, transition: 'background 0.2s' }}>
+                  <div style={{ width: 40, height: 22, borderRadius: 11, background: parcialHabilitado ? '#B5761A' : '#C9CCD3', position: 'relative', flexShrink: 0, transition: 'background 0.2s' }}>
                     <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: parcialHabilitado ? 20 : 2, transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
                   </div>
                 </div>
@@ -992,11 +992,11 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                   <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
                       <div style={{ flex: 1 }}>
-                        <label style={{ fontSize: 11, color: '#92400e', marginBottom: 4, display: 'block', fontWeight: 600 }}>Monto a cobrar ahora</label>
+                        <label style={{ fontSize: 11, color: '#7A4B0C', marginBottom: 4, display: 'block', fontWeight: 600 }}>Monto a cobrar ahora</label>
                         <input
                           // eslint-disable-next-line jsx-a11y/no-autofocus
                           autoFocus
-                          style={{ width: '100%', padding: '8px 12px', fontSize: 14, fontWeight: 700, border: '1px solid #fbbf24', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }}
+                          style={{ width: '100%', padding: '8px 12px', fontSize: 14, fontWeight: 700, border: '1px solid #C9CCD3', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }}
                           type="number" min="0.01" step="0.01" max={totalCobro}
                           value={montoParcialStr}
                           onChange={e => setMontoParcialStr(e.target.value)}
@@ -1005,27 +1005,27 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                       </div>
                       <button
                         onClick={() => setMontoParcialStr(totalCobro.toFixed(2))}
-                        style={{ padding: '8px 10px', fontSize: 11, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#64748b', cursor: 'pointer', flexShrink: 0, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                        style={{ padding: '8px 10px', fontSize: 11, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#62666E', cursor: 'pointer', flexShrink: 0, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
                         Total
                       </button>
                     </div>
                     {esParcial ? (
-                      <div style={{ padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
-                        ⚠ Saldo pendiente: <strong>{fmt$(saldoQuedara)}</strong> · Las cuotas quedarán en PAGO PARCIAL
+                      <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 8, fontSize: 12, color: '#7A4B0C' }}>
+                        Saldo pendiente: <strong>{fmt$(saldoQuedara)}</strong> · Las cuotas quedarán en PAGO PARCIAL
                       </div>
                     ) : montoParcialStr ? (
-                      <div style={{ fontSize: 11, color: '#15803d' }}>✓ Cubre el total adeudado</div>
+                      <div style={{ fontSize: 11, color: '#1F7A50' }}>✓ Cubre el total adeudado</div>
                     ) : null}
                   </div>
                 )}
               </div>
 
               {/* Formas de pago — multi-línea */}
-              <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden' }}>
-                <div style={{ padding: '8px 12px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Formas de pago *</span>
+              <div style={{ border: '1px solid #E6E8EB', borderRadius: 10, overflow: 'hidden' }}>
+                <div style={{ padding: '8px 12px', background: '#F8F9FA', borderBottom: '1px solid #E6E8EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#4A4D54' }}>Formas de pago *</span>
                   <button onClick={agregarPagoLinea}
-                    style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#059669', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#267F56', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}>
                     <Plus size={12} /> Agregar
                   </button>
                 </div>
@@ -1033,7 +1033,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                   {pagosLineas.map((p, i) => (
                     <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 1fr 28px', gap: 6, alignItems: 'center' }}>
                       <select
-                        style={{ padding: '7px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 7, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
+                        style={{ padding: '7px 8px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 7, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
                         value={p.id_forma_pago_fk}
                         onChange={e => {
                           const sel = formasPago.find(f => f.id === Number(e.target.value))
@@ -1043,30 +1043,30 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                         {formasPago.filter(f => !(restringeCondonar && norm(f.nombre).includes('condonac'))).map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
                       </select>
                       <input
-                        style={{ padding: '7px 8px', fontSize: 13, fontWeight: 600, border: '1px solid #e2e8f0', borderRadius: 7, background: '#fff', fontFamily: 'inherit', outline: 'none', textAlign: 'right' }}
+                        style={{ padding: '7px 8px', fontSize: 13, fontWeight: 600, border: '1px solid #E6E8EB', borderRadius: 7, background: '#fff', fontFamily: 'inherit', outline: 'none', textAlign: 'right' }}
                         type="number" min="0" step="0.01"
                         value={p.monto}
                         placeholder={i === 0 && pagosLineas.length === 1 ? fmt$(montoParcial) : '0.00'}
                         onChange={e => setPagoLinea(i, { monto: e.target.value })}
                       />
                       <input
-                        style={{ padding: '7px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 7, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
+                        style={{ padding: '7px 8px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 7, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
                         value={p.referencia} placeholder="Referencia…"
                         onChange={e => setPagoLinea(i, { referencia: e.target.value })}
                       />
                       <button onClick={() => removerPagoLinea(i)}
-                        style={{ padding: '4px', background: 'none', border: 'none', cursor: pagosLineas.length > 1 ? 'pointer' : 'default', color: pagosLineas.length > 1 ? '#dc2626' : '#cbd5e1' }}>
+                        style={{ padding: '4px', background: 'none', border: 'none', cursor: pagosLineas.length > 1 ? 'pointer' : 'default', color: pagosLineas.length > 1 ? '#C23B3B' : '#C9CCD3' }}>
                         <Trash2 size={13} />
                       </button>
                     </div>
                   ))}
                 </div>
                 {/* Balance */}
-                <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', background: Math.abs(balancePagos) < 0.01 ? '#f0fdf4' : '#fef2f2', display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                  <span style={{ color: '#64748b' }}>
+                <div style={{ padding: '8px 12px', borderTop: '1px solid #F4F5F7', background: '#F4F5F7', display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                  <span style={{ color: '#62666E' }}>
                     {Math.abs(balancePagos) < 0.01 ? '✓ Suma cuadrada' : balancePagos > 0 ? `Falta distribuir` : `Exceso`}
                   </span>
-                  <span style={{ fontWeight: 700, color: Math.abs(balancePagos) < 0.01 ? '#15803d' : '#dc2626' }}>
+                  <span style={{ fontWeight: 700, color: Math.abs(balancePagos) < 0.01 ? '#1F7A50' : '#C23B3B' }}>
                     {Math.abs(balancePagos) < 0.01 ? fmt$(montoParcial) : `${fmt$(Math.abs(balancePagos))}`}
                   </span>
                 </div>
@@ -1074,14 +1074,14 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
 
               {/* Observaciones */}
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Observaciones</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }}>Observaciones</label>
                 <textarea
-                  style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', height: 52, resize: 'vertical' }}
+                  style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', height: 52, resize: 'vertical' }}
                   value={observaciones} onChange={e => setObservaciones(e.target.value)}
                 />
               </div>
 
-              {error && <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>{error}</div>}
+              {error && <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 13, color: '#C23B3B' }}>{error}</div>}
             </>
           )}
       </div>

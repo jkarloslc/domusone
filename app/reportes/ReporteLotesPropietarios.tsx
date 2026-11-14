@@ -5,7 +5,7 @@ import { RefreshCw, Filter } from 'lucide-react'
 import { PrintBar } from './utils'
 
 const STATUS_COLOR: Record<string, string> = {
-  Vendido: '#15803d', Libre: '#1d4ed8', Bloqueado: '#dc2626',
+  Vendido: '#1F7A50', Libre: '#26282D', Bloqueado: '#C23B3B',
 }
 
 export default function ReporteLotesPropietarios() {
@@ -111,8 +111,8 @@ export default function ReporteLotesPropietarios() {
       </div>
 
       {queryError && (
-        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8,
-          padding: '10px 14px', marginBottom: 12, fontSize: 12, color: '#dc2626' }}>
+        <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8,
+          padding: '10px 14px', marginBottom: 12, fontSize: 12, color: '#C23B3B' }}>
           Error al cargar datos: {queryError}
         </div>
       )}
@@ -174,20 +174,20 @@ export default function ReporteLotesPropietarios() {
                     {l?.status_lote ? (
                       <span style={{ fontSize: 11, fontWeight: 600,
                         padding: '2px 8px', borderRadius: 20,
-                        color: stColor, background: stColor + '15', border: `1px solid ${stColor}40` }}>
+                        color: '#fff', background: stColor, border: `1px solid ${stColor}` }}>
                         {l.status_lote}
                       </span>
                     ) : '—'}
                   </td>
                   <td style={{ fontWeight: 500 }}>{nombre}</td>
-                  <td style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-secondary)' }}>
+                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--text-secondary)' }}>
                     {p?.rfc ?? '—'}
                   </td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                     {p?.tipo_persona ?? '—'}
                   </td>
                   <td style={{ textAlign: 'center', fontSize: 12,
-                    color: r.es_principal ? '#15803d' : 'var(--text-muted)',
+                    color: r.es_principal ? '#1F7A50' : 'var(--text-muted)',
                     fontWeight: r.es_principal ? 600 : 400 }}>
                     {r.es_principal ? '✓ Sí' : 'No'}
                   </td>

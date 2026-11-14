@@ -393,11 +393,11 @@ export default function ReporteComposicionIngresoCuotas() {
   const cartera = useMemo(() => {
     const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
     const BANDAS_ANT = [
-      { key: 'porVencer', label: 'Por vencer', color: '#2563eb', test: (d: number) => d <= 0 },
-      { key: 'b30',       label: '1 a 30',     color: '#ca8a04', test: (d: number) => d >= 1 && d <= 30 },
-      { key: 'b60',       label: '31 a 60',    color: '#ea580c', test: (d: number) => d >= 31 && d <= 60 },
-      { key: 'b90',       label: '61 a 90',    color: '#dc2626', test: (d: number) => d >= 61 && d <= 90 },
-      { key: 'mas90',     label: 'Más de 90',  color: '#7f1d1d', test: (d: number) => d > 90 },
+      { key: 'porVencer', label: 'Por vencer', color: '#1C1D21', test: (d: number) => d <= 0 },
+      { key: 'b30',       label: '1 a 30',     color: '#A8821A', test: (d: number) => d >= 1 && d <= 30 },
+      { key: 'b60',       label: '31 a 60',    color: '#C8642A', test: (d: number) => d >= 31 && d <= 60 },
+      { key: 'b90',       label: '61 a 90',    color: '#C23B3B', test: (d: number) => d >= 61 && d <= 90 },
+      { key: 'mas90',     label: 'Más de 90',  color: '#8C2A2A', test: (d: number) => d > 90 },
     ] as const
 
     const porLinea = new Map<string, Record<string, number> & { total: number; n: number }>()
@@ -558,7 +558,7 @@ export default function ReporteComposicionIngresoCuotas() {
       {/* ── Filtros ─────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div>
-          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Año</label>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', display: 'block', marginBottom: 4 }}>Año</label>
           <select className="select" value={anio} onChange={e => setAnio(Number(e.target.value))}
             style={{ minWidth: 100 }}>
             {anios.map(a => <option key={a} value={a}>{a}</option>)}
@@ -566,7 +566,7 @@ export default function ReporteComposicionIngresoCuotas() {
         </div>
 
         <div>
-          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Del mes</label>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', display: 'block', marginBottom: 4 }}>Del mes</label>
           <select className="select" value={mesDesde}
             onChange={e => { setMesDesde(e.target.value); if (e.target.value > mesHasta) setMesHasta(e.target.value) }}
             style={{ minWidth: 100 }}>
@@ -575,7 +575,7 @@ export default function ReporteComposicionIngresoCuotas() {
         </div>
 
         <div>
-          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Al mes</label>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', display: 'block', marginBottom: 4 }}>Al mes</label>
           <select className="select" value={mesHasta}
             onChange={e => { setMesHasta(e.target.value); if (e.target.value < mesDesde) setMesDesde(e.target.value) }}
             style={{ minWidth: 100 }}>
@@ -584,16 +584,16 @@ export default function ReporteComposicionIngresoCuotas() {
         </div>
 
         <div>
-          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Módulos</label>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', display: 'block', marginBottom: 4 }}>Módulos</label>
           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
             {MODULOS_CUOTAS.map(m => {
               const on = modulosSel.includes(m)
               return (
                 <button key={m} onClick={() => toggleModulo(m)}
                   style={{ padding: '7px 12px', fontSize: 12, fontWeight: on ? 700 : 500, borderRadius: 8, cursor: 'pointer',
-                    border: '1px solid', borderColor: on ? MODULO_META[m].color : '#e2e8f0',
-                    background: on ? MODULO_META[m].color + '18' : '#fff',
-                    color: on ? MODULO_META[m].color : '#64748b' }}>
+                    border: '1px solid', borderColor: on ? MODULO_META[m].color : '#E6E8EB',
+                    background: on ? '#E6E8EB' : '#fff',
+                    color: on ? MODULO_META[m].color : '#62666E' }}>
                   {MODULO_META[m].label}
                 </button>
               )
@@ -602,7 +602,7 @@ export default function ReporteComposicionIngresoCuotas() {
         </div>
 
         <div>
-          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Línea / Sección</label>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#4A4D54', display: 'block', marginBottom: 4 }}>Línea / Sección</label>
           <select className="select" value={lineaSel} onChange={e => setLineaSel(e.target.value)} style={{ minWidth: 190 }}>
             <option value="">Todas</option>
             {/* Un grupo por módulo: con cuatro módulos prendidos la lista plana
@@ -621,12 +621,12 @@ export default function ReporteComposicionIngresoCuotas() {
         {/* Los dos switches van juntos y al final: modifican cómo se lee todo el
             reporte, no qué filas entran, y separados se leían como un filtro más. */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingBottom: 2 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#475569', cursor: 'pointer' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#4A4D54', cursor: 'pointer' }}>
             <input type="checkbox" checked={incluirCargaInicial} onChange={e => setIncluirCargaInicial(e.target.checked)} />
             Incluir carga inicial de cartera
           </label>
 
-          <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#475569', cursor: 'pointer' }}
+          <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#4A4D54', cursor: 'pointer' }}
             title="Las cuotas anuales (ej. la Inscripción de Golf) se reparten entre los meses que cubren en vez de reconocerse completas en el mes del cargo. Solo afecta al generado; el cobro no cambia.">
             <input type="checkbox" checked={prorratear} onChange={e => setProrratear(e.target.checked)} />
             Prorratear cuotas anuales
@@ -655,19 +655,19 @@ export default function ReporteComposicionIngresoCuotas() {
 
       {/* ── Errores y avisos ────────────────────────────────── */}
       {(data?.errores ?? []).map((e, i) => (
-        <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#991b1b' }}>
+        <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', background: '#E6E8EB', border: '1px solid #E6E8EB', borderLeft: '3px solid #8C2A2A', borderRadius: 8, fontSize: 12, color: '#8C2A2A' }}>
           <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
           <span><strong>Error de consulta:</strong> {e}</span>
         </div>
       ))}
       {(data?.avisos ?? []).map((a, i) => (
-        <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+        <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 8, fontSize: 12, color: '#7A4B0C' }}>
           <Info size={15} style={{ flexShrink: 0, marginTop: 1 }} />
           <span>{a}</span>
         </div>
       ))}
       {!incluirCargaInicial && Object.keys(data?.arranque ?? {}).length > 0 && (
-        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, fontSize: 12, color: '#1e40af' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8, fontSize: 12, color: '#1C1D21' }}>
           <Info size={15} style={{ flexShrink: 0, marginTop: 1 }} />
           <span>
             <strong>Carga inicial excluida del cobro.</strong>{' '}
@@ -678,7 +678,7 @@ export default function ReporteComposicionIngresoCuotas() {
         </div>
       )}
 
-      {loading && <div style={{ padding: 30, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>Cargando cobranza…</div>}
+      {loading && <div style={{ padding: 30, textAlign: 'center', color: '#7A7E87', fontSize: 13 }}>Cargando cobranza…</div>}
 
       {!loading && data && (
         <>
@@ -687,28 +687,28 @@ export default function ReporteComposicionIngresoCuotas() {
             {[
               { label: `Generado ${anio}`, value: fmt0(kpis.devengado),
                 sub: hayDiferido ? 'reconocido, con cuotas anuales prorrateadas' : 'cuotas del periodo, cobradas o no',
-                color: '#2563eb', bg: '#eff6ff', icon: CalendarClock },
+                color: '#1C1D21', bg: '#F4F5F7', icon: CalendarClock },
               // Con la card de condonación oculta, el subtítulo es lo único
               // que explica por qué este KPI no empata con el «Total cobrado»
               // de la tabla. Sin él la diferencia parece un error del reporte.
               { label: 'Cobrado (caja)',    value: fmt0(kpis.caja),
                 sub: `del año ${anio}`,
-                color: '#15803d', bg: '#f0fdf4', icon: Wallet },
+                color: '#1F7A50', bg: '#F4F5F7', icon: Wallet },
               ...(hayCondonacion ? [{
                 label: 'Condonado', value: fmt0(kpis.condonado),
                 sub: `liquidado sin efectivo · ${pctStr(kpis.condonado, kpis.liquidado)} de lo cobrado`,
-                color: '#be185d', bg: '#fdf2f8', icon: Scissors,
+                color: '#9E3A5C', bg: '#F4F5F7', icon: Scissors,
               }] : []),
-              { label: 'Por cobrar',        value: fmt0(kpis.pendiente), sub: 'cartera del generado del año',     color: '#d97706', bg: '#fffbeb', icon: Clock },
-              { label: 'Avance de cobro',   value: `${kpis.avance.toFixed(1)}%`, sub: 'del generado del año',     color: '#7c3aed', bg: '#faf5ff', icon: TrendingUp },
+              { label: 'Por cobrar',        value: fmt0(kpis.pendiente), sub: 'cartera del generado del año',     color: '#B5761A', bg: '#F4F5F7', icon: Clock },
+              { label: 'Avance de cobro',   value: `${kpis.avance.toFixed(1)}%`, sub: 'del generado del año',     color: '#6B4E79', bg: '#F4F5F7', icon: TrendingUp },
             ].map(k => (
-              <div key={k.label} className="card" style={{ flex: '1 1 180px', maxWidth: 260, padding: 14, background: k.bg, borderColor: k.color + '33' }}>
+              <div key={k.label} className="card" style={{ flex: '1 1 180px', maxWidth: 260, padding: 14, background: '#fff', borderColor: '#E6E8EB' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                   <k.icon size={14} color={k.color} />
-                  <span style={{ fontSize: 11, fontWeight: 600, color: k.color }}>{k.label}</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#62666E' }}>{k.label}</span>
                 </div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
-                <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{k.sub}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: '#1C1D21',  }}>{k.value}</div>
+                <div style={{ fontSize: 10, color: '#62666E', marginTop: 2 }}>{k.sub}</div>
               </div>
             ))}
           </div>
@@ -720,10 +720,10 @@ export default function ReporteComposicionIngresoCuotas() {
               const monto = matriz.totales[b]
               return (
                 <div key={b} className="card" title={meta.ayuda}
-                  style={{ flex: '1 1 180px', maxWidth: 280, padding: 14, background: meta.bg, borderColor: meta.color + '33' }}>
+                  style={{ flex: '1 1 180px', maxWidth: 280, padding: 14, background: meta.bg, borderColor: '#E6E8EB' }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: meta.color, marginBottom: 6 }}>{meta.label}</div>
-                  <div style={{ fontSize: 19, fontWeight: 700, color: '#0f172a', fontVariantNumeric: 'tabular-nums' }}>{fmt0(monto)}</div>
-                  <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>
+                  <div style={{ fontSize: 19, fontWeight: 700, color: '#1C1D21', fontVariantNumeric: 'tabular-nums' }}>{fmt0(monto)}</div>
+                  <div style={{ fontSize: 10, color: '#62666E', marginTop: 2 }}>
                     {pctStr(monto, matriz.granTotal)} del cobro {periodoTxt}
                   </div>
                 </div>
@@ -732,7 +732,7 @@ export default function ReporteComposicionIngresoCuotas() {
           </div>
 
           {/* ── Tabs ─────────────────────────────────────────── */}
-          <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid #E6E8EB' }}>
             {([
               { k: 'composicion', label: 'Composición del cobro' },
               { k: 'puente',      label: 'Puente generado → caja' },
@@ -743,8 +743,8 @@ export default function ReporteComposicionIngresoCuotas() {
               <button key={t.k} onClick={() => setTab(t.k)}
                 style={{ padding: '9px 14px', fontSize: 13, fontWeight: tab === t.k ? 700 : 500, cursor: 'pointer',
                   background: 'none', border: 'none', borderBottom: '2px solid',
-                  borderColor: tab === t.k ? '#2563eb' : 'transparent',
-                  color: tab === t.k ? '#1d4ed8' : '#64748b' }}>
+                  borderColor: tab === t.k ? '#1C1D21' : 'transparent',
+                  color: tab === t.k ? '#26282D' : '#62666E' }}>
                 {t.label}
               </button>
             ))}
@@ -754,7 +754,7 @@ export default function ReporteComposicionIngresoCuotas() {
             {/* ── TAB 1: matriz mes × banda ──────────────────── */}
             {tab === 'composicion' && (
               <>
-                <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 8px' }}>
+                <p style={{ fontSize: 11, color: '#62666E', margin: '0 0 8px' }}>
                   Las cuatro bandas suman exactamente el cobro del mes: descomponen la cifra sin alterarla.
                   «Corriente» es el desempeño real del mes; «vencida» es recuperación de cartera y «anticipada»
                   es dinero de meses futuros — ninguna de las dos mide el mes en que entró.
@@ -775,8 +775,8 @@ export default function ReporteComposicionIngresoCuotas() {
                         </th>
                       ))}
                       <th style={cellNum}>Total cobrado</th>
-                      {hayCondonacion && <th style={{ ...cellNum, color: '#be185d' }} title="Parte del cobro liquidada por condonación: extingue el saldo de la cuota pero no entra al banco ni genera recibo de ingreso.">Condonado</th>}
-                      {hayCondonacion && <th style={{ ...cellNum, color: '#15803d' }} title="Cobro menos condonación: el efectivo que sí pasó por caja.">Caja (efectivo)</th>}
+                      {hayCondonacion && <th style={{ ...cellNum, color: '#9E3A5C' }} title="Parte del cobro liquidada por condonación: extingue el saldo de la cuota pero no entra al banco ni genera recibo de ingreso.">Condonado</th>}
+                      {hayCondonacion && <th style={{ ...cellNum, color: '#1F7A50' }} title="Cobro menos condonación: el efectivo que sí pasó por caja.">Caja (efectivo)</th>}
                       <th style={cellNum}>% Corriente</th>
                     </tr>
                   </thead>
@@ -785,40 +785,40 @@ export default function ReporteComposicionIngresoCuotas() {
                       <tr key={f.mes}>
                         <td style={{ fontWeight: 600 }}>{f.label} {anio}</td>
                         {BANDAS.map(b => (
-                          <td key={b} style={{ ...cellNum, color: f.porBanda[b] ? BANDA_META[b].color : '#cbd5e1' }}>
+                          <td key={b} style={{ ...cellNum, color: f.porBanda[b] ? BANDA_META[b].color : '#C9CCD3' }}>
                             {f.porBanda[b] ? fmt$(f.porBanda[b]) : '—'}
                           </td>
                         ))}
                         <td style={{ ...cellNum, fontWeight: 700 }}>{fmt$(f.total)}</td>
                         {hayCondonacion && (
-                          <td style={{ ...cellNum, color: f.condonado ? '#be185d' : '#cbd5e1' }}>
+                          <td style={{ ...cellNum, color: f.condonado ? '#9E3A5C' : '#C9CCD3' }}>
                             {f.condonado ? fmt$(f.condonado) : '—'}
                           </td>
                         )}
                         {hayCondonacion && (
-                          <td style={{ ...cellNum, color: '#15803d', fontWeight: 600 }}>{fmt$(f.caja)}</td>
+                          <td style={{ ...cellNum, color: '#1F7A50', fontWeight: 600 }}>{fmt$(f.caja)}</td>
                         )}
-                        <td style={{ ...cellNum, color: '#16a34a', fontWeight: 600 }}>{pctStr(f.porBanda.CORRIENTE, f.total)}</td>
+                        <td style={{ ...cellNum, color: '#267F56', fontWeight: 600 }}>{pctStr(f.porBanda.CORRIENTE, f.total)}</td>
                       </tr>
                     ))}
                     {matriz.filas.every(f => f.total === 0) && (
-                      <tr><td colSpan={hayCondonacion ? 9 : 7} style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>
+                      <tr><td colSpan={hayCondonacion ? 9 : 7} style={{ textAlign: 'center', color: '#7A7E87', padding: 20 }}>
                         Sin cobros registrados en {periodoTxt} para los módulos seleccionados.
                       </td></tr>
                     )}
                   </tbody>
                   <tfoot>
-                    <tr style={{ background: '#f8fafc', fontWeight: 700 }}>
+                    <tr style={{ background: '#F8F9FA', fontWeight: 700 }}>
                       <td>TOTAL {periodoTxt}</td>
                       {BANDAS.map(b => (
                         <td key={b} style={{ ...cellNum, color: BANDA_META[b].color }}>{fmt$(matriz.totales[b])}</td>
                       ))}
                       <td style={cellNum}>{fmt$(matriz.granTotal)}</td>
-                      {hayCondonacion && <td style={{ ...cellNum, color: '#be185d' }}>{fmt$(matriz.granCondonado)}</td>}
-                      {hayCondonacion && <td style={{ ...cellNum, color: '#15803d' }}>{fmt$(matriz.granCaja)}</td>}
-                      <td style={{ ...cellNum, color: '#16a34a' }}>{pctStr(matriz.totales.CORRIENTE, matriz.granTotal)}</td>
+                      {hayCondonacion && <td style={{ ...cellNum, color: '#9E3A5C' }}>{fmt$(matriz.granCondonado)}</td>}
+                      {hayCondonacion && <td style={{ ...cellNum, color: '#1F7A50' }}>{fmt$(matriz.granCaja)}</td>}
+                      <td style={{ ...cellNum, color: '#267F56' }}>{pctStr(matriz.totales.CORRIENTE, matriz.granTotal)}</td>
                     </tr>
-                    <tr style={{ background: '#f8fafc', fontSize: 11, color: '#64748b' }}>
+                    <tr style={{ background: '#F8F9FA', fontSize: 11, color: '#62666E' }}>
                       <td>% del cobro</td>
                       {BANDAS.map(b => <td key={b} style={cellNum}>{pctStr(matriz.totales[b], matriz.granTotal)}</td>)}
                       <td style={cellNum}>100%</td>
@@ -830,7 +830,7 @@ export default function ReporteComposicionIngresoCuotas() {
                 </table>
 
                 {hayCondonacion && data && data.condonacionIndeterminada > 0 && (
-                  <p style={{ fontSize: 11, color: '#92400e', marginTop: 8 }}>
+                  <p style={{ fontSize: 11, color: '#7A4B0C', marginTop: 8 }}>
                     <strong>{fmt$(data.condonacionIndeterminada)}</strong> se cobró con varias formas de pago,
                     una de ellas condonación, y la subcuenta solo guarda el texto concatenado sin los montos:
                     no se puede saber cuánto de eso fue condonación, así que queda contado como caja.
@@ -843,7 +843,7 @@ export default function ReporteComposicionIngresoCuotas() {
             {/* ── TAB 2: puente devengado → caja ─────────────── */}
             {tab === 'puente' && (
               <>
-                <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 8px' }}>
+                <p style={{ fontSize: 11, color: '#62666E', margin: '0 0 8px' }}>
                   Por cada periodo: cuánto se generó y cómo se cobró.{' '}
                   {hayDiferido && <><strong>Reconocido + diferido = generado por cargo</strong>, y{' '}</>}
                   <strong>generado por cargo = cobrado en su mes + antes + después + sin fecha{hayDescuento ? ' + descuento' : ''} + pendiente.</strong>{' '}
@@ -855,15 +855,15 @@ export default function ReporteComposicionIngresoCuotas() {
                   <thead>
                     <tr>
                       <th style={{ textAlign: 'left' }}>Periodo</th>
-                      {hayDiferido && <th style={{ ...cellNum, color: '#7c3aed' }} title="Generado del mes con las cuotas anuales prorrateadas — es la medida del área">Generado reconocido</th>}
-                      {hayDiferido && <th style={{ ...cellNum, color: '#a855f7' }} title="Parte del cargo que se reconoce en otros meses">± Diferido</th>}
+                      {hayDiferido && <th style={{ ...cellNum, color: '#6B4E79' }} title="Generado del mes con las cuotas anuales prorrateadas — es la medida del área">Generado reconocido</th>}
+                      {hayDiferido && <th style={{ ...cellNum, color: '#8E739B' }} title="Parte del cargo que se reconoce en otros meses">± Diferido</th>}
                       <th style={cellNum}>{hayDiferido ? 'Generado por cargo' : 'Generado'}</th>
-                      <th style={{ ...cellNum, color: '#16a34a' }}>Cobrado en su mes</th>
-                      <th style={{ ...cellNum, color: '#2563eb' }}>Cobrado antes (anticipo)</th>
-                      <th style={{ ...cellNum, color: '#dc2626' }}>Cobrado después (vencido)</th>
-                      <th style={{ ...cellNum, color: '#b45309' }}>Sin fecha</th>
-                      {hayDescuento && <th style={{ ...cellNum, color: '#0891b2' }} title="Parte del cargo liquidada por descuento de pago anticipado — liquida cargo pero no es efectivo">Descuento</th>}
-                      <th style={{ ...cellNum, color: '#d97706' }}>Pendiente</th>
+                      <th style={{ ...cellNum, color: '#267F56' }}>Cobrado en su mes</th>
+                      <th style={{ ...cellNum, color: '#1C1D21' }}>Cobrado antes (anticipo)</th>
+                      <th style={{ ...cellNum, color: '#C23B3B' }}>Cobrado después (vencido)</th>
+                      <th style={{ ...cellNum, color: '#96600F' }}>Sin fecha</th>
+                      {hayDescuento && <th style={{ ...cellNum, color: '#32789A' }} title="Parte del cargo liquidada por descuento de pago anticipado — liquida cargo pero no es efectivo">Descuento</th>}
+                      <th style={{ ...cellNum, color: '#B5761A' }}>Pendiente</th>
                       <th style={{ textAlign: 'center' }}>Cuadra</th>
                     </tr>
                   </thead>
@@ -871,40 +871,40 @@ export default function ReporteComposicionIngresoCuotas() {
                     {puente.filas.map(f => (
                       <tr key={f.mes}>
                         <td style={{ fontWeight: 600, textTransform: 'capitalize' }}>{labelPeriodo(f.periodo)}</td>
-                        {hayDiferido && <td style={{ ...cellNum, fontWeight: 700, color: '#7c3aed' }}>{fmt$(f.reconocido)}</td>}
-                        {hayDiferido && <td style={{ ...cellNum, color: f.diferido ? '#a855f7' : '#cbd5e1' }}>{f.diferido ? fmt$(f.diferido) : '—'}</td>}
+                        {hayDiferido && <td style={{ ...cellNum, fontWeight: 700, color: '#6B4E79' }}>{fmt$(f.reconocido)}</td>}
+                        {hayDiferido && <td style={{ ...cellNum, color: f.diferido ? '#8E739B' : '#C9CCD3' }}>{f.diferido ? fmt$(f.diferido) : '—'}</td>}
                         <td style={{ ...cellNum, fontWeight: 700 }}>{fmt$(f.cargado)}</td>
-                        <td style={{ ...cellNum, color: f.enSuMes ? '#16a34a' : '#cbd5e1' }}>{f.enSuMes ? fmt$(f.enSuMes) : '—'}</td>
-                        <td style={{ ...cellNum, color: f.antes ? '#2563eb' : '#cbd5e1' }}>{f.antes ? fmt$(f.antes) : '—'}</td>
-                        <td style={{ ...cellNum, color: f.despues ? '#dc2626' : '#cbd5e1' }}>{f.despues ? fmt$(f.despues) : '—'}</td>
-                        <td style={{ ...cellNum, color: f.sinFecha ? '#b45309' : '#cbd5e1' }}>{f.sinFecha ? fmt$(f.sinFecha) : '—'}</td>
-                        {hayDescuento && <td style={{ ...cellNum, color: f.descuento ? '#0891b2' : '#cbd5e1' }}>{f.descuento ? fmt$(f.descuento) : '—'}</td>}
-                        <td style={{ ...cellNum, color: f.pendiente ? '#d97706' : '#cbd5e1' }}>{f.pendiente ? fmt$(f.pendiente) : '—'}</td>
+                        <td style={{ ...cellNum, color: f.enSuMes ? '#267F56' : '#C9CCD3' }}>{f.enSuMes ? fmt$(f.enSuMes) : '—'}</td>
+                        <td style={{ ...cellNum, color: f.antes ? '#1C1D21' : '#C9CCD3' }}>{f.antes ? fmt$(f.antes) : '—'}</td>
+                        <td style={{ ...cellNum, color: f.despues ? '#C23B3B' : '#C9CCD3' }}>{f.despues ? fmt$(f.despues) : '—'}</td>
+                        <td style={{ ...cellNum, color: f.sinFecha ? '#96600F' : '#C9CCD3' }}>{f.sinFecha ? fmt$(f.sinFecha) : '—'}</td>
+                        {hayDescuento && <td style={{ ...cellNum, color: f.descuento ? '#32789A' : '#C9CCD3' }}>{f.descuento ? fmt$(f.descuento) : '—'}</td>}
+                        <td style={{ ...cellNum, color: f.pendiente ? '#B5761A' : '#C9CCD3' }}>{f.pendiente ? fmt$(f.pendiente) : '—'}</td>
                         <td style={{ textAlign: 'center' }}>
                           {f.cuadra
-                            ? <CheckCircle size={14} color="#16a34a" />
-                            : <span title={`Diferencia ${fmt$(f.dif)}`} style={{ color: '#dc2626', fontSize: 11, fontWeight: 700 }}>{fmt$(f.dif)}</span>}
+                            ? <CheckCircle size={14} color="#267F56" />
+                            : <span title={`Diferencia ${fmt$(f.dif)}`} style={{ color: '#C23B3B', fontSize: 11, fontWeight: 700 }}>{fmt$(f.dif)}</span>}
                         </td>
                       </tr>
                     ))}
                     {!puente.filas.length && (
-                      <tr><td colSpan={(hayDiferido ? 10 : 8) + (hayDescuento ? 1 : 0)} style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>
+                      <tr><td colSpan={(hayDiferido ? 10 : 8) + (hayDescuento ? 1 : 0)} style={{ textAlign: 'center', color: '#7A7E87', padding: 20 }}>
                         Sin cuotas generadas en {periodoTxt} para los módulos seleccionados.
                       </td></tr>
                     )}
                   </tbody>
                   <tfoot>
-                    <tr style={{ background: '#f8fafc', fontWeight: 700 }}>
+                    <tr style={{ background: '#F8F9FA', fontWeight: 700 }}>
                       <td>TOTAL {periodoTxt}</td>
-                      {hayDiferido && <td style={{ ...cellNum, color: '#7c3aed' }}>{fmt$(puente.tot.reconocido)}</td>}
-                      {hayDiferido && <td style={{ ...cellNum, color: '#a855f7' }}>{fmt$(puente.tot.diferido)}</td>}
+                      {hayDiferido && <td style={{ ...cellNum, color: '#6B4E79' }}>{fmt$(puente.tot.reconocido)}</td>}
+                      {hayDiferido && <td style={{ ...cellNum, color: '#8E739B' }}>{fmt$(puente.tot.diferido)}</td>}
                       <td style={cellNum}>{fmt$(puente.tot.cargado)}</td>
-                      <td style={{ ...cellNum, color: '#16a34a' }}>{fmt$(puente.tot.enSuMes)}</td>
-                      <td style={{ ...cellNum, color: '#2563eb' }}>{fmt$(puente.tot.antes)}</td>
-                      <td style={{ ...cellNum, color: '#dc2626' }}>{fmt$(puente.tot.despues)}</td>
-                      <td style={{ ...cellNum, color: '#b45309' }}>{fmt$(puente.tot.sinFecha)}</td>
-                      {hayDescuento && <td style={{ ...cellNum, color: '#0891b2' }}>{fmt$(puente.tot.descuento)}</td>}
-                      <td style={{ ...cellNum, color: '#d97706' }}>{fmt$(puente.tot.pendiente)}</td>
+                      <td style={{ ...cellNum, color: '#267F56' }}>{fmt$(puente.tot.enSuMes)}</td>
+                      <td style={{ ...cellNum, color: '#1C1D21' }}>{fmt$(puente.tot.antes)}</td>
+                      <td style={{ ...cellNum, color: '#C23B3B' }}>{fmt$(puente.tot.despues)}</td>
+                      <td style={{ ...cellNum, color: '#96600F' }}>{fmt$(puente.tot.sinFecha)}</td>
+                      {hayDescuento && <td style={{ ...cellNum, color: '#32789A' }}>{fmt$(puente.tot.descuento)}</td>}
+                      <td style={{ ...cellNum, color: '#B5761A' }}>{fmt$(puente.tot.pendiente)}</td>
                       <td />
                     </tr>
                   </tfoot>
@@ -915,7 +915,7 @@ export default function ReporteComposicionIngresoCuotas() {
             {/* ── TAB 3: libro de ingresos ───────────────────── */}
             {tab === 'ingreso' && (
               <>
-                <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 8px' }}>
+                <p style={{ fontSize: 11, color: '#62666E', margin: '0 0 8px' }}>
                   Construido sobre <strong>ctrl.recibos_ingreso</strong>, la misma fuente que el Comparativo de
                   Presupuesto: por eso el total de cada mes <strong>sí coincide</strong> con el Estado de Resultados.
                   Es otro libro del mismo dinero que las pestañas anteriores (que salen de las subcuentas de cobranza),
@@ -927,7 +927,7 @@ export default function ReporteComposicionIngresoCuotas() {
                 </p>
 
                 {!matrizIngreso.acotado && (
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', marginBottom: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', marginBottom: 10, background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 8, fontSize: 12, color: '#7A4B0C' }}>
                     <Info size={15} style={{ flexShrink: 0, marginTop: 1 }} />
                     <span>
                       No se pudo resolver a qué centro de ingreso pertenecen los módulos seleccionados, así que esta
@@ -938,7 +938,7 @@ export default function ReporteComposicionIngresoCuotas() {
                 )}
 
                 {matrizIngreso.lineaSinDimension && (
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', marginBottom: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', marginBottom: 10, background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 8, fontSize: 12, color: '#7A4B0C' }}>
                     <Info size={15} style={{ flexShrink: 0, marginTop: 1 }} />
                     <span>
                       La línea «<strong>{lineaFiltro?.linea}</strong>» no tiene concepto ni sección con que ubicarse en el libro
@@ -948,7 +948,7 @@ export default function ReporteComposicionIngresoCuotas() {
                 )}
 
                 {ingreso && !ingreso.clasificacionDisponible && (
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', marginBottom: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', marginBottom: 10, background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 8, fontSize: 12, color: '#7A4B0C' }}>
                     <Info size={15} style={{ flexShrink: 0, marginTop: 1 }} />
                     <span>
                       Las columnas de clasificación aún no existen en la base: falta ejecutar la migración
@@ -958,7 +958,7 @@ export default function ReporteComposicionIngresoCuotas() {
                 )}
 
                 {(ingreso?.errores ?? []).map((e, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', marginBottom: 10, background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#991b1b' }}>
+                  <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', marginBottom: 10, background: '#E6E8EB', border: '1px solid #E6E8EB', borderLeft: '3px solid #8C2A2A', borderRadius: 8, fontSize: 12, color: '#8C2A2A' }}>
                     <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
                     <span>{e}</span>
                   </div>
@@ -968,10 +968,10 @@ export default function ReporteComposicionIngresoCuotas() {
                   <thead>
                     <tr>
                       <th style={{ textAlign: 'left' }}>Mes del recibo</th>
-                      <th style={{ ...cellNum, color: '#16a34a' }}>Corriente</th>
-                      <th style={{ ...cellNum, color: '#dc2626' }}>Vencida</th>
-                      <th style={{ ...cellNum, color: '#2563eb' }}>Anticipada</th>
-                      <th style={{ ...cellNum, color: '#64748b' }}>Sin clasificar</th>
+                      <th style={{ ...cellNum, color: '#267F56' }}>Corriente</th>
+                      <th style={{ ...cellNum, color: '#C23B3B' }}>Vencida</th>
+                      <th style={{ ...cellNum, color: '#1C1D21' }}>Anticipada</th>
+                      <th style={{ ...cellNum, color: '#62666E' }}>Sin clasificar</th>
                       <th style={cellNum}>Ingreso del mes</th>
                       <th style={cellNum}>% clasificado</th>
                     </tr>
@@ -980,31 +980,31 @@ export default function ReporteComposicionIngresoCuotas() {
                     {matrizIngreso.porMes.filter(f => f.total !== 0).map(f => (
                       <tr key={f.mes}>
                         <td style={{ fontWeight: 600 }}>{f.label} {anio}</td>
-                        <td style={{ ...cellNum, color: f.corriente ? '#16a34a' : '#cbd5e1' }}>{f.corriente ? fmt$(f.corriente) : '—'}</td>
-                        <td style={{ ...cellNum, color: f.vencido ? '#dc2626' : '#cbd5e1' }}>{f.vencido ? fmt$(f.vencido) : '—'}</td>
-                        <td style={{ ...cellNum, color: f.anticipado ? '#2563eb' : '#cbd5e1' }}>{f.anticipado ? fmt$(f.anticipado) : '—'}</td>
-                        <td style={{ ...cellNum, color: f.sinClas ? '#64748b' : '#cbd5e1' }}>{f.sinClas ? fmt$(f.sinClas) : '—'}</td>
+                        <td style={{ ...cellNum, color: f.corriente ? '#267F56' : '#C9CCD3' }}>{f.corriente ? fmt$(f.corriente) : '—'}</td>
+                        <td style={{ ...cellNum, color: f.vencido ? '#C23B3B' : '#C9CCD3' }}>{f.vencido ? fmt$(f.vencido) : '—'}</td>
+                        <td style={{ ...cellNum, color: f.anticipado ? '#1C1D21' : '#C9CCD3' }}>{f.anticipado ? fmt$(f.anticipado) : '—'}</td>
+                        <td style={{ ...cellNum, color: f.sinClas ? '#62666E' : '#C9CCD3' }}>{f.sinClas ? fmt$(f.sinClas) : '—'}</td>
                         <td style={{ ...cellNum, fontWeight: 700 }}>{fmt$(f.total)}</td>
                         <td style={cellNum}>{pctStr(f.total - f.sinClas, f.total)}</td>
                       </tr>
                     ))}
                     {matrizIngreso.porMes.every(f => f.total === 0) && (
-                      <tr><td colSpan={7} style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>
+                      <tr><td colSpan={7} style={{ textAlign: 'center', color: '#7A7E87', padding: 20 }}>
                         Sin recibos de ingreso confirmados en {periodoTxt}.
                       </td></tr>
                     )}
                   </tbody>
                   <tfoot>
-                    <tr style={{ background: '#f8fafc', fontWeight: 700 }}>
+                    <tr style={{ background: '#F8F9FA', fontWeight: 700 }}>
                       <td>TOTAL {periodoTxt}</td>
-                      <td style={{ ...cellNum, color: '#16a34a' }}>{fmt$(matrizIngreso.tot.corriente)}</td>
-                      <td style={{ ...cellNum, color: '#dc2626' }}>{fmt$(matrizIngreso.tot.vencido)}</td>
-                      <td style={{ ...cellNum, color: '#2563eb' }}>{fmt$(matrizIngreso.tot.anticipado)}</td>
-                      <td style={{ ...cellNum, color: '#64748b' }}>{fmt$(matrizIngreso.tot.sinClas)}</td>
+                      <td style={{ ...cellNum, color: '#267F56' }}>{fmt$(matrizIngreso.tot.corriente)}</td>
+                      <td style={{ ...cellNum, color: '#C23B3B' }}>{fmt$(matrizIngreso.tot.vencido)}</td>
+                      <td style={{ ...cellNum, color: '#1C1D21' }}>{fmt$(matrizIngreso.tot.anticipado)}</td>
+                      <td style={{ ...cellNum, color: '#62666E' }}>{fmt$(matrizIngreso.tot.sinClas)}</td>
                       <td style={cellNum}>{fmt$(matrizIngreso.tot.total)}</td>
                       <td style={cellNum}>{pctStr(matrizIngreso.tot.total - matrizIngreso.tot.sinClas, matrizIngreso.tot.total)}</td>
                     </tr>
-                    <tr style={{ background: '#f8fafc', fontSize: 11, color: '#64748b' }}>
+                    <tr style={{ background: '#F8F9FA', fontSize: 11, color: '#62666E' }}>
                       <td>% del ingreso</td>
                       <td style={cellNum}>{pctStr(matrizIngreso.tot.corriente, matrizIngreso.tot.total)}</td>
                       <td style={cellNum}>{pctStr(matrizIngreso.tot.vencido, matrizIngreso.tot.total)}</td>
@@ -1017,7 +1017,7 @@ export default function ReporteComposicionIngresoCuotas() {
                 </table>
 
                 {matrizIngreso.tot.sinClas > 0 && (
-                  <p style={{ fontSize: 11, color: '#92400e', marginTop: 8 }}>
+                  <p style={{ fontSize: 11, color: '#7A4B0C', marginTop: 8 }}>
                     <strong>{fmt$(matrizIngreso.tot.sinClas)}</strong> sin clasificar
                     ({pctStr(matrizIngreso.tot.sinClas, matrizIngreso.tot.total)} del ingreso).
                     Se captura por recibo en <strong>Ingresos</strong>, activando «Clasificar cobranza» en el
@@ -1031,7 +1031,7 @@ export default function ReporteComposicionIngresoCuotas() {
             {/* ── TAB 4: cartera por antigüedad ──────────────── */}
             {tab === 'cartera' && (
               <>
-                <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 8px' }}>
+                <p style={{ fontSize: 11, color: '#62666E', margin: '0 0 8px' }}>
                   Saldo pendiente a hoy por línea y banda de vencimiento. A diferencia de las otras pestañas,
                   esto es un <strong>stock</strong>, no un flujo de un mes: no depende del año seleccionado y no
                   se suma con la composición del cobro. El pendiente se deriva de cargado − cobrado, así que el
@@ -1040,12 +1040,12 @@ export default function ReporteComposicionIngresoCuotas() {
 
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
                   {cartera.BANDAS_ANT.map(b => (
-                    <div key={b.key} className="card" style={{ flex: '1 1 150px', maxWidth: 240, padding: 13, borderColor: b.color + '33' }}>
+                    <div key={b.key} className="card" style={{ flex: '1 1 150px', maxWidth: 240, padding: 13, borderColor: '#E6E8EB' }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: b.color, marginBottom: 5 }}>{b.label}</div>
-                      <div style={{ fontSize: 17, fontWeight: 700, color: '#0f172a', fontVariantNumeric: 'tabular-nums' }}>
+                      <div style={{ fontSize: 17, fontWeight: 700, color: '#1C1D21', fontVariantNumeric: 'tabular-nums' }}>
                         {fmt0(cartera.totales[b.key] ?? 0)}
                       </div>
-                      <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>
+                      <div style={{ fontSize: 10, color: '#62666E', marginTop: 2 }}>
                         {pctStr(cartera.totales[b.key] ?? 0, cartera.total)} de la cartera
                       </div>
                     </div>
@@ -1054,7 +1054,7 @@ export default function ReporteComposicionIngresoCuotas() {
 
                 {cartera.sinVencimiento > 0 && (
                   <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', marginBottom: 10,
-                    background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+                    background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 8, fontSize: 12, color: '#7A4B0C' }}>
                     <Info size={15} style={{ flexShrink: 0, marginTop: 1 }} />
                     <span>
                       <strong>{fmt$(cartera.sinVencimiento)}</strong> en {cartera.nSinVenc} cuota(s) sin fecha de
@@ -1081,7 +1081,7 @@ export default function ReporteComposicionIngresoCuotas() {
                         <td style={{ color: MODULO_META[f.modulo].color, fontWeight: 600 }}>{MODULO_META[f.modulo].label}</td>
                         <td>{f.linea}</td>
                         {cartera.BANDAS_ANT.map(b => (
-                          <td key={b.key} style={{ ...cellNum, color: (f as any)[b.key] ? b.color : '#cbd5e1' }}>
+                          <td key={b.key} style={{ ...cellNum, color: (f as any)[b.key] ? b.color : '#C9CCD3' }}>
                             {(f as any)[b.key] ? fmt$((f as any)[b.key]) : '—'}
                           </td>
                         ))}
@@ -1090,14 +1090,14 @@ export default function ReporteComposicionIngresoCuotas() {
                       </tr>
                     ))}
                     {!cartera.filas.length && (
-                      <tr><td colSpan={cartera.BANDAS_ANT.length + 4} style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>
+                      <tr><td colSpan={cartera.BANDAS_ANT.length + 4} style={{ textAlign: 'center', color: '#7A7E87', padding: 20 }}>
                         Sin saldo pendiente en los módulos seleccionados.
                       </td></tr>
                     )}
                   </tbody>
                   {cartera.filas.length > 0 && (
                     <tfoot>
-                      <tr style={{ background: '#f8fafc', fontWeight: 700 }}>
+                      <tr style={{ background: '#F8F9FA', fontWeight: 700 }}>
                         <td colSpan={2}>TOTAL</td>
                         {cartera.BANDAS_ANT.map(b => (
                           <td key={b.key} style={{ ...cellNum, color: b.color }}>{fmt$(cartera.totales[b.key] ?? 0)}</td>
@@ -1118,9 +1118,9 @@ export default function ReporteComposicionIngresoCuotas() {
                   {([{ k: '' as const, label: 'Todas' }, ...BANDAS.map(b => ({ k: b, label: BANDA_META[b].label }))]).map(o => (
                     <button key={o.k || 'all'} onClick={() => setBandaFiltro(o.k)}
                       style={{ padding: '6px 11px', fontSize: 12, fontWeight: bandaFiltro === o.k ? 700 : 500, borderRadius: 8, cursor: 'pointer',
-                        border: '1px solid', borderColor: bandaFiltro === o.k ? '#2563eb' : '#e2e8f0',
-                        background: bandaFiltro === o.k ? '#eff6ff' : '#fff',
-                        color: bandaFiltro === o.k ? '#1d4ed8' : '#64748b' }}>
+                        border: '1px solid', borderColor: bandaFiltro === o.k ? '#1C1D21' : '#E6E8EB',
+                        background: bandaFiltro === o.k ? '#F4F5F7' : '#fff',
+                        color: bandaFiltro === o.k ? '#26282D' : '#62666E' }}>
                       {o.label}
                     </button>
                   ))}
@@ -1136,8 +1136,8 @@ export default function ReporteComposicionIngresoCuotas() {
                       <th style={{ textAlign: 'left' }}>Periodo</th>
                       <th style={{ textAlign: 'left' }}>Clasificación</th>
                       <th style={cellNum}>Monto</th>
-                      {hayCondonacion && <th style={{ ...cellNum, color: '#be185d' }}>Condonado</th>}
-                      {hayCondonacion && <th style={{ ...cellNum, color: '#15803d' }}>Caja</th>}
+                      {hayCondonacion && <th style={{ ...cellNum, color: '#9E3A5C' }}>Condonado</th>}
+                      {hayCondonacion && <th style={{ ...cellNum, color: '#1F7A50' }}>Caja</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -1147,7 +1147,7 @@ export default function ReporteComposicionIngresoCuotas() {
                         <td style={{ color: MODULO_META[c.modulo].color, fontWeight: 600 }}>{MODULO_META[c.modulo].label}</td>
                         <td>{c.linea}</td>
                         <td>{c.cliente}</td>
-                        <td style={{ color: '#64748b' }}>{c.concepto}</td>
+                        <td style={{ color: '#62666E' }}>{c.concepto}</td>
                         <td style={{ whiteSpace: 'nowrap', textTransform: 'capitalize' }}>{c.periodo ? labelPeriodo(c.periodo) : '—'}</td>
                         <td>
                           <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6,
@@ -1155,31 +1155,31 @@ export default function ReporteComposicionIngresoCuotas() {
                             {BANDA_META[c.banda].label}
                           </span>
                           {c.esCargaInicial && (
-                            <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 6, marginLeft: 4, background: '#f1f5f9', color: '#64748b' }}>
+                            <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 6, marginLeft: 4, background: '#F4F5F7', color: '#62666E' }}>
                               carga inicial
                             </span>
                           )}
                         </td>
                         <td style={{ ...cellNum, fontWeight: 600 }}>{fmt$(c.monto)}</td>
                         {hayCondonacion && (
-                          <td style={{ ...cellNum, color: c.condonado ? '#be185d' : '#cbd5e1' }}>
+                          <td style={{ ...cellNum, color: c.condonado ? '#9E3A5C' : '#C9CCD3' }}>
                             {c.condonado ? fmt$(c.condonado) : '—'}
                           </td>
                         )}
                         {hayCondonacion && (
-                          <td style={{ ...cellNum, color: '#15803d' }}>{fmt$(c.monto - c.condonado)}</td>
+                          <td style={{ ...cellNum, color: '#1F7A50' }}>{fmt$(c.monto - c.condonado)}</td>
                         )}
                       </tr>
                     ))}
                     {!detalle.length && (
-                      <tr><td colSpan={hayCondonacion ? 10 : 8} style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>
+                      <tr><td colSpan={hayCondonacion ? 10 : 8} style={{ textAlign: 'center', color: '#7A7E87', padding: 20 }}>
                         Sin cobros que cumplan los filtros.
                       </td></tr>
                     )}
                   </tbody>
                   {detalle.length > 0 && (
                     <tfoot>
-                      <tr style={{ background: '#f8fafc', fontWeight: 700 }}>
+                      <tr style={{ background: '#F8F9FA', fontWeight: 700 }}>
                         <td colSpan={7}>
                           TOTAL {detalle.length} aplicación(es)
                           {/* Sin el botón de Excel a la vista, ofrecerlo como salida sería mentir. */}
@@ -1188,8 +1188,8 @@ export default function ReporteComposicionIngresoCuotas() {
                             : ' — se muestran las primeras 1,500')}
                         </td>
                         <td style={cellNum}>{fmt$(detalle.reduce((a, c) => a + c.monto, 0))}</td>
-                        {hayCondonacion && <td style={{ ...cellNum, color: '#be185d' }}>{fmt$(detalle.reduce((a, c) => a + c.condonado, 0))}</td>}
-                        {hayCondonacion && <td style={{ ...cellNum, color: '#15803d' }}>{fmt$(detalle.reduce((a, c) => a + c.monto - c.condonado, 0))}</td>}
+                        {hayCondonacion && <td style={{ ...cellNum, color: '#9E3A5C' }}>{fmt$(detalle.reduce((a, c) => a + c.condonado, 0))}</td>}
+                        {hayCondonacion && <td style={{ ...cellNum, color: '#1F7A50' }}>{fmt$(detalle.reduce((a, c) => a + c.monto - c.condonado, 0))}</td>}
                       </tr>
                     </tfoot>
                   )}

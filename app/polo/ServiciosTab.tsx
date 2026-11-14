@@ -29,18 +29,12 @@ type Servicio = {
   cat_tipos_servicio?: { nombre: string }
 }
 
-const TIPO_ICON: Record<string, string> = {
-  'veterinario': '🩺',
-  'herraje':     '🔨',
-  'alimento':    '🌾',
-  'otro':        '📋',
-}
 
 const TIPO_COLOR: Record<string, { bg: string; color: string }> = {
-  'veterinario': { bg: '#ecfeff', color: '#0891b2' },
-  'herraje':     { bg: '#fffbeb', color: '#b45309' },
-  'alimento':    { bg: '#f0fdf4', color: '#16a34a' },
-  'otro':        { bg: '#f8fafc', color: '#64748b' },
+  'veterinario': { bg: '#F4F5F7', color: '#32789A' },
+  'herraje':     { bg: '#F4F5F7', color: '#96600F' },
+  'alimento':    { bg: '#F4F5F7', color: '#267F56' },
+  'otro':        { bg: '#F8F9FA', color: '#62666E' },
 }
 
 const EMPTY = {
@@ -240,14 +234,14 @@ export default function ServiciosTab() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(130px, 1fr))', gap: 10, marginBottom: 18 }}>
         {[
-          { label: 'Servicios', value: total.toString(), color: '#1d4ed8', bg: '#eff6ff' },
-          { label: 'Costo total', value: fmt$(kpis.costoTotal), color: '#2563eb', bg: '#eff6ff' },
-          { label: 'Facturables', value: kpis.facturables.toString(), color: '#b45309', bg: '#fffbeb' },
-          { label: 'Monto facturable', value: fmt$(kpis.montoFacturable), color: '#b45309', bg: '#fffbeb' },
+          { label: 'Servicios', value: total.toString(), color: '#26282D', bg: '#F4F5F7' },
+          { label: 'Costo total', value: fmt$(kpis.costoTotal), color: '#1C1D21', bg: '#F4F5F7' },
+          { label: 'Facturables', value: kpis.facturables.toString(), color: '#96600F', bg: '#F4F5F7' },
+          { label: 'Monto facturable', value: fmt$(kpis.montoFacturable), color: '#96600F', bg: '#F4F5F7' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '12px 14px', background: k.bg }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>{k.label}</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: k.color }}>{k.value}</div>
+          <div key={k.label} className="card" style={{ padding: '12px 14px', background: '#fff' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{k.value}</div>
           </div>
         ))}
       </div>
@@ -267,7 +261,7 @@ export default function ServiciosTab() {
         <select className="input" value={filtroTipo} onChange={e => { setFiltroTipo(e.target.value); setPage(0) }} style={{ width: 160, flex: '0 0 auto', fontSize: 12 }}>
           <option value="">Todos los tipos</option>
           {['veterinario', 'herraje', 'alimento', 'otro'].map(t => (
-            <option key={t} value={t}>{TIPO_ICON[t]} {t.charAt(0).toUpperCase() + t.slice(1)}</option>
+            <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
           ))}
         </select>
         <select className="input" value={filtroCaballo} onChange={e => { setFiltroCaballo(e.target.value ? Number(e.target.value) : ''); setPage(0) }} style={{ width: 190, flex: '0 0 auto', fontSize: 12 }}>
@@ -296,13 +290,13 @@ export default function ServiciosTab() {
             ) : items.length === 0 ? (
               <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Sin registros</td></tr>
             ) : items.map((s, i) => {
-              const tc = TIPO_COLOR[s.tipo] ?? { bg: '#f8fafc', color: '#64748b' }
+              const tc = TIPO_COLOR[s.tipo] ?? { bg: '#F8F9FA', color: '#62666E' }
               return (
                 <tr key={s.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                   <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12, whiteSpace: 'nowrap' }}>{fmtFecha(s.fecha)}</td>
                   <td style={{ padding: '10px 14px' }}>
-                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: tc.bg, color: tc.color }}>
-                      {TIPO_ICON[s.tipo]} {s.tipo}
+                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: tc.color, color: '#fff'}}>
+                      {s.tipo}
                     </span>
                   </td>
                   <td style={{ padding: '10px 14px', fontWeight: 500, color: 'var(--text-primary)' }}>{s.cat_caballos?.nombre ?? '—'}</td>
@@ -321,7 +315,7 @@ export default function ServiciosTab() {
                         </button>
                       )}
                       {puedeEliminar && (
-                        <button className="btn-ghost" style={{ padding: '4px 8px', color: '#dc2626' }} disabled={deleting === s.id} onClick={() => handleDelete(s.id)} title="Eliminar">
+                        <button className="btn-ghost" style={{ padding: '4px 8px', color: '#C23B3B' }} disabled={deleting === s.id} onClick={() => handleDelete(s.id)} title="Eliminar">
                           <Trash2 size={13} />
                         </button>
                       )}
@@ -371,7 +365,7 @@ export default function ServiciosTab() {
                         fontWeight: form.tipo === t ? 600 : 400,
                         opacity: readOnly ? 0.8 : 1,
                       }}>
-                      {TIPO_ICON[t]}<br />{t.charAt(0).toUpperCase() + t.slice(1)}
+                      {t.charAt(0).toUpperCase() + t.slice(1)}
                     </button>
                   )
                 })}
@@ -440,7 +434,7 @@ export default function ServiciosTab() {
               <textarea className="input" disabled={readOnly} rows={2} value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} style={{ resize: 'vertical', width: '100%' }} />
             </div>
 
-            {err && <div style={{ gridColumn: 'span 2', fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{err}</div>}
+            {err && <div style={{ gridColumn: 'span 2', fontSize: 12, color: '#C23B3B', background: '#F4F5F7', padding: '8px 12px', borderRadius: 6 }}>{err}</div>}
           </div>
         </ModalShell>
       )}

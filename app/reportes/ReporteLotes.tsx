@@ -77,7 +77,7 @@ export default function ReporteLotes({ editable = false }: { editable?: boolean 
   const totalSup = lotesOrd.reduce((a, l) => a + (Number(l.superficie) || 0), 0)
 
   const STATUS_COLOR: Record<string, string> = {
-    'Vendido': '#15803d', 'Libre': '#1d4ed8', 'Bloqueado': '#dc2626',
+    'Vendido': '#1F7A50', 'Libre': '#26282D', 'Bloqueado': '#C23B3B',
   }
 
   return (
@@ -232,7 +232,7 @@ function EdicionRapida({ lote, secciones, clasifs, onClose, onSaved }: {
           {saving ? 'Guardando…' : 'Guardar'}
         </button>
       </>}>
-      {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#dc2626', fontSize: 13, marginBottom: 16 }}>{error}</div>}
+      {error && <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 6, color: '#C23B3B', fontSize: 13, marginBottom: 16 }}>{error}</div>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', gap: 12 }}>
           <F label="Clave Lote"><input className="input" value={form.cve_lote} onChange={set('cve_lote')} /></F>

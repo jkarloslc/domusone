@@ -196,7 +196,7 @@ export default function ParteModal({ parte, tipos, ubicaciones, onClose, onChang
     if (!w) return
     w.document.write(`<html><head><title>Parte de Novedades ${esc(actual.fecha)}</title>
       <style>body{font-family:Arial,sans-serif;font-size:12px;padding:24px}table{border-collapse:collapse;width:100%}
-      th,td{border:1px solid #999;padding:4px 6px;vertical-align:top;text-align:left}th{background:#e5e7eb}h1{font-size:18px}</style></head><body>
+      th,td{border:1px solid #7A7E87;padding:4px 6px;vertical-align:top;text-align:left}th{background:#E6E8EB}h1{font-size:18px}</style></head><body>
       <h1>Parte de Novedades — ${esc(fmtFecha(actual.fecha))}</h1>
       <p><b>Responsable:</b> ${esc(actual.responsable)} &nbsp; <b>Supervisor:</b> ${esc(actual.supervisor)}<br>
       <b>Destinatarios:</b> ${esc(actual.destinatarios)}<br>
@@ -223,7 +223,7 @@ export default function ParteModal({ parte, tipos, ubicaciones, onClose, onChang
         </>}
       </>}>
       <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 18, overflowY: 'auto', maxHeight: 'calc(90vh - 130px)' }}>
-        {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 13 }}>{error}</div>}
+        {error && <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
 
         {/* Encabezado */}
         <fieldset disabled={soloLectura} style={{ border: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
@@ -301,7 +301,7 @@ export default function ParteModal({ parte, tipos, ubicaciones, onClose, onChang
                       <tr><td colSpan={7} style={{ textAlign: 'center', padding: 28, color: 'var(--text-muted)' }}>Sin novedades registradas</td></tr>
                     ) : novedades.map(n => (
                       <tr key={n.id}>
-                        <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{fmtHora(n.hora)}</td>
+                        <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{fmtHora(n.hora)}</td>
                         <td style={{ fontSize: 12 }}>{tipos.find(t => t.id === n.id_tipo_fk)?.nombre ?? '—'}</td>
                         <td style={{ fontSize: 12, maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={n.descripcion ?? ''}>{n.titulo}</td>
                         <td style={{ fontSize: 12, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(ubicPorNov[n.id] ?? []).join(', ') || (n.id_lote_fk ? `Lote #${n.id_lote_fk}` : '—')}</td>
@@ -311,7 +311,7 @@ export default function ParteModal({ parte, tipos, ubicaciones, onClose, onChang
                           <div style={{ display: 'flex', gap: 4 }}>
                             <button className="btn-ghost" style={{ padding: 5 }} title="Ver" onClick={() => setNovModal({ nov: n })}><Eye size={13} /></button>
                             {!soloLectura && <button className="btn-ghost" style={{ padding: 5 }} title="Editar" onClick={() => setNovModal({ nov: n })}><Edit2 size={13} /></button>}
-                            {!soloLectura && canDelete() && <button className="btn-ghost" style={{ padding: 5, color: '#dc2626' }} title="Eliminar" onClick={() => delNovedad(n)}><Trash2 size={13} /></button>}
+                            {!soloLectura && canDelete() && <button className="btn-ghost" style={{ padding: 5, color: '#C23B3B' }} title="Eliminar" onClick={() => delNovedad(n)}><Trash2 size={13} /></button>}
                           </div>
                         </td>
                       </tr>

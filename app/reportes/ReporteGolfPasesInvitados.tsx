@@ -115,9 +115,9 @@ const TD: React.CSSProperties  = { padding: '8px 12px', fontSize: 12, color: 'va
 const TDR: React.CSSProperties = { ...TD, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
 
 const ESTADO_COLOR: Record<string, { bg: string; color: string }> = {
-  Vigente: { bg: '#f0fdf4', color: '#16a34a' },
-  Agotado: { bg: '#f1f5f9', color: '#64748b' },
-  Vencido: { bg: '#fef2f2', color: '#dc2626' },
+  Vigente: { bg: '#F4F5F7', color: '#267F56' },
+  Agotado: { bg: '#F4F5F7', color: '#62666E' },
+  Vencido: { bg: '#F4F5F7', color: '#C23B3B' },
 }
 
 function estadoLote(l: Lote, hoy: string): 'Vigente' | 'Agotado' | 'Vencido' {
@@ -472,7 +472,7 @@ export default function ReporteGolfPasesInvitados() {
       </div>
 
       {error && (
-        <div className="card" style={{ padding: '12px 16px', color: '#dc2626', background: '#fef2f2', marginBottom: 16, fontSize: 13 }}>{error}</div>
+        <div className="card" style={{ padding: '12px 16px', color: '#C23B3B', background: '#F4F5F7', marginBottom: 16, fontSize: 13 }}>{error}</div>
       )}
 
       {!buscado && !error && (
@@ -486,12 +486,12 @@ export default function ReporteGolfPasesInvitados() {
           {/* KPIs */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
             {[
-              { label: 'Pases asignados (período)',  value: tot.asignados,       color: '#16a34a' },
-              { label: 'Pases usados (período)',     value: tot.usados,          color: '#dc2626' },
-              { label: '% de uso vs. asignados',     value: `${pctUso}%`,        color: '#2563eb' },
-              { label: 'Disponibles vigentes hoy',   value: tot.vigentes,        color: '#d97706' },
-              { label: 'Vencidos sin usar (período)', value: tot.vencidos,       color: '#64748b' },
-              { label: 'Invitados distintos',        value: invitadosDistintos,  color: '#7c3aed' },
+              { label: 'Pases asignados (período)',  value: tot.asignados,       color: '#267F56' },
+              { label: 'Pases usados (período)',     value: tot.usados,          color: '#C23B3B' },
+              { label: '% de uso vs. asignados',     value: `${pctUso}%`,        color: '#1C1D21' },
+              { label: 'Disponibles vigentes hoy',   value: tot.vigentes,        color: '#B5761A' },
+              { label: 'Vencidos sin usar (período)', value: tot.vencidos,       color: '#62666E' },
+              { label: 'Invitados distintos',        value: invitadosDistintos,  color: '#6B4E79' },
             ].map(k => (
               <div key={k.label} className="card" style={{ flex: '1 1 150px', maxWidth: 240, padding: '12px 16px' }}>
                 <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>{k.label}</div>
@@ -501,11 +501,11 @@ export default function ReporteGolfPasesInvitados() {
           </div>
 
           {/* Tabs */}
-          <div style={{ display: 'flex', gap: 4, marginBottom: 12, borderBottom: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 12, borderBottom: '1px solid #E6E8EB' }}>
             {tabBtn('resumen', 'Resumen por socio', Users, 'var(--blue)')}
-            {tabBtn('asignaciones', `Asignaciones (${asignaciones.length})`, ClipboardList, '#16a34a')}
-            {tabBtn('uso', `Uso (${consumos.length})`, Ticket, '#dc2626')}
-            {tabBtn('invitados', `Por invitado (${porInvitado.length})`, UserCheck, '#7c3aed')}
+            {tabBtn('asignaciones', `Asignaciones (${asignaciones.length})`, ClipboardList, '#267F56')}
+            {tabBtn('uso', `Uso (${consumos.length})`, Ticket, '#C23B3B')}
+            {tabBtn('invitados', `Por invitado (${porInvitado.length})`, UserCheck, '#6B4E79')}
           </div>
 
           <PrintBar
@@ -536,22 +536,22 @@ export default function ReporteGolfPasesInvitados() {
                         <tr key={f.socio.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                           <td style={{ ...TD, color: 'var(--text-primary)', fontWeight: 500 }}>{socioLabel(f.socio)}</td>
                           <td style={TD}>{f.categoria}</td>
-                          <td style={{ ...TDR, color: '#16a34a', fontWeight: 600 }}>{f.asignados || '—'}</td>
-                          <td style={{ ...TDR, color: '#dc2626', fontWeight: 600 }}>{f.usados || '—'}</td>
+                          <td style={{ ...TDR, color: '#267F56', fontWeight: 600 }}>{f.asignados || '—'}</td>
+                          <td style={{ ...TDR, color: '#C23B3B', fontWeight: 600 }}>{f.usados || '—'}</td>
                           <td style={TDR}>{f.asignados > 0 ? `${Math.round((f.usados / f.asignados) * 100)}%` : '—'}</td>
-                          <td style={{ ...TDR, color: '#d97706' }}>{f.ajustes ? (f.ajustes > 0 ? `+${f.ajustes}` : f.ajustes) : '—'}</td>
-                          <td style={{ ...TDR, fontWeight: 700, color: f.vigentes > 0 ? '#2563eb' : 'var(--text-muted)' }}>{f.vigentes || '—'}</td>
-                          <td style={{ ...TDR, color: f.vencidos > 0 ? '#dc2626' : 'var(--text-muted)' }}>{f.vencidos || '—'}</td>
+                          <td style={{ ...TDR, color: '#B5761A' }}>{f.ajustes ? (f.ajustes > 0 ? `+${f.ajustes}` : f.ajustes) : '—'}</td>
+                          <td style={{ ...TDR, fontWeight: 700, color: f.vigentes > 0 ? '#1C1D21' : 'var(--text-muted)' }}>{f.vigentes || '—'}</td>
+                          <td style={{ ...TDR, color: f.vencidos > 0 ? '#C23B3B' : 'var(--text-muted)' }}>{f.vencidos || '—'}</td>
                         </tr>
                       ))}
-                      <tr style={{ background: '#f1f5f9', borderTop: '2px solid #cbd5e1', fontWeight: 700 }}>
+                      <tr style={{ background: '#F4F5F7', borderTop: '2px solid #C9CCD3', fontWeight: 700 }}>
                         <td style={TD} colSpan={2}>TOTAL ({resumen.length} socios)</td>
-                        <td style={{ ...TDR, color: '#16a34a' }}>{tot.asignados}</td>
-                        <td style={{ ...TDR, color: '#dc2626' }}>{tot.usados}</td>
+                        <td style={{ ...TDR, color: '#267F56' }}>{tot.asignados}</td>
+                        <td style={{ ...TDR, color: '#C23B3B' }}>{tot.usados}</td>
                         <td style={TDR}>{pctUso}%</td>
                         <td style={TDR}>{tot.ajustes > 0 ? `+${tot.ajustes}` : tot.ajustes}</td>
-                        <td style={{ ...TDR, color: '#2563eb' }}>{tot.vigentes}</td>
-                        <td style={{ ...TDR, color: '#dc2626' }}>{tot.vencidos}</td>
+                        <td style={{ ...TDR, color: '#1C1D21' }}>{tot.vigentes}</td>
+                        <td style={{ ...TDR, color: '#C23B3B' }}>{tot.vencidos}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -581,11 +581,11 @@ export default function ReporteGolfPasesInvitados() {
                             <td style={TD}>{catMap.get(s?.id_categoria_fk ?? -1) ?? 'Sin categoría'}</td>
                             <td style={TD}>{l?.cat_pases_config?.nombre ?? '—'}</td>
                             <td style={TD}>{l?.periodo ?? '—'}</td>
-                            <td style={{ ...TDR, color: '#16a34a', fontWeight: 600 }}>{m.cantidad}</td>
+                            <td style={{ ...TDR, color: '#267F56', fontWeight: 600 }}>{m.cantidad}</td>
                             <td style={{ ...TD, whiteSpace: 'nowrap', fontSize: 11 }}>
                               {l ? `${fmtFecha(l.fecha_inicio)} – ${fmtFecha(l.fecha_vencimiento)}` : '—'}
                             </td>
-                            <td style={{ ...TDR, color: '#dc2626' }}>{l?.cantidad_usada ?? '—'}</td>
+                            <td style={{ ...TDR, color: '#C23B3B' }}>{l?.cantidad_usada ?? '—'}</td>
                             <td style={{ ...TDR, fontWeight: 600 }}>{l ? (l.cantidad_disponible ?? l.cantidad_otorgada - l.cantidad_usada) : '—'}</td>
                             <td style={TD}>
                               {est && (
@@ -619,20 +619,20 @@ export default function ReporteGolfPasesInvitados() {
                           <td style={TD}>
                             <span title={g.conFicha ? 'Ligado al catálogo de invitados' : 'Sin ficha: agrupado por nombre'}
                               style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 999,
-                                background: g.conFicha ? '#f0fdf4' : '#fffbeb', color: g.conFicha ? '#16a34a' : '#d97706' }}>
+                                background: g.conFicha ? '#1F7A50' : '#B5761A', color: '#fff' }}>
                               {g.conFicha ? 'Sí' : 'Por nombre'}
                             </span>
                           </td>
-                          <td style={{ ...TDR, fontWeight: 700, color: '#7c3aed' }}>{g.visitas}</td>
+                          <td style={{ ...TDR, fontWeight: 700, color: '#6B4E79' }}>{g.visitas}</td>
                           <td style={TDR}>{g.anfitriones.length}</td>
                           <td style={{ ...TD, whiteSpace: 'nowrap', fontSize: 11 }}>{fmtFecha(g.primera)}</td>
                           <td style={{ ...TD, whiteSpace: 'nowrap', fontSize: 11 }}>{fmtFecha(g.ultima)}</td>
                           <td style={{ ...TD, fontSize: 11 }}>{g.anfitriones.join(' · ')}</td>
                         </tr>
                       ))}
-                      <tr style={{ background: '#f1f5f9', borderTop: '2px solid #cbd5e1', fontWeight: 700 }}>
+                      <tr style={{ background: '#F4F5F7', borderTop: '2px solid #C9CCD3', fontWeight: 700 }}>
                         <td style={TD} colSpan={2}>TOTAL ({porInvitado.length} invitados)</td>
-                        <td style={{ ...TDR, color: '#7c3aed' }}>{porInvitado.reduce((a, g) => a + g.visitas, 0)}</td>
+                        <td style={{ ...TDR, color: '#6B4E79' }}>{porInvitado.reduce((a, g) => a + g.visitas, 0)}</td>
                         <td style={TD} colSpan={4} />
                       </tr>
                     </tbody>

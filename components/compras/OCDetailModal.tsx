@@ -175,22 +175,22 @@ export function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; ca
 
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+      : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
 
     const html = `<!DOCTYPE html><html><head><title>Orden de Pago ${opData.folio}</title>
       <style>
-        body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
-        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
-        .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
-        .org-sub { font-size: 11px; color: #64748b; }
-        .doc-title { font-size: 14px; font-weight: 600; color: #0D4F80; margin-bottom: 2px; }
-        .sub { color: #64748b; font-size: 12px; margin-bottom: 24px; }
+        body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #26282D; }
+        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #1C1D21; margin-bottom: 18px; }
+        .org-nombre { font-size: 18px; font-weight: 700; color: #1C1D21; margin: 0 0 2px; }
+        .org-sub { font-size: 11px; color: #62666E; }
+        .doc-title { font-size: 14px; font-weight: 600; color: #1C1D21; margin-bottom: 2px; }
+        .sub { color: #62666E; font-size: 12px; margin-bottom: 24px; }
         table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-        td, th { border: 1px solid #e2e8f0; padding: 8px 12px; }
-        th { background: #f1f5f9; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; text-align: left; }
-        .total { background: #eff6ff; font-size: 16px; font-weight: 700; color: #0D4F80; }
+        td, th { border: 1px solid #E6E8EB; padding: 8px 12px; }
+        th { background: #F4F5F7; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; text-align: left; }
+        .total { background: #F4F5F7; font-size: 16px; font-weight: 700; color: #1C1D21; }
         .firmas { display: flex; gap: 30px; margin-top: 60px; }
-        .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 150px; font-size: 11px; color: #64748b; }
+        .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 150px; font-size: 11px; color: #62666E; }
         @page { margin: 1.2cm; }
       </style></head><body>
       <div class="org-header">
@@ -206,7 +206,7 @@ export function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; ca
       </div>
       <table>
         <tr><th>Beneficiario</th><td>${oc._provNombre ?? '—'}</td><th>Banco</th><td>${opData.banco_destino ?? prov?.banco ?? '—'}</td></tr>
-        <tr><th>CLABE / Cuenta</th><td style="font-family:monospace">${opData.cuenta_clabe ?? prov?.cuenta_clabe ?? '—'}</td><th>Forma de Pago</th><td>${opData.forma_pago}</td></tr>
+        <tr><th>CLABE / Cuenta</th><td style="font-variant-numeric:tabular-nums">${opData.cuenta_clabe ?? prov?.cuenta_clabe ?? '—'}</td><th>Forma de Pago</th><td>${opData.forma_pago}</td></tr>
         <tr><th>Concepto</th><td colspan="3">${opData.concepto ?? '—'}</td></tr>
         <tr><th>Almacén</th><td>${almNombre}</td><th>Vencimiento</th><td>${fmtFecha(opData.fecha_vencimiento)}</td></tr>
         ${opData.id_tipo_gasto_fk ? `<tr><th>Tipo de Gasto</th><td colspan="3">${catTG.nombre(opData.id_tipo_gasto_fk) ?? ''}</td></tr>` : ''}
@@ -217,34 +217,34 @@ export function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; ca
         ${(opData.subtotal != null || opData.iva != null) ? `<tr><th>Subtotal</th><td>${fmt(opData.subtotal)}</td><th>IVA</th><td>${fmt(opData.iva)}</td></tr>` : ''}
         <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(opData.monto)}</td></tr>
       </table>
-      ${opData.notas ? `<p style="font-size:12px;color:#64748b"><em>Notas: ${opData.notas}</em></p>` : ''}
-      <div style="margin-top:18px;border:1px solid #bfdbfe;border-radius:8px;overflow:hidden">
-        <div style="background:#eff6ff;padding:8px 14px;font-size:11px;font-weight:700;color:#1e40af;letter-spacing:.06em;text-transform:uppercase">
+      ${opData.notas ? `<p style="font-size:12px;color:#62666E"><em>Notas: ${opData.notas}</em></p>` : ''}
+      <div style="margin-top:18px;border:1px solid #C9CCD3;border-radius:8px;overflow:hidden">
+        <div style="background:#F4F5F7;padding:8px 14px;font-size:11px;font-weight:700;color:#1C1D21;letter-spacing:.06em;text-transform:uppercase">
           Autorización y Control de Pago
         </div>
         <table style="margin:0">
           <tr><th>Estatus</th><td>${estadoAut}</td></tr>
           ${opData.autorizado_por     ? `<tr><th>1ra Autorización</th><td>${opData.autorizado_por}${opData.fecha_autorizacion ? ' · ' + new Date(opData.fecha_autorizacion).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'}) : ''}</td></tr>` : ''}
           ${opData.autorizado_finanzas_por ? `<tr><th>2da Autorización (Finanzas)</th><td>${opData.autorizado_finanzas_por}${opData.fecha_autorizacion_finanzas ? ' · ' + new Date(opData.fecha_autorizacion_finanzas).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'}) : ''}</td></tr>` : ''}
-          ${opData.referencia_pago    ? `<tr><th>Ref. de Pago</th><td style="font-family:monospace">${opData.referencia_pago}</td></tr>` : ''}
-          ${opData.instrucciones_pago ? `<tr><th>Instrucciones</th><td style="white-space:pre-wrap;color:#92400e;background:#fffbeb">${opData.instrucciones_pago}</td></tr>` : ''}
+          ${opData.referencia_pago    ? `<tr><th>Ref. de Pago</th><td style="font-variant-numeric:tabular-nums">${opData.referencia_pago}</td></tr>` : ''}
+          ${opData.instrucciones_pago ? `<tr><th>Instrucciones</th><td style="white-space:pre-wrap;color:#7A4B0C;background:#F4F5F7">${opData.instrucciones_pago}</td></tr>` : ''}
           ${!opData.autorizado_por && !opData.autorizado_finanzas_por && !opData.referencia_pago && !opData.instrucciones_pago ? `<tr><th>Detalle</th><td>Sin datos adicionales de autorización/pago.</td></tr>` : ''}
         </table>
       </div>
       <div class="firmas">
         <div class="firma">
-          <div style="margin-bottom:2px;font-weight:600;color:#1e293b">${nombreElaboro}</div>
+          <div style="margin-bottom:2px;font-weight:600;color:#26282D">${nombreElaboro}</div>
           Elaboró
         </div>
         <div class="firma">
-          <div style="margin-bottom:2px;font-weight:600;color:#1e293b">${nombreAutorizo1}</div>
+          <div style="margin-bottom:2px;font-weight:600;color:#26282D">${nombreAutorizo1}</div>
           Autorizó
-          ${opData.fecha_autorizacion ? `<div style="font-size:10px;color:#64748b;margin-top:2px">${new Date(opData.fecha_autorizacion).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
+          ${opData.fecha_autorizacion ? `<div style="font-size:10px;color:#62666E;margin-top:2px">${new Date(opData.fecha_autorizacion).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
         </div>
         <div class="firma">
-          <div style="margin-bottom:2px;font-weight:600;color:#1e293b">${nombreAutorizo2}</div>
+          <div style="margin-bottom:2px;font-weight:600;color:#26282D">${nombreAutorizo2}</div>
           Autorizó Finanzas
-          ${opData.fecha_autorizacion_finanzas ? `<div style="font-size:10px;color:#64748b;margin-top:2px">${new Date(opData.fecha_autorizacion_finanzas).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
+          ${opData.fecha_autorizacion_finanzas ? `<div style="font-size:10px;color:#62666E;margin-top:2px">${new Date(opData.fecha_autorizacion_finanzas).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
         </div>
         <div class="firma">Recibió</div>
       </div>
@@ -292,10 +292,10 @@ export function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; ca
                       <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{d.unidad}</td>
                       <td style={{ textAlign: 'right' }}>{fmt(d.precio_unitario)}</td>
                       <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(d.total)}</td>
-                      <td style={{ textAlign: 'right', fontSize: 12, color: d.cant_recibida > 0 ? '#15803d' : 'var(--text-muted)' }}>{d.cant_recibida ?? 0}</td>
+                      <td style={{ textAlign: 'right', fontSize: 12, color: d.cant_recibida > 0 ? '#1F7A50' : 'var(--text-muted)' }}>{d.cant_recibida ?? 0}</td>
                     </tr>
                   ))}
-                  <tr style={{ background: '#f8fafc' }}><td colSpan={3}></td><td style={{ fontWeight: 600, textAlign: 'right' }}>Subtotal</td><td style={{ fontWeight: 600, textAlign: 'right' }}>{fmt(oc.subtotal)}</td><td></td></tr>
+                  <tr style={{ background: '#F8F9FA' }}><td colSpan={3}></td><td style={{ fontWeight: 600, textAlign: 'right' }}>Subtotal</td><td style={{ fontWeight: 600, textAlign: 'right' }}>{fmt(oc.subtotal)}</td><td></td></tr>
                   <tr style={{ background: 'var(--blue-pale)' }}><td colSpan={3}></td><td style={{ fontWeight: 700, color: 'var(--blue)', textAlign: 'right' }}>TOTAL</td><td style={{ fontWeight: 700, color: 'var(--blue)', textAlign: 'right', fontSize: 15 }}>{fmt(oc.total)}</td><td></td></tr>
                 </tbody>
               </table>
@@ -317,14 +317,14 @@ export function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; ca
           </div>
 
           {canAuth && oc.status === 'Pendiente Auth' && (
-            <div style={{ padding: '14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+            <div style={{ padding: '14px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8 }}>
               <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 10 }}>Autorización de Orden de Compra</div>
               <textarea className="input" rows={2} value={comentario} onChange={e => setCom(e.target.value)}
                 placeholder="Comentario (opcional)" style={{ resize: 'vertical', marginBottom: 10 }} />
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn-primary" onClick={() => onAuth(oc.id, true, comentario)} style={{ flex: 1 }}><CheckCircle size={13} /> Autorizar OC</button>
                 <button onClick={() => onAuth(oc.id, false, comentario)}
-                  style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px', borderRadius: 7, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font-body)' }}>
+                  style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px', borderRadius: 7, background: '#F4F5F7', color: '#C23B3B', border: '1px solid #E6E8EB', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font-body)' }}>
                   <XCircle size={13} /> Rechazar
                 </button>
               </div>
@@ -338,8 +338,8 @@ export function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; ca
           )}
 
           {creandoOP && (
-            <div style={{ padding: '14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#15803d', marginBottom: 10 }}>Nueva Orden de Pago — {fmt(oc.total)}</div>
+            <div style={{ padding: '14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#1F7A50', marginBottom: 10 }}>Nueva Orden de Pago — {fmt(oc.total)}</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div><label className="label">Forma de Pago</label>
                   <select className="select" value={opForm.forma_pago} onChange={e => setOpForm(f => ({ ...f, forma_pago: e.target.value }))}>
@@ -369,9 +369,9 @@ export function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; ca
           )}
 
           {op && (
-            <div style={{ padding: '14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8 }}>
+            <div style={{ padding: '14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#15803d' }}>Orden de Pago: {op.folio}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#1F7A50' }}>Orden de Pago: {op.folio}</div>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <StatusBadge status={op.status} />
                   <button className="btn-secondary" style={{ fontSize: 11 }} onClick={imprimirOP}><Printer size={12} /> Imprimir</button>
@@ -389,14 +389,14 @@ export function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; ca
           {/* Reclasificar (solo superadmin) — corrige CC/Área/Frente sin
               importar status, nunca total ni pagos. */}
           {authUser?.rol === 'superadmin' && (
-            <div style={{ padding: '14px 16px', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 10 }}>
+            <div style={{ padding: '14px 16px', background: '#F8F9FA', border: '1px dashed #C9CCD3', borderRadius: 10 }}>
               {!reclasOpen ? (
                 <button className="btn-ghost" style={{ fontSize: 12 }} onClick={abrirReclasificar}>
                   <Tag size={13} /> Reclasificar CC/Área/Frente
                 </button>
               ) : (
                 <>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#4A4D54', marginBottom: 10 }}>
                     Reclasificar — solo corrige clasificación, no toca el total
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
@@ -422,7 +422,7 @@ export function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; ca
                       </select>
                     </div>
                   </div>
-                  {reclasError && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 10 }}>{reclasError}</p>}
+                  {reclasError && <p style={{ fontSize: 12, color: '#C23B3B', marginBottom: 10 }}>{reclasError}</p>}
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleReclasificar} disabled={reclasSaving}>
                       {reclasSaving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar reclasificación
@@ -440,7 +440,7 @@ export function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; ca
 
 const Sec = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div>
-    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, paddingBottom: 4, borderBottom: '1px solid #e2e8f0' }}>{label}</div>
+    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, paddingBottom: 4, borderBottom: '1px solid #E6E8EB' }}>{label}</div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{children}</div>
   </div>
 )

@@ -56,7 +56,7 @@ const CATALOGOS: CatConfig[] = [
     tabla:        'cuadrantes',
     label:        'Zonas',
     icon:         Grid3x3,
-    color:        '#0891b2',
+    color:        '#32789A',
     sectionLabel: 'Estructura',
     desc:         'Zonas — agrupan Secciones (ingresos: Zona → Sección → Lote) y Áreas (costos: Zona → Área). Usa el ojo para asignar secciones, áreas y colaboradores.',
     hasDetail:    true,
@@ -72,7 +72,7 @@ const CATALOGOS: CatConfig[] = [
     tabla:     'secciones',
     label:     'Secciones',
     icon:      MapPin,
-    color:     '#2563eb',
+    color:     '#1C1D21',
     desc:      'Secciones del fraccionamiento — se agrupan en una o varias Zonas (catálogo Zonas) y se relacionan con lotes, cobranza y mantenimiento',
     hasDetail: true,
     campos: [
@@ -91,7 +91,7 @@ const CATALOGOS: CatConfig[] = [
     tabla: 'tipo_secciones',
     label: 'Tipos de Sección',
     icon:  Layers,
-    color: '#0891b2',
+    color: '#32789A',
     desc:  'Tipos de sección: Condominio, Fraccionamiento, etc.',
     campos: [
       { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
@@ -102,7 +102,7 @@ const CATALOGOS: CatConfig[] = [
     tabla: 'centros_costo',
     label: 'Centros de Costo',
     icon:  DollarSign,
-    color: '#059669',
+    color: '#267F56',
     desc:  'Centros de costo para clasificación de compras y mantenimiento. "Usa Zonas" agrega el nivel Zona entre el CC y sus Áreas (CC → Zona → Área).',
     campos: [
       { key: 'nombre',    label: 'Nombre *',  type: 'text', required: true },
@@ -114,7 +114,7 @@ const CATALOGOS: CatConfig[] = [
     tabla: 'tipos_gasto',
     label: 'Tipos de Gasto',
     icon:  Tag,
-    color: '#d97706',
+    color: '#B5761A',
     desc:  'Tipos de gasto para clasificar Órdenes de Pago y partidas de Presupuestos. El Rubro define el primer nivel del Árbol en Comparativo y Flujo de Efectivo.',
     campos: [
       { key: 'nombre',      label: 'Nombre *', type: 'text', required: true },
@@ -126,7 +126,7 @@ const CATALOGOS: CatConfig[] = [
     tabla:  'rubros_financieros',
     label:  'Rubros Financieros',
     icon:   Layers,
-    color:  '#0f766e',
+    color:  '#126B63',
     desc:   'Primer nivel del Árbol en Comparativo y Flujo de Efectivo. Egresos: se asignan en Tipos de Gasto. Ingresos: en Centros de Ingreso (default) o en Conceptos de Ingreso (override). Un rubro de ingreso no debe mezclar centros de ingreso.',
     sortBy: 'orden',
     campos: [
@@ -140,7 +140,7 @@ const CATALOGOS: CatConfig[] = [
     tabla:     'areas',
     label:     'Áreas',
     icon:      Layers,
-    color:     '#0891b2',
+    color:     '#32789A',
     desc:      'Áreas de obra dentro de un Centro de Costo; se agrupan en Zonas (catálogo Zonas). Usa "Frentes" para gestionar los frentes permitidos en cada área.',
     hasDetail: true,
     campos: [
@@ -153,7 +153,7 @@ const CATALOGOS: CatConfig[] = [
     tabla:     'frentes',
     label:     'Frentes',
     icon:      MapPin,
-    color:     '#7c3aed',
+    color:     '#6B4E79',
     desc:      'Frentes transversales — cada frente puede pertenecer a varias áreas (relación N:M gobernada). Usa el botón "Áreas" para administrar las áreas del frente.',
     hasDetail: true,
     campos: [
@@ -165,7 +165,7 @@ const CATALOGOS: CatConfig[] = [
     tabla: 'areas_comunes',
     label: 'Áreas Comunes',
     icon:  Flag,
-    color: '#059669',
+    color: '#267F56',
     desc:  'Áreas comunes de mantenimiento dentro de un Área — usadas en el Programa Anual',
     campos: [
       { key: 'nombre',      label: 'Nombre *',    type: 'text',    required: true },
@@ -180,7 +180,7 @@ const CATALOGOS: CatConfig[] = [
     tabla:        'tipos_lote',
     label:        'Tipos de Lote',
     icon:         Tag,
-    color:        '#7c3aed',
+    color:        '#6B4E79',
     sectionLabel: 'Fraccionamiento',
     desc:         'Clasificación del tipo de lote (Fairway, Casa, Villa, etc.)',
     campos: [
@@ -192,7 +192,7 @@ const CATALOGOS: CatConfig[] = [
     tabla: 'clasificacion',
     label: 'Clasificación',
     icon:  Grid3x3,
-    color: '#0891b2',
+    color: '#32789A',
     desc:  'Clasificación del uso del lote (Baldío, Casa, Construcción, etc.)',
     campos: [
       { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
@@ -203,7 +203,7 @@ const CATALOGOS: CatConfig[] = [
     tabla: '__custom__',
     label: 'Cuotas Estándar',
     icon:  DollarSign,
-    color: '#059669',
+    color: '#267F56',
     desc:  'Cuotas de mantenimiento con precios por sección y clasificación',
     campos: [],
   },
@@ -212,7 +212,7 @@ const CATALOGOS: CatConfig[] = [
     tabla: 'formas_pago',
     label: 'Formas de Pago',
     icon:  CreditCard,
-    color: '#d97706',
+    color: '#B5761A',
     desc:  'Métodos de pago disponibles en recibos, cobranza y compras',
     campos: [
       { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
@@ -223,7 +223,7 @@ const CATALOGOS: CatConfig[] = [
     tabla: 'marcas_vehiculos',
     label: 'Marcas de Vehículos',
     icon:  Car,
-    color: '#475569',
+    color: '#4A4D54',
     desc:  'Marcas disponibles en el registro de vehículos',
     campos: [
       { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
@@ -234,7 +234,7 @@ const CATALOGOS: CatConfig[] = [
     tabla: 'tipos_incidencia',
     label: 'Tipos de Incidencia',
     icon:  AlertTriangle,
-    color: '#dc2626',
+    color: '#C23B3B',
     desc:  'Clasificación de incidencias reportadas en el residencial',
     campos: [
       { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
@@ -245,7 +245,7 @@ const CATALOGOS: CatConfig[] = [
     tabla: 'origenes_incidencia',
     label: 'Orígenes de Incidencia',
     icon:  MapPin,
-    color: '#ea580c',
+    color: '#C8642A',
     desc:  'Origen del reporte de incidencia (Residente, Guardia, etc.)',
     campos: [
       { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
@@ -256,7 +256,7 @@ const CATALOGOS: CatConfig[] = [
     tabla:  'agrupadores_ingreso',
     label:  'Agrupadores de Centros de Ingreso',
     icon:   ArrowUpCircle,
-    color:  '#0d9488',
+    color:  '#178A80',
     desc:   'Agrupa centros de ingreso para filtrar como "Agrupador/Centro de Ingreso" en reportes, recibos y presupuestos',
     sortBy: 'orden',
     campos: [
@@ -271,7 +271,7 @@ const CATALOGOS: CatConfig[] = [
     tabla: 'centros_ingreso',
     label: 'Centros de Ingreso',
     icon:  ArrowUpCircle,
-    color: '#059669',
+    color: '#267F56',
     desc:  'Centros de ingreso, su agrupador y tipo de captura',
     campos: [
       { key: 'nombre',        label: 'Nombre *',        type: 'text',   required: true },
@@ -292,7 +292,7 @@ const CATALOGOS: CatConfig[] = [
     tabla:  'conceptos_ingreso',
     label:  'Conceptos de Ingreso',
     icon:   Tag,
-    color:  '#7c3aed',
+    color:  '#6B4E79',
     desc:   'Conceptos adicionales de cobro en recibos de ingreso (No identificados, Deslindes, Tags, Intereses, etc.)',
     sortBy: 'orden',
     campos: [
@@ -310,7 +310,7 @@ const CATALOGOS: CatConfig[] = [
     tabla:        'cat_categorias_mano_obra',
     label:        'Categorías Mano de Obra',
     icon:         HardHat,
-    color:        '#b45309',
+    color:        '#96600F',
     sectionLabel: 'Mantenimiento',
     desc:         'Categorías de mano de obra con sueldo diario y costo por hora de referencia (sueldo/8)',
     sortBy:       'categoria',
@@ -324,7 +324,7 @@ const CATALOGOS: CatConfig[] = [
     tabla:  'cat_puestos_colaboradores',
     label:  'Puestos de Colaboradores',
     icon:   Briefcase,
-    color:  '#b45309',
+    color:  '#96600F',
     desc:   'Puestos/cargos disponibles para el campo Puesto de Colaboradores',
     sortBy: 'orden',
     campos: [
@@ -337,7 +337,7 @@ const CATALOGOS: CatConfig[] = [
     tabla: '__custom__',
     label: 'Colaboradores',
     icon:  Users,
-    color: '#b45309',
+    color: '#96600F',
     desc:  'Personal operativo — usado para asignar OT (Asignado a / Supervisor)',
     campos: [],
   },
@@ -348,7 +348,7 @@ const CATALOGOS: CatConfig[] = [
     schema:       'golf',
     label:        'Categorías de Socios',
     icon:         Tag,
-    color:        '#059669',
+    color:        '#267F56',
     sectionLabel: 'Golf',
     desc:         'Categorías de membresía del Club de Golf (Platino, Oro, Familiar, etc.)',
     campos: [
@@ -362,7 +362,7 @@ const CATALOGOS: CatConfig[] = [
     schema: 'golf',
     label:  'Espacios Deportivos',
     icon:   MapPin,
-    color:  '#0369a1',
+    color:  '#2A6582',
     desc:   'Canchas y espacios disponibles para reservaciones',
     campos: [
       { key: 'nombre',      label: 'Nombre *',    type: 'text',     required: true },
@@ -375,7 +375,7 @@ const CATALOGOS: CatConfig[] = [
     schema: 'golf',
     label:  'Formas de Juego',
     icon:   Flag,
-    color:  '#d97706',
+    color:  '#B5761A',
     desc:   'Modalidades de juego (18 Hoyos, 9 Hoyos, Práctica, etc.)',
     campos: [
       { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
@@ -387,7 +387,7 @@ const CATALOGOS: CatConfig[] = [
     schema: 'golf',
     label:  'Tipos de Pase',
     icon:   Ticket,
-    color:  '#d97706',
+    color:  '#B5761A',
     desc:   'Tipos de pase de invitación disponibles al asignar pases a socios',
     campos: [
       { key: 'nombre',      label: 'Nombre *',    type: 'text',     required: true },
@@ -399,7 +399,7 @@ const CATALOGOS: CatConfig[] = [
     tabla:  '__custom__',
     label:  'Cuotas de Membresía',
     icon:   DollarSign,
-    color:  '#7c3aed',
+    color:  '#6B4E79',
     desc:   'Cuotas de inscripción, mensualidad y pensión de carrito por categoría',
     campos: [],
   },
@@ -408,7 +408,7 @@ const CATALOGOS: CatConfig[] = [
     tabla:  'agrupadores_venta',
     label:  'Agrupadores de Centros de Venta',
     icon:   Store,
-    color:  '#0d9488',
+    color:  '#178A80',
     desc:   'Agrupa centros de venta del POS para filtrar y totalizar como "Agrupador/Centro de Venta" en reportes y vistas',
     sortBy: 'orden',
     campos: [
@@ -421,7 +421,7 @@ const CATALOGOS: CatConfig[] = [
     tabla: '__custom__',
     label: 'Centros de Venta POS',
     icon:  Store,
-    color: '#059669',
+    color: '#267F56',
     desc:  'Centros de venta del POS de Golf y su mapeo al Centro de Ingreso para cortes',
     campos: [],
   },
@@ -430,7 +430,7 @@ const CATALOGOS: CatConfig[] = [
     tabla:        'vig_tipos_novedad',
     label:        'Tipos de Novedad',
     icon:         AlertTriangle,
-    color:        '#334155',
+    color:        '#33363C',
     sectionLabel: 'Vigilancia',
     desc:         'Clasificación de novedades del Parte de Vigilancia (Rutina, Acceso o Incidencia)',
     campos: [
@@ -445,7 +445,7 @@ const CATALOGOS: CatConfig[] = [
     tabla:        'vig_ubicaciones',
     label:        'Ubicaciones de Vigilancia',
     icon:         MapPin,
-    color:        '#334155',
+    color:        '#33363C',
     sectionLabel: 'Vigilancia',
     desc:         'Casetas, secciones, zonas e instalaciones que reporta Vigilancia (independiente de Áreas Comunes de Mantenimiento)',
     campos: [
@@ -559,7 +559,7 @@ function CuotasEstandarPanel() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
             <div style={{ width: 32, height: 32, borderRadius: 8, background: '#05996920',
               display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <DollarSign size={15} style={{ color: '#059669' }} />
+              <DollarSign size={15} style={{ color: '#62666E' }} />
             </div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Cuotas Estándar</h2>
           </div>
@@ -582,8 +582,8 @@ function CuotasEstandarPanel() {
       {/* Stats */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
         <div className="card" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <CheckCircle size={13} style={{ color: '#15803d' }} />
-          <span style={{ fontSize: 12 }}><strong style={{ color: '#15803d' }}>{activas}</strong> activas</span>
+          <CheckCircle size={13} style={{ color: '#1F7A50' }} />
+          <span style={{ fontSize: 12 }}><strong style={{ color: '#1F7A50' }}>{activas}</strong> activas</span>
         </div>
         {inactivas > 0 && (
           <div className="card" style={{ padding: '8px 16px' }}>
@@ -594,10 +594,10 @@ function CuotasEstandarPanel() {
 
       {/* Formulario inline */}
       {formOpen && (
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px 20px', marginBottom: 16 }}>
+        <div style={{ background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10, padding: '16px 20px', marginBottom: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <span style={{ fontSize: 14, fontWeight: 600 }}>{editing ? 'Editar cuota' : 'Nueva cuota'}</span>
-            <button onClick={() => setFormOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={16} /></button>
+            <button onClick={() => setFormOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87' }}><X size={16} /></button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px', gap: '10px 16px' }}>
             <div>
@@ -676,7 +676,7 @@ function CuotasEstandarPanel() {
               </td></tr>
             ) : cuotas.map(c => (
               <tr key={c.id} style={{ opacity: c.activo ? 1 : 0.45 }}>
-                <td style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{c.id}</td>
+                <td style={{ fontSize: 11, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{c.id}</td>
                 <td style={{ fontWeight: 500 }}>{c.nombre}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.periodicidad ?? '—'}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-muted)', maxWidth: 180,
@@ -688,8 +688,8 @@ function CuotasEstandarPanel() {
                     title="Ver / editar precios por sección y clasificación"
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11,
                       padding: '3px 10px', borderRadius: 20, border: 'none', cursor: 'pointer', fontWeight: 600,
-                      background: (c._lineCount ?? 0) > 0 ? '#dcfce7' : '#fef3c7',
-                      color:      (c._lineCount ?? 0) > 0 ? '#15803d' : '#92400e' }}>
+                      background: (c._lineCount ?? 0) > 0 ? '#1F7A50' : '#B5761A',
+                      color:      '#fff' }}>
                     <Eye size={11} />
                     {c._lineCount ?? 0} línea{(c._lineCount ?? 0) !== 1 ? 's' : ''}
                   </button>
@@ -698,8 +698,8 @@ function CuotasEstandarPanel() {
                   <button onClick={() => puedeEscribir && toggleActivo(c)}
                     style={{ background: 'none', border: 'none', cursor: puedeEscribir ? 'pointer' : 'default', display: 'flex', margin: '0 auto' }}>
                     {c.activo
-                      ? <ToggleRight size={20} style={{ color: '#15803d' }} />
-                      : <ToggleLeft  size={20} style={{ color: '#cbd5e1' }} />}
+                      ? <ToggleRight size={20} style={{ color: '#1F7A50' }} />
+                      : <ToggleLeft  size={20} style={{ color: '#C9CCD3' }} />}
                   </button>
                 </td>
                 {puedeEscribir && (
@@ -812,13 +812,13 @@ function CuotaPreciosModal({ cuota, puedeEscribir, onClose }: {
     >
       <div style={{ padding: '0 24px 24px' }}>
         {/* Info cabecera */}
-        <div style={{ display: 'flex', gap: 20, padding: '12px 0 16px', borderBottom: '1px solid #f1f5f9', marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 20, padding: '12px 0 16px', borderBottom: '1px solid #F4F5F7', marginBottom: 16 }}>
           <div>
-            <div style={{ fontSize: 10, color: '#059669', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 2 }}>Periodicidad</div>
+            <div style={{ fontSize: 10, color: '#267F56', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 2 }}>Periodicidad</div>
             <div style={{ fontSize: 13, fontWeight: 600 }}>{cuota.periodicidad ?? '—'}</div>
           </div>
           <div>
-            <div style={{ fontSize: 10, color: '#059669', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 2 }}>Líneas activas</div>
+            <div style={{ fontSize: 10, color: '#267F56', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 2 }}>Líneas activas</div>
             <div style={{ fontSize: 13, fontWeight: 600 }}>{lines.filter(l => l.activo).length}</div>
           </div>
         </div>
@@ -870,13 +870,13 @@ function CuotaPreciosModal({ cuota, puedeEscribir, onClose }: {
                     <button onClick={() => toggleLine(l)}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', margin: '0 auto' }}>
                       {l.activo
-                        ? <ToggleRight size={18} style={{ color: '#15803d' }} />
-                        : <ToggleLeft  size={18} style={{ color: '#cbd5e1' }} />}
+                        ? <ToggleRight size={18} style={{ color: '#1F7A50' }} />
+                        : <ToggleLeft  size={18} style={{ color: '#C9CCD3' }} />}
                     </button>
                   </td>
                   {puedeEscribir && (
                     <td>
-                      <button className="btn-ghost" style={{ padding: '3px 6px', color: '#dc2626' }}
+                      <button className="btn-ghost" style={{ padding: '3px 6px', color: '#C23B3B' }}
                         onClick={() => handleDelete(l.id)}>
                         <Trash2 size={12} />
                       </button>
@@ -890,7 +890,7 @@ function CuotaPreciosModal({ cuota, puedeEscribir, onClose }: {
 
         {/* Agregar línea */}
         {puedeEscribir && (
-          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '14px 16px' }}>
+          <div style={{ background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10, padding: '14px 16px' }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 10 }}>
               Agregar línea de precio
             </div>
@@ -924,7 +924,7 @@ function CuotaPreciosModal({ cuota, puedeEscribir, onClose }: {
               </button>
             </div>
             {errorNew && (
-              <div style={{ marginTop: 8, fontSize: 12, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 5 }}>
+              <div style={{ marginTop: 8, fontSize: 12, color: '#C23B3B', display: 'flex', alignItems: 'center', gap: 5 }}>
                 <AlertTriangle size={12} /> {errorNew}
               </div>
             )}
@@ -954,8 +954,8 @@ function CuotasGolfPanel() {
 // ── Centros de Venta POS ──────────────────────────────────────
 const emptyCVForm = () => ({ nombre: '', descripcion: '', orden: 1, id_centro_ingreso_fk: '' as string | number, genera_recibo_automatico: false, serie_factura: '', id_agrupador_fk: '' as string | number })
 
-const inputSt: React.CSSProperties = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }
-const labelSt: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }
+const inputSt: React.CSSProperties = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }
+const labelSt: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 4, display: 'block' }
 
 function CentrosVentaPOSPanel() {
   const { authUser } = useAuth()
@@ -1046,8 +1046,8 @@ function CentrosVentaPOSPanel() {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#05966918', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Store size={15} style={{ color: '#059669' }} />
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#267F5618', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Store size={15} style={{ color: '#62666E' }} />
             </div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Centros de Venta POS</h2>
           </div>
@@ -1070,8 +1070,8 @@ function CentrosVentaPOSPanel() {
       {/* Stats */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
         <div className="card" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <CheckCircle size={13} style={{ color: '#15803d' }} />
-          <span style={{ fontSize: 12 }}><strong style={{ color: '#15803d' }}>{activos}</strong> activos</span>
+          <CheckCircle size={13} style={{ color: '#1F7A50' }} />
+          <span style={{ fontSize: 12 }}><strong style={{ color: '#1F7A50' }}>{activos}</strong> activos</span>
         </div>
         {inactivos > 0 && (
           <div className="card" style={{ padding: '8px 16px' }}>
@@ -1082,10 +1082,10 @@ function CentrosVentaPOSPanel() {
 
       {/* Formulario inline */}
       {showForm && (
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px 20px', marginBottom: 16 }}>
+        <div style={{ background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10, padding: '16px 20px', marginBottom: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#1e293b' }}>{editing ? 'Editar centro' : 'Nuevo centro'}</span>
-            <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={16} /></button>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#26282D' }}>{editing ? 'Editar centro' : 'Nuevo centro'}</span>
+            <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87' }}><X size={16} /></button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 20px' }}>
             <div style={{ gridColumn: '1 / -1' }}>
@@ -1116,7 +1116,7 @@ function CentrosVentaPOSPanel() {
             </div>
             <div>
               <label style={labelSt}>Serie de Factura</label>
-              <input style={{ ...inputSt, fontFamily: 'monospace', textTransform: 'uppercase' }}
+              <input style={{ ...inputSt, fontVariantNumeric: 'tabular-nums', textTransform: 'uppercase' }}
                 value={form.serie_factura} onChange={e => setForm(f => ({ ...f, serie_factura: e.target.value }))}
                 placeholder="Ej. GOLF, HIPICO" />
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>
@@ -1126,21 +1126,21 @@ function CentrosVentaPOSPanel() {
           </div>
           {form.id_centro_ingreso_fk && (
             <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8,
-              background: (form as any).genera_recibo_automatico ? '#f0fdf4' : '#fef3c7',
-              border: `1px solid ${(form as any).genera_recibo_automatico ? '#bbf7d0' : '#fde68a'}`,
+              background: (form as any).genera_recibo_automatico ? '#F4F5F7' : '#E6E8EB',
+              border: '1px solid #E6E8EB',
               display: 'flex', alignItems: 'center', gap: 10 }}>
               <input type="checkbox" id="chk-genera-recibo-cat"
                 checked={(form as any).genera_recibo_automatico ?? false}
                 onChange={e => setForm(f => ({ ...f, genera_recibo_automatico: e.target.checked } as any))} />
               <label htmlFor="chk-genera-recibo-cat" style={{ fontSize: 13, cursor: 'pointer',
-                color: (form as any).genera_recibo_automatico ? '#15803d' : '#92400e', fontWeight: 500 }}>
+                color: (form as any).genera_recibo_automatico ? '#1F7A50' : '#7A4B0C', fontWeight: 500 }}>
                 {(form as any).genera_recibo_automatico
-                  ? '🟢 Genera recibo de ingreso automáticamente al hacer corte'
-                  : '🟡 No genera recibo automático — captura manual requerida'}
+                  ? 'Genera recibo de ingreso automáticamente al hacer corte'
+                  : 'No genera recibo automático — captura manual requerida'}
               </label>
             </div>
           )}
-          {error && <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, fontSize: 13, color: '#dc2626' }}>{error}</div>}
+          {error && <div style={{ marginTop: 10, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 7, fontSize: 13, color: '#C23B3B' }}>{error}</div>}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
             <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancelar</button>
             <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1182,39 +1182,39 @@ function CentrosVentaPOSPanel() {
               const ciNombre = m ? (centrosIng.find(ci => ci.id === m.id_centro_ingreso_fk)?.nombre ?? '—') : null
               return (
                 <tr key={item.id} style={{ opacity: item.activo ? 1 : 0.45 }}>
-                  <td style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{item.id}</td>
+                  <td style={{ fontSize: 11, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{item.id}</td>
                   <td style={{ fontWeight: 500 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                      <Store size={12} color="#059669" />{item.nombre}
+                      <Store size={12} color="#62666E" />{item.nombre}
                     </div>
                   </td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{item.descripcion ?? '—'}</td>
                   <td style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)' }}>{item.orden}</td>
                   <td style={{ fontSize: 12 }}>
-                    {agrupadores.find(a => a.id === item.id_agrupador_fk)?.nombre ?? <span style={{ color: '#cbd5e1' }}>—</span>}
+                    {agrupadores.find(a => a.id === item.id_agrupador_fk)?.nombre ?? <span style={{ color: '#C9CCD3' }}>—</span>}
                   </td>
                   <td>
                     {ciNombre
-                      ? <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: '#dcfce7', color: '#15803d' }}>{ciNombre}</span>
-                      : <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>Sin asignar</span>}
+                      ? <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: '#1F7A50', color: '#fff' }}>{ciNombre}</span>
+                      : <span style={{ fontSize: 11, color: '#D9922B', fontWeight: 600 }}>Sin asignar</span>}
                   </td>
-                  <td style={{ textAlign: 'center', fontSize: 11, fontFamily: 'monospace', fontWeight: 700, color: item.serie_factura ? '#7c3aed' : '#cbd5e1' }}>
+                  <td style={{ textAlign: 'center', fontSize: 11, fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: item.serie_factura ? '#6B4E79' : '#C9CCD3' }}>
                     {item.serie_factura || 'FAC'}
                   </td>
                   <td style={{ textAlign: 'center' }}>
                     {m ? (
                       <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 10,
-                        background: m.genera_recibo_automatico ? '#dcfce7' : '#fef3c7',
-                        color: m.genera_recibo_automatico ? '#15803d' : '#92400e' }}>
+                        background: m.genera_recibo_automatico ? '#1F7A50' : '#B5761A',
+                        color: '#fff' }}>
                         {m.genera_recibo_automatico ? 'Activo' : 'Manual'}
                       </span>
-                    ) : <span style={{ fontSize: 11, color: '#94a3b8' }}>—</span>}
+                    ) : <span style={{ fontSize: 11, color: '#7A7E87' }}>—</span>}
                   </td>
                   <td style={{ textAlign: 'center' }}>
                     <button onClick={() => toggleActivo(item)} style={{ background: 'none', border: 'none', cursor: puedeEscribir ? 'pointer' : 'default', display: 'flex', margin: '0 auto' }}>
                       {item.activo
-                        ? <ToggleRight size={20} style={{ color: '#15803d' }} />
-                        : <ToggleLeft  size={20} style={{ color: '#cbd5e1' }} />}
+                        ? <ToggleRight size={20} style={{ color: '#1F7A50' }} />
+                        : <ToggleLeft  size={20} style={{ color: '#C9CCD3' }} />}
                     </button>
                   </td>
                   {puedeEscribir && (
@@ -1244,7 +1244,7 @@ export default function CatalogosPage() {
     return (
       <div style={{ padding: '32px 36px' }}>
         <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
-          🔒 Acceso solo para administradores
+          Acceso solo para administradores
         </div>
       </div>
     )
@@ -1270,16 +1270,16 @@ export default function CatalogosPage() {
             return (
               <div key={cat.key}>
                 {showSection && (
-                  <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', borderTop: i > 0 ? '1px solid #f1f5f9' : 'none', marginTop: i > 0 ? 4 : 0 }}>
+                  <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.1em', borderTop: i > 0 ? '1px solid #F4F5F7' : 'none', marginTop: i > 0 ? 4 : 0 }}>
                     {cat.sectionLabel}
                   </div>
                 )}
                 <button onClick={() => setActiveKey(cat.key)}
                   style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '10px 14px', background: isActive ? cat.color + '10' : 'none',
+                    padding: '10px 14px', background: isActive ? '#E6E8EB' : 'none',
                     border: 'none', borderLeft: `3px solid ${isActive ? cat.color : 'transparent'}`,
                     cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
-                  onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = '#f8fafc' }}
+                  onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = '#F8F9FA' }}
                   onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'none' }}>
                   <div style={{ width: 28, height: 28, borderRadius: 7,
                     background: cat.color + (isActive ? '20' : '12'),
@@ -1386,9 +1386,9 @@ function CatalogoTable({ config }: { config: CatConfig }) {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: config.color + '18',
+            <div className="icon-chip" style={{ width: 32, height: 32, borderRadius: 8, 
               display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Icon size={15} style={{ color: config.color }} />
+              <Icon size={15} style={{ color: '#1C1D21' }} />
             </div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>{config.label}</h2>
           </div>
@@ -1406,8 +1406,8 @@ function CatalogoTable({ config }: { config: CatConfig }) {
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
         <div className="card" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <CheckCircle size={13} style={{ color: '#15803d' }} />
-          <span style={{ fontSize: 12 }}><strong style={{ color: '#15803d' }}>{activos}</strong> activos</span>
+          <CheckCircle size={13} style={{ color: '#1F7A50' }} />
+          <span style={{ fontSize: 12 }}><strong style={{ color: '#1F7A50' }}>{activos}</strong> activos</span>
         </div>
         {inactivos > 0 && (
           <div className="card" style={{ padding: '8px 16px' }}>
@@ -1438,7 +1438,7 @@ function CatalogoTable({ config }: { config: CatConfig }) {
               </td></tr>
             ) : pagedRows.map(row => (
               <tr key={row.id} style={{ opacity: row.activo ? 1 : 0.45 }}>
-                <td style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{row.id}</td>
+                <td style={{ fontSize: 11, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{row.id}</td>
                 {colsTabla.map(c => (
                   <td key={c.key} style={{ fontSize: c.key === 'nombre' ? 14 : 12, fontWeight: c.key === 'nombre' ? 500 : 400, color: 'var(--text-secondary)' }}>
                     {c.type === 'boolean'
@@ -1464,34 +1464,34 @@ function CatalogoTable({ config }: { config: CatConfig }) {
                   <button onClick={() => toggleActivo(row)}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', margin: '0 auto' }}>
                     {row.activo
-                      ? <ToggleRight size={20} style={{ color: '#15803d' }} />
-                      : <ToggleLeft  size={20} style={{ color: '#cbd5e1' }} />}
+                      ? <ToggleRight size={20} style={{ color: '#1F7A50' }} />
+                      : <ToggleLeft  size={20} style={{ color: '#C9CCD3' }} />}
                   </button>
                 </td>
                 <td>
                   <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                     {config.key === 'areas' && (
-                      <button className="btn-ghost" style={{ padding: '4px 6px', color: '#059669' }}
+                      <button className="btn-ghost" style={{ padding: '4px 6px', color: '#267F56' }}
                         title="Áreas Comunes" onClick={() => setDetailAreasRow(row)}>
                         <Flag size={13} />
                       </button>
                     )}
                     {config.key === 'secciones' &&
                       (selectMaps['id_tipo_seccion_fk']?.[row.id_tipo_seccion_fk] ?? '').toLowerCase() === 'condominio' && (
-                      <button className="btn-ghost" style={{ padding: '4px 6px', color: '#7c3aed' }}
+                      <button className="btn-ghost" style={{ padding: '4px 6px', color: '#6B4E79' }}
                         title="Administración Interna" onClick={() => setDetailAdminRow(row)}>
                         <Building2 size={13} />
                       </button>
                     )}
                     {config.hasDetail && (
-                      <button className="btn-ghost" style={{ padding: '4px 6px', color: '#0f766e' }} onClick={() => setDetailRow(row)}>
+                      <button className="btn-ghost" style={{ padding: '4px 6px', color: '#126B63' }} onClick={() => setDetailRow(row)}>
                         <Eye size={13} />
                       </button>
                     )}
                     <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setModal(row)}>
                       <Edit2 size={13} />
                     </button>
-                    <button className="btn-ghost" style={{ padding: '4px 6px', color: '#dc2626' }} onClick={() => handleDelete(row.id)}>
+                    <button className="btn-ghost" style={{ padding: '4px 6px', color: '#C23B3B' }} onClick={() => handleDelete(row.id)}>
                       <Trash2 size={13} />
                     </button>
                   </div>
@@ -1659,15 +1659,15 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
     >
 
         {/* Saldo + stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: '1px solid #f1f5f9' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: '1px solid #F4F5F7' }}>
           {[
-            { label: 'Saldo Actual',   value: fmtMXN(saldoActual), color: '#0f766e', icon: TrendingUp },
-            { label: 'Cargos período', value: fmtMXN(totalCargos), color: '#dc2626', icon: ArrowDownCircle },
-            { label: 'Abonos período', value: fmtMXN(totalAbonos), color: '#15803d', icon: ArrowUpCircle },
+            { label: 'Saldo Actual',   value: fmtMXN(saldoActual), color: '#126B63', icon: TrendingUp },
+            { label: 'Cargos período', value: fmtMXN(totalCargos), color: '#C23B3B', icon: ArrowDownCircle },
+            { label: 'Abonos período', value: fmtMXN(totalAbonos), color: '#1F7A50', icon: ArrowUpCircle },
           ].map((s, i) => {
             const SIcon = s.icon
             return (
-              <div key={s.label} style={{ padding: '14px 20px', textAlign: 'center', borderRight: i < 2 ? '1px solid #f1f5f9' : 'none' }}>
+              <div key={s.label} style={{ padding: '14px 20px', textAlign: 'center', borderRight: i < 2 ? '1px solid #F4F5F7' : 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 2 }}>
                   <SIcon size={14} style={{ color: s.color }} />
                   <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.label}</span>
@@ -1679,7 +1679,7 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
         </div>
 
         {/* Filtros + botón Abono */}
-        <div style={{ display: 'flex', gap: 10, padding: '12px 24px', borderBottom: '1px solid #f1f5f9', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 10, padding: '12px 24px', borderBottom: '1px solid #F4F5F7', alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em' }}>Período:</span>
           <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)}
             style={{ width: 140 }} />
@@ -1698,8 +1698,8 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
             <button
               onClick={() => { setShowAbono(s => !s); setErrorAbono('') }}
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', fontSize: 12, fontWeight: 600,
-                background: showAbono ? '#f0fdf4' : '#15803d', color: showAbono ? '#15803d' : '#fff',
-                border: '1px solid #15803d', borderRadius: 8, cursor: 'pointer', transition: 'all 0.15s' }}>
+                background: showAbono ? '#F4F5F7' : '#1F7A50', color: showAbono ? '#1F7A50' : '#fff',
+                border: '1px solid #1F7A50', borderRadius: 8, cursor: 'pointer', transition: 'all 0.15s' }}>
               <ArrowUpCircle size={13} />
               {showAbono ? 'Cancelar' : 'Registrar Abono'}
             </button>
@@ -1708,12 +1708,12 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
 
         {/* Formulario de abono */}
         {showAbono && (
-          <div style={{ padding: '16px 24px', background: '#f0fdf4', borderBottom: '1px solid #bbf7d0' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#15803d', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ padding: '16px 24px', background: '#F4F5F7', borderBottom: '1px solid #E6E8EB' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#1F7A50', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
               <ArrowUpCircle size={13} /> Registrar Abono — Los cargos solo se generan desde una Orden de Pago
             </div>
             {errorAbono && (
-              <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12, marginBottom: 10 }}>
+              <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12, marginBottom: 10 }}>
                 {errorAbono}
               </div>
             )}
@@ -1734,14 +1734,14 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
               </div>
               <div>
                 <label className="label">Referencia</label>
-                <input className="input" placeholder="No. de transferencia, cheque…" style={{ fontFamily: 'monospace' }}
+                <input className="input" placeholder="No. de transferencia, cheque…" style={{ fontVariantNumeric: 'tabular-nums' }}
                   value={formAbono.referencia} onChange={setFA('referencia')} />
               </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
               <button onClick={handleAbono} disabled={savingAbono}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', fontSize: 13, fontWeight: 600,
-                  background: '#15803d', color: '#fff', border: 'none', borderRadius: 8, cursor: savingAbono ? 'not-allowed' : 'pointer', opacity: savingAbono ? 0.7 : 1 }}>
+                  background: '#1F7A50', color: '#fff', border: 'none', borderRadius: 8, cursor: savingAbono ? 'not-allowed' : 'pointer', opacity: savingAbono ? 0.7 : 1 }}>
                 {savingAbono ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
                 {savingAbono ? 'Guardando…' : 'Confirmar Abono'}
               </button>
@@ -1778,17 +1778,17 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
                   <tr key={m.id}>
                     <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{fmtDate(m.fecha_movimiento)}</td>
                     <td style={{ fontSize: 12, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.concepto ?? '—'}</td>
-                    <td style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--text-muted)' }}>{m.referencia ?? '—'}</td>
+                    <td style={{ fontSize: 11, fontVariantNumeric: 'tabular-nums', color: 'var(--text-muted)' }}>{m.referencia ?? '—'}</td>
                     <td style={{ textAlign: 'center' }}>
                       <span style={{
                         fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600,
-                        background: m.tipo === 'Cargo' ? '#fef2f2' : '#f0fdf4',
-                        color:      m.tipo === 'Cargo' ? '#dc2626'  : '#15803d',
-                        border:     `1px solid ${m.tipo === 'Cargo' ? '#fecaca' : '#bbf7d0'}`,
+                        background: m.tipo === 'Cargo' ? '#C23B3B' : '#1F7A50',
+                        color:      '#fff',
+                        border:     `1px solid ${m.tipo === 'Cargo' ? '#C23B3B' : '#1F7A50'}`,
                       }}>{m.tipo}</span>
                     </td>
                     <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums',
-                      color: m.tipo === 'Cargo' ? '#dc2626' : '#15803d', fontSize: 13 }}>
+                      color: m.tipo === 'Cargo' ? '#C23B3B' : '#1F7A50', fontSize: 13 }}>
                       {m.tipo === 'Cargo' ? '−' : '+'}{fmtMXN(m.monto ?? 0)}
                     </td>
                     <td style={{ textAlign: 'right', fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
@@ -1965,33 +1965,33 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
 
   const tabStyle = (active: boolean): React.CSSProperties => ({
     padding: '8px 18px', fontSize: 13, fontWeight: active ? 600 : 400,
-    color: active ? '#1d4ed8' : 'var(--text-muted)',
-    borderBottom: `2px solid ${active ? '#2563eb' : 'transparent'}`,
+    color: active ? '#26282D' : 'var(--text-muted)',
+    borderBottom: `2px solid ${active ? '#1C1D21' : 'transparent'}`,
     background: 'none', border: 'none', borderBottomWidth: 2,
-    borderBottomStyle: 'solid', borderBottomColor: active ? '#2563eb' : 'transparent',
+    borderBottomStyle: 'solid', borderBottomColor: active ? '#1C1D21' : 'transparent',
     cursor: 'pointer', transition: 'all 0.15s',
   })
 
   return (
     <ModalShell modulo="mantenimiento" titulo={cuadrante.nombre} onClose={onClose} maxWidth={520}>
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', paddingLeft: 8 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', paddingLeft: 8 }}>
         <button style={tabStyle(tab === 'secciones')} onClick={() => setTab('secciones')}>
-          Secciones {selSecs.size > 0 && <span style={{ marginLeft: 4, fontSize: 11, background: '#dcfce7', color: '#15803d', borderRadius: 10, padding: '1px 6px' }}>{selSecs.size}</span>}
+          Secciones {selSecs.size > 0 && <span style={{ marginLeft: 4, fontSize: 11, background: '#1F7A50', color: '#fff', borderRadius: 10, padding: '1px 6px' }}>{selSecs.size}</span>}
         </button>
         <button style={tabStyle(tab === 'lotes')} onClick={() => setTab('lotes')}>Lotes</button>
         <button style={tabStyle(tab === 'areas')} onClick={() => setTab('areas')}>
-          Áreas {selAreas.size > 0 && <span style={{ marginLeft: 4, fontSize: 11, background: '#dbeafe', color: '#1d4ed8', borderRadius: 10, padding: '1px 6px' }}>{selAreas.size}</span>}
+          Áreas {selAreas.size > 0 && <span style={{ marginLeft: 4, fontSize: 11, background: '#E6E8EB', color: '#26282D', borderRadius: 10, padding: '1px 6px' }}>{selAreas.size}</span>}
         </button>
         <button style={tabStyle(tab === 'colaboradores')} onClick={() => setTab('colaboradores')}>
-          Colaboradores {selColabs.size > 0 && <span style={{ marginLeft: 4, fontSize: 11, background: '#ede9fe', color: '#7c3aed', borderRadius: 10, padding: '1px 6px' }}>{selColabs.size}</span>}
+          Colaboradores {selColabs.size > 0 && <span style={{ marginLeft: 4, fontSize: 11, background: '#6B4E79', color: '#fff', borderRadius: 10, padding: '1px 6px' }}>{selColabs.size}</span>}
         </button>
       </div>
 
       {/* Tab Secciones — N:M: una sección puede estar en varias zonas */}
       {tab === 'secciones' && (
         <>
-          <div style={{ padding: '10px 16px', borderBottom: '1px solid #e2e8f0' }}>
+          <div style={{ padding: '10px 16px', borderBottom: '1px solid #E6E8EB' }}>
             <input className="input" placeholder="Buscar sección…" value={busqSecs}
               onChange={e => setBusqSecs(e.target.value)} style={{ fontSize: 13 }} />
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
@@ -2011,26 +2011,26 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
               return (
                 <label key={x.id}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px',
-                    cursor: 'pointer', background: checked ? '#f0fdf4' : 'transparent',
-                    borderLeft: `3px solid ${checked ? '#15803d' : 'transparent'}`, transition: 'background 0.15s' }}>
+                    cursor: 'pointer', background: checked ? '#F4F5F7' : 'transparent',
+                    borderLeft: `3px solid ${checked ? '#1F7A50' : 'transparent'}`, transition: 'background 0.15s' }}>
                   <input type="checkbox" checked={checked} onChange={() => toggleSec(x.id)}
-                    style={{ accentColor: '#15803d', width: 15, height: 15 }} />
-                  <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: checked ? '#15803d' : '#1e293b' }}>
+                    style={{ accentColor: '#1F7A50', width: 15, height: 15 }} />
+                  <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: checked ? '#1F7A50' : '#26282D' }}>
                     {x.nombre}
                   </span>
                   <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{lotesPorSec[x.id] ?? 0} lotes</span>
                   {otraZona && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>también en {otraZona}</span>}
-                  {checked && <CheckCircle size={14} style={{ color: '#15803d', marginLeft: 'auto', flexShrink: 0 }} />}
+                  {checked && <CheckCircle size={14} style={{ color: '#1F7A50', marginLeft: 'auto', flexShrink: 0 }} />}
                 </label>
               )
             })}
           </div>
           {errorSecs && (
-            <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: '#fef2f2',
-              border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{errorSecs}</div>
+            <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: '#F4F5F7',
+              border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>{errorSecs}</div>
           )}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center',
-            padding: '12px 16px', borderTop: '1px solid #e2e8f0' }}>
+            padding: '12px 16px', borderTop: '1px solid #E6E8EB' }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               {selSecs.size} secci{selSecs.size !== 1 ? 'ones' : 'ón'} · {Array.from(selSecs).reduce((a, id) => a + (lotesPorSec[id] ?? 0), 0)} lotes en la zona
             </span>
@@ -2053,7 +2053,7 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
       {/* Tab Áreas */}
       {tab === 'areas' && (
         <>
-          <div style={{ padding: '10px 16px', borderBottom: '1px solid #e2e8f0' }}>
+          <div style={{ padding: '10px 16px', borderBottom: '1px solid #E6E8EB' }}>
             <input className="input" placeholder="Buscar área…" value={busqAreas}
               onChange={e => setBusqAreas(e.target.value)} style={{ fontSize: 13 }} />
           </div>
@@ -2069,24 +2069,24 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
               return (
                 <label key={a.id}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px',
-                    cursor: 'pointer', background: checked ? '#eff6ff' : 'transparent',
-                    borderLeft: `3px solid ${checked ? '#2563eb' : 'transparent'}`, transition: 'background 0.15s' }}>
+                    cursor: 'pointer', background: checked ? '#F4F5F7' : 'transparent',
+                    borderLeft: `3px solid ${checked ? '#1C1D21' : 'transparent'}`, transition: 'background 0.15s' }}>
                   <input type="checkbox" checked={checked} onChange={() => toggleArea(a.id)}
                     style={{ accentColor: 'var(--blue)', width: 15, height: 15 }} />
-                  <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: checked ? '#1d4ed8' : '#1e293b' }}>
+                  <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: '#26282D' }}>
                     {a.nombre}
                   </span>
-                  {checked && <CheckCircle size={14} style={{ color: '#2563eb', marginLeft: 'auto', flexShrink: 0 }} />}
+                  {checked && <CheckCircle size={14} style={{ color: '#1C1D21', marginLeft: 'auto', flexShrink: 0 }} />}
                 </label>
               )
             })}
           </div>
           {errorAreas && (
-            <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: '#fef2f2',
-              border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{errorAreas}</div>
+            <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: '#F4F5F7',
+              border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>{errorAreas}</div>
           )}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center',
-            padding: '12px 16px', borderTop: '1px solid #e2e8f0' }}>
+            padding: '12px 16px', borderTop: '1px solid #E6E8EB' }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               {selAreas.size} área{selAreas.size !== 1 ? 's' : ''} asignada{selAreas.size !== 1 ? 's' : ''}
             </span>
@@ -2103,7 +2103,7 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
       {/* Tab Colaboradores */}
       {tab === 'colaboradores' && (
         <>
-          <div style={{ padding: '10px 16px', borderBottom: '1px solid #e2e8f0' }}>
+          <div style={{ padding: '10px 16px', borderBottom: '1px solid #E6E8EB' }}>
             <input className="input" placeholder="Buscar colaborador…" value={busqColabs}
               onChange={e => setBusqColabs(e.target.value)} style={{ fontSize: 13 }} />
           </div>
@@ -2119,27 +2119,27 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
               return (
                 <label key={c.id}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px',
-                    cursor: 'pointer', background: checked ? '#f5f3ff' : 'transparent',
-                    borderLeft: `3px solid ${checked ? '#7c3aed' : 'transparent'}`, transition: 'background 0.15s' }}>
+                    cursor: 'pointer', background: checked ? '#F4F5F7' : 'transparent',
+                    borderLeft: `3px solid ${checked ? '#6B4E79' : 'transparent'}`, transition: 'background 0.15s' }}>
                   <input type="checkbox" checked={checked} onChange={() => toggleColab(c.id)}
-                    style={{ accentColor: '#7c3aed', width: 15, height: 15 }} />
+                    style={{ accentColor: '#6B4E79', width: 15, height: 15 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: checked ? '#6d28d9' : '#1e293b' }}>
+                    <div style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: checked ? '#5C4268' : '#26282D' }}>
                       {nombreCompletoColaborador(c)}
                     </div>
                     {c.puesto && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.puesto}</div>}
                   </div>
-                  {checked && <CheckCircle size={14} style={{ color: '#7c3aed', flexShrink: 0 }} />}
+                  {checked && <CheckCircle size={14} style={{ color: '#6B4E79', flexShrink: 0 }} />}
                 </label>
               )
             })}
           </div>
           {errorColabs && (
-            <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: '#fef2f2',
-              border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{errorColabs}</div>
+            <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: '#F4F5F7',
+              border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>{errorColabs}</div>
           )}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center',
-            padding: '12px 16px', borderTop: '1px solid #e2e8f0' }}>
+            padding: '12px 16px', borderTop: '1px solid #E6E8EB' }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               {selColabs.size} colaborador{selColabs.size !== 1 ? 'es' : ''} asignado{selColabs.size !== 1 ? 's' : ''}
             </span>
@@ -2227,7 +2227,7 @@ function ZonaLotes({ zona, secciones, otrasZonas, zonaNombres, onClose }: {
 
   return (
     <>
-      <div style={{ padding: '10px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ padding: '10px 16px', borderBottom: '1px solid #E6E8EB', display: 'flex', flexDirection: 'column', gap: 8 }}>
         <select className="select" value={secSel ?? ''} onChange={e => setSecSel(Number(e.target.value) || null)} style={{ fontSize: 13 }}>
           {compartidas.map(x => (
             <option key={x.id} value={x.id}>{x.nombre} — también en {(otrasZonas[x.id] ?? []).map(z => zonaNombres[z] ?? `#${z}`).join(', ')}</option>
@@ -2239,7 +2239,7 @@ function ZonaLotes({ zona, secciones, otrasZonas, zonaNombres, onClose }: {
             {todosFilt ? 'Quitar visibles' : 'Marcar visibles'}
           </button>
         </div>
-        {sinAsignar > 0 && <div style={{ fontSize: 11, color: '#b45309' }}>{sinAsignar} lote(s) de esta sección aún sin zona</div>}
+        {sinAsignar > 0 && <div style={{ fontSize: 11, color: '#96600F' }}>{sinAsignar} lote(s) de esta sección aún sin zona</div>}
       </div>
       <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 330px)', padding: '8px 0' }}>
         {loading ? (
@@ -2251,19 +2251,19 @@ function ZonaLotes({ zona, secciones, otrasZonas, zonaNombres, onClose }: {
           const otra = l.id_cuadrante_fk && l.id_cuadrante_fk !== zona.id ? (zonaNombres[l.id_cuadrante_fk] ?? `#${l.id_cuadrante_fk}`) : null
           return (
             <label key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 16px', cursor: 'pointer',
-              background: checked ? '#f0fdf4' : 'transparent', borderLeft: `3px solid ${checked ? '#15803d' : 'transparent'}` }}>
-              <input type="checkbox" checked={checked} onChange={() => toggle(l.id)} style={{ accentColor: '#15803d', width: 15, height: 15 }} />
-              <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: checked ? '#15803d' : '#1e293b' }}>{l.cve_lote ?? `#${l.lote}`}</span>
+              background: checked ? '#F4F5F7' : 'transparent', borderLeft: `3px solid ${checked ? '#1F7A50' : 'transparent'}` }}>
+              <input type="checkbox" checked={checked} onChange={() => toggle(l.id)} style={{ accentColor: '#1F7A50', width: 15, height: 15 }} />
+              <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: checked ? '#1F7A50' : '#26282D' }}>{l.cve_lote ?? `#${l.lote}`}</span>
               <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{[l.manzana && `Mz ${l.manzana}`, l.calle, l.numero].filter(Boolean).join(' ')}</span>
               {otra && !checked && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>en {otra}</span>}
-              {otra && checked && <span style={{ fontSize: 11, color: '#b45309', marginLeft: 'auto' }}>se moverá desde {otra}</span>}
+              {otra && checked && <span style={{ fontSize: 11, color: '#96600F', marginLeft: 'auto' }}>se moverá desde {otra}</span>}
             </label>
           )
         })}
       </div>
-      {error && <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
-      {ok && <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, color: '#15803d', fontSize: 12 }}>{ok}</div>}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderTop: '1px solid #e2e8f0' }}>
+      {error && <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>{error}</div>}
+      {ok && <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #1F7A50', borderRadius: 6, color: '#1F7A50', fontSize: 12 }}>{ok}</div>}
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderTop: '1px solid #E6E8EB' }}>
         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{sel.size} de {lotes.length} lotes en {zona.nombre}</span>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cerrar</button>
@@ -2345,7 +2345,7 @@ function AreaAreasComunes({ area, onClose }: { area: any; onClose: () => void })
 
   return (
     <ModalShell modulo="mantenimiento" titulo={`Áreas Comunes — ${area.nombre}`} onClose={onClose} maxWidth={480}>
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: 8 }}>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid #E6E8EB', display: 'flex', gap: 8 }}>
         <input className="input" placeholder="Nueva área común…" value={nueva}
           onChange={e => setNueva(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && crearYAsignar()}
@@ -2356,7 +2356,7 @@ function AreaAreasComunes({ area, onClose }: { area: any; onClose: () => void })
           Crear
         </button>
       </div>
-      <div style={{ padding: '8px 16px', borderBottom: '1px solid #f1f5f9' }}>
+      <div style={{ padding: '8px 16px', borderBottom: '1px solid #F4F5F7' }}>
         <input className="input" placeholder="Buscar área común existente…" value={busqueda}
           onChange={e => setBusqueda(e.target.value)} style={{ fontSize: 13 }} />
       </div>
@@ -2374,28 +2374,28 @@ function AreaAreasComunes({ area, onClose }: { area: any; onClose: () => void })
           return (
             <label key={a.id}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px',
-                cursor: 'pointer', background: checked ? '#f0fdf4' : 'transparent',
-                borderLeft: `3px solid ${checked ? '#16a34a' : 'transparent'}`,
+                cursor: 'pointer', background: checked ? '#F4F5F7' : 'transparent',
+                borderLeft: `3px solid ${checked ? '#267F56' : 'transparent'}`,
                 transition: 'background 0.15s' }}>
               <input type="checkbox" checked={checked} onChange={() => toggle(a.id)}
-                style={{ accentColor: '#16a34a', width: 15, height: 15 }} />
+                style={{ accentColor: '#267F56', width: 15, height: 15 }} />
               <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400,
-                color: checked ? '#15803d' : '#1e293b', flex: 1 }}>
+                color: checked ? '#1F7A50' : '#26282D', flex: 1 }}>
                 {a.nombre}
               </span>
-              {checked && <CheckCircle size={14} style={{ color: '#16a34a', flexShrink: 0 }} />}
+              {checked && <CheckCircle size={14} style={{ color: '#267F56', flexShrink: 0 }} />}
             </label>
           )
         })}
       </div>
       {error && (
-        <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: '#fef2f2',
-          border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>
+        <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: '#F4F5F7',
+          border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 12 }}>
           {error}
         </div>
       )}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center',
-        padding: '12px 16px', borderTop: '1px solid #e2e8f0' }}>
+        padding: '12px 16px', borderTop: '1px solid #E6E8EB' }}>
         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
           {seleccion.size} área{seleccion.size !== 1 ? 's' : ''} asignada{seleccion.size !== 1 ? 's' : ''}
         </span>
@@ -2501,7 +2501,7 @@ function SeccionAdministracion({ seccion, onClose }: { seccion: any; onClose: ()
     <ModalShell modulo="residencial" titulo={`Administración Interna — ${seccion.nombre}`} onClose={onClose} maxWidth={620}
       footer={<button className="btn-secondary" onClick={onClose}>Cerrar</button>}
     >
-      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 14, marginBottom: 16 }}>
+      <div style={{ background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, padding: 14, marginBottom: 16 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue)', marginBottom: 10 }}>
           {editId ? 'Editar periodo' : 'Nuevo periodo de administración'}
         </div>
@@ -2528,8 +2528,8 @@ function SeccionAdministracion({ seccion, onClose }: { seccion: any; onClose: ()
           <textarea className="input" rows={2} value={form.notas} onChange={set('notas')} style={{ resize: 'vertical' }} />
         </div>
         {error && (
-          <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca',
-            borderRadius: 6, color: '#dc2626', fontSize: 12, marginBottom: 10 }}>
+          <div style={{ padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B',
+            borderRadius: 6, color: '#C23B3B', fontSize: 12, marginBottom: 10 }}>
             {error}
           </div>
         )}
@@ -2558,13 +2558,13 @@ function SeccionAdministracion({ seccion, onClose }: { seccion: any; onClose: ()
             return (
               <div key={p.id} style={{
                 padding: 12, borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-                background: vigente ? '#f0fdf4' : '#fff', border: `1px solid ${vigente ? '#bbf7d0' : '#e2e8f0'}`,
+                background: vigente ? '#F4F5F7' : '#fff', border: '1px solid #E6E8EB',
               }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
                     <span style={{ fontSize: 13, fontWeight: 600 }}>{p.nombre_administrador}</span>
                     {vigente && (
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 10, background: '#dcfce7', color: '#15803d' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 10, background: '#1F7A50', color: '#fff' }}>
                         Vigente
                       </span>
                     )}
@@ -2583,7 +2583,7 @@ function SeccionAdministracion({ seccion, onClose }: { seccion: any; onClose: ()
                   <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => editar(p)}>
                     <Edit2 size={13} />
                   </button>
-                  <button className="btn-ghost" style={{ padding: '4px 6px', color: '#dc2626' }} onClick={() => eliminar(p.id)}>
+                  <button className="btn-ghost" style={{ padding: '4px 6px', color: '#C23B3B' }} onClick={() => eliminar(p.id)}>
                     <Trash2 size={13} />
                   </button>
                 </div>
@@ -2686,11 +2686,11 @@ function SeccionLotesDetail({ seccion, onClose }: { seccion: any; onClose: () =>
 
   const statusBadge = (s: string | null) => {
     const map: Record<string, { bg: string; color: string }> = {
-      Libre:     { bg: '#dbeafe', color: '#1d4ed8' },
-      Vendido:   { bg: '#dcfce7', color: '#15803d' },
-      Bloqueado: { bg: '#fef3c7', color: '#b45309' },
+      Libre:     { bg: '#E6E8EB', color: '#26282D' },
+      Vendido:   { bg: '#E6E8EB', color: '#1F7A50' },
+      Bloqueado: { bg: '#E6E8EB', color: '#96600F' },
     }
-    const style = map[s ?? ''] ?? { bg: '#f1f5f9', color: '#64748b' }
+    const style = map[s ?? ''] ?? { bg: '#F4F5F7', color: '#62666E' }
     return (
       <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600, ...style }}>
         {s ?? '—'}
@@ -2718,22 +2718,22 @@ function SeccionLotesDetail({ seccion, onClose }: { seccion: any; onClose: () =>
       {limite !== null && (
         <div style={{
           padding: '12px 16px', borderRadius: 8, marginBottom: 16,
-          background: llena ? '#fef2f2' : pct >= 80 ? '#fffbeb' : '#f0fdf4',
-          border: `1px solid ${llena ? '#fecaca' : pct >= 80 ? '#fde68a' : '#bbf7d0'}`,
+          background: '#F4F5F7',
+          border: '1px solid #E6E8EB',
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: llena ? '#dc2626' : pct >= 80 ? '#b45309' : '#15803d' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: llena ? '#C23B3B' : pct >= 80 ? '#96600F' : '#1F7A50' }}>
               {llena ? 'Sección llena' : pct >= 80 ? 'Capacidad casi agotada' : 'Capacidad'}
             </span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: llena ? '#dc2626' : '#475569' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: llena ? '#C23B3B' : '#4A4D54' }}>
               {actual} / {limite} lotes
               {disponibles !== null && disponibles > 0 && ` · ${disponibles} disponible${disponibles !== 1 ? 's' : ''}`}
             </span>
           </div>
-          <div style={{ height: 6, borderRadius: 6, background: '#e2e8f0' }}>
+          <div style={{ height: 6, borderRadius: 6, background: '#E6E8EB' }}>
             <div style={{
               height: '100%', width: `${pct}%`, borderRadius: 6, transition: 'width 0.3s',
-              background: llena ? '#dc2626' : pct >= 80 ? '#f59e0b' : '#22c55e',
+              background: llena ? '#C23B3B' : pct >= 80 ? '#D9922B' : '#2E9E6B',
             }} />
           </div>
         </div>
@@ -2754,7 +2754,7 @@ function SeccionLotesDetail({ seccion, onClose }: { seccion: any; onClose: () =>
 
       {/* Panel de búsqueda y asignación */}
       {showAsignar && (
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 14, marginBottom: 16 }}>
+        <div style={{ background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8, padding: 14, marginBottom: 16 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue)', marginBottom: 10 }}>
             Buscar lotes para asignar a «{seccion.nombre}»
           </div>
@@ -2783,7 +2783,7 @@ function SeccionLotesDetail({ seccion, onClose }: { seccion: any; onClose: () =>
               {soloSinSeccion ? 'No hay lotes sin sección disponibles' : 'No se encontraron lotes'}
             </div>
           ) : (
-            <div style={{ maxHeight: 240, overflowY: 'auto', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff' }}>
+            <div style={{ maxHeight: 240, overflowY: 'auto', borderRadius: 6, border: '1px solid #E6E8EB', background: '#fff' }}>
               <table>
                 <thead>
                   <tr>
@@ -2859,7 +2859,7 @@ function SeccionLotesDetail({ seccion, onClose }: { seccion: any; onClose: () =>
                     <td>{statusBadge(l.status_lote)}</td>
                     <td>
                       <button className="btn-ghost"
-                        style={{ padding: '4px 6px', color: '#dc2626' }}
+                        style={{ padding: '4px 6px', color: '#C23B3B' }}
                         disabled={quitando === l.id}
                         onClick={() => quitar(l.id)}
                         title="Quitar de esta sección">
@@ -2963,7 +2963,7 @@ function CatalogoModal({ config, row, onClose, onSaved }:
 
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto', maxHeight: 'calc(88vh - 130px)' }}>
           {error && (
-            <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>
+            <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>
               {error}
             </div>
           )}
@@ -3024,10 +3024,10 @@ function CatalogoModal({ config, row, onClose, onSaved }:
                       <>
                         <a href={form[c.key]} target="_blank" rel="noopener noreferrer"
                           style={{ fontSize: 12, color: 'var(--blue)', display: 'inline-flex', alignItems: 'center', gap: 4,
-                            padding: '6px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, textDecoration: 'none' }}>
+                            padding: '6px 12px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 6, textDecoration: 'none' }}>
                           <ExternalLink size={12} /> Ver archivo
                         </a>
-                        <button style={{ fontSize: 12, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca',
+                        <button style={{ fontSize: 12, color: '#C23B3B', background: '#F4F5F7', border: '1px solid #E6E8EB',
                           borderRadius: 6, padding: '6px 12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                           onClick={() => setForm(f => ({ ...f, [c.key]: '' }))}>
                           <Trash2 size={12} /> Quitar
@@ -3046,7 +3046,7 @@ function CatalogoModal({ config, row, onClose, onSaved }:
                     )}
                   </div>
                   {form[c.key] && (
-                    <div style={{ fontSize: 11, color: '#15803d', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <div style={{ fontSize: 11, color: '#1F7A50', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                       <CheckCircle size={11} /> Archivo cargado
                     </div>
                   )}
@@ -3184,7 +3184,7 @@ function RelAreaFrenteDetail({ modo, fila, onClose }:
       footer={<>
         <span style={{ fontSize: 12, color: 'var(--text-muted)', marginRight: 'auto' }}>
           {seleccion.size} de {catalogo.length} seleccionad{modo === 'frente' ? 'as' : 'os'}
-          {dirty && <span style={{ color: '#d97706', marginLeft: 8, fontWeight: 600 }}>· cambios sin guardar</span>}
+          {dirty && <span style={{ color: '#B5761A', marginLeft: 8, fontWeight: 600 }}>· cambios sin guardar</span>}
         </span>
         <button className="btn-secondary" onClick={onClose} disabled={saving}>Cancelar</button>
         <button className="btn-primary" onClick={handleSave} disabled={saving || !dirty}>
@@ -3193,7 +3193,7 @@ function RelAreaFrenteDetail({ modo, fila, onClose }:
         </button>
       </>}
     >
-      <div style={{ padding: '14px 20px', borderBottom: '1px solid #f1f5f9' }}>
+      <div style={{ padding: '14px 20px', borderBottom: '1px solid #F4F5F7' }}>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0, marginBottom: 10 }}>{subtitulo}</p>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <input
@@ -3213,7 +3213,7 @@ function RelAreaFrenteDetail({ modo, fila, onClose }:
       </div>
 
       {error && (
-        <div style={{ padding: '10px 20px', background: '#fef2f2', color: '#dc2626', fontSize: 12, borderBottom: '1px solid #fecaca' }}>
+        <div style={{ padding: '10px 20px', background: '#F4F5F7', color: '#C23B3B', fontSize: 12, borderBottom: '1px solid #E6E8EB' }}>
           {error}
         </div>
       )}
@@ -3238,21 +3238,21 @@ function RelAreaFrenteDetail({ modo, fila, onClose }:
                 <label key={item.id}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 12, padding: '10px 20px',
-                    borderBottom: '1px solid #f8fafc', cursor: 'pointer',
-                    background: checked ? '#eff6ff' : '#fff',
+                    borderBottom: '1px solid #F8F9FA', cursor: 'pointer',
+                    background: checked ? '#F4F5F7' : '#fff',
                     transition: 'background 0.1s',
                   }}
-                  onMouseEnter={e => { if (!checked) e.currentTarget.style.background = '#f8fafc' }}
+                  onMouseEnter={e => { if (!checked) e.currentTarget.style.background = '#F8F9FA' }}
                   onMouseLeave={e => { if (!checked) e.currentTarget.style.background = '#fff' }}
                 >
                   <input
                     type="checkbox"
                     checked={checked}
                     onChange={() => toggle(item.id)}
-                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#2563eb' }}
+                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#1C1D21' }}
                   />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: checked ? 600 : 500, color: checked ? '#1d4ed8' : '#1e293b' }}>
+                    <div style={{ fontSize: 13, fontWeight: checked ? 600 : 500, color: '#26282D' }}>
                       {item.nombre}
                     </div>
                     {ccNombre && (
@@ -3261,7 +3261,7 @@ function RelAreaFrenteDetail({ modo, fila, onClose }:
                       </div>
                     )}
                   </div>
-                  {checked && <CheckCircle size={14} style={{ color: '#2563eb', flexShrink: 0 }} />}
+                  {checked && <CheckCircle size={14} style={{ color: '#1C1D21', flexShrink: 0 }} />}
                 </label>
               )
             })}

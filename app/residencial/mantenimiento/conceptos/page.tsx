@@ -56,10 +56,10 @@ const UNIDADES = [
 ]
 
 const TIPO_COLOR: Record<TipoMatriz, { bg: string; color: string; label: string }> = {
-  mano_obra:         { bg: '#ede9fe', color: '#7c3aed', label: 'Mano de Obra' },
-  material:          { bg: '#dbeafe', color: '#1d4ed8', label: 'Material' },
-  equipo:            { bg: '#dcfce7', color: '#15803d', label: 'Equipo' },
-  herramienta_menor: { bg: '#fef3c7', color: '#d97706', label: 'Herramienta Menor' },
+  mano_obra:         { bg: '#E6E8EB', color: '#6B4E79', label: 'Mano de Obra' },
+  material:          { bg: '#E6E8EB', color: '#26282D', label: 'Material' },
+  equipo:            { bg: '#E6E8EB', color: '#1F7A50', label: 'Equipo' },
+  herramienta_menor: { bg: '#E6E8EB', color: '#B5761A', label: 'Herramienta Menor' },
 }
 
 const fmt  = (v: number | null | undefined) => v != null ? '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'
@@ -131,7 +131,7 @@ export default function ConceptosPage() {
       />
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 20 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', marginBottom: 20 }}>
         {([
           { key: 'conceptos', label: 'Conceptos', icon: <ClipboardList size={13} /> },
           { key: 'insumos',   label: 'Insumos Base', icon: <Boxes size={13} /> },
@@ -141,7 +141,7 @@ export default function ConceptosPage() {
               background: 'none', border: 'none', cursor: 'pointer', fontSize: 13,
               fontWeight: tab === t.key ? 600 : 400,
               color: tab === t.key ? 'var(--blue)' : 'var(--text-muted)',
-              borderBottom: tab === t.key ? '2px solid var(--blue)' : '2px solid transparent',
+              borderBottom: tab === t.key ? '2px solid #19D3C5' : '2px solid transparent',
               marginBottom: -1 }}>
             {t.icon}{t.label}
           </button>
@@ -221,7 +221,7 @@ export default function ConceptosPage() {
                         </td>
                         <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{c.unidad}</td>
                         <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 13 }}>{fmt(c.costo_directo)}</td>
-                        <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, fontSize: 13, color: '#0f766e' }}>{fmt(c.pu_venta)}</td>
+                        <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, fontSize: 13, color: '#126B63' }}>{fmt(c.pu_venta)}</td>
                         <td>
                           <div style={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
                             {puedeEscribir && (
@@ -352,7 +352,7 @@ function ConceptoModal({ concepto, categorias, onClose, onSaved }: {
       }
     >
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', padding: '0 24px' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', padding: '0 24px' }}>
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               disabled={t.id !== 'generales' && !conceptoId}
@@ -360,7 +360,7 @@ function ConceptoModal({ concepto, categorias, onClose, onSaved }: {
                 padding: '11px 16px', background: 'none', border: 'none', cursor: t.id !== 'generales' && !conceptoId ? 'not-allowed' : 'pointer',
                 fontSize: 13, fontWeight: tab === t.id ? 600 : 400,
                 color: tab === t.id ? 'var(--blue)' : 'var(--text-muted)',
-                borderBottom: tab === t.id ? '2px solid var(--blue)' : '2px solid transparent',
+                borderBottom: tab === t.id ? '2px solid #19D3C5' : '2px solid transparent',
                 marginBottom: -1, opacity: t.id !== 'generales' && !conceptoId ? 0.4 : 1,
               }}>
               {t.label}
@@ -368,7 +368,7 @@ function ConceptoModal({ concepto, categorias, onClose, onSaved }: {
           ))}
           {conceptoId && (
             <span style={{ marginLeft: 'auto', alignSelf: 'center', fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-              CD: <strong>{fmt(totales.costo_directo)}</strong> · PU Venta: <strong style={{ color: '#0f766e' }}>{fmt(totales.pu_venta)}</strong>
+              CD: <strong>{fmt(totales.costo_directo)}</strong> · PU Venta: <strong style={{ color: '#126B63' }}>{fmt(totales.pu_venta)}</strong>
             </span>
           )}
         </div>
@@ -376,7 +376,7 @@ function ConceptoModal({ concepto, categorias, onClose, onSaved }: {
         {tab === 'generales' && (
           <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto' }}>
             {error && (
-              <div style={{ padding: 10, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>
+              <div style={{ padding: 10, background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>
             )}
             <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 12 }}>
               <div><label className="label">Código *</label><input className="input" value={form.codigo} onChange={set('codigo')} placeholder="JAR-001" autoFocus /></div>
@@ -548,12 +548,12 @@ function MatrizPUPanel({ conceptoId, factorIndirectos, puedeEscribir, onTotalesC
             return (
               <div key={tipo} style={{ marginBottom: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                  <span style={{ padding: '1px 7px', borderRadius: 99, fontSize: 10, fontWeight: 700, background: tc.bg, color: tc.color }}>{tc.label}</span>
+                  <span style={{ padding: '1px 7px', borderRadius: 99, fontSize: 10, fontWeight: 700, background: tc.color, color: '#fff'}}>{tc.label}</span>
                   <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Subtotal: <strong>{fmtC(subtotal)}</strong></span>
                 </div>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
-                    <tr style={{ background: '#f8fafc' }}>
+                    <tr style={{ background: '#F8F9FA' }}>
                       <th style={thSt2Left}>Insumo</th>
                       <th style={thSt2}>Unidad</th>
                       <th style={{ ...thSt2, textAlign: 'right' }}>Cantidad</th>
@@ -564,7 +564,7 @@ function MatrizPUPanel({ conceptoId, factorIndirectos, puedeEscribir, onTotalesC
                   </thead>
                   <tbody>
                     {list.map(i => (
-                      <tr key={i.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <tr key={i.id} style={{ borderBottom: '1px solid #F4F5F7' }}>
                         <td style={tdSt2}>{i.descripcion}</td>
                         <td style={{ ...tdSt2, textAlign: 'center', color: 'var(--text-muted)' }}>{i.unidad ?? '—'}</td>
                         <td style={{ ...tdSt2, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtC(i.cantidad)}</td>
@@ -586,16 +586,16 @@ function MatrizPUPanel({ conceptoId, factorIndirectos, puedeEscribir, onTotalesC
           )}
 
           {/* Totales */}
-          <div style={{ display: 'flex', gap: 16, marginTop: 12, marginBottom: 12, padding: '10px 14px', background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: 8, fontSize: 12 }}>
+          <div style={{ display: 'flex', gap: 16, marginTop: 12, marginBottom: 12, padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8, fontSize: 12 }}>
             <span>Costo Directo: <strong>{fmt(costoDirecto)}</strong></span>
             <span>Indirectos ({fmtPct(factorIndirectos)}): <strong>{fmt(indirectos)}</strong></span>
-            <span style={{ color: '#0f766e' }}>PU Venta: <strong>{fmt(puVenta)}</strong></span>
+            <span style={{ color: '#126B63' }}>PU Venta: <strong>{fmt(puVenta)}</strong></span>
           </div>
 
           {/* Formulario agregar insumo */}
           {puedeEscribir && (
-            <div style={{ background: '#fafafa', border: '1px solid #e2e8f0', borderRadius: 6, padding: 10 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Agregar Insumo</div>
+            <div style={{ background: '#fafafa', border: '1px solid #E6E8EB', borderRadius: 6, padding: 10 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Agregar Insumo</div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 <div>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>Tipo</div>
@@ -634,7 +634,7 @@ function MatrizPUPanel({ conceptoId, factorIndirectos, puedeEscribir, onTotalesC
                         {results.map(r => (
                           <button key={r.id} onClick={() => selectResult(r)}
                             style={{ display: 'flex', width: '100%', textAlign: 'left', gap: 8, padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 11 }}
-                            onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                            onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                             <span style={{ color: TIPO_COLOR[r.tipo].color, fontWeight: 600, minWidth: 50 }}>{r.codigo}</span>
                             <span style={{ flex: 1 }}>{r.descripcion}</span>
@@ -662,7 +662,7 @@ function MatrizPUPanel({ conceptoId, factorIndirectos, puedeEscribir, onTotalesC
                     </div>
                   </>
                 )}
-                <div style={{ padding: '4px 8px', background: '#f0fdf4', borderRadius: 5, fontSize: 11, fontWeight: 600, color: '#15803d', minWidth: 70, textAlign: 'right' }}>
+                <div style={{ padding: '4px 8px', background: '#1F7A50', borderRadius: 5, fontSize: 11, fontWeight: 600, color: '#fff', minWidth: 70, textAlign: 'right' }}>
                   {form.cantidad && form.costo_unitario ? fmtC(Number(form.cantidad) * Number(form.costo_unitario)) : '—'}
                 </div>
                 <button className="btn-primary" style={{ padding: '6px 12px', fontSize: 11 }} onClick={addItem} disabled={saving || !form.descripcion.trim() || !form.cantidad || !form.costo_unitario}>
@@ -745,7 +745,7 @@ function InsumosBaseTab({ puedeEscribir, puedeEliminar }: { puedeEscribir: boole
           <button className="btn-ghost" onClick={fetchData} title="Actualizar"><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {syncMsg && <span style={{ fontSize: 11, color: syncMsg.startsWith('Error') ? '#dc2626' : '#15803d' }}>{syncMsg}</span>}
+          {syncMsg && <span style={{ fontSize: 11, color: syncMsg.startsWith('Error') ? '#C23B3B' : '#1F7A50' }}>{syncMsg}</span>}
           {puedeEscribir && (
             <button className="btn-secondary" onClick={sincronizarPrecios} disabled={syncing} title="Toma el precio de última compra de los artículos vinculados y recalcula APU y explosión">
               {syncing ? <Loader size={13} className="animate-spin" /> : <RefreshCw size={13} />} Sincronizar precios de Compras
@@ -781,7 +781,7 @@ function InsumosBaseTab({ puedeEscribir, puedeEliminar }: { puedeEscribir: boole
                     <tr key={i.id} style={{ cursor: 'pointer' }} onClick={() => { setEditing(i); setModal(true) }}>
                       <td style={{ fontFamily: 'var(--font-display)', fontSize: 12, color: tc.color, fontWeight: 600 }}>{i.codigo}</td>
                       <td style={{ fontSize: 13 }}>{i.descripcion}</td>
-                      <td><span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: tc.bg, color: tc.color }}>{tc.label}</span></td>
+                      <td><span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: tc.color, color: '#fff'}}>{tc.label}</span></td>
                       <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{i.unidad}</td>
                       <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{fmt(i.costo)}</td>
                       <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>
@@ -789,10 +789,10 @@ function InsumosBaseTab({ puedeEscribir, puedeEliminar }: { puedeEscribir: boole
                           ? <>
                               <span style={{ color: 'var(--blue)', fontWeight: 600 }}>{artMap[i.id_articulo_fk].clave}</span>{' '}
                               {precioArticulo(artMap[i.id_articulo_fk]).precio != null
-                                ? <span title={precioArticulo(artMap[i.id_articulo_fk]).origen} style={{ color: '#15803d' }}>● precio real</span>
-                                : <span style={{ color: '#d97706' }}>sin precio de compra</span>}
+                                ? <span title={precioArticulo(artMap[i.id_articulo_fk]).origen} style={{ color: '#1F7A50' }}>● precio real</span>
+                                : <span style={{ color: '#B5761A' }}>sin precio de compra</span>}
                             </>
-                          : i.tipo === 'material' ? <span style={{ color: '#d97706' }}>Sin vincular</span> : '—'}
+                          : i.tipo === 'material' ? <span style={{ color: '#B5761A' }}>Sin vincular</span> : '—'}
                       </td>
                       <td>
                         <div style={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
@@ -889,7 +889,7 @@ function InsumoBaseModal({ insumo, onClose, onSaved }: { insumo: InsumoBase | nu
         <button className="btn-primary" onClick={handleSave} disabled={saving}>{saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar</button>
       </>}>
       <div style={{ padding: '4px 4px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {error && <div style={{ padding: 10, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+        {error && <div style={{ padding: 10, background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
         <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 10 }}>
           <div><label className="label">Código *</label><input className="input" value={form.codigo} onChange={e => setForm(f => ({ ...f, codigo: e.target.value }))} placeholder="MO-01" autoFocus /></div>
           <div>
@@ -911,7 +911,7 @@ function InsumoBaseModal({ insumo, onClose, onSaved }: { insumo: InsumoBase | nu
             <label className="label">Vincular a artículo del catálogo (opcional)</label>
             <input className="input" placeholder="Buscar artículo…" value={form.search} onChange={e => setForm(f => ({ ...f, search: e.target.value, id_articulo_fk: null, factor: '' }))} />
             {form.id_articulo_fk && (
-              <div style={{ fontSize: 11, marginTop: 3, color: costoDeArticulo ? '#15803d' : '#d97706' }}>
+              <div style={{ fontSize: 11, marginTop: 3, color: costoDeArticulo ? '#1F7A50' : '#B5761A' }}>
                 {articulo
                   ? <>Vinculado ✓ {articulo.clave} — {articulo.nombre}. {costoDeArticulo
                       ? `Costo = ${precioArticulo(articulo).origen} ÷ equivalencia; se actualiza solo con cada compra.`
@@ -920,7 +920,7 @@ function InsumoBaseModal({ insumo, onClose, onSaved }: { insumo: InsumoBase | nu
               </div>
             )}
             {articulo && (
-              <div style={{ marginTop: 8, padding: 10, borderRadius: 6, background: mismaUnidad ? '#f0fdf4' : '#fffbeb', border: `1px solid ${mismaUnidad ? '#bbf7d0' : '#fde68a'}` }}>
+              <div style={{ marginTop: 8, padding: 10, borderRadius: 6, background: '#F4F5F7', border: '1px solid #E6E8EB' }}>
                 <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>
                   Equivalencia de unidades{!mismaUnidad && ' — el artículo y el insumo usan unidades distintas'}
                 </div>
@@ -956,6 +956,6 @@ function InsumoBaseModal({ insumo, onClose, onSaved }: { insumo: InsumoBase | nu
 }
 
 // Estilos de tabla reutilizables
-const thSt2: React.CSSProperties = { padding: '6px 8px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: '#94a3b8', whiteSpace: 'nowrap', textAlign: 'center', background: '#f8fafc' }
+const thSt2: React.CSSProperties = { padding: '6px 8px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: '#7A7E87', whiteSpace: 'nowrap', textAlign: 'center', background: '#F8F9FA' }
 const thSt2Left: React.CSSProperties = { ...thSt2, textAlign: 'left' }
 const tdSt2: React.CSSProperties = { padding: '6px 8px', verticalAlign: 'middle' }

@@ -69,8 +69,8 @@ export default function CargosTab() {
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
           { label: 'Total cargado',   value: fmt(totalMonto),  color: 'var(--text-primary)' },
-          { label: 'Total pagado',    value: fmt(totalPagado), color: '#15803d' },
-          { label: 'Saldo pendiente', value: fmt(totalSaldo),  color: totalSaldo > 0 ? '#dc2626' : '#15803d' },
+          { label: 'Total pagado',    value: fmt(totalPagado), color: '#1F7A50' },
+          { label: 'Saldo pendiente', value: fmt(totalSaldo),  color: totalSaldo > 0 ? '#C23B3B' : '#1F7A50' },
         ].map(s => (
           <div key={s.label} className="card" style={{ padding: '12px 18px', minWidth: 150 }}>
             <div style={{ fontSize: 18, fontFamily: 'var(--font-display)', fontWeight: 600, color: s.color }}>{s.value}</div>
@@ -141,14 +141,14 @@ export default function CargosTab() {
                     {new Date(c.fecha_cargo + 'T12:00:00').toLocaleDateString('es-MX')}
                   </td>
                   <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>{fmt(c.monto)}</td>
-                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#15803d' }}>
+                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#1F7A50' }}>
                     {c.monto_pagado > 0 ? fmt(c.monto_pagado) : '—'}
                   </td>
-                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: c.saldo > 0 ? '#dc2626' : '#15803d' }}>
+                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: c.saldo > 0 ? '#C23B3B' : '#1F7A50' }}>
                     {fmt(c.saldo)}
                   </td>
                   <td>
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: sc.color, color: '#fff', border: `1px solid ${sc.color}` }}>
                       {c.status}
                     </span>
                   </td>
@@ -321,7 +321,7 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
       </>}
     >
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #E6E8EB' }}>
           <div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Generar Cargos del Mes</h2>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
@@ -348,7 +348,7 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
 
           {/* Info cuota */}
           {cuotaSel && (
-            <div style={{ display: 'flex', gap: 16, padding: '12px 16px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8 }}>
+            <div style={{ display: 'flex', gap: 16, padding: '12px 16px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8 }}>
               <InfoChip label="Cuota"        value={cuotaSel.nombre} />
               <InfoChip label="Periodicidad" value={cuotaSel.periodicidad ?? '—'} />
             </div>
@@ -386,7 +386,7 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
             <>
               {sinLineas && (
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '12px 16px',
-                  background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>
+                  background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 13, color: '#C23B3B' }}>
                   <AlertTriangle size={14} />
                   Esta cuota no tiene líneas de precio configuradas. Define los precios por sección/clasificación en Catálogos → Cuotas Estándar.
                 </div>
@@ -394,7 +394,7 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
 
               {duplicados > 0 && (
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '10px 14px',
-                  background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 13, color: '#92400e' }}>
+                  background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 8, fontSize: 13, color: '#7A4B0C' }}>
                   <AlertTriangle size={14} />
                   {duplicados} lote(s) ya tienen cargo para esta cuota en {periodoMes} {periodoAnio} — se omitirán.
                 </div>
@@ -402,14 +402,14 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
 
               {excepcionesCount > 0 && (
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '10px 14px',
-                  background: '#fefce8', border: '1px solid #fef08a', borderRadius: 8, fontSize: 13, color: '#713f12' }}>
+                  background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #6B4A10', borderRadius: 8, fontSize: 13, color: '#6B4A10' }}>
                   <AlertTriangle size={14} />
                   {excepcionesCount} lote(s) usarán su <strong>tarifa excepcional</strong> en lugar del precio estándar.
                 </div>
               )}
 
               {!sinLineas && preview.length === 0 && (
-                <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)', fontSize: 13, background: '#f8fafc', borderRadius: 8 }}>
+                <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)', fontSize: 13, background: '#F8F9FA', borderRadius: 8 }}>
                   Todos los lotes aplicables ya tienen este cargo generado para el período seleccionado.
                 </div>
               )}
@@ -429,15 +429,15 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
                         <tr key={l.id}>
                           <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{l.cve_lote ?? `#${l.lote}`}</td>
                           <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600,
-                            color: l.esExcepcion ? '#d97706' : 'var(--text-primary)' }}>
+                            color: l.esExcepcion ? '#B5761A' : 'var(--text-primary)' }}>
                             {fmt(l.monto)}
                           </td>
                           <td style={{ textAlign: 'center' }}>
                             {l.esExcepcion ? (
                               <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
-                                background: '#fef3c7', color: '#d97706' }}>Excepción</span>
+                                background: '#B5761A', color: '#fff' }}>Excepción</span>
                             ) : (
-                              <span style={{ fontSize: 10, color: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
+                              <span style={{ fontSize: 10, color: '#1F7A50', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
                                 <CheckCircle size={10} /> Estándar
                               </span>
                             )}
@@ -446,7 +446,7 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr style={{ background: '#f8fafc' }}>
+                      <tr style={{ background: '#F8F9FA' }}>
                         <td style={{ padding: '10px 14px', fontWeight: 700, fontSize: 13 }}>
                           Total — {preview.length} lotes
                         </td>
@@ -555,7 +555,7 @@ function CargoEspecialModal({ onClose, onSaved }: { onClose: () => void; onSaved
                 {lotes.map((l: any) => (
                   <button key={l.id} onClick={() => selectLote(l)}
                     style={{ display: 'flex', width: '100%', padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--blue)', fontWeight: 600, fontSize: 14 }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                     {l.cve_lote ?? `#${l.lote}`}
                   </button>
@@ -576,7 +576,7 @@ function CargoEspecialModal({ onClose, onSaved }: { onClose: () => void; onSaved
             {!conceptoManual ? (
               <div style={{ position: 'relative' }}>
                 <button onClick={() => setShowCatalogo(s => !s)}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '8px 12px', background: form.concepto ? '#eff6ff' : 'var(--surface-600)', border: `1px solid ${form.concepto ? '#bfdbfe' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', fontSize: 13, color: form.concepto ? 'var(--blue)' : 'var(--text-muted)', fontWeight: form.concepto ? 600 : 400 }}>
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '8px 12px', background: form.concepto ? '#F4F5F7' : 'var(--surface-600)', border: `1px solid ${form.concepto ? '#C9CCD3' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', fontSize: 13, color: form.concepto ? 'var(--blue)' : 'var(--text-muted)', fontWeight: form.concepto ? 600 : 400 }}>
                   <span>{form.concepto || 'Selecciona del catálogo…'}</span>
                   <ChevronDown size={13} style={{ color: 'var(--text-muted)' }} />
                 </button>
@@ -585,7 +585,7 @@ function CargoEspecialModal({ onClose, onSaved }: { onClose: () => void; onSaved
                     {catalogoCuotas.map(c => (
                       <button key={c.id} onClick={() => aplicarCatalogo(c)}
                         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '9px 14px', background: 'none', border: 'none', cursor: 'pointer' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                         <span style={{ fontSize: 13 }}>{c.nombre}</span>
                         <span style={{ fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{fmt(c.monto)}</span>
@@ -643,7 +643,7 @@ function CargoEspecialModal({ onClose, onSaved }: { onClose: () => void; onSaved
 // ─── Helper ───────────────────────────────────────────────────────────────────
 const InfoChip = ({ label, value }: { label: string; value: string }) => (
   <div>
-    <div style={{ fontSize: 10, color: '#3b82f6', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 2 }}>{label}</div>
+    <div style={{ fontSize: 10, color: '#33363C', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 2 }}>{label}</div>
     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{value}</div>
   </div>
 )

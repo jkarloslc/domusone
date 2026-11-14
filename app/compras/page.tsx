@@ -9,19 +9,19 @@ import { useAuth } from '@/lib/AuthContext'
 import PageHeader from '@/components/layout/PageHeader'
 
 const MODULOS = [
-  { key: 'requisiciones', label: 'Requisiciones',     icon: ClipboardList, color: '#2563eb', desc: 'Solicitudes de compra por área' },
-  { key: 'cotizaciones',  label: 'Cotizaciones (RFQ)',icon: FileText,      color: '#7c3aed', desc: 'Solicitudes y comparación de cotizaciones' },
-  { key: 'ordenes',       label: 'Órdenes de Compra', icon: ShoppingCart,  color: '#059669', desc: 'OC y control de compras' },
-  { key: 'ordenes-pago',  label: 'Órdenes de Pago',   icon: FileText,      color: '#0891b2', desc: 'Pagos con y sin OC — servicios y compras' },
-  { key: 'recepciones',   label: 'Recepción',         icon: Truck,         color: '#0891b2', desc: 'Entrada de mercancías a almacén' },
-  { key: 'transferencias',label: 'Transferencias',    icon: ArrowLeftRight,color: '#d97706', desc: 'Movimientos entre almacenes' },
-  { key: 'inventario',    label: 'Inventario',        icon: Warehouse,     color: '#dc2626', desc: 'Saldos y kardex por almacén' },
-  { key: 'articulos',     label: 'Artículos',              icon: Package,       color: '#475569', desc: 'Catálogo de productos e insumos' },
-  { key: 'proveedores',   label: 'Proveedores',             icon: Users,         color: '#92400e', desc: 'Catálogo de proveedores' },
-  { key: 'almacenes',     label: 'Almacenes',    icon: Warehouse,     color: '#0891b2', desc: 'Almacenes y centros de costo' },
-  { key: 'areas',         label: 'Áreas Solicitantes',      icon: Layers,        color: '#7c3aed', desc: 'Áreas para requisiciones' },
-  { key: 'caja-chica',   label: 'Caja Chica',              icon: Wallet,        color: '#d97706', desc: 'Fondos y reembolsos de gastos menores' },
-  { key: 'combustible',  label: 'Combustible',             icon: Fuel,          color: '#16a34a', desc: 'Kardex de Magna, Premium y Diesel' },
+  { key: 'requisiciones', label: 'Requisiciones',     icon: ClipboardList, color: '#1C1D21', desc: 'Solicitudes de compra por área' },
+  { key: 'cotizaciones',  label: 'Cotizaciones (RFQ)',icon: FileText,      color: '#6B4E79', desc: 'Solicitudes y comparación de cotizaciones' },
+  { key: 'ordenes',       label: 'Órdenes de Compra', icon: ShoppingCart,  color: '#267F56', desc: 'OC y control de compras' },
+  { key: 'ordenes-pago',  label: 'Órdenes de Pago',   icon: FileText,      color: '#32789A', desc: 'Pagos con y sin OC — servicios y compras' },
+  { key: 'recepciones',   label: 'Recepción',         icon: Truck,         color: '#32789A', desc: 'Entrada de mercancías a almacén' },
+  { key: 'transferencias',label: 'Transferencias',    icon: ArrowLeftRight,color: '#B5761A', desc: 'Movimientos entre almacenes' },
+  { key: 'inventario',    label: 'Inventario',        icon: Warehouse,     color: '#C23B3B', desc: 'Saldos y kardex por almacén' },
+  { key: 'articulos',     label: 'Artículos',              icon: Package,       color: '#4A4D54', desc: 'Catálogo de productos e insumos' },
+  { key: 'proveedores',   label: 'Proveedores',             icon: Users,         color: '#7A4B0C', desc: 'Catálogo de proveedores' },
+  { key: 'almacenes',     label: 'Almacenes',    icon: Warehouse,     color: '#32789A', desc: 'Almacenes y centros de costo' },
+  { key: 'areas',         label: 'Áreas Solicitantes',      icon: Layers,        color: '#6B4E79', desc: 'Áreas para requisiciones' },
+  { key: 'caja-chica',   label: 'Caja Chica',              icon: Wallet,        color: '#B5761A', desc: 'Fondos y reembolsos de gastos menores' },
+  { key: 'combustible',  label: 'Combustible',             icon: Fuel,          color: '#267F56', desc: 'Kardex de Magna, Premium y Diesel' },
 ]
 
 export default function ComprasPage() {
@@ -46,15 +46,15 @@ export default function ComprasPage() {
             <button key={m.key}
               onClick={() => router.push(`/compras/${m.key}`)}
               className="card card-hover"
-              style={{ padding: '18px 20px', textAlign: 'left', background: 'none', border: '1px solid #e2e8f0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: m.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Icon size={18} style={{ color: m.color }} />
+              style={{ padding: '18px 20px', textAlign: 'left', background: '#fff', border: '1px solid #E6E8EB', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div className="icon-chip" style={{ width: 40, height: 40, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon size={18} />
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{m.label}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{m.desc}</div>
               </div>
-              <ChevronRight size={14} style={{ color: '#cbd5e1', flexShrink: 0 }} />
+              <ChevronRight size={14} style={{ color: '#C9CCD3', flexShrink: 0 }} />
             </button>
           )
         })}
@@ -65,21 +65,21 @@ export default function ComprasPage() {
         <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>Flujo P2P</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           {[
-            { label: 'Requisición', color: '#2563eb' },
-            { label: 'Auth. Req.', color: '#059669' },
-            { label: 'RFQ / Cotización', color: '#7c3aed' },
-            { label: 'Orden de Compra', color: '#059669' },
-            { label: 'Auth. OC', color: '#059669' },
-            { label: 'Orden de Pago', color: '#0891b2' },
-            { label: 'Recepción', color: '#d97706' },
-            { label: 'Transferencia', color: '#d97706' },
-            { label: 'Inventario', color: '#dc2626' },
+            { label: 'Requisición', color: '#1C1D21' },
+            { label: 'Auth. Req.', color: '#267F56' },
+            { label: 'RFQ / Cotización', color: '#6B4E79' },
+            { label: 'Orden de Compra', color: '#267F56' },
+            { label: 'Auth. OC', color: '#267F56' },
+            { label: 'Orden de Pago', color: '#32789A' },
+            { label: 'Recepción', color: '#B5761A' },
+            { label: 'Transferencia', color: '#B5761A' },
+            { label: 'Inventario', color: '#C23B3B' },
           ].map((step, i, arr) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ padding: '5px 10px', borderRadius: 20, background: step.color + '12', border: `1px solid ${step.color}30`, fontSize: 11, fontWeight: 600, color: step.color, whiteSpace: 'nowrap' }}>
+              <div style={{ padding: '5px 10px', borderRadius: 20, background: step.color, border: `1px solid ${step.color}`, fontSize: 11, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap' }}>
                 {step.label}
               </div>
-              {i < arr.length - 1 && <span style={{ color: '#cbd5e1', fontSize: 16 }}>→</span>}
+              {i < arr.length - 1 && <span style={{ color: '#C9CCD3', fontSize: 16 }}>→</span>}
             </div>
           ))}
         </div>

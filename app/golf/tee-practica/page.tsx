@@ -170,11 +170,11 @@ function ModalNuevaEntrada({ onClose, onSaved }: { onClose: () => void; onSaved:
         </>}
       >
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 13, color: '#475569', marginBottom: 6 }}>
-            <span style={{ fontWeight: 600, color: '#1e293b' }}>{nombreCompleto(success.cat_socios)}</span>
+          <div style={{ fontSize: 13, color: '#4A4D54', marginBottom: 6 }}>
+            <span style={{ fontWeight: 600, color: '#26282D' }}>{nombreCompleto(success.cat_socios)}</span>
           </div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#059669', margin: '12px 0 4px' }}>{success.num_bolas}</div>
-          <div style={{ fontSize: 12, color: '#64748b' }}>bolas asignadas</div>
+          <div style={{ fontSize: 28, fontWeight: 800, color: '#267F56', margin: '12px 0 4px' }}>{success.num_bolas}</div>
+          <div style={{ fontSize: 12, color: '#62666E' }}>bolas asignadas</div>
         </div>
       </ModalShell>
     )
@@ -191,7 +191,7 @@ function ModalNuevaEntrada({ onClose, onSaved }: { onClose: () => void; onSaved:
           className="btn-primary"
           onClick={handleGuardar}
           disabled={saving || !tieneSocio || tieneAdeudo || verificandoAdeudo}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#059669', border: 'none' }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#267F56', border: 'none' }}>
           {saving
             ? <><Loader size={14} className="animate-spin" /> Guardando…</>
             : <><Printer size={14} /> Registrar y Emitir Ticket</>}
@@ -203,33 +203,33 @@ function ModalNuevaEntrada({ onClose, onSaved }: { onClose: () => void; onSaved:
           {/* Búsqueda de socio */}
           {!tieneSocio ? (
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6, display: 'block' }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 6, display: 'block' }}>
                 Buscar Socio *
               </label>
               <div style={{ position: 'relative' }}>
-                <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
                 <input
                   autoFocus
                   value={busqueda}
                   onChange={e => setBusqueda(e.target.value)}
                   placeholder="Nombre o número de socio…"
-                  style={{ width: '100%', padding: '9px 12px 9px 32px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, outline: 'none', fontFamily: 'inherit' }}
+                  style={{ width: '100%', padding: '9px 12px 9px 32px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, outline: 'none', fontFamily: 'inherit' }}
                 />
-                {buscando && <Loader size={13} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', animation: 'spin 1s linear infinite' }} />}
+                {buscando && <Loader size={13} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87', animation: 'spin 1s linear infinite' }} />}
               </div>
               {resultados.length > 0 && (
-                <div style={{ marginTop: 4, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+                <div style={{ marginTop: 4, border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
                   {resultados.map(s => (
                     <button key={s.id} onClick={() => handleSeleccionarSocio(s)}
-                      style={{ width: '100%', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, background: '#fff', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #f1f5f9' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                      style={{ width: '100%', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, background: '#fff', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #F4F5F7' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                       onMouseLeave={e => (e.currentTarget.style.background = '#fff')}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#0369a1' }}>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#E6E8EB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#2A6582' }}>
                         {s.nombre.charAt(0)}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{nombreCompleto(s)}</div>
-                        <div style={{ fontSize: 11, color: '#94a3b8', display: 'flex', gap: 6 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>{nombreCompleto(s)}</div>
+                        <div style={{ fontSize: 11, color: '#7A7E87', display: 'flex', gap: 6 }}>
                           {s.numero_socio && <span>#{s.numero_socio}</span>}
                           {s.cat_categorias_socios?.nombre && <span>· {s.cat_categorias_socios.nombre}</span>}
                         </div>
@@ -242,44 +242,44 @@ function ModalNuevaEntrada({ onClose, onSaved }: { onClose: () => void; onSaved:
           ) : (
             /* Socio seleccionado */
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6, display: 'block' }}>Socio</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10 }}>
-                <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 15, fontWeight: 700, color: '#fff' }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 6, display: 'block' }}>Socio</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 10 }}>
+                <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#267F56', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 15, fontWeight: 700, color: '#fff' }}>
                   {socioSelec.nombre.charAt(0)}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#1e293b' }}>{nombreCompleto(socioSelec)}</div>
-                  <div style={{ fontSize: 11, color: '#64748b', display: 'flex', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#26282D' }}>{nombreCompleto(socioSelec)}</div>
+                  <div style={{ fontSize: 11, color: '#62666E', display: 'flex', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
                     {socioSelec.numero_socio && <span>#{socioSelec.numero_socio}</span>}
                     {socioSelec.cat_categorias_socios?.nombre && <span>· {socioSelec.cat_categorias_socios.nombre}</span>}
                   </div>
                 </div>
                 <button onClick={() => { setSocioSelec(null); setAdeudos([]) }}
-                  style={{ width: 28, height: 28, borderRadius: 6, background: 'transparent', border: '1px solid #e2e8f0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <X size={12} style={{ color: '#64748b' }} />
+                  style={{ width: 28, height: 28, borderRadius: 6, background: 'transparent', border: '1px solid #E6E8EB', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <X size={12} style={{ color: '#62666E' }} />
                 </button>
               </div>
 
               {/* Estado de adeudos */}
               {verificandoAdeudo ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '8px 12px', background: '#f8fafc', borderRadius: 8, fontSize: 12, color: '#64748b' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '8px 12px', background: '#F8F9FA', borderRadius: 8, fontSize: 12, color: '#62666E' }}>
                   <Loader size={13} className="animate-spin" /> Verificando cuotas…
                 </div>
               ) : tieneAdeudo ? (
-                <div style={{ marginTop: 8, padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, fontSize: 12, fontWeight: 700, color: '#dc2626' }}>
+                <div style={{ marginTop: 8, padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, fontSize: 12, fontWeight: 700, color: '#C23B3B' }}>
                     <AlertTriangle size={13} /> Socio con adeudo — no puede obtener ticket
                   </div>
                   {adeudos.map(a => (
-                    <div key={a.id} style={{ fontSize: 11, color: '#991b1b', display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                    <div key={a.id} style={{ fontSize: 11, color: '#8C2A2A', display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
                       <span>{a.concepto}</span>
                       <span style={{ fontWeight: 600 }}>{fmt$(a.monto_final ?? 0)}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, padding: '8px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, fontSize: 12, color: '#15803d', fontWeight: 600 }}>
-                  <Circle size={8} style={{ fill: '#15803d', color: '#15803d' }} /> Sin adeudos — puede obtener ticket
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, padding: '8px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #1F7A50', borderRadius: 8, fontSize: 12, color: '#1F7A50', fontWeight: 600 }}>
+                  <Circle size={8} style={{ fill: '#1F7A50', color: '#1F7A50' }} /> Sin adeudos — puede obtener ticket
                 </div>
               )}
             </div>
@@ -287,31 +287,31 @@ function ModalNuevaEntrada({ onClose, onSaved }: { onClose: () => void; onSaved:
 
           {/* Número de bolas */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6, display: 'block' }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 6, display: 'block' }}>
               Número de Bolas *
             </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <button
                 onClick={() => setNumBolas(v => Math.max(1, v - 25))}
-                style={{ width: 36, height: 36, borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                style={{ width: 36, height: 36, borderRadius: 8, border: '1px solid #E6E8EB', background: '#F8F9FA', cursor: 'pointer', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
               <input
                 type="number"
                 min={1}
                 max={999}
                 value={numBolas}
                 onChange={e => setNumBolas(Math.max(1, Math.min(999, Number(e.target.value) || 1)))}
-                style={{ width: 90, padding: '8px 12px', fontSize: 20, fontWeight: 700, textAlign: 'center', border: '1px solid #e2e8f0', borderRadius: 8, outline: 'none', fontFamily: 'inherit' }}
+                style={{ width: 90, padding: '8px 12px', fontSize: 20, fontWeight: 700, textAlign: 'center', border: '1px solid #E6E8EB', borderRadius: 8, outline: 'none', fontFamily: 'inherit' }}
               />
               <button
                 onClick={() => setNumBolas(v => Math.min(999, v + 25))}
-                style={{ width: 36, height: 36, borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                style={{ width: 36, height: 36, borderRadius: 8, border: '1px solid #E6E8EB', background: '#F8F9FA', cursor: 'pointer', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                 {[50, 100, 150, 200].map(n => (
                   <button key={n} onClick={() => setNumBolas(n)}
                     style={{ padding: '5px 10px', fontSize: 11, fontWeight: 600, borderRadius: 6, border: '1px solid', cursor: 'pointer',
-                      background: numBolas === n ? '#059669' : '#f8fafc',
-                      color:      numBolas === n ? '#fff' : '#64748b',
-                      borderColor: numBolas === n ? '#059669' : '#e2e8f0' }}>
+                      background: numBolas === n ? '#267F56' : '#F8F9FA',
+                      color:      numBolas === n ? '#fff' : '#62666E',
+                      borderColor: numBolas === n ? '#267F56' : '#E6E8EB' }}>
                     {n}
                   </button>
                 ))}
@@ -321,20 +321,20 @@ function ModalNuevaEntrada({ onClose, onSaved }: { onClose: () => void; onSaved:
 
           {/* Notas opcionales */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6, display: 'block' }}>
-              Notas <span style={{ fontWeight: 400, color: '#94a3b8' }}>(opcional)</span>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#4A4D54', marginBottom: 6, display: 'block' }}>
+              Notas <span style={{ fontWeight: 400, color: '#7A7E87' }}>(opcional)</span>
             </label>
             <textarea
               value={notas}
               onChange={e => setNotas(e.target.value)}
               rows={2}
               placeholder="Observaciones adicionales…"
-              style={{ width: '100%', padding: '8px 12px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
+              style={{ width: '100%', padding: '8px 12px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 8, outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
             />
           </div>
 
           {error && (
-            <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>
+            <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 8, fontSize: 13, color: '#C23B3B' }}>
               {error}
             </div>
           )}
@@ -387,7 +387,7 @@ export default function TeePracticaPage() {
         variant="xl"
         backHref="/golf"
         icon={Target}
-        color="#059669"
+        color="#267F56"
         eyebrowLabel="Módulo"
         title="Tee de Práctica"
         subtitle="Registro de entradas y emisión de tickets — concesionado"
@@ -397,7 +397,7 @@ export default function TeePracticaPage() {
           </button>
           {puedeEscribir && (
             <button className="btn-primary" onClick={() => setShowModal(true)}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#059669', border: 'none' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#267F56', border: 'none' }}>
               <Plus size={14} /> Nueva Entrada
             </button>
           )}
@@ -410,13 +410,13 @@ export default function TeePracticaPage() {
           type="date"
           value={fecha}
           onChange={e => setFecha(e.target.value)}
-          style={{ padding: '7px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, outline: 'none', fontFamily: 'inherit', background: '#fff' }}
+          style={{ padding: '7px 12px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, outline: 'none', fontFamily: 'inherit', background: '#fff' }}
         />
         <div style={{ display: 'flex', gap: 10 }}>
-          <div style={{ padding: '7px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, fontSize: 12, color: '#15803d', fontWeight: 600 }}>
+          <div style={{ padding: '7px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #1F7A50', borderRadius: 8, fontSize: 12, color: '#1F7A50', fontWeight: 600 }}>
             {loading ? '—' : entradas.length} entradas
           </div>
-          <div style={{ padding: '7px 14px', background: '#ecfdf5', border: '1px solid #6ee7b7', borderRadius: 8, fontSize: 12, color: '#065f46', fontWeight: 600 }}>
+          <div style={{ padding: '7px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #17603F', borderRadius: 8, fontSize: 12, color: '#17603F', fontWeight: 600 }}>
             {loading ? '—' : totalBolas.toLocaleString('es-MX')} bolas
           </div>
         </div>
@@ -425,20 +425,20 @@ export default function TeePracticaPage() {
       {/* Tabla de entradas */}
       <div className="card" style={{ overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>
+          <div style={{ padding: 40, textAlign: 'center', color: '#7A7E87' }}>
             <Loader size={20} className="animate-spin" style={{ margin: '0 auto 8px' }} />
             <div style={{ fontSize: 13 }}>Cargando…</div>
           </div>
         ) : entradas.length === 0 ? (
           <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-            <Target size={32} style={{ color: '#cbd5e1', margin: '0 auto 12px' }} />
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Sin entradas registradas</div>
-            <div style={{ fontSize: 12, color: '#94a3b8' }}>
+            <Target size={32} style={{ color: '#C9CCD3', margin: '0 auto 12px' }} />
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#62666E', marginBottom: 4 }}>Sin entradas registradas</div>
+            <div style={{ fontSize: 12, color: '#7A7E87' }}>
               {fecha === localToday() ? 'No hay entradas hoy' : `No hay entradas el ${fecha}`}
             </div>
             {puedeEscribir && (
               <button className="btn-primary" onClick={() => setShowModal(true)}
-                style={{ marginTop: 16, display: 'inline-flex', alignItems: 'center', gap: 6, background: '#059669', border: 'none' }}>
+                style={{ marginTop: 16, display: 'inline-flex', alignItems: 'center', gap: 6, background: '#267F56', border: 'none' }}>
                 <Plus size={14} /> Registrar entrada
               </button>
             )}
@@ -448,47 +448,47 @@ export default function TeePracticaPage() {
           <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: '#64748b', textAlign: 'left', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Folio</th>
-                <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: '#64748b', textAlign: 'left', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Socio</th>
-                <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: '#64748b', textAlign: 'left', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Categoría</th>
-                <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: '#64748b', textAlign: 'center', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Bolas</th>
-                <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: '#64748b', textAlign: 'left', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Hora</th>
-                <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: '#64748b', textAlign: 'center', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Ticket</th>
+              <tr style={{ background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
+                <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: '#62666E', textAlign: 'left', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Folio</th>
+                <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: '#62666E', textAlign: 'left', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Socio</th>
+                <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: '#62666E', textAlign: 'left', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Categoría</th>
+                <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: '#62666E', textAlign: 'center', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Bolas</th>
+                <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: '#62666E', textAlign: 'left', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Hora</th>
+                <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: '#62666E', textAlign: 'center', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Ticket</th>
               </tr>
             </thead>
             <tbody>
               {entradasPag.map((e, idx) => (
-                <tr key={e.id} style={{ borderBottom: '1px solid #f1f5f9', background: idx % 2 === 0 ? '#fff' : '#fafafa' }}
-                  onMouseEnter={ev => (ev.currentTarget.style.background = '#f0fdf4')}
+                <tr key={e.id} style={{ borderBottom: '1px solid #F4F5F7', background: idx % 2 === 0 ? '#fff' : '#fafafa' }}
+                  onMouseEnter={ev => (ev.currentTarget.style.background = '#F4F5F7')}
                   onMouseLeave={ev => (ev.currentTarget.style.background = idx % 2 === 0 ? '#fff' : '#fafafa')}>
                   <td style={{ padding: '10px 16px', fontSize: 13 }}>
-                    <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#64748b' }}>
+                    <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#62666E' }}>
                       #{String(e.id).padStart(6, '0')}
                     </span>
                   </td>
                   <td style={{ padding: '10px 16px' }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{nombreCompleto(e.cat_socios)}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>{nombreCompleto(e.cat_socios)}</div>
                     {e.cat_socios?.numero_socio && (
-                      <div style={{ fontSize: 11, color: '#94a3b8' }}>#{e.cat_socios.numero_socio}</div>
+                      <div style={{ fontSize: 11, color: '#7A7E87' }}>#{e.cat_socios.numero_socio}</div>
                     )}
                   </td>
-                  <td style={{ padding: '10px 16px', fontSize: 12, color: '#475569' }}>
+                  <td style={{ padding: '10px 16px', fontSize: 12, color: '#4A4D54' }}>
                     {e.cat_socios?.cat_categorias_socios?.nombre ?? '—'}
                   </td>
                   <td style={{ padding: '10px 16px', textAlign: 'center' }}>
-                    <span style={{ fontSize: 18, fontWeight: 800, color: '#059669' }}>{e.num_bolas}</span>
+                    <span style={{ fontSize: 18, fontWeight: 800, color: '#267F56' }}>{e.num_bolas}</span>
                   </td>
-                  <td style={{ padding: '10px 16px', fontSize: 12, color: '#64748b' }}>
+                  <td style={{ padding: '10px 16px', fontSize: 12, color: '#62666E' }}>
                     {fmtHora(e.fecha)}
                   </td>
                   <td style={{ padding: '10px 16px', textAlign: 'center' }}>
                     <button
                       onClick={() => abrirTicket(e, false)}
                       title="Reimprimir ticket"
-                      style={{ padding: '5px 10px', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#64748b' }}
-                      onMouseEnter={ev => { ev.currentTarget.style.background = '#f0fdf4'; ev.currentTarget.style.color = '#059669' }}
-                      onMouseLeave={ev => { ev.currentTarget.style.background = '#fff'; ev.currentTarget.style.color = '#64748b' }}>
+                      style={{ padding: '5px 10px', border: '1px solid #E6E8EB', borderRadius: 6, background: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#62666E' }}
+                      onMouseEnter={ev => { ev.currentTarget.style.background = '#F4F5F7'; ev.currentTarget.style.color = '#267F56' }}
+                      onMouseLeave={ev => { ev.currentTarget.style.background = '#fff'; ev.currentTarget.style.color = '#62666E' }}>
                       <Printer size={12} />
                     </button>
                   </td>

@@ -206,8 +206,8 @@ export function ServiciosTab({ loteId }: { loteId: number }) {
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <Zap size={14} style={{ color: '#d97706' }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#d97706' }}>CFE — Energía Eléctrica ({cfe.length})</span>
+            <Zap size={14} style={{ color: '#62666E' }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#B5761A' }}>CFE — Energía Eléctrica ({cfe.length})</span>
           </div>
           <button className="btn-ghost" style={{ fontSize: 12 }}
             onClick={() => setCfe(p => [...p, { id_lote_fk: loteId, no_servicio: '', tarifa: '', medidor: '', status: 'Activo', notas: '' }])}>
@@ -216,13 +216,13 @@ export function ServiciosTab({ loteId }: { loteId: number }) {
         </div>
         {cfe.length === 0 && <p style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>Sin servicios CFE registrados</p>}
         {cfe.map((s, i) => (
-          <div key={i} style={{ padding: 12, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, marginBottom: 8 }}>
+          <div key={i} style={{ padding: 12, background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8, marginBottom: 8 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
               <div><label className="label">No. Servicio</label>
-                <input className="input" value={s.no_servicio ?? ''} onChange={e => setCF(i, 'no_servicio', e.target.value)} style={{ fontFamily: 'monospace' }} />
+                <input className="input" value={s.no_servicio ?? ''} onChange={e => setCF(i, 'no_servicio', e.target.value)} style={{ fontVariantNumeric: 'tabular-nums' }} />
               </div>
               <div><label className="label">No. Medidor</label>
-                <input className="input" value={s.medidor ?? ''} onChange={e => setCF(i, 'medidor', e.target.value)} style={{ fontFamily: 'monospace' }} />
+                <input className="input" value={s.medidor ?? ''} onChange={e => setCF(i, 'medidor', e.target.value)} style={{ fontVariantNumeric: 'tabular-nums' }} />
               </div>
               <div><label className="label">Tarifa</label>
                 <select className="select" value={s.tarifa ?? ''} onChange={e => setCF(i, 'tarifa', e.target.value)}>
@@ -240,7 +240,7 @@ export function ServiciosTab({ loteId }: { loteId: number }) {
               <div style={{ flex: 1 }}><label className="label">Notas</label>
                 <input className="input" value={s.notas ?? ''} onChange={e => setCF(i, 'notas', e.target.value)} placeholder="Opcional" />
               </div>
-              <button className="btn-ghost" style={{ padding: 6, color: '#dc2626' }} onClick={() => delCFE(i)}><Trash2 size={13} /></button>
+              <button className="btn-ghost" style={{ padding: 6, color: '#C23B3B' }} onClick={() => delCFE(i)}><Trash2 size={13} /></button>
             </div>
           </div>
         ))}
@@ -260,13 +260,13 @@ export function ServiciosTab({ loteId }: { loteId: number }) {
         </div>
         {agua.length === 0 && <p style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>Sin servicios de agua registrados</p>}
         {agua.map((s, i) => (
-          <div key={i} style={{ padding: 12, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, marginBottom: 8 }}>
+          <div key={i} style={{ padding: 12, background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8, marginBottom: 8 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
               <div><label className="label">No. Contrato</label>
-                <input className="input" value={s.no_contrato ?? ''} onChange={e => setAG(i, 'no_contrato', e.target.value)} style={{ fontFamily: 'monospace' }} />
+                <input className="input" value={s.no_contrato ?? ''} onChange={e => setAG(i, 'no_contrato', e.target.value)} style={{ fontVariantNumeric: 'tabular-nums' }} />
               </div>
               <div><label className="label">No. Medidor</label>
-                <input className="input" value={s.medidor ?? ''} onChange={e => setAG(i, 'medidor', e.target.value)} style={{ fontFamily: 'monospace' }} />
+                <input className="input" value={s.medidor ?? ''} onChange={e => setAG(i, 'medidor', e.target.value)} style={{ fontVariantNumeric: 'tabular-nums' }} />
               </div>
               <div><label className="label">Tipo de Toma</label>
                 <select className="select" value={s.tipo_toma ?? ''} onChange={e => setAG(i, 'tipo_toma', e.target.value)}>
@@ -284,20 +284,20 @@ export function ServiciosTab({ loteId }: { loteId: number }) {
               <div style={{ flex: 1 }}><label className="label">Notas</label>
                 <input className="input" value={s.notas ?? ''} onChange={e => setAG(i, 'notas', e.target.value)} placeholder="Opcional" />
               </div>
-              <button className="btn-ghost" style={{ padding: 6, color: '#dc2626' }} onClick={() => delAGU(i)}><Trash2 size={13} /></button>
+              <button className="btn-ghost" style={{ padding: 6, color: '#C23B3B' }} onClick={() => delAGU(i)}><Trash2 size={13} /></button>
             </div>
           </div>
         ))}
       </div>
 
       {err && (
-        <div style={{ padding: '10px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#b91c1c' }}>
+        <div style={{ padding: '10px 12px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #A83232', borderRadius: 8, fontSize: 12, color: '#A83232' }}>
           {err}
         </div>
       )}
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12 }}>
-        {msg && <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>✓ {msg}</span>}
+        {msg && <span style={{ fontSize: 12, color: '#1F7A50', fontWeight: 600 }}>✓ {msg}</span>}
         <button className="btn-primary" onClick={guardar} disabled={saving}>
           {saving ? <><Loader size={13} className="animate-spin" /> Guardando…</> : <><Save size={13} /> Guardar</>}
         </button>

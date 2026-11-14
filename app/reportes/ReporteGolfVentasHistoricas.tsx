@@ -255,16 +255,16 @@ export default function ReporteGolfVentasHistoricas() {
   }
 
   const selStyle: React.CSSProperties = {
-    height: 32, padding: '0 10px', border: '1px solid #e2e8f0',
+    height: 32, padding: '0 10px', border: '1px solid #E6E8EB',
     borderRadius: 6, fontSize: 13, background: '#fff',
     fontFamily: 'var(--font-body)', color: 'var(--text-primary)',
   }
   const inputStyle: React.CSSProperties = { ...selStyle, width: 130 }
 
-  const GOLD = '#b8952a'
-  const GOLD_PALE = '#fefce8'
-  const GOLD_BORDER = '#fde68a'
-  const GOLD_DARK = '#92400e'
+  const GOLD = '#A8821A'
+  const GOLD_PALE = '#F4F5F7'
+  const GOLD_BORDER = '#E6E8EB'
+  const GOLD_DARK = '#7A4B0C'
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'resumen',   label: 'Resumen',        icon: <PieChart   size={13} /> },
@@ -287,10 +287,10 @@ export default function ReporteGolfVentasHistoricas() {
         textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
         {title}
       </div>
-      <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+      <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
-            <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+            <tr style={{ background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
               {headers.map((h, i) => (
                 <th key={h} style={{ padding: '8px 12px',
                   textAlign: i === 0 ? 'left' : 'right',
@@ -303,7 +303,7 @@ export default function ReporteGolfVentasHistoricas() {
           </thead>
           <tbody>
             {rows.map((row, ri) => (
-              <tr key={ri} style={{ borderBottom: '1px solid #f1f5f9', background: ri % 2 === 0 ? '#fff' : '#fafafa' }}>
+              <tr key={ri} style={{ borderBottom: '1px solid #F4F5F7', background: ri % 2 === 0 ? '#fff' : '#fafafa' }}>
                 {row.map((cell, ci) => (
                   <td key={ci} style={{ padding: '8px 12px', textAlign: ci === 0 ? 'left' : 'right',
                     fontVariantNumeric: 'tabular-nums' }}>
@@ -370,19 +370,19 @@ export default function ReporteGolfVentasHistoricas() {
         {[
           { label: 'Total Ventas',      value: fmt(totalVentas),   color: GOLD,         bg: GOLD_PALE },
           { label: 'Unidades Vendidas', value: totalCantidad.toLocaleString('es-MX'), color: 'var(--blue)', bg: 'var(--blue-pale)' },
-          { label: 'Tickets',           value: numTickets.toString(), color: '#7c3aed', bg: '#f5f3ff' },
-          { label: 'Ticket Promedio',   value: fmt(ticketPromedio), color: '#0f766e',   bg: '#f0fdfa' },
+          { label: 'Tickets',           value: numTickets.toString(), color: '#6B4E79', bg: '#F4F5F7' },
+          { label: 'Ticket Promedio',   value: fmt(ticketPromedio), color: '#126B63',   bg: '#F4F5F7' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '14px 20px', background: k.bg, flex: '1 1 150px', maxWidth: 220 }}>
-            <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700,
-              color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{k.label}</div>
+          <div key={k.label} className="card" style={{ padding: '14px 20px', background: '#fff', flex: '1 1 150px', maxWidth: 220 }}>
+            <div style={{ fontSize: 22, fontWeight: 700,
+              color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
           </div>
         ))}
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 16, gap: 2 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid #E6E8EB', marginBottom: 16, gap: 2 }}>
         {tabs.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px',
@@ -469,7 +469,7 @@ export default function ReporteGolfVentasHistoricas() {
           <div style={{ overflowX: 'auto' }}>
             <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <tr style={{ background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
                   {['Artículo / Servicio', 'Cantidad', 'Subtotal', 'IVA', 'Total', '%'].map((h, i) => (
                     <th key={h} style={{ padding: '9px 14px', textAlign: i === 0 ? 'left' : 'right',
                       fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)',
@@ -481,7 +481,7 @@ export default function ReporteGolfVentasHistoricas() {
               </thead>
               <tbody>
                 {porArticulo.map((a, i) => (
-                  <tr key={a.nombre} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                  <tr key={a.nombre} style={{ borderBottom: '1px solid #F4F5F7', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                     <td style={{ padding: '9px 14px', fontWeight: 500 }}>{a.nombre}</td>
                     <td style={{ padding: '9px 14px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{a.cantidad.toLocaleString('es-MX')}</td>
                     <td style={{ padding: '9px 14px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{fmt(a.subtotal)}</td>
@@ -509,7 +509,7 @@ export default function ReporteGolfVentasHistoricas() {
           <div style={{ overflowX: 'auto' }}>
             <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <tr style={{ background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
                   {['Fecha', 'Centro', 'Folio', 'Cliente', 'Artículo / Servicio', 'Cant.', 'P. Unit.', 'Total'].map(h => (
                     <th key={h} style={{ padding: '9px 12px',
                       textAlign: ['Cant.', 'P. Unit.', 'Total'].includes(h) ? 'right' : 'left',
@@ -522,7 +522,7 @@ export default function ReporteGolfVentasHistoricas() {
               </thead>
               <tbody>
                 {filtered.map((d, i) => (
-                  <tr key={d.id} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                  <tr key={d.id} style={{ borderBottom: '1px solid #F4F5F7', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                     <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontSize: 12 }}>{fmtF(d.fecha)}</td>
                     <td style={{ padding: '8px 12px', fontSize: 12, whiteSpace: 'nowrap' }}>{d.centro_nombre}</td>
                     <td style={{ padding: '8px 12px', textAlign: 'center', fontSize: 12, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>#{String(d.folio).padStart(5, '0')}</td>
@@ -557,10 +557,10 @@ export default function ReporteGolfVentasHistoricas() {
               Sin facturas para esta forma de pago
             </div>
           ) : (
-            <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'auto' }}>
+            <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  <tr style={{ background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
                     {['Fecha', 'Folio Factura', 'UUID Fiscal', 'Cliente / Receptor', 'Centro', 'Monto'].map((h, i) => (
                       <th key={h} style={{ padding: '8px 12px', textAlign: i === 5 ? 'right' : 'left',
                         fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)',
@@ -572,23 +572,23 @@ export default function ReporteGolfVentasHistoricas() {
                 </thead>
                 <tbody>
                   {drillRows.map((r, i) => (
-                    <tr key={r.idPago} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                    <tr key={r.idPago} style={{ borderBottom: '1px solid #F4F5F7', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                       <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontSize: 12 }}>{fmtF(r.fecha)}</td>
                       <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>
                         {r.facturada ? (
                           <>
-                            <div style={{ fontWeight: 700, fontFamily: 'monospace', color: '#2563eb' }}>{r.folioFactura ?? '—'}</div>
+                            <div style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: '#1C1D21' }}>{r.folioFactura ?? '—'}</div>
                             {r.cfdiStatus === 'Cancelada' && (
-                              <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20, background: '#fef2f2', color: '#dc2626' }}>Cancelada</span>
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20, background: '#C23B3B', color: '#fff' }}>Cancelada</span>
                             )}
                           </>
                         ) : (
-                          <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>Sin facturar</span>
+                          <span style={{ fontSize: 11, color: '#7A7E87', fontStyle: 'italic' }}>Sin facturar</span>
                         )}
-                        <div style={{ fontSize: 10, color: '#94a3b8' }}>Ticket #{String(r.folioVenta).padStart(6, '0')}</div>
+                        <div style={{ fontSize: 10, color: '#7A7E87' }}>Ticket #{String(r.folioVenta).padStart(6, '0')}</div>
                       </td>
                       <td style={{ padding: '8px 12px', maxWidth: 200 }}>
-                        <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#7c3aed', wordBreak: 'break-all' }}>{r.uuidFiscal ?? '—'}</div>
+                        <div style={{ fontSize: 11, fontVariantNumeric: 'tabular-nums', color: '#6B4E79', wordBreak: 'break-all' }}>{r.uuidFiscal ?? '—'}</div>
                       </td>
                       <td style={{ padding: '8px 12px', maxWidth: 200 }}>
                         <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.nombre_cliente}>{r.nombre_cliente}</div>

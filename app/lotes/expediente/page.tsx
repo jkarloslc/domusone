@@ -22,38 +22,38 @@ const fmtFecha = (d: string | null | undefined) =>
   d ? new Date(d.includes('T') ? d : d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
 const STATUS_COLOR: Record<string, string> = {
-  'Libre': '#15803d', 'Vendido': '#2563eb', 'Bloqueado': '#dc2626',
-  'Abierta': '#dc2626', 'En Proceso': '#d97706', 'Cerrada': '#15803d',
-  'Vigente': '#15803d', 'Vencido': '#dc2626', 'Cancelado': '#94a3b8',
-  'Pendiente': '#dc2626', 'Parcial': '#d97706', 'Pagado': '#15803d',
+  'Libre': '#1F7A50', 'Vendido': '#1C1D21', 'Bloqueado': '#C23B3B',
+  'Abierta': '#C23B3B', 'En Proceso': '#B5761A', 'Cerrada': '#1F7A50',
+  'Vigente': '#1F7A50', 'Vencido': '#C23B3B', 'Cancelado': '#7A7E87',
+  'Pendiente': '#C23B3B', 'Parcial': '#B5761A', 'Pagado': '#1F7A50',
 }
 const statusBadge = (s: string | null | undefined) => {
   if (!s) return null
-  const color = STATUS_COLOR[s] ?? '#64748b'
+  const color = STATUS_COLOR[s] ?? '#62666E'
   return (
     <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-      background: color + '18', color, border: `1px solid ${color}40` }}>
+      background: color, color: '#fff', border: `1px solid ${color}` }}>
       {s}
     </span>
   )
 }
 
-function Section({ icon: Icon, title, count, color = '#2563eb', children, defaultOpen = false }:
+function Section({ icon: Icon, title, count, color = '#1C1D21', children, defaultOpen = false }:
   { icon: any; title: string; count?: number; color?: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <div style={{ background: '#fff', borderRadius: 10, border: '1px solid #e2e8f0', overflow: 'hidden', marginBottom: 10 }}>
-      <button onClick={() => setOpen(o => !o)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', borderBottom: open ? '1px solid #e2e8f0' : 'none' }}>
-        <div style={{ width: 28, height: 28, borderRadius: 7, background: color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <Icon size={14} style={{ color }} />
+    <div style={{ background: '#fff', borderRadius: 10, border: '1px solid #E6E8EB', overflow: 'hidden', marginBottom: 10 }}>
+      <button onClick={() => setOpen(o => !o)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', borderBottom: open ? '1px solid #E6E8EB' : 'none' }}>
+        <div className="icon-chip" style={{ width: 28, height: 28, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Icon size={14} style={{ color: '#1C1D21' }} />
         </div>
-        <span style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600, color: '#1e293b', flex: 1, textAlign: 'left' }}>{title}</span>
+        <span style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600, color: '#26282D', flex: 1, textAlign: 'left' }}>{title}</span>
         {count !== undefined && (
-          <span style={{ fontSize: 11, fontWeight: 700, minWidth: 20, height: 20, borderRadius: 10, background: count > 0 ? color + '18' : '#f1f5f9', color: count > 0 ? color : '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 6px' }}>
+          <span style={{ fontSize: 11, fontWeight: 700, minWidth: 20, height: 20, borderRadius: 10, background: count > 0 ? '#E6E8EB' : '#F4F5F7', color: count > 0 ? color : '#7A7E87', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 6px' }}>
             {count}
           </span>
         )}
-        {open ? <ChevronDown size={14} style={{ color: '#94a3b8', flexShrink: 0 }} /> : <ChevronRight size={14} style={{ color: '#94a3b8', flexShrink: 0 }} />}
+        {open ? <ChevronDown size={14} style={{ color: '#7A7E87', flexShrink: 0 }} /> : <ChevronRight size={14} style={{ color: '#7A7E87', flexShrink: 0 }} />}
       </button>
       {open && <div style={{ padding: '14px 16px' }}>{children}</div>}
     </div>
@@ -63,9 +63,9 @@ function Section({ icon: Icon, title, count, color = '#2563eb', children, defaul
 function DataRow({ label, value, mono = false }: { label: string; value?: any; mono?: boolean }) {
   if (value === null || value === undefined || value === '') return null
   return (
-    <div style={{ display: 'flex', gap: 8, padding: '4px 0', borderBottom: '1px solid #f8fafc' }}>
-      <span style={{ fontSize: 11, color: '#94a3b8', minWidth: 130, flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 12, color: '#1e293b', fontFamily: mono ? 'monospace' : undefined }}>{value}</span>
+    <div style={{ display: 'flex', gap: 8, padding: '4px 0', borderBottom: '1px solid #F8F9FA' }}>
+      <span style={{ fontSize: 11, color: '#7A7E87', minWidth: 130, flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 12, color: '#26282D', fontFamily: mono ? 'monospace' : undefined }}>{value}</span>
     </div>
   )
 }
@@ -88,7 +88,7 @@ function PropietarioModal({ propietario, onClose }: { propietario: any; onClose:
     >
         <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(85vh - 80px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#2563eb', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Datos Personales</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#1C1D21', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Datos Personales</div>
             <DataRow label="RFC"              value={p.rfc} mono />
             <DataRow label="CURP"             value={p.curp} mono />
             <DataRow label="Fecha nacimiento" value={fmtFecha(p.fecha_nacimiento)} />
@@ -96,7 +96,7 @@ function PropietarioModal({ propietario, onClose }: { propietario: any; onClose:
           </div>
           {(p.calle || p.ciudad) && (
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#2563eb', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Domicilio</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#1C1D21', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Domicilio</div>
               <DataRow label="Calle"   value={p.calle} />
               <DataRow label="Colonia" value={p.colonia} />
               <DataRow label="C.P."   value={p.cp} />
@@ -105,9 +105,9 @@ function PropietarioModal({ propietario, onClose }: { propietario: any; onClose:
           )}
           {(tels.length > 0 || emails.length > 0) && (
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#2563eb', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Contacto</div>
-              {tels.map((t, i) => <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}><Phone size={12} style={{ color: '#64748b' }} /><span style={{ fontSize: 12 }}>{t.numero}</span></div>)}
-              {emails.map((e, i) => <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}><Mail size={12} style={{ color: '#64748b' }} /><span style={{ fontSize: 12, color: '#2563eb' }}>{e.correo}</span></div>)}
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#1C1D21', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Contacto</div>
+              {tels.map((t, i) => <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}><Phone size={12} style={{ color: '#62666E' }} /><span style={{ fontSize: 12 }}>{t.numero}</span></div>)}
+              {emails.map((e, i) => <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}><Mail size={12} style={{ color: '#62666E' }} /><span style={{ fontSize: 12, color: '#1C1D21' }}>{e.correo}</span></div>)}
             </div>
           )}
         </div>
@@ -231,7 +231,7 @@ function ExpedienteContent({ embedded }: { embedded?: boolean }) {
             {results.map(r => (
               <button key={r.id} onClick={() => cargarLote(r.id)}
                 style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                 <MapPin size={13} style={{ color: 'var(--blue)', flexShrink: 0 }} />
                 <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600, color: 'var(--blue)' }}>{r.cve_lote ?? `#${r.lote}`}</span>
@@ -262,12 +262,12 @@ function ExpedienteContent({ embedded }: { embedded?: boolean }) {
         <div className="inicio-grid" style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: 16, alignItems: 'start' }}>
           {/* Columna izquierda */}
           <div>
-            <div style={{ background: 'linear-gradient(135deg, #0D4F80 0%, #1A6FAD 100%)', borderRadius: 12, padding: '20px', marginBottom: 12, color: '#fff' }}>
+            <div style={{ background: '#1C1D21', borderRadius: 12, padding: '20px', marginBottom: 12, color: '#fff' }}>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, marginBottom: 2 }}>{lote.cve_lote ?? `#${lote.lote}`}</div>
-              <div style={{ fontSize: 13, color: '#bfdbfe', marginBottom: 12 }}>{lote.secciones?.nombre ?? '—'}</div>
+              <div style={{ fontSize: 13, color: '#C9CCD3', marginBottom: 12 }}>{lote.secciones?.nombre ?? '—'}</div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {lote.status_lote && <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: lote.status_lote === 'Libre' ? '#dcfce7' : lote.status_lote === 'Vendido' ? '#dbeafe' : '#fee2e2', color: lote.status_lote === 'Libre' ? '#15803d' : lote.status_lote === 'Vendido' ? '#1d4ed8' : '#dc2626' }}>{lote.status_lote}</span>}
-                {saldoTotal > 0 && <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#fee2e2', color: '#dc2626' }}>Adeudo: {fmt(saldoTotal)}</span>}
+                {lote.status_lote && <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: lote.status_lote === 'Libre' ? '#1F7A50' : lote.status_lote === 'Vendido' ? '#E6E8EB' : '#C23B3B', color: lote.status_lote === 'Libre' ? '#fff' : lote.status_lote === 'Vendido' ? '#26282D' : '#fff' }}>{lote.status_lote}</span>}
+                {saldoTotal > 0 && <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#C23B3B', color: '#fff' }}>Adeudo: {fmt(saldoTotal)}</span>}
               </div>
             </div>
             <div className="card" style={{ padding: '14px 16px' }}>
@@ -283,7 +283,7 @@ function ExpedienteContent({ embedded }: { embedded?: boolean }) {
 
           {/* Columna derecha */}
           <div>
-            <Section icon={Users} title="Propietarios" count={propietarios.length} color="#2563eb" defaultOpen>
+            <Section icon={Users} title="Propietarios" count={propietarios.length} color="#1C1D21" defaultOpen>
               {propietarios.length === 0
                 ? <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '10px 0' }}>Sin propietarios</div>
                 : propietarios.map(item => {
@@ -291,17 +291,17 @@ function ExpedienteContent({ embedded }: { embedded?: boolean }) {
                   const nombre = p ? [p.nombre, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ') : '—'
                   return (
                     <button key={item.id} onClick={() => setPropModal(item.propietarios)}
-                      style={{ width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: item.es_principal ? '#eff6ff' : '#f8fafc', border: `1px solid ${item.es_principal ? '#bfdbfe' : '#e2e8f0'}`, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10 }}
-                      onMouseEnter={e => (e.currentTarget.style.background = item.es_principal ? '#dbeafe' : '#f1f5f9')}
-                      onMouseLeave={e => (e.currentTarget.style.background = item.es_principal ? '#eff6ff' : '#f8fafc')}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: item.es_principal ? '#dbeafe' : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <User size={14} style={{ color: item.es_principal ? '#2563eb' : '#64748b' }} />
+                      style={{ width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: item.es_principal ? '#F4F5F7' : '#F8F9FA', border: `1px solid ${item.es_principal ? '#C9CCD3' : '#E6E8EB'}`, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10 }}
+                      onMouseEnter={e => (e.currentTarget.style.background = item.es_principal ? '#E6E8EB' : '#F4F5F7')}
+                      onMouseLeave={e => (e.currentTarget.style.background = item.es_principal ? '#F4F5F7' : '#F8F9FA')}>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#E6E8EB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <User size={14} style={{ color: item.es_principal ? '#1C1D21' : '#62666E' }} />
                       </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: item.es_principal ? '#1d4ed8' : '#334155' }}>{nombre}</div>
-                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>{item.fecha_desde && `Desde: ${fmtFecha(item.fecha_desde)}`}</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: item.es_principal ? '#26282D' : '#33363C' }}>{nombre}</div>
+                        <div style={{ fontSize: 11, color: '#62666E', marginTop: 1 }}>{item.fecha_desde && `Desde: ${fmtFecha(item.fecha_desde)}`}</div>
                       </div>
-                      {item.es_principal && <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: '#dbeafe', color: '#1d4ed8' }}>ACTUAL</span>}
+                      {item.es_principal && <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: '#E6E8EB', color: '#26282D' }}>ACTUAL</span>}
                     </button>
                   )
                 })
@@ -309,19 +309,19 @@ function ExpedienteContent({ embedded }: { embedded?: boolean }) {
             </Section>
 
             {cargos.length > 0 && (
-              <Section icon={DollarSign} title="Adeudos Pendientes" count={cargos.length} color="#dc2626" defaultOpen>
-                <div style={{ padding: '8px 12px', background: '#fef2f2', borderRadius: 7, marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>Saldo Total</span>
-                  <span style={{ fontSize: 16, fontWeight: 700, color: '#dc2626', fontVariantNumeric: 'tabular-nums' }}>{fmt(saldoTotal)}</span>
+              <Section icon={DollarSign} title="Adeudos Pendientes" count={cargos.length} color="#C23B3B" defaultOpen>
+                <div style={{ padding: '8px 12px', background: '#F4F5F7', borderRadius: 7, marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 12, color: '#C23B3B', fontWeight: 600 }}>Saldo Total</span>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: '#C23B3B', fontVariantNumeric: 'tabular-nums' }}>{fmt(saldoTotal)}</span>
                 </div>
                 {cargos.map(c => (
-                  <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: '#f8fafc', borderRadius: 6, marginBottom: 5, border: '1px solid #e2e8f0' }}>
+                  <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: '#F8F9FA', borderRadius: 6, marginBottom: 5, border: '1px solid #E6E8EB' }}>
                     <div>
                       <div style={{ fontSize: 12, fontWeight: 500 }}>{c.concepto}</div>
-                      {c.periodo_mes && <div style={{ fontSize: 11, color: '#94a3b8' }}>{c.periodo_mes} {c.periodo_anio}</div>}
+                      {c.periodo_mes && <div style={{ fontSize: 11, color: '#7A7E87' }}>{c.periodo_mes} {c.periodo_anio}</div>}
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#dc2626', fontVariantNumeric: 'tabular-nums' }}>{fmt(c.saldo)}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#C23B3B', fontVariantNumeric: 'tabular-nums' }}>{fmt(c.saldo)}</div>
                       {statusBadge(c.status)}
                     </div>
                   </div>
@@ -329,54 +329,54 @@ function ExpedienteContent({ embedded }: { embedded?: boolean }) {
               </Section>
             )}
 
-            <Section icon={FileText} title="Contratos" count={contratos.length} color="#7c3aed">
+            <Section icon={FileText} title="Contratos" count={contratos.length} color="#6B4E79">
               {contratos.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '8px 0' }}>Sin contratos</div>
                 : contratos.map(c => (
-                  <div key={c.id} style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: 7, marginBottom: 6, border: '1px solid #e2e8f0' }}>
+                  <div key={c.id} style={{ padding: '8px 12px', background: '#F8F9FA', borderRadius: 7, marginBottom: 6, border: '1px solid #E6E8EB' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                       <span style={{ fontSize: 13, fontWeight: 600 }}>{c.tipo_contrato ?? 'Contrato'}</span>
                       {statusBadge(c.status)}
                     </div>
-                    {c.fecha_contrato && <span style={{ fontSize: 11, color: '#64748b' }}>Fecha: {fmtFecha(c.fecha_contrato)}</span>}
-                    {c.pdf_contrato && <a href={c.pdf_contrato} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#2563eb', display: 'block', marginTop: 4 }}>📄 Ver PDF</a>}
+                    {c.fecha_contrato && <span style={{ fontSize: 11, color: '#62666E' }}>Fecha: {fmtFecha(c.fecha_contrato)}</span>}
+                    {c.pdf_contrato && <a href={c.pdf_contrato} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#1C1D21', display: 'block', marginTop: 4 }}>Ver PDF</a>}
                   </div>
                 ))
               }
             </Section>
 
-            <Section icon={Building2} title="Escrituras" count={escrituras.length} color="#0e7490">
+            <Section icon={Building2} title="Escrituras" count={escrituras.length} color="#2A6582">
               {escrituras.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '8px 0' }}>Sin escrituras</div>
                 : escrituras.map(e => (
-                  <div key={e.id} style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: 7, marginBottom: 6, border: '1px solid #e2e8f0' }}>
+                  <div key={e.id} style={{ padding: '8px 12px', background: '#F8F9FA', borderRadius: 7, marginBottom: 6, border: '1px solid #E6E8EB' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                       <span style={{ fontSize: 13, fontWeight: 600 }}>{e.notaria ?? 'Escritura'}</span>
                       {statusBadge(e.status)}
                     </div>
-                    {e.numero_escritura && <span style={{ fontSize: 11, color: '#64748b' }}>No. {e.numero_escritura}</span>}
-                    {e.pdf_escritura && <a href={e.pdf_escritura} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#2563eb', display: 'block', marginTop: 4 }}>📄 Ver PDF</a>}
+                    {e.numero_escritura && <span style={{ fontSize: 11, color: '#62666E' }}>No. {e.numero_escritura}</span>}
+                    {e.pdf_escritura && <a href={e.pdf_escritura} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#1C1D21', display: 'block', marginTop: 4 }}>Ver PDF</a>}
                   </div>
                 ))
               }
             </Section>
 
-            <Section icon={AlertTriangle} title="Incidencias" count={incidencias.length} color="#d97706">
+            <Section icon={AlertTriangle} title="Incidencias" count={incidencias.length} color="#B5761A">
               {incidencias.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '8px 0' }}>Sin incidencias</div>
                 : incidencias.slice(0, 8).map(inc => (
-                  <div key={inc.id} style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: 7, marginBottom: 6, border: '1px solid #e2e8f0' }}>
+                  <div key={inc.id} style={{ padding: '8px 12px', background: '#F8F9FA', borderRadius: 7, marginBottom: 6, border: '1px solid #E6E8EB' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
                       <span style={{ fontSize: 13, fontWeight: 600 }}>{inc.tipo ?? 'Incidencia'}</span>
                       {statusBadge(inc.status)}
                     </div>
-                    {inc.descripcion && <div style={{ fontSize: 12, color: '#64748b' }}>{inc.descripcion}</div>}
+                    {inc.descripcion && <div style={{ fontSize: 12, color: '#62666E' }}>{inc.descripcion}</div>}
                   </div>
                 ))
               }
             </Section>
 
-            <Section icon={HardHat} title="Construcciones" count={construcciones.length} color="#d97706">
+            <Section icon={HardHat} title="Construcciones" count={construcciones.length} color="#B5761A">
               {construcciones.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '8px 0' }}>Sin expedientes de construcción</div>
                 : construcciones.map(c => (
-                  <div key={c.id} style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: 7, marginBottom: 6, border: '1px solid #e2e8f0' }}>
+                  <div key={c.id} style={{ padding: '8px 12px', background: '#F8F9FA', borderRadius: 7, marginBottom: 6, border: '1px solid #E6E8EB' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ fontSize: 13, fontWeight: 600 }}>{c.motivo ?? 'Construcción'}</span>
                       {statusBadge(c.status)}
@@ -386,60 +386,60 @@ function ExpedienteContent({ embedded }: { embedded?: boolean }) {
               }
             </Section>
 
-            <Section icon={Users} title="Visitantes Autorizados" count={visitantes.length} color="#0891b2">
+            <Section icon={Users} title="Visitantes Autorizados" count={visitantes.length} color="#32789A">
               {visitantes.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '8px 0' }}>Sin visitantes</div>
                 : visitantes.map(v => (
-                  <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', background: '#f8fafc', borderRadius: 7, marginBottom: 5 }}>
-                    <User size={13} style={{ color: '#0891b2' }} />
+                  <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', background: '#F8F9FA', borderRadius: 7, marginBottom: 5 }}>
+                    <User size={13} style={{ color: '#62666E' }} />
                     <div>
                       <div style={{ fontSize: 12, fontWeight: 500 }}>{[v.nombre, v.apellido].filter(Boolean).join(' ')}</div>
-                      <div style={{ fontSize: 11, color: '#94a3b8' }}>{v.tipo_visita}</div>
+                      <div style={{ fontSize: 11, color: '#7A7E87' }}>{v.tipo_visita}</div>
                     </div>
                   </div>
                 ))
               }
             </Section>
 
-            <Section icon={Car} title="Vehículos" count={vehiculos.length} color="#7c3aed">
+            <Section icon={Car} title="Vehículos" count={vehiculos.length} color="#6B4E79">
               {vehiculos.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '8px 0' }}>Sin vehículos</div>
                 : vehiculos.map(v => (
-                  <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', background: '#f8fafc', borderRadius: 7, marginBottom: 5 }}>
-                    <Car size={13} style={{ color: '#7c3aed' }} />
+                  <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', background: '#F8F9FA', borderRadius: 7, marginBottom: 5 }}>
+                    <Car size={13} style={{ color: '#62666E' }} />
                     <div>
                       <div style={{ fontSize: 12, fontWeight: 500 }}>{[v.marca, v.modelo, v.color].filter(Boolean).join(' · ')}</div>
-                      <div style={{ fontSize: 11, color: '#94a3b8' }}>Placas: {v.placas ?? '—'}</div>
+                      <div style={{ fontSize: 11, color: '#7A7E87' }}>Placas: {v.placas ?? '—'}</div>
                     </div>
                   </div>
                 ))
               }
             </Section>
 
-            <Section icon={Shield} title="Accesos Recientes" count={accesos.length} color="#0f766e">
+            <Section icon={Shield} title="Accesos Recientes" count={accesos.length} color="#126B63">
               {accesos.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '8px 0' }}>Sin accesos</div>
                 : accesos.slice(0, 10).map(a => (
-                  <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: '#f8fafc', borderRadius: 6, marginBottom: 4 }}>
+                  <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: '#F8F9FA', borderRadius: 6, marginBottom: 4 }}>
                     <span style={{ fontSize: 12, fontWeight: 500 }}>{a.tipo_acceso ?? 'Acceso'}</span>
-                    <span style={{ fontSize: 11, color: '#64748b' }}>{fmtFecha(a.fecha_entrada)}</span>
+                    <span style={{ fontSize: 11, color: '#62666E' }}>{fmtFecha(a.fecha_entrada)}</span>
                   </div>
                 ))
               }
             </Section>
 
             {(cfe.length > 0 || agua.length > 0) && (
-              <Section icon={Zap} title="Servicios" count={cfe.length + agua.length} color="#ca8a04">
-                {cfe.map(c => <div key={c.id} style={{ padding: '8px 12px', background: '#fefce8', borderRadius: 7, marginBottom: 6 }}><div style={{ fontSize: 12, fontWeight: 600, color: '#92400e' }}>⚡ CFE</div><DataRow label="No. Servicio" value={c.no_servicio} mono /></div>)}
-                {agua.map(a => <div key={a.id} style={{ padding: '8px 12px', background: '#eff6ff', borderRadius: 7, marginBottom: 6 }}><div style={{ fontSize: 12, fontWeight: 600, color: '#1e40af' }}>💧 Agua</div><DataRow label="No. Contrato" value={a.no_contrato} mono /></div>)}
+              <Section icon={Zap} title="Servicios" count={cfe.length + agua.length} color="#A8821A">
+                {cfe.map(c => <div key={c.id} style={{ padding: '8px 12px', background: '#F4F5F7', borderRadius: 7, marginBottom: 6 }}><div style={{ fontSize: 12, fontWeight: 600, color: '#7A4B0C' }}>CFE</div><DataRow label="No. Servicio" value={c.no_servicio} mono /></div>)}
+                {agua.map(a => <div key={a.id} style={{ padding: '8px 12px', background: '#F4F5F7', borderRadius: 7, marginBottom: 6 }}><div style={{ fontSize: 12, fontWeight: 600, color: '#1C1D21' }}>Agua</div><DataRow label="No. Contrato" value={a.no_contrato} mono /></div>)}
               </Section>
             )}
 
             {comunicados.length > 0 && (
-              <Section icon={MessageSquare} title="Comunicados" count={comunicados.length} color="#7c3aed">
+              <Section icon={MessageSquare} title="Comunicados" count={comunicados.length} color="#6B4E79">
                 {comunicados.map(e => {
                   const c = e.comunicado
                   return (
-                    <div key={e.id} style={{ padding: '8px 12px', background: '#faf5ff', borderRadius: 7, marginBottom: 6, border: '1px solid #e9d5ff' }}>
+                    <div key={e.id} style={{ padding: '8px 12px', background: '#F4F5F7', borderRadius: 7, marginBottom: 6, border: '1px solid #E6E8EB' }}>
                       <div style={{ fontSize: 13, fontWeight: 600 }}>{c?.titulo ?? '—'}</div>
-                      <div style={{ fontSize: 11, color: '#94a3b8' }}>📧 {e.correo_destino}</div>
+                      <div style={{ fontSize: 11, color: '#7A7E87' }}>{e.correo_destino}</div>
                     </div>
                   )
                 })}

@@ -297,7 +297,7 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
       </>}
     >
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #E6E8EB' }}>
           <div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 600 }}>Nueva Factura</h2>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Comprobante Fiscal Digital (CFDI 4.0)</p>
@@ -306,24 +306,24 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
         </div>
 
         {/* Steps */}
-        <div style={{ display: 'flex', padding: '12px 24px', gap: 4, borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+        <div style={{ display: 'flex', padding: '12px 24px', gap: 4, borderBottom: '1px solid #E6E8EB', background: '#F8F9FA' }}>
           {['Recibo', 'Receptor', 'CFDI', 'Confirmar'].map((label, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
               <div style={{
                 width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0,
-                background: paso > i+1 ? '#15803d' : paso === i+1 ? 'var(--blue)' : '#e2e8f0',
-                color: paso >= i+1 ? '#fff' : '#94a3b8',
+                background: paso > i+1 ? '#1F7A50' : paso === i+1 ? 'var(--blue)' : '#E6E8EB',
+                color: paso >= i+1 ? '#fff' : '#7A7E87',
               }}>
                 {paso > i+1 ? <CheckCircle size={12} /> : i+1}
               </div>
-              <span style={{ fontSize: 11, color: paso === i+1 ? 'var(--blue)' : '#94a3b8', fontWeight: paso === i+1 ? 600 : 400 }}>{label}</span>
-              {i < 3 && <div style={{ flex: 1, height: 1, background: paso > i+1 ? '#15803d' : '#e2e8f0', margin: '0 4px' }} />}
+              <span style={{ fontSize: 11, color: paso === i+1 ? 'var(--blue)' : '#7A7E87', fontWeight: paso === i+1 ? 600 : 400 }}>{label}</span>
+              {i < 3 && <div style={{ flex: 1, height: 1, background: paso > i+1 ? '#1F7A50' : '#E6E8EB', margin: '0 4px' }} />}
             </div>
           ))}
         </div>
 
         <div style={{ padding: '20px 24px', minHeight: 300, display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {error && <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+          {error && <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', borderRadius: 6, color: '#C23B3B', fontSize: 13 }}>{error}</div>}
 
           {/* PASO 1 — Recibo */}
           {paso === 1 && (
@@ -331,9 +331,9 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
               <div>
                 <label className="label">Recibo a Facturar *</label>
                 {reciboInicial ? (
-                  <div style={{ padding: '10px 14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8 }}>
+                  <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #C9CCD3', borderRadius: 8 }}>
                     <div style={{ fontWeight: 600, color: 'var(--blue)' }}>{recibo?.folio ?? `#${recibo?.id}`}</div>
-                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>Monto: {fmt(recibo?.monto ?? 0)}</div>
+                    <div style={{ fontSize: 12, color: '#62666E', marginTop: 2 }}>Monto: {fmt(recibo?.monto ?? 0)}</div>
                   </div>
                 ) : (
                   <>
@@ -344,10 +344,10 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
                         {reciboResults.map(r => (
                           <button key={r.id} onClick={() => seleccionarRecibo(r)}
                             style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '8px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                            onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                             <span style={{ fontWeight: 600, color: 'var(--blue)' }}>{r.folio ?? `#${r.id}`}</span>
-                            <span style={{ fontSize: 12, color: '#64748b' }}>{fmt(r.monto_total ?? 0)} · {new Date(r.fecha).toLocaleDateString('es-MX')}</span>
+                            <span style={{ fontSize: 12, color: '#62666E' }}>{fmt(r.monto_total ?? 0)} · {new Date(r.fecha).toLocaleDateString('es-MX')}</span>
                           </button>
                         ))}
                       </div>
@@ -358,7 +358,7 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
 
               {recibo && (
                 <>
-                  <div style={{ padding: '12px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+                  <div style={{ padding: '12px 14px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 8 }}>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Resumen del Recibo</div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                       {[
@@ -380,11 +380,11 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
                     <label className="label">Monto a Facturar</label>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                       <button onClick={() => { setParcial(false); setMontoFacturar(recibo.monto_total ?? 0) }}
-                        style={{ flex: 1, padding: '8px', borderRadius: 7, cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 13, border: `1px solid ${!parcial ? 'var(--blue)' : '#e2e8f0'}`, background: !parcial ? 'var(--blue-pale)' : '#fff', color: !parcial ? 'var(--blue)' : 'var(--text-secondary)', fontWeight: !parcial ? 600 : 400 }}>
+                        style={{ flex: 1, padding: '8px', borderRadius: 7, cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 13, border: `1px solid ${!parcial ? 'var(--blue)' : '#E6E8EB'}`, background: !parcial ? 'var(--blue-pale)' : '#fff', color: !parcial ? 'var(--blue)' : 'var(--text-secondary)', fontWeight: !parcial ? 600 : 400 }}>
                         Completo — {fmt(recibo.monto_total ?? 0)}
                       </button>
                       <button onClick={() => setParcial(true)}
-                        style={{ flex: 1, padding: '8px', borderRadius: 7, cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 13, border: `1px solid ${parcial ? 'var(--blue)' : '#e2e8f0'}`, background: parcial ? 'var(--blue-pale)' : '#fff', color: parcial ? 'var(--blue)' : 'var(--text-secondary)', fontWeight: parcial ? 600 : 400 }}>
+                        style={{ flex: 1, padding: '8px', borderRadius: 7, cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 13, border: `1px solid ${parcial ? 'var(--blue)' : '#E6E8EB'}`, background: parcial ? 'var(--blue-pale)' : '#fff', color: parcial ? 'var(--blue)' : 'var(--text-secondary)', fontWeight: parcial ? 600 : 400 }}>
                         Parcial
                       </button>
                     </div>
@@ -404,8 +404,8 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
 
               {/* ── Buscador de socio para precargar fiscal ── */}
-              <div style={{ padding: '12px 14px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8 }}>
-                <label className="label" style={{ color: '#0369a1', display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+              <div style={{ padding: '12px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8 }}>
+                <label className="label" style={{ color: '#2A6582', display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
                   <UserSearch size={13} /> Precargar datos fiscales de un Socio (opcional)
                 </label>
                 <div style={{ position: 'relative' }}>
@@ -413,7 +413,7 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
                     value={socioSearch}
                     onChange={e => { setSocioSearch(e.target.value); setSocioFiscalMsg('') }}
                     style={{ paddingLeft: 32 }} />
-                  <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
+                  <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87', pointerEvents: 'none' }} />
                 </div>
                 {socioResults.length > 0 && (
                   <div className="card" style={{ marginTop: 4, padding: '4px 0' }}>
@@ -422,13 +422,13 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
                       return (
                         <button key={s.id} onClick={() => precargarFiscalSocio(s)}
                           style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '8px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                          onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                          onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                           <div>
                             <span style={{ fontWeight: 600, fontSize: 13 }}>{nombre}</span>
-                            {s.numero_socio && <span style={{ marginLeft: 8, fontSize: 11, color: '#64748b' }}>#{s.numero_socio}</span>}
+                            {s.numero_socio && <span style={{ marginLeft: 8, fontSize: 11, color: '#62666E' }}>#{s.numero_socio}</span>}
                           </div>
-                          <span style={{ fontSize: 11, color: s.rfc ? '#15803d' : '#94a3b8', fontFamily: 'monospace' }}>
+                          <span style={{ fontSize: 11, color: s.rfc ? '#1F7A50' : '#7A7E87', fontVariantNumeric: 'tabular-nums' }}>
                             {s.rfc || 'Sin RFC'}
                           </span>
                         </button>
@@ -438,24 +438,24 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
                 )}
                 {fiscalOptionsSocio.length > 0 && (
                   <div className="card" style={{ marginTop: 4, padding: '8px 0' }}>
-                    <div style={{ padding: '0 14px 6px', fontSize: 11.5, fontWeight: 600, color: '#0369a1' }}>
+                    <div style={{ padding: '0 14px 6px', fontSize: 11.5, fontWeight: 600, color: '#2A6582' }}>
                       Elige el dato fiscal a facturar
                     </div>
                     {fiscalOptionsSocio.map(opt => (
                       <button key={opt.id} onClick={() => aplicarFiscalOpcion(opt, opt._nombreSocio)}
                         style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '8px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#F8F9FA')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                         <div>
                           <span style={{ fontWeight: 600, fontSize: 13 }}>{opt.alias || opt.razon_social_fiscal}</span>
                         </div>
-                        <span style={{ fontSize: 11, color: '#15803d', fontFamily: 'monospace' }}>{opt.rfc}</span>
+                        <span style={{ fontSize: 11, color: '#1F7A50', fontVariantNumeric: 'tabular-nums' }}>{opt.rfc}</span>
                       </button>
                     ))}
                   </div>
                 )}
                 {socioFiscalMsg && (
-                  <div style={{ marginTop: 6, fontSize: 12, color: '#15803d', fontWeight: 500 }}>{socioFiscalMsg}</div>
+                  <div style={{ marginTop: 6, fontSize: 12, color: '#1F7A50', fontWeight: 500 }}>{socioFiscalMsg}</div>
                 )}
               </div>
 
@@ -463,10 +463,10 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
                 <div>
                   <label className="label">RFC Receptor *</label>
                   <input className="input" value={receptor.rfc} onChange={handleRfcReceptor}
-                    placeholder="XAXX010101000" style={{ fontFamily: 'monospace', textTransform: 'uppercase' }} />
+                    placeholder="XAXX010101000" style={{ fontVariantNumeric: 'tabular-nums', textTransform: 'uppercase' }} />
                   {receptor.rfc.toUpperCase() === RFC_PUBLICO_GENERAL && (
-                    <div style={{ marginTop: 4, fontSize: 11, color: '#7c3aed', display: 'flex', alignItems: 'center', gap: 4 }}>
-                      ⚡ Público en General — régimen, uso CFDI y razón social pre-llenados
+                    <div style={{ marginTop: 4, fontSize: 11, color: '#6B4E79', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      Público en General — régimen, uso CFDI y razón social pre-llenados
                     </div>
                   )}
                 </div>
@@ -507,7 +507,7 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
                 <div>
                   <label className="label">Clave Prod/Serv SAT</label>
                   <input className="input" value={cfdi.clave_prod_serv} onChange={e => setCfdi(c => ({ ...c, clave_prod_serv: e.target.value }))}
-                    placeholder="80101601" style={{ fontFamily: 'monospace' }} />
+                    placeholder="80101601" style={{ fontVariantNumeric: 'tabular-nums' }} />
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -540,7 +540,7 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
                       style={{
                         flex: 1, padding: '9px 12px', borderRadius: 8, cursor: 'pointer',
                         fontFamily: 'var(--font-body)', fontSize: 13,
-                        border: `1px solid ${cfdi.tasa_iva === op.valor ? 'var(--blue)' : '#e2e8f0'}`,
+                        border: `1px solid ${cfdi.tasa_iva === op.valor ? 'var(--blue)' : '#E6E8EB'}`,
                         background: cfdi.tasa_iva === op.valor ? 'var(--blue-pale)' : '#fff',
                         color: cfdi.tasa_iva === op.valor ? 'var(--blue)' : 'var(--text-secondary)',
                         fontWeight: cfdi.tasa_iva === op.valor ? 600 : 400,
@@ -550,7 +550,7 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
                   ))}
                 </div>
                 {tasaIva > 0 && (
-                  <div style={{ marginTop: 6, fontSize: 12, color: '#64748b' }}>
+                  <div style={{ marginTop: 6, fontSize: 12, color: '#62666E' }}>
                     IVA estimado: <strong>{fmt(iva)}</strong> · Total: <strong style={{ color: 'var(--blue)' }}>{fmt(total)}</strong>
                   </div>
                 )}
@@ -561,7 +561,7 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
           {/* PASO 4 — Confirmar */}
           {paso === 4 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+              <div style={{ padding: '16px', background: '#F8F9FA', border: '1px solid #E6E8EB', borderRadius: 10 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Resumen de la Factura</div>
                 {[
                   ['Recibo',             recibo?.folio ?? `#${recibo?.id}`],
@@ -575,14 +575,14 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
                   [`IVA (${tasaIva > 0 ? '16 %' : 'Exento'})`, fmt(iva)],
                   ['Total a Facturar',                         fmt(total)],
                 ].map(([l, v]) => (
-                  <div key={l} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #f1f5f9' }}>
+                  <div key={l} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #F4F5F7' }}>
                     <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{l}</span>
                     <span style={{ fontSize: 12, fontWeight: 500, color: l === 'Total a Facturar' ? 'var(--blue)' : 'var(--text-primary)' }}>{v}</span>
                   </div>
                 ))}
               </div>
-              <div style={{ padding: '10px 14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 7, fontSize: 12, color: '#92400e' }}>
-                ⚠ Una vez timbrado el CFDI no puede modificarse, solo cancelarse. Verifica los datos antes de continuar.
+              <div style={{ padding: '10px 14px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #7A4B0C', borderRadius: 7, fontSize: 12, color: '#7A4B0C' }}>
+                Una vez timbrado el CFDI no puede modificarse, solo cancelarse. Verifica los datos antes de continuar.
               </div>
             </div>
           )}

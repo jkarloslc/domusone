@@ -16,56 +16,56 @@ const REPORTES = [
     label: 'Salidas al Campo',
     desc:  'Registro de rondas por socio y categoría, con detalle de acompañantes',
     icon:  MapPin,
-    color: '#16a34a',
-    bg:    '#f0fdf4',
+    color: '#267F56',
+    bg:    '#F4F5F7',
   },
   {
     key:   'cobranza',
     label: 'Cobranza / CXC',
     desc:  'Cuotas por categoría, tipo y status con resumen y detalle',
     icon:  CreditCard,
-    color: '#2563eb',
-    bg:    '#eff6ff',
+    color: '#1C1D21',
+    bg:    '#F4F5F7',
   },
   {
     key:   'estado-cuenta',
     label: 'Estado de Cuenta',
     desc:  'Cuotas y recibos por socio en un período',
     icon:  FileText,
-    color: '#7c3aed',
-    bg:    '#f5f3ff',
+    color: '#6B4E79',
+    bg:    '#F4F5F7',
   },
   {
     key:   'caballos-servicios',
     label: 'Caballos y Servicios',
     desc:  'Desglose por caballo y tipo de servicio, con filtros por fechas, caballo y tipo',
     icon:  BarChart2,
-    color: '#92400e',
-    bg:    '#fff7ed',
+    color: '#7A4B0C',
+    bg:    '#F4F5F7',
   },
   {
     key:   'miembros-federados',
     label: 'Miembros Federados',
     desc:  'Socios inscritos a la Federación Mexicana de Golf por período (año)',
     icon:  Award,
-    color: '#d97706',
-    bg:    '#fffbeb',
+    color: '#B5761A',
+    bg:    '#F4F5F7',
   },
   {
     key:   'slots-ocupacion',
     label: 'Ocupación de Slots / Cajones',
     desc:  'Status de cada cajón con socio y familiar ocupante, tipo, marca y modelo del carrito',
     icon:  Warehouse,
-    color: '#059669',
-    bg:    '#ecfdf5',
+    color: '#267F56',
+    bg:    '#F4F5F7',
   },
   {
     key:   'auditoria-slots',
     label: 'Auditoría de Slots',
     desc:  'Hoja de verificación: ocupación según sistema contra levantamiento físico en motor lobby',
     icon:  ClipboardCheck,
-    color: '#0d9488',
-    bg:    '#f0fdfa',
+    color: '#178A80',
+    bg:    '#F4F5F7',
   },
 ]
 
@@ -101,24 +101,24 @@ export default function GolfReportesPage() {
                 style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
                   padding: '20px 22px', borderRadius: 14, cursor: 'pointer',
-                  background: r.bg, border: `1.5px solid ${r.color}22`,
+                  background: '#fff', border: '1px solid #E6E8EB',
                   textAlign: 'left', outline: 'none', transition: 'all 0.15s',
                   boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
                 }}
                 onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.boxShadow = `0 4px 16px ${r.color}22`
-                  ;(e.currentTarget as HTMLElement).style.borderColor = r.color + '55'
+                  (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 16px rgba(28,29,33,0.08)'
+                  ;(e.currentTarget as HTMLElement).style.borderColor = '#19D3C5'
                 }}
                 onMouseLeave={e => {
                   (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)'
-                  ;(e.currentTarget as HTMLElement).style.borderColor = r.color + '22'
+                  ;(e.currentTarget as HTMLElement).style.borderColor = '#E6E8EB'
                 }}
               >
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: r.color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-                  <Icon size={20} style={{ color: r.color }} />
+                <div className="icon-chip" style={{ width: 40, height: 40, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+                  <Icon size={20} />
                 </div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#1e293b', marginBottom: 6 }}>{r.label}</div>
-                <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>{r.desc}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#26282D', marginBottom: 6 }}>{r.label}</div>
+                <div style={{ fontSize: 12, color: '#62666E', lineHeight: 1.5 }}>{r.desc}</div>
                 <div style={{ marginTop: 14, fontSize: 12, fontWeight: 600, color: r.color, display: 'flex', alignItems: 'center', gap: 4 }}>
                   Consultar →
                 </div>

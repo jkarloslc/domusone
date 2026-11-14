@@ -174,16 +174,16 @@ export default function PasesPage() {
   })
 
   const badgePase = (p: LotePase) => {
-    if (vencido(p.fecha_vencimiento))   return { bg: '#fef2f2', color: '#dc2626', label: 'Vencido' }
-    if (porVencer(p.fecha_vencimiento)) return { bg: '#fff7ed', color: '#c2410c', label: 'Por vencer' }
-    if (p.cantidad_disponible <= 0)     return { bg: '#f1f5f9', color: '#64748b', label: 'Agotado' }
-    return { bg: '#f0fdf4', color: '#16a34a', label: 'Vigente' }
+    if (vencido(p.fecha_vencimiento))   return { bg: '#F4F5F7', color: '#C23B3B', label: 'Vencido' }
+    if (porVencer(p.fecha_vencimiento)) return { bg: '#F4F5F7', color: '#A8501F', label: 'Por vencer' }
+    if (p.cantidad_disponible <= 0)     return { bg: '#F4F5F7', color: '#62666E', label: 'Agotado' }
+    return { bg: '#F4F5F7', color: '#267F56', label: 'Vigente' }
   }
 
   const tipoMovColor: Record<string, string> = {
-    ASIGNACION: '#16a34a',
-    CONSUMO:    '#dc2626',
-    AJUSTE:     '#d97706',
+    ASIGNACION: '#267F56',
+    CONSUMO:    '#C23B3B',
+    AJUSTE:     '#B5761A',
   }
 
   const nc = (s: SocioConPases) => [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')
@@ -204,7 +204,7 @@ export default function PasesPage() {
             </button>
           )}
           {puedeEscribir && (
-            <button className="btn-primary" onClick={() => setShowModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#d97706' }}>
+            <button className="btn-primary" onClick={() => setShowModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#B5761A' }}>
               <Plus size={14} /> Asignar Pases
             </button>
           )}
@@ -213,41 +213,41 @@ export default function PasesPage() {
 
       {/* Política de pases (cuántos pases otorga cada año por 12 cuotas / pronto pago) */}
       {showPolitica && puedeEscribir && (
-        <div className="card" style={{ marginBottom: 20, padding: '16px 20px', background: '#fffbeb', border: '1px solid #fde68a' }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#92400e', marginBottom: 4 }}>Política de Pases por Año</div>
-          <div style={{ fontSize: 11, color: '#78716c', marginBottom: 14 }}>
+        <div className="card" style={{ marginBottom: 20, padding: '16px 20px', background: '#F4F5F7', border: '1px solid #E6E8EB' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#7A4B0C', marginBottom: 4 }}>Política de Pases por Año</div>
+          <div style={{ fontSize: 11, color: '#62666E', marginBottom: 14 }}>
             Define cuántos pases de invitado se sugieren al cobrar cuotas: por completar las 12 mensualidades del año y por pagar la mensualidad antes del día límite de pronto pago.
           </div>
           {loadingPolitica ? (
-            <div style={{ padding: 12 }}><Loader size={16} className="animate-spin" color="#d97706" /></div>
+            <div style={{ padding: 12 }}><Loader size={16} className="animate-spin" color="#B5761A" /></div>
           ) : (
             <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, color: '#92400e', marginBottom: 4, display: 'block' }}>Año</label>
+                <label style={{ fontSize: 11, fontWeight: 600, color: '#7A4B0C', marginBottom: 4, display: 'block' }}>Año</label>
                 <input type="number" value={politica.anio}
                   onChange={e => { const a = Number(e.target.value); setPolitica(p => ({ ...p, anio: a })); fetchPolitica(a) }}
-                  style={{ width: 90, padding: '7px 10px', fontSize: 13, border: '1px solid #fde68a', borderRadius: 8, fontFamily: 'inherit' }} />
+                  style={{ width: 90, padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, fontFamily: 'inherit' }} />
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, color: '#92400e', marginBottom: 4, display: 'block' }}>Pases por 12 cuotas pagadas (anual)</label>
+                <label style={{ fontSize: 11, fontWeight: 600, color: '#7A4B0C', marginBottom: 4, display: 'block' }}>Pases por 12 cuotas pagadas (anual)</label>
                 <input type="number" min={0} value={politica.pases_anuales_12_cuotas}
                   onChange={e => setPolitica(p => ({ ...p, pases_anuales_12_cuotas: Math.max(0, Number(e.target.value)) }))}
-                  style={{ width: 90, padding: '7px 10px', fontSize: 13, border: '1px solid #fde68a', borderRadius: 8, fontFamily: 'inherit' }} />
+                  style={{ width: 90, padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, fontFamily: 'inherit' }} />
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, color: '#92400e', marginBottom: 4, display: 'block' }}>Pases por pronto pago (mensual)</label>
+                <label style={{ fontSize: 11, fontWeight: 600, color: '#7A4B0C', marginBottom: 4, display: 'block' }}>Pases por pronto pago (mensual)</label>
                 <input type="number" min={0} value={politica.pases_mensuales_pronto_pago}
                   onChange={e => setPolitica(p => ({ ...p, pases_mensuales_pronto_pago: Math.max(0, Number(e.target.value)) }))}
-                  style={{ width: 90, padding: '7px 10px', fontSize: 13, border: '1px solid #fde68a', borderRadius: 8, fontFamily: 'inherit' }} />
+                  style={{ width: 90, padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, fontFamily: 'inherit' }} />
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, color: '#92400e', marginBottom: 4, display: 'block' }}>Día límite de pronto pago</label>
+                <label style={{ fontSize: 11, fontWeight: 600, color: '#7A4B0C', marginBottom: 4, display: 'block' }}>Día límite de pronto pago</label>
                 <input type="number" min={1} max={28} value={politica.dia_limite_pronto_pago}
                   onChange={e => setPolitica(p => ({ ...p, dia_limite_pronto_pago: Math.max(1, Number(e.target.value)) }))}
-                  style={{ width: 90, padding: '7px 10px', fontSize: 13, border: '1px solid #fde68a', borderRadius: 8, fontFamily: 'inherit' }} />
+                  style={{ width: 90, padding: '7px 10px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, fontFamily: 'inherit' }} />
               </div>
               <button onClick={guardarPolitica} disabled={savingPolitica}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#d97706', color: '#fff', cursor: 'pointer', opacity: savingPolitica ? 0.7 : 1 }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#B5761A', color: '#fff', cursor: 'pointer', opacity: savingPolitica ? 0.7 : 1 }}>
                 {savingPolitica ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
                 Guardar
               </button>
@@ -259,14 +259,14 @@ export default function PasesPage() {
       {/* KPIs */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { label: 'Socios con Pases', value: stats.socios,      color: '#d97706', bg: '#fffbeb' },
-          { label: 'Disponibles',      value: stats.disponibles,  color: '#16a34a', bg: '#f0fdf4' },
-          { label: 'Usados',           value: stats.usados,       color: '#2563eb', bg: '#eff6ff' },
-          { label: 'Asignaciones Vencidas', value: stats.vencidos, color: '#dc2626', bg: '#fef2f2' },
+          { label: 'Socios con Pases', value: stats.socios,      color: '#B5761A', bg: '#F4F5F7' },
+          { label: 'Disponibles',      value: stats.disponibles,  color: '#267F56', bg: '#F4F5F7' },
+          { label: 'Usados',           value: stats.usados,       color: '#1C1D21', bg: '#F4F5F7' },
+          { label: 'Asignaciones Vencidas', value: stats.vencidos, color: '#C23B3B', bg: '#F4F5F7' },
         ].map(card => (
-          <div key={card.label} className="card" style={{ flex: '1 1 140px', maxWidth: 200, padding: '12px 16px', background: card.bg, border: `1px solid ${card.color}22` }}>
-            <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>{card.label}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: card.color }}>{card.value}</div>
+          <div key={card.label} className="card" style={{ flex: '1 1 140px', maxWidth: 200, padding: '12px 16px', background: '#fff', border: '1px solid #E6E8EB' }}>
+            <div style={{ fontSize: 11, color: '#62666E', marginBottom: 4 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: card.color, marginRight: 6, verticalAlign: 'middle' }} />{card.label}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{card.value}</div>
           </div>
         ))}
       </div>
@@ -274,16 +274,16 @@ export default function PasesPage() {
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 260px', maxWidth: 340 }}>
-          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
           <input
-            style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', color: '#26282D', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
             placeholder="Buscar socio…"
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
           />
-          {busqueda && <button onClick={() => setBusqueda('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+          {busqueda && <button onClick={() => setBusqueda('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2 }}><X size={12} /></button>}
         </div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#475569', cursor: 'pointer' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#4A4D54', cursor: 'pointer' }}>
           <input type="checkbox" checked={soloActivos} onChange={e => setSoloActivos(e.target.checked)} />
           Solo pases vigentes
         </label>
@@ -315,11 +315,11 @@ export default function PasesPage() {
                   <>
                     <tr key={s.id}
                       onClick={() => toggleExpand(s.id)}
-                      style={{ borderBottom: abierto ? 'none' : '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.1s', background: abierto ? '#fffbeb' : '' }}
+                      style={{ borderBottom: abierto ? 'none' : '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.1s', background: abierto ? '#F4F5F7' : '' }}
                       onMouseEnter={e => { if (!abierto) (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)' }}
                       onMouseLeave={e => { if (!abierto) (e.currentTarget as HTMLElement).style.background = '' }}>
                       {/* Chevron */}
-                      <td style={{ padding: '10px 10px 10px 14px', width: 28, color: '#94a3b8' }}>
+                      <td style={{ padding: '10px 10px 10px 14px', width: 28, color: '#7A7E87' }}>
                         {abierto ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                       </td>
                       <td style={{ padding: '10px 14px' }}>
@@ -330,7 +330,7 @@ export default function PasesPage() {
                         {s.cat_categorias_socios?.nombre ?? '—'}
                       </td>
                       <td style={{ padding: '10px 14px' }}>
-                        <span style={{ fontWeight: 700, fontSize: 16, color: s.total_disponibles > 0 ? '#d97706' : '#94a3b8' }}>{s.total_disponibles}</span>
+                        <span style={{ fontWeight: 700, fontSize: 16, color: s.total_disponibles > 0 ? '#B5761A' : '#7A7E87' }}>{s.total_disponibles}</span>
                       </td>
                       <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>
                         {s.total_usados}
@@ -348,16 +348,16 @@ export default function PasesPage() {
 
                             {/* Asignaciones */}
                             <div style={{ marginBottom: 16 }}>
-                              <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Asignaciones</div>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Asignaciones</div>
                               {s.pases.length === 0 ? (
-                                <div style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Sin asignaciones</div>
+                                <div style={{ fontSize: 12, color: '#7A7E87', fontStyle: 'italic' }}>Sin asignaciones</div>
                               ) : (
                                 <div style={{ overflowX: 'auto' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                                   <thead>
-                                    <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                    <tr style={{ borderBottom: '1px solid #E6E8EB' }}>
                                       {['Tipo', 'Período', 'Vigencia', 'Otorgados', 'Usados', 'Disponibles', 'Status'].map(h => (
-                                        <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                                        <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                                       ))}
                                     </tr>
                                   </thead>
@@ -365,15 +365,15 @@ export default function PasesPage() {
                                     {s.pases.map(p => {
                                       const badge = badgePase(p)
                                       return (
-                                        <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                          <td style={{ padding: '7px 10px', fontWeight: 500, color: '#1e293b' }}>{p.cat_pases_config?.nombre ?? 'Estándar'}</td>
-                                          <td style={{ padding: '7px 10px', color: '#64748b' }}>{p.periodo ?? '—'}</td>
-                                          <td style={{ padding: '7px 10px', color: '#64748b', whiteSpace: 'nowrap' }}>{fmtFecha(p.fecha_inicio)} → {fmtFecha(p.fecha_vencimiento)}</td>
-                                          <td style={{ padding: '7px 10px', textAlign: 'center', color: '#475569' }}>{p.cantidad_otorgada}</td>
-                                          <td style={{ padding: '7px 10px', textAlign: 'center', color: '#475569' }}>{p.cantidad_usada}</td>
-                                          <td style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 700, color: '#d97706' }}>{p.cantidad_disponible}</td>
+                                        <tr key={p.id} style={{ borderBottom: '1px solid #F4F5F7' }}>
+                                          <td style={{ padding: '7px 10px', fontWeight: 500, color: '#26282D' }}>{p.cat_pases_config?.nombre ?? 'Estándar'}</td>
+                                          <td style={{ padding: '7px 10px', color: '#62666E' }}>{p.periodo ?? '—'}</td>
+                                          <td style={{ padding: '7px 10px', color: '#62666E', whiteSpace: 'nowrap' }}>{fmtFecha(p.fecha_inicio)} → {fmtFecha(p.fecha_vencimiento)}</td>
+                                          <td style={{ padding: '7px 10px', textAlign: 'center', color: '#4A4D54' }}>{p.cantidad_otorgada}</td>
+                                          <td style={{ padding: '7px 10px', textAlign: 'center', color: '#4A4D54' }}>{p.cantidad_usada}</td>
+                                          <td style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 700, color: '#B5761A' }}>{p.cantidad_disponible}</td>
                                           <td style={{ padding: '7px 10px' }}>
-                                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: badge.bg, color: badge.color, fontWeight: 600 }}>{badge.label}</span>
+                                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: badge.color, color: '#fff', fontWeight: 600 }}>{badge.label}</span>
                                           </td>
                                         </tr>
                                       )
@@ -386,33 +386,33 @@ export default function PasesPage() {
 
                             {/* Movimientos */}
                             <div style={{ marginBottom: 12 }}>
-                              <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Últimos movimientos</div>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Últimos movimientos</div>
                               {loadingMov === s.id ? (
-                                <div style={{ fontSize: 12, color: '#94a3b8' }}>Cargando…</div>
+                                <div style={{ fontSize: 12, color: '#7A7E87' }}>Cargando…</div>
                               ) : movsSocio.length === 0 ? (
-                                <div style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Sin movimientos</div>
+                                <div style={{ fontSize: 12, color: '#7A7E87', fontStyle: 'italic' }}>Sin movimientos</div>
                               ) : (
                                 <div style={{ overflowX: 'auto' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                                   <thead>
-                                    <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                    <tr style={{ borderBottom: '1px solid #E6E8EB' }}>
                                       {['Tipo', 'Cantidad', 'Motivo', 'Fecha', 'Registrado por'].map(h => (
-                                        <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                                        <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                                       ))}
                                     </tr>
                                   </thead>
                                   <tbody>
                                     {movsSocio.map(m => (
-                                      <tr key={m.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                        <td style={{ padding: '6px 10px', fontWeight: 700, color: tipoMovColor[m.tipo] ?? '#475569' }}>{m.tipo}</td>
-                                        <td style={{ padding: '6px 10px', fontWeight: 600, color: m.cantidad > 0 ? '#16a34a' : '#dc2626' }}>
+                                      <tr key={m.id} style={{ borderBottom: '1px solid #F4F5F7' }}>
+                                        <td style={{ padding: '6px 10px', fontWeight: 700, color: tipoMovColor[m.tipo] ?? '#4A4D54' }}>{m.tipo}</td>
+                                        <td style={{ padding: '6px 10px', fontWeight: 600, color: m.cantidad > 0 ? '#267F56' : '#C23B3B' }}>
                                           {m.cantidad > 0 ? `+${m.cantidad}` : m.cantidad}
                                         </td>
-                                        <td style={{ padding: '6px 10px', color: '#64748b' }}>{m.motivo ?? '—'}</td>
-                                        <td style={{ padding: '6px 10px', color: '#94a3b8', whiteSpace: 'nowrap' }}>
+                                        <td style={{ padding: '6px 10px', color: '#62666E' }}>{m.motivo ?? '—'}</td>
+                                        <td style={{ padding: '6px 10px', color: '#7A7E87', whiteSpace: 'nowrap' }}>
                                           {new Date(m.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
                                         </td>
-                                        <td style={{ padding: '6px 10px', color: '#64748b' }}>{m.created_by ?? '—'}</td>
+                                        <td style={{ padding: '6px 10px', color: '#62666E' }}>{m.created_by ?? '—'}</td>
                                       </tr>
                                     ))}
                                   </tbody>
@@ -425,7 +425,7 @@ export default function PasesPage() {
                             {puedeEscribir && (
                               <button
                                 onClick={e => { e.stopPropagation(); setShowModal(true) }}
-                                style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#d97706', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
+                                style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#B5761A', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
                                 <Plus size={12} /> Asignar más pases
                               </button>
                             )}

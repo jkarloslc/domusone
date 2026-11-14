@@ -37,10 +37,10 @@ const FUENTE_CFG: Record<FuenteCobranza, { titulo: string; clienteLabel: string;
 }
 
 const CLASIF_META: Record<Clasif, { label: string; color: string; bg: string }> = {
-  CORRIENTE:  { label: 'Corriente',  color: '#16a34a', bg: '#dcfce7' },
-  VENCIDA:    { label: 'Vencida',    color: '#dc2626', bg: '#fee2e2' },
-  ANTICIPADA: { label: 'Anticipada', color: '#2563eb', bg: '#dbeafe' },
-  OTROS:      { label: 'Otros',      color: '#64748b', bg: '#f1f5f9' },
+  CORRIENTE:  { label: 'Corriente',  color: '#267F56', bg: '#E6E8EB' },
+  VENCIDA:    { label: 'Vencida',    color: '#C23B3B', bg: '#E6E8EB' },
+  ANTICIPADA: { label: 'Anticipada', color: '#1C1D21', bg: '#E6E8EB' },
+  OTROS:      { label: 'Otros',      color: '#62666E', bg: '#F4F5F7' },
 }
 
 const fmt$ = (v: number) => '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 })
@@ -270,7 +270,7 @@ export default function ReporteCobranzaCorrienteVencida({ fuente }: { fuente: Fu
       </div>
 
       {error && (
-        <div className="card" style={{ padding: '14px 18px', marginBottom: 16, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: 13 }}>
+        <div className="card" style={{ padding: '14px 18px', marginBottom: 16, background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', color: '#C23B3B', fontSize: 13 }}>
           {error}
         </div>
       )}
@@ -287,15 +287,15 @@ export default function ReporteCobranzaCorrienteVencida({ fuente }: { fuente: Fu
           {/* KPIs */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
             {[
-              { label: 'Total cobrado',       value: fmt$(totalCobrado),  color: '#334155', bg: '#f8fafc', sub: `${rows.length} conceptos` },
-              { label: 'Cobranza corriente',  value: fmt$(totCorriente),  color: '#16a34a', bg: '#f0fdf4', sub: `${cnt('CORRIENTE')} cuotas · ${pct(totCorriente, baseCuotas)} del cobro de cuotas` },
-              { label: 'Cobranza vencida',    value: fmt$(totVencida),    color: '#dc2626', bg: '#fef2f2', sub: `${cnt('VENCIDA')} cuotas · ${pct(totVencida, baseCuotas)} del cobro de cuotas` },
-              { label: 'Cobranza anticipada', value: fmt$(totAnticipada), color: '#2563eb', bg: '#eff6ff', sub: `${cnt('ANTICIPADA')} cuotas` },
-              { label: 'Otros conceptos',     value: fmt$(totOtros),      color: '#64748b', bg: '#f8fafc', sub: `${cnt('OTROS')} sin periodo` },
+              { label: 'Total cobrado',       value: fmt$(totalCobrado),  color: '#33363C', bg: '#F8F9FA', sub: `${rows.length} conceptos` },
+              { label: 'Cobranza corriente',  value: fmt$(totCorriente),  color: '#267F56', bg: '#F4F5F7', sub: `${cnt('CORRIENTE')} cuotas · ${pct(totCorriente, baseCuotas)} del cobro de cuotas` },
+              { label: 'Cobranza vencida',    value: fmt$(totVencida),    color: '#C23B3B', bg: '#F4F5F7', sub: `${cnt('VENCIDA')} cuotas · ${pct(totVencida, baseCuotas)} del cobro de cuotas` },
+              { label: 'Cobranza anticipada', value: fmt$(totAnticipada), color: '#1C1D21', bg: '#F4F5F7', sub: `${cnt('ANTICIPADA')} cuotas` },
+              { label: 'Otros conceptos',     value: fmt$(totOtros),      color: '#62666E', bg: '#F8F9FA', sub: `${cnt('OTROS')} sin periodo` },
             ].map(k => (
-              <div key={k.label} className="card" style={{ flex: '1 1 160px', padding: '12px 16px', background: k.bg }}>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>{k.label}</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: k.color }}>{k.value}</div>
+              <div key={k.label} className="card" style={{ flex: '1 1 160px', padding: '12px 16px', background: '#fff' }}>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{k.value}</div>
                 {k.sub && <div style={{ fontSize: 10, color: k.color, marginTop: 1 }}>{k.sub}</div>}
               </div>
             ))}
@@ -322,9 +322,9 @@ export default function ReporteCobranzaCorrienteVencida({ fuente }: { fuente: Fu
                       return (
                         <tr key={mes} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                           <td style={{ padding: '9px 12px', fontWeight: 600, color: 'var(--text-primary)', textTransform: 'capitalize' }}>{fmtMes(mes)}</td>
-                          <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 600, color: '#16a34a' }}>{m.CORRIENTE > 0 ? fmt$(m.CORRIENTE) : '—'}</td>
-                          <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 600, color: '#dc2626' }}>{m.VENCIDA > 0 ? fmt$(m.VENCIDA) : '—'}</td>
-                          <td style={{ padding: '9px 12px', textAlign: 'right', color: '#2563eb' }}>{m.ANTICIPADA > 0 ? fmt$(m.ANTICIPADA) : '—'}</td>
+                          <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 600, color: '#267F56' }}>{m.CORRIENTE > 0 ? fmt$(m.CORRIENTE) : '—'}</td>
+                          <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 600, color: '#C23B3B' }}>{m.VENCIDA > 0 ? fmt$(m.VENCIDA) : '—'}</td>
+                          <td style={{ padding: '9px 12px', textAlign: 'right', color: '#1C1D21' }}>{m.ANTICIPADA > 0 ? fmt$(m.ANTICIPADA) : '—'}</td>
                           <td style={{ padding: '9px 12px', textAlign: 'right', color: 'var(--text-muted)' }}>{m.OTROS !== 0 ? fmt$(m.OTROS) : '—'}</td>
                           <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700 }}>{fmt$(m.total)}</td>
                           <td style={{ padding: '9px 12px', textAlign: 'right', color: 'var(--text-muted)' }}>{pct(m.CORRIENTE, m.CORRIENTE + m.VENCIDA)}</td>
@@ -333,9 +333,9 @@ export default function ReporteCobranzaCorrienteVencida({ fuente }: { fuente: Fu
                     })}
                     <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
                       <td style={{ padding: '9px 12px', fontWeight: 700, fontSize: 11, color: 'var(--text-muted)' }}>TOTAL</td>
-                      <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#16a34a' }}>{fmt$(totCorriente)}</td>
-                      <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#dc2626' }}>{fmt$(totVencida)}</td>
-                      <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#2563eb' }}>{fmt$(totAnticipada)}</td>
+                      <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#267F56' }}>{fmt$(totCorriente)}</td>
+                      <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#C23B3B' }}>{fmt$(totVencida)}</td>
+                      <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#1C1D21' }}>{fmt$(totAnticipada)}</td>
                       <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: 'var(--text-muted)' }}>{fmt$(totOtros)}</td>
                       <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700 }}>{fmt$(totalCobrado)}</td>
                       <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: 'var(--text-muted)' }}>{pct(totCorriente, baseCuotas)}</td>
@@ -368,14 +368,14 @@ export default function ReporteCobranzaCorrienteVencida({ fuente }: { fuente: Fu
                       return (
                         <tr key={r.key} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                           <td style={{ padding: '9px 12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{fmtFecha(r.fechaPago)}</td>
-                          <td style={{ padding: '9px 12px', fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
+                          <td style={{ padding: '9px 12px', fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
                           <td style={{ padding: '9px 12px', color: 'var(--text-primary)', fontSize: 11 }}>{r.cliente}</td>
                           <td style={{ padding: '9px 12px', color: 'var(--text-primary)' }}>{r.concepto}</td>
-                          <td style={{ padding: '9px 12px', color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 11 }}>{r.periodo ?? '—'}</td>
+                          <td style={{ padding: '9px 12px', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>{r.periodo ?? '—'}</td>
                           <td style={{ padding: '9px 12px' }}>
-                            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: cm.bg, color: cm.color, fontWeight: 700 }}>{cm.label}</span>
+                            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: cm.color, color: '#fff', fontWeight: 700 }}>{cm.label}</span>
                           </td>
-                          <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 600, color: r.monto < 0 ? '#dc2626' : 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{fmt$(r.monto)}</td>
+                          <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 600, color: r.monto < 0 ? '#C23B3B' : 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{fmt$(r.monto)}</td>
                         </tr>
                       )
                     })}

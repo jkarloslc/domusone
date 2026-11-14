@@ -24,11 +24,11 @@ type RegistroAgenda = {
 const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
 
 const SEG_STYLE: Record<string, { bg: string; color: string }> = {
-  'Contactar de nuevo': { bg: '#fffbeb', color: '#d97706' },
-  'Sin respuesta':      { bg: '#f8fafc', color: '#64748b' },
-  'Pago prometido':     { bg: '#f5f3ff', color: '#7c3aed' },
-  'En mora':            { bg: '#fef2f2', color: '#dc2626' },
-  'Gestión jurídica':   { bg: '#fff7ed', color: '#9a3412' },
+  'Contactar de nuevo': { bg: '#F4F5F7', color: '#B5761A' },
+  'Sin respuesta':      { bg: '#F8F9FA', color: '#62666E' },
+  'Pago prometido':     { bg: '#F4F5F7', color: '#6B4E79' },
+  'En mora':            { bg: '#F4F5F7', color: '#C23B3B' },
+  'Gestión jurídica':   { bg: '#F4F5F7', color: '#8A4119' },
 }
 
 const SEGUIMIENTOS_ABIERTOS = ['Contactar de nuevo', 'Sin respuesta', 'Pago prometido', 'En mora', 'Gestión jurídica'] as const
@@ -177,19 +177,19 @@ export default function AgendaCobranza({ modulo, onVerEntidad }: Props) {
     if (!w) return
     const rowsHtml = filtrados.map(r => {
       const proxV  = r.fecha_proximo_contacto && r.fecha_proximo_contacto <= hoy
-      const seg    = SEG_STYLE[r.seguimiento] ?? { bg: '#f8fafc', color: '#64748b' }
+      const seg    = SEG_STYLE[r.seguimiento] ?? { bg: '#F8F9FA', color: '#62666E' }
       return `<tr>
         <td>${r.nombre_entidad}</td>
         <td><span style="background:${seg.bg};color:${seg.color};padding:1px 6px;border-radius:10px;font-size:10px;font-weight:bold">${r.seguimiento}</span></td>
-        <td style="color:${proxV ? '#dc2626' : '#334155'};font-weight:${proxV ? 'bold' : 'normal'}">${fmtFecha(r.fecha_proximo_contacto)}</td>
-        <td style="font-weight:bold;color:#7c3aed">${r.monto_prometido ? fmt$(r.monto_prometido) : '—'}</td>
+        <td style="color:${proxV ? '#C23B3B' : '#33363C'};font-weight:${proxV ? 'bold' : 'normal'}">${fmtFecha(r.fecha_proximo_contacto)}</td>
+        <td style="font-weight:bold;color:#6B4E79">${r.monto_prometido ? fmt$(r.monto_prometido) : '—'}</td>
         <td>${r.canal}</td>
         <td>${r.respuesta ?? '—'}</td>
         <td>${fmtFecha(r.fecha_contacto)}</td>
       </tr>`
     }).join('')
     w.document.write(`<html><head><title>Agenda Cobranza</title>
-    <style>body{font-family:Arial,sans-serif;font-size:11px;padding:20px}h2{font-size:15px;margin-bottom:4px}.sub{font-size:11px;color:#64748b;margin-bottom:16px}table{width:100%;border-collapse:collapse}th{text-align:left;font-size:10px;font-weight:bold;color:#64748b;text-transform:uppercase;padding:6px 8px;border-bottom:2px solid #e2e8f0}td{padding:6px 8px;border-bottom:1px solid #f1f5f9;font-size:11px}@media print{@page{margin:1.5cm}}</style>
+    <style>body{font-family:Arial,sans-serif;font-size:11px;padding:20px}h2{font-size:15px;margin-bottom:4px}.sub{font-size:11px;color:#62666E;margin-bottom:16px}table{width:100%;border-collapse:collapse}th{text-align:left;font-size:10px;font-weight:bold;color:#62666E;text-transform:uppercase;padding:6px 8px;border-bottom:2px solid #E6E8EB}td{padding:6px 8px;border-bottom:1px solid #F4F5F7;font-size:11px}@media print{@page{margin:1.5cm}}</style>
     </head><body>
     <h2>Agenda de Seguimiento de Cobranza</h2>
     <div class="sub">Generado: ${new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })} · ${filtrados.length} registros</div>
@@ -223,15 +223,15 @@ export default function AgendaCobranza({ modulo, onVerEntidad }: Props) {
       {/* KPIs */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { label: 'Total abiertos',    value: kTotal,  color: '#2563eb', bg: '#eff6ff' },
-          { label: 'Contactar hoy',     value: kHoy,    color: '#dc2626', bg: '#fef2f2' },
-          { label: 'Esta semana',       value: kSemana, color: '#d97706', bg: '#fffbeb' },
-          { label: 'Pago prometido',    value: kProm,   color: '#7c3aed', bg: '#f5f3ff' },
-          { label: 'En mora / Jurídico',value: kMora,   color: '#9a3412', bg: '#fff7ed' },
+          { label: 'Total abiertos',    value: kTotal,  color: '#1C1D21', bg: '#F4F5F7' },
+          { label: 'Contactar hoy',     value: kHoy,    color: '#C23B3B', bg: '#F4F5F7' },
+          { label: 'Esta semana',       value: kSemana, color: '#B5761A', bg: '#F4F5F7' },
+          { label: 'Pago prometido',    value: kProm,   color: '#6B4E79', bg: '#F4F5F7' },
+          { label: 'En mora / Jurídico',value: kMora,   color: '#8A4119', bg: '#F4F5F7' },
         ].map(k => (
-          <div key={k.label} style={{ flex: '1 1 100px', minWidth: 100, background: k.bg, border: `1px solid ${k.color}22`, borderRadius: 10, padding: '10px 14px' }}>
-            <div style={{ fontSize: 10, color: '#64748b', marginBottom: 3 }}>{k.label}</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: k.color }}>{k.value}</div>
+          <div key={k.label} style={{ flex: '1 1 100px', minWidth: 100, background: '#fff', border: '1px solid #E6E8EB', borderRadius: 10, padding: '10px 14px' }}>
+            <div style={{ fontSize: 10, color: '#62666E', marginBottom: 3 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)' }}>{k.value}</div>
           </div>
         ))}
       </div>
@@ -240,21 +240,21 @@ export default function AgendaCobranza({ modulo, onVerEntidad }: Props) {
       <div style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'center', flexWrap: 'wrap' }}>
         {/* Búsqueda */}
         <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: 300 }}>
-          <Search size={13} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <Search size={13} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#7A7E87' }} />
           <input value={busqueda} onChange={e => setBusqueda(e.target.value)}
             placeholder="Buscar por nombre…"
-            style={{ width: '100%', padding: '7px 10px 7px 28px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const }} />
-          {busqueda && <button onClick={() => setBusqueda('')} style={{ position: 'absolute', right: 7, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={11} /></button>}
+            style={{ width: '100%', padding: '7px 10px 7px 28px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 8, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const }} />
+          {busqueda && <button onClick={() => setBusqueda('')} style={{ position: 'absolute', right: 7, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2 }}><X size={11} /></button>}
         </div>
 
         {/* Filtro seguimiento */}
         <select value={filtroSeg} onChange={e => setFiltroSeg(e.target.value as SeguimientoFiltro)}
-          style={{ padding: '6px 10px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
+          style={{ padding: '6px 10px', fontSize: 12, border: '1px solid #E6E8EB', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
           <option value="todos">Todos los seguimientos</option>
           {SEGUIMIENTOS_ABIERTOS.map(s => <option key={s}>{s}</option>)}
         </select>
 
-        <span style={{ fontSize: 12, color: '#94a3b8' }}>{filtrados.length} registro{filtrados.length !== 1 ? 's' : ''}</span>
+        <span style={{ fontSize: 12, color: '#7A7E87' }}>{filtrados.length} registro{filtrados.length !== 1 ? 's' : ''}</span>
 
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
           <button onClick={load} style={btnGhost}><RefreshCw size={12} /></button>
@@ -265,12 +265,12 @@ export default function AgendaCobranza({ modulo, onVerEntidad }: Props) {
 
       {/* Tabla */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '48px', color: '#94a3b8', fontSize: 13 }}>Cargando agenda…</div>
+        <div style={{ textAlign: 'center', padding: '48px', color: '#7A7E87', fontSize: 13 }}>Cargando agenda…</div>
       ) : filtrados.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '48px 20px', background: '#f8fafc', borderRadius: 10, border: '1px dashed #e2e8f0' }}>
-          <Calendar size={28} style={{ color: '#cbd5e1', margin: '0 auto 8px', display: 'block' }} />
-          <div style={{ fontSize: 13, color: '#94a3b8', fontWeight: 500 }}>Sin registros de seguimiento abiertos</div>
-          <div style={{ fontSize: 12, color: '#cbd5e1', marginTop: 4 }}>Todos los seguimientos están cerrados o aún no se han registrado</div>
+        <div style={{ textAlign: 'center', padding: '48px 20px', background: '#F8F9FA', borderRadius: 10, border: '1px dashed #E6E8EB' }}>
+          <Calendar size={28} style={{ color: '#C9CCD3', margin: '0 auto 8px', display: 'block' }} />
+          <div style={{ fontSize: 13, color: '#7A7E87', fontWeight: 500 }}>Sin registros de seguimiento abiertos</div>
+          <div style={{ fontSize: 12, color: '#C9CCD3', marginTop: 4 }}>Todos los seguimientos están cerrados o aún no se han registrado</div>
         </div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
@@ -278,25 +278,25 @@ export default function AgendaCobranza({ modulo, onVerEntidad }: Props) {
             <thead>
               <tr>
                 {['Nombre', 'Seguimiento', 'Próx. contacto', 'Monto prometido', 'Último canal', 'Comentario', 'Ult. contacto'].map(h => (
-                  <th key={h} style={{ textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '6px 10px', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
+                  <th key={h} style={{ textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '6px 10px', borderBottom: '1px solid #E6E8EB', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
-                {onVerEntidad && <th style={{ textAlign: 'right', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '6px 10px', borderBottom: '1px solid #e2e8f0' }}></th>}
+                {onVerEntidad && <th style={{ textAlign: 'right', fontSize: 10, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '6px 10px', borderBottom: '1px solid #E6E8EB' }}></th>}
               </tr>
             </thead>
             <tbody>
               {filtrados.map(r => {
-                const seg        = SEG_STYLE[r.seguimiento] ?? { bg: '#f8fafc', color: '#64748b' }
+                const seg        = SEG_STYLE[r.seguimiento] ?? { bg: '#F8F9FA', color: '#62666E' }
                 const proxFecha  = r.fecha_proximo_contacto
                 const proxVenc   = proxFecha && proxFecha <= hoy
                 const proxSemana = proxFecha && proxFecha > hoy && proxFecha <= enNDias(7)
                 return (
                   <tr key={r.id}
-                    style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.1s' }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f8fafc'}
+                    style={{ borderBottom: '1px solid #F4F5F7', transition: 'background 0.1s' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FA'}
                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
-                    <td style={{ padding: '9px 10px', fontWeight: 600, color: '#1e293b' }}>{r.nombre_entidad}</td>
+                    <td style={{ padding: '9px 10px', fontWeight: 600, color: '#26282D' }}>{r.nombre_entidad}</td>
                     <td style={{ padding: '9px 10px' }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: seg.bg, color: seg.color }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: seg.color, color: '#fff'}}>
                         {r.seguimiento}
                       </span>
                     </td>
@@ -304,27 +304,27 @@ export default function AgendaCobranza({ modulo, onVerEntidad }: Props) {
                       {proxFecha ? (
                         <span style={{
                           fontWeight: proxVenc || proxSemana ? 700 : 400,
-                          color: proxVenc ? '#dc2626' : proxSemana ? '#d97706' : '#334155',
+                          color: proxVenc ? '#C23B3B' : proxSemana ? '#B5761A' : '#33363C',
                         }}>
-                          {proxVenc && '⚠ '}{fmtFecha(proxFecha)}
+                          {proxVenc && ''}{fmtFecha(proxFecha)}
                         </span>
                       ) : '—'}
                     </td>
-                    <td style={{ padding: '9px 10px', whiteSpace: 'nowrap', fontWeight: r.monto_prometido ? 700 : 400, color: r.monto_prometido ? '#7c3aed' : '#94a3b8' }}>
+                    <td style={{ padding: '9px 10px', whiteSpace: 'nowrap', fontWeight: r.monto_prometido ? 700 : 400, color: r.monto_prometido ? '#6B4E79' : '#7A7E87' }}>
                       {r.monto_prometido ? fmt$(r.monto_prometido) : '—'}
                     </td>
-                    <td style={{ padding: '9px 10px', color: '#64748b' }}>{r.canal}</td>
-                    <td style={{ padding: '9px 10px', color: '#475569', maxWidth: 220 }}>
+                    <td style={{ padding: '9px 10px', color: '#62666E' }}>{r.canal}</td>
+                    <td style={{ padding: '9px 10px', color: '#4A4D54', maxWidth: 220 }}>
                       {r.respuesta
                         ? <span title={r.respuesta} style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>"{r.respuesta}"</span>
                         : '—'}
                     </td>
-                    <td style={{ padding: '9px 10px', color: '#94a3b8', whiteSpace: 'nowrap', fontSize: 11 }}>{fmtFecha(r.fecha_contacto)}</td>
+                    <td style={{ padding: '9px 10px', color: '#7A7E87', whiteSpace: 'nowrap', fontSize: 11 }}>{fmtFecha(r.fecha_contacto)}</td>
                     {onVerEntidad && (
                       <td style={{ padding: '9px 10px', textAlign: 'right' }}>
                         <button
                           onClick={() => onVerEntidad(r.id_entidad, r.nombre_entidad)}
-                          style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', color: '#2563eb', cursor: 'pointer' }}>
+                          style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', border: '1px solid #E6E8EB', borderRadius: 6, background: '#fff', color: '#1C1D21', cursor: 'pointer' }}>
                           Ver →
                         </button>
                       </td>
@@ -343,6 +343,6 @@ export default function AgendaCobranza({ modulo, onVerEntidad }: Props) {
 const btnGhost: React.CSSProperties = {
   display: 'flex', alignItems: 'center', gap: 4,
   padding: '5px 10px', fontSize: 11, fontWeight: 600,
-  border: '1px solid #e2e8f0', borderRadius: 7,
-  background: '#fff', color: '#64748b', cursor: 'pointer',
+  border: '1px solid #E6E8EB', borderRadius: 7,
+  background: '#fff', color: '#62666E', cursor: 'pointer',
 }

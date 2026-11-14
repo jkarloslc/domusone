@@ -98,22 +98,22 @@ const fmtFecha = (f: string) =>
   new Date(f + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
 
 // Filtro por CC/Sección/Área — mismo estilo visual que /dashboards/financiero
-const ING = { border: '#bbf7d0', bg: '#f0fdf4', text: '#15803d' }
-const EGR = { border: '#fecaca', bg: '#fef2f2', text: '#dc2626' }
+const ING = { border: '#E6E8EB', bg: '#F4F5F7', text: '#1F7A50' }
+const EGR = { border: '#E6E8EB', bg: '#F4F5F7', text: '#C23B3B' }
 const selStyle = (active: boolean, color: { border: string; bg: string; text: string }, width: number): React.CSSProperties => ({
   fontSize: 11, padding: '4px 8px', borderRadius: 6, width,
   border: `1px solid ${color.border}`,
-  background: active ? color.bg : '#f8fafc',
+  background: active ? color.bg : '#F8F9FA',
   color: active ? color.text : 'var(--text-secondary)',
   cursor: 'pointer',
 })
 
 function VariacionCell({ varAbs, varPct, tipo }: { varAbs: number; varPct: number | null; tipo: 'ingreso' | 'egreso' }) {
-  if (varAbs === 0 && !varPct) return <span style={{ color: '#94a3b8' }}>—</span>
+  if (varAbs === 0 && !varPct) return <span style={{ color: '#7A7E87' }}>—</span>
   const positivo = varAbs >= 0
   const color = tipo === 'ingreso'
-    ? (positivo ? '#15803d' : '#dc2626')
-    : (positivo ? '#dc2626' : '#15803d')
+    ? (positivo ? '#1F7A50' : '#C23B3B')
+    : (positivo ? '#C23B3B' : '#1F7A50')
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
       <span style={{ fontWeight: 700, color, fontVariantNumeric: 'tabular-nums', fontSize: 13 }}>
@@ -130,15 +130,15 @@ function VariacionCell({ varAbs, varPct, tipo }: { varAbs: number; varPct: numbe
 
 function PctEjercidoCell({ real, ppto, tipo }: { real: number; ppto: number; tipo: 'ingreso' | 'egreso' }) {
   const p = ppto > 0 ? Math.round((real / ppto) * 100) : null
-  if (p === null) return <span style={{ color: '#94a3b8', fontSize: 12 }}>—</span>
+  if (p === null) return <span style={{ color: '#7A7E87', fontSize: 12 }}>—</span>
   const color = tipo === 'ingreso'
-    ? (p >= 90 ? '#15803d' : p >= 60 ? '#d97706' : '#dc2626')
-    : (p <= 100 ? '#15803d' : p <= 115 ? '#d97706' : '#dc2626')
+    ? (p >= 90 ? '#1F7A50' : p >= 60 ? '#B5761A' : '#C23B3B')
+    : (p <= 100 ? '#1F7A50' : p <= 115 ? '#B5761A' : '#C23B3B')
   const w = Math.min(p, 100)
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <span style={{ fontSize: 13, fontWeight: 700, color }}>{p}%</span>
-      <div style={{ height: 4, borderRadius: 2, background: '#f1f5f9', overflow: 'hidden' }}>
+      <div style={{ height: 4, borderRadius: 2, background: '#F4F5F7', overflow: 'hidden' }}>
         <div style={{ height: '100%', width: `${w}%`, background: color, borderRadius: 2, transition: 'width .4s' }} />
       </div>
     </div>
@@ -843,12 +843,12 @@ export default function FlujoEfectivoPage() {
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300 }}>
-      <Loader size={28} color="#94a3b8" className="animate-spin" />
+      <Loader size={28} color="#7A7E87" className="animate-spin" />
     </div>
   )
 
   if (presupuestos.length === 0) return (
-    <div style={{ padding: 32, textAlign: 'center', color: '#94a3b8' }}>
+    <div style={{ padding: 32, textAlign: 'center', color: '#7A7E87' }}>
       <p>No hay presupuestos. Crea uno en la pestaña <strong>Captura</strong>.</p>
     </div>
   )
@@ -875,8 +875,8 @@ export default function FlujoEfectivoPage() {
       {/* Nota de metodología */}
       <div style={{
         display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 16,
-        padding: '10px 14px', borderRadius: 8, background: '#eef2ff',
-        border: '1px solid #c7d2fe', fontSize: 12, color: '#3730a3',
+        padding: '10px 14px', borderRadius: 8, background: '#F4F5F7',
+        border: '1px solid #C9CCD3', fontSize: 12, color: '#1C1D21',
       }}>
         <Info size={15} style={{ flexShrink: 0, marginTop: 1 }} />
         <span>
@@ -921,7 +921,7 @@ export default function FlujoEfectivoPage() {
             los que bajen de línea — estos filtros de datos se quedan junto a Presupuesto/Mes. */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
-            textTransform: 'uppercase', color: '#059669', paddingLeft: 2 }}>
+            textTransform: 'uppercase', color: '#267F56', paddingLeft: 2 }}>
             Ingresos
           </span>
           <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
@@ -964,8 +964,8 @@ export default function FlujoEfectivoPage() {
             {hayFiltroIng && (
               <button onClick={() => { setFiltroAgrIng(''); setFiltroCentroIng(''); setFiltroZonaIng(''); setFiltroSeccion(''); setFiltroConcepto('') }}
                 title="Limpiar filtro ingresos"
-                style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #bbf7d0',
-                  background: '#f0fdf4', color: '#16a34a', cursor: 'pointer', fontSize: 10,
+                style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #E6E8EB',
+                  background: '#F4F5F7', color: '#267F56', cursor: 'pointer', fontSize: 10,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 ✕
               </button>
@@ -975,7 +975,7 @@ export default function FlujoEfectivoPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
-            textTransform: 'uppercase', color: '#dc2626', paddingLeft: 2 }}>
+            textTransform: 'uppercase', color: '#C23B3B', paddingLeft: 2 }}>
             Egresos
           </span>
           <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
@@ -1002,8 +1002,8 @@ export default function FlujoEfectivoPage() {
             {hayFiltroEgr && (
               <button onClick={() => { setFiltroCC(''); setFiltroZonaEgr(''); setFiltroArea('') }}
                 title="Limpiar filtro egresos"
-                style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #fecaca',
-                  background: '#fef2f2', color: '#dc2626', cursor: 'pointer', fontSize: 10,
+                style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #E6E8EB',
+                  background: '#F4F5F7', color: '#C23B3B', cursor: 'pointer', fontSize: 10,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 ✕
               </button>
@@ -1012,13 +1012,13 @@ export default function FlujoEfectivoPage() {
         </div>
 
         {/* Tipo */}
-        <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
+        <div style={{ display: 'flex', gap: 6, background: '#F4F5F7', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
           {(['', 'ingreso', 'egreso'] as const).map(t => (
             <button key={t} onClick={() => setFilterTipo(t)}
               style={{
                 padding: '4px 14px', borderRadius: 18, border: 'none', cursor: 'pointer', fontSize: 12,
                 background: filterTipo === t ? '#fff' : 'transparent',
-                color: filterTipo === t ? '#1e293b' : '#64748b',
+                color: filterTipo === t ? '#26282D' : '#62666E',
                 fontWeight: filterTipo === t ? 600 : 400,
                 boxShadow: filterTipo === t ? '0 1px 3px rgba(0,0,0,.1)' : 'none',
               }}>
@@ -1028,7 +1028,7 @@ export default function FlujoEfectivoPage() {
         </div>
 
         {/* Modo: Resumen (una columna por período) / Mensual (grid 12 meses) */}
-        <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
+        <div style={{ display: 'flex', gap: 6, background: '#F4F5F7', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
           {([
             { v: 'resumen', label: 'Resumen', icon: List },
             { v: 'mensual', label: 'Mensual', icon: CalendarRange },
@@ -1040,7 +1040,7 @@ export default function FlujoEfectivoPage() {
                 padding: '4px 14px', borderRadius: 18, border: 'none', cursor: 'pointer', fontSize: 12,
                 display: 'flex', alignItems: 'center', gap: 5,
                 background: modo === v ? '#fff' : 'transparent',
-                color: modo === v ? '#1e293b' : '#64748b',
+                color: modo === v ? '#26282D' : '#62666E',
                 fontWeight: modo === v ? 600 : 400,
                 boxShadow: modo === v ? '0 1px 3px rgba(0,0,0,.1)' : 'none',
               }}>
@@ -1053,7 +1053,7 @@ export default function FlujoEfectivoPage() {
 
       {/* Tabla */}
       {filas.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>
+        <div className="card" style={{ textAlign: 'center', padding: 40, color: '#7A7E87' }}>
           Sin datos para el período seleccionado
         </div>
       ) : (
@@ -1110,22 +1110,22 @@ export default function FlujoEfectivoPage() {
           footer={<button className="btn-secondary" onClick={() => setModalManual(false)}>Cerrar</button>}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>
+            <p style={{ margin: 0, fontSize: 13, color: '#62666E' }}>
               Montos reales adicionales que no provienen de recibos de ingreso ni de abonos de OP
               (por ejemplo, movimientos de financiamiento: préstamos, aportaciones de socios, pago de capital
               de deuda). Si un mismo mes tiene más de un registro, se suman.
             </p>
 
             {manualEntries.length > 0 && (
-              <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+              <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
                 {manualEntries.map((e, i) => (
                   <div key={e.id} style={{
                     display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
-                    borderBottom: i < manualEntries.length - 1 ? '1px solid #f1f5f9' : 'none',
+                    borderBottom: i < manualEntries.length - 1 ? '1px solid #F4F5F7' : 'none',
                   }}>
                     {editManualId === e.id ? (
                       <>
-                        <span style={{ fontSize: 12, color: '#64748b', width: 34, flexShrink: 0 }}>
+                        <span style={{ fontSize: 12, color: '#62666E', width: 34, flexShrink: 0 }}>
                           {MESES[e.mes - 1]}
                         </span>
                         <input className="input" type="number" min={0} step={0.01} autoFocus
@@ -1141,22 +1141,22 @@ export default function FlujoEfectivoPage() {
                       </>
                     ) : (
                       <>
-                        <span style={{ fontSize: 12, color: '#64748b', width: 34, flexShrink: 0 }}>
+                        <span style={{ fontSize: 12, color: '#62666E', width: 34, flexShrink: 0 }}>
                           {MESES[e.mes - 1]}
                         </span>
                         <button onClick={() => startEditManual(e)} title="Clic para editar"
                           style={{
-                            font: 'inherit', fontWeight: 600, color: '#1e293b', background: 'none', border: 'none',
+                            font: 'inherit', fontWeight: 600, color: '#26282D', background: 'none', border: 'none',
                             padding: 0, cursor: 'pointer', fontVariantNumeric: 'tabular-nums',
                             textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3,
                           }}>
                           {fmt(e.monto)}
                         </button>
-                        <span style={{ flex: 1, fontSize: 12, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ flex: 1, fontSize: 12, color: '#7A7E87', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {e.concepto ?? '—'}
                         </span>
                         <button className="btn-ghost" onClick={() => deleteManualEntry(e.id)}
-                          style={{ padding: '4px 6px', color: '#dc2626' }}>
+                          style={{ padding: '4px 6px', color: '#C23B3B' }}>
                           <Trash2 size={13} />
                         </button>
                       </>
@@ -1167,12 +1167,12 @@ export default function FlujoEfectivoPage() {
             )}
 
             {esTodos(selPpto) && !pptoDestinoManual(manualPid) ? (
-              <p style={{ fontSize: 12, color: '#b45309', margin: 0 }}>
+              <p style={{ fontSize: 12, color: '#96600F', margin: 0 }}>
                 No hay un presupuesto de este año para el módulo de esta partida; créalo en Captura para poder registrar Real manual.
               </p>
             ) : (
-            <div style={{ borderTop: manualEntries.length > 0 ? '1px solid #f1f5f9' : undefined, paddingTop: manualEntries.length > 0 ? 14 : 0 }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 8 }}>
+            <div style={{ borderTop: manualEntries.length > 0 ? '1px solid #F4F5F7' : undefined, paddingTop: manualEntries.length > 0 ? 14 : 0 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#33363C', display: 'block', marginBottom: 8 }}>
                 Agregar nuevo
               </span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1218,11 +1218,11 @@ export default function FlujoEfectivoPage() {
           onClose={() => setDrillGrupo(null)}
           footer={<button className="btn-secondary" onClick={() => setDrillGrupo(null)}>Cerrar</button>}
         >
-          <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'hidden' }}>
             <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <tr style={{ background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
                   <th style={th}>Partida</th>
                   <th style={{ ...th, textAlign: 'right' }}>Presupuestado</th>
                   <th style={{ ...th, textAlign: 'right' }}>Real</th>
@@ -1234,21 +1234,21 @@ export default function FlujoEfectivoPage() {
                   .slice()
                   .sort((a, b) => b.realVal - a.realVal)
                   .map((p, i) => (
-                    <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9',
+                    <tr key={p.id} style={{ borderBottom: '1px solid #F4F5F7',
                       background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                       <td style={td}>{p.nombre}
                         {p.tipo === 'egreso' && (p.id_centro_costo_fk != null || p.id_area_fk != null) && (
-                          <span style={{ display: 'block', fontSize: 11, color: '#94a3b8' }}>
+                          <span style={{ display: 'block', fontSize: 11, color: '#7A7E87' }}>
                             {[p.id_centro_costo_fk != null ? nombres.nombreCC(p.id_centro_costo_fk) : null,
                               p.id_area_fk != null ? nombres.nombreArea(p.id_area_fk) : null].filter(Boolean).join(' · ')}
                           </span>
                         )}
                       </td>
-                      <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
-                        {p.pptoVal > 0 ? fmt(p.pptoVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                      <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#4A4D54' }}>
+                        {p.pptoVal > 0 ? fmt(p.pptoVal) : <span style={{ color: '#C9CCD3' }}>—</span>}
                       </td>
                       <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
-                        {p.realVal > 0 ? fmt(p.realVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                        {p.realVal > 0 ? fmt(p.realVal) : <span style={{ color: '#C9CCD3' }}>—</span>}
                       </td>
                       <td style={{ ...td, textAlign: 'right' }}>
                         <VariacionCell varAbs={p.varAbs} varPct={p.varPct} tipo={drillGrupo.tipo} />
@@ -1257,8 +1257,8 @@ export default function FlujoEfectivoPage() {
                   ))}
               </tbody>
               <tfoot>
-                <tr style={{ background: '#f1f5f9', fontWeight: 700 }}>
-                  <td style={{ ...td, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color: '#475569' }}>
+                <tr style={{ background: '#F4F5F7', fontWeight: 700 }}>
+                  <td style={{ ...td, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color: '#4A4D54' }}>
                     Total
                   </td>
                   <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
@@ -1288,14 +1288,14 @@ export default function FlujoEfectivoPage() {
           footer={<button className="btn-secondary" onClick={() => setDrillOps(null)}>Cerrar</button>}
         >
           {drillOps.rows.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 32, color: '#94a3b8', fontSize: 13 }}>
+            <div style={{ textAlign: 'center', padding: 32, color: '#7A7E87', fontSize: 13 }}>
               Sin movimientos para el período seleccionado
             </div>
           ) : (
-            <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'auto' }}>
+            <div style={{ border: '1px solid #E6E8EB', borderRadius: 8, overflow: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  <tr style={{ background: '#F8F9FA', borderBottom: '1px solid #E6E8EB' }}>
                     <th style={th}>Fecha</th>
                     <th style={th}>Folio</th>
                     <th style={th}>{drillOps.conOp ? 'Proveedor' : 'Descripción'}</th>
@@ -1305,10 +1305,10 @@ export default function FlujoEfectivoPage() {
                 </thead>
                 <tbody>
                   {drillOps.rows.map((r, i) => (
-                    <tr key={i} style={{ borderBottom: '1px solid #f1f5f9',
+                    <tr key={i} style={{ borderBottom: '1px solid #F4F5F7',
                       background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                       <td style={td}>{fmtFecha(r.fecha)}</td>
-                      <td style={{ ...td, fontWeight: 600, color: r.id_op_fk ? '#2563eb' : '#1e293b' }}>
+                      <td style={{ ...td, fontWeight: 600, color: r.id_op_fk ? '#1C1D21' : '#26282D' }}>
                         {r.id_op_fk ? (
                           <button onClick={() => abrirOP(r.id_op_fk!)} disabled={opLoading}
                             style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', fontWeight: 600,
@@ -1318,16 +1318,16 @@ export default function FlujoEfectivoPage() {
                         ) : r.id_recibo_fk ? (
                           <button onClick={() => abrirRecibo(r.id_recibo_fk!)} disabled={opLoading}
                             title="Ver recibo de ingreso"
-                            style={{ background: 'none', border: 'none', padding: 0, color: '#2563eb', fontWeight: 600,
+                            style={{ background: 'none', border: 'none', padding: 0, color: '#1C1D21', fontWeight: 600,
                               fontFamily: 'inherit', fontSize: 'inherit', cursor: opLoading ? 'default' : 'pointer', textDecoration: 'underline' }}>
                             {r.folio ?? `#${r.id_recibo_fk}`}
                           </button>
                         ) : (r.folio ?? '—')}
                       </td>
-                      <td style={{ ...td, color: '#475569' }}>
+                      <td style={{ ...td, color: '#4A4D54' }}>
                         {drillOps.conOp ? (r.id_proveedor_fk ? (provMap[r.id_proveedor_fk] ?? `#${r.id_proveedor_fk}`) : (r.descripcion ?? '—')) : (r.descripcion ?? '—')}
                       </td>
-                      {drillOps.conOp && <td style={{ ...td, color: '#64748b', fontSize: 12 }}>{r.tipo_gasto ?? '—'}</td>}
+                      {drillOps.conOp && <td style={{ ...td, color: '#62666E', fontSize: 12 }}>{r.tipo_gasto ?? '—'}</td>}
                       <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
                         {fmt(r.monto)}
                       </td>
@@ -1335,8 +1335,8 @@ export default function FlujoEfectivoPage() {
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr style={{ background: '#f1f5f9', fontWeight: 700 }}>
-                    <td colSpan={drillOps.conOp ? 4 : 3} style={{ ...td, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color: '#475569' }}>
+                  <tr style={{ background: '#F4F5F7', fontWeight: 700 }}>
+                    <td colSpan={drillOps.conOp ? 4 : 3} style={{ ...td, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color: '#4A4D54' }}>
                       Total
                     </td>
                     <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
@@ -1382,10 +1382,10 @@ function totalSeccionRows(rows: FilaPartida[], field: 'pptoVal' | 'realVal') {
 
 const th: React.CSSProperties = {
   padding: '10px 16px', textAlign: 'left', fontSize: 11,
-  fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em',
+  fontWeight: 600, color: '#62666E', textTransform: 'uppercase', letterSpacing: '.05em',
 }
-const td: React.CSSProperties = { padding: '10px 16px', fontSize: 13, color: '#374151' }
+const td: React.CSSProperties = { padding: '10px 16px', fontSize: 13, color: '#33363C' }
 const lbl: React.CSSProperties = {
   display: 'flex', flexDirection: 'column', gap: 5,
-  fontSize: 13, fontWeight: 500, color: '#374151',
+  fontSize: 13, fontWeight: 500, color: '#33363C',
 }

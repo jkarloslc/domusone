@@ -234,15 +234,15 @@ export default function ArrendatariosLocalesPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(120px, 1fr))', gap: 10, marginBottom: 18 }}>
         {[
-          { label: 'Total', value: total, color: '#1d4ed8', bg: '#eff6ff' },
-          { label: 'Activos', value: kpis.activos, color: '#15803d', bg: '#f0fdf4' },
-          { label: 'Inactivos', value: kpis.inactivos, color: '#dc2626', bg: '#fef2f2' },
-          { label: 'Persona Física', value: kpis.fisicas, color: '#7c3aed', bg: '#f5f3ff' },
-          { label: 'Persona Moral', value: kpis.morales, color: '#a16207', bg: '#fefce8' },
+          { label: 'Total', value: total, color: '#26282D', bg: '#F4F5F7' },
+          { label: 'Activos', value: kpis.activos, color: '#1F7A50', bg: '#F4F5F7' },
+          { label: 'Inactivos', value: kpis.inactivos, color: '#C23B3B', bg: '#F4F5F7' },
+          { label: 'Persona Física', value: kpis.fisicas, color: '#6B4E79', bg: '#F4F5F7' },
+          { label: 'Persona Moral', value: kpis.morales, color: '#8A6A12', bg: '#F4F5F7' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '12px 14px', background: k.bg }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>{k.label}</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: k.color }}>{k.value}</div>
+          <div key={k.label} className="card" style={{ padding: '12px 14px', background: '#fff' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: k.color, marginRight: 6, verticalAlign: 'middle' }} />{k.label}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{k.value}</div>
           </div>
         ))}
       </div>
@@ -288,29 +288,29 @@ export default function ArrendatariosLocalesPage() {
             ) : items.map((a, i) => (
               <tr key={a.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                 <td style={{ padding: '10px 14px', fontWeight: 500, color: 'var(--text-primary)' }}>{fmtNombre(a)}</td>
-                <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 12 }}>{a.rfc ?? '—'}</td>
+                <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{a.rfc ?? '—'}</td>
                 <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>{a.telefono ?? '—'}</td>
                 <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>{a.email ?? '—'}</td>
                 <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12 }}>{a.tipo_persona}</td>
                 <td style={{ padding: '10px 14px', fontSize: 12 }}>
                   {a.id_socio_fk != null ? (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#0f766e', fontWeight: 500 }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#126B63', fontWeight: 500 }}>
                       <UserCheck size={12} /> {sociosPorId[a.id_socio_fk] ?? `Socio #${a.id_socio_fk}`}
                     </span>
-                  ) : <span style={{ color: '#cbd5e1' }}>— Público en general —</span>}
+                  ) : <span style={{ color: '#C9CCD3' }}>— Público en general —</span>}
                 </td>
                 <td style={{ padding: '10px 14px' }}>
                   <span style={{
                     fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600,
-                    background: a.activo ? '#dcfce7' : '#fee2e2',
-                    color: a.activo ? '#16a34a' : '#dc2626',
+                    background: a.activo ? '#1F7A50' : '#C23B3B',
+                    color: '#fff',
                   }}>{a.activo ? 'Activo' : 'Inactivo'}</span>
                 </td>
                 <td style={{ padding: '10px 14px' }}>
                   <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                     <button className="btn-ghost" style={{ padding: '4px 8px' }} onClick={() => setDetailItem(a)}><Eye size={13} /></button>
                     {puedeEscribir && <button className="btn-ghost" style={{ padding: '4px 8px' }} onClick={() => openEdit(a)}><Edit2 size={13} /></button>}
-                    {puedeEliminar && <button className="btn-ghost" style={{ padding: '4px 8px', color: '#dc2626' }} disabled={deleting === a.id} onClick={() => handleDelete(a.id)}><Trash2 size={13} /></button>}
+                    {puedeEliminar && <button className="btn-ghost" style={{ padding: '4px 8px', color: '#C23B3B' }} disabled={deleting === a.id} onClick={() => handleDelete(a.id)}><Trash2 size={13} /></button>}
                   </div>
                 </td>
               </tr>
@@ -393,16 +393,16 @@ export default function ArrendatariosLocalesPage() {
             {F('Tel. Alternativo', 'telefono_alt', { half: true })}
 
             {/* Vínculo con socio, para precargar datos fiscales al facturar */}
-            <div style={{ gridColumn: 'span 2', border: '1px solid #e2e8f0', borderRadius: 8, padding: 12, background: '#f8fafc' }}>
+            <div style={{ gridColumn: 'span 2', border: '1px solid #E6E8EB', borderRadius: 8, padding: 12, background: '#F8F9FA' }}>
               <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 6, fontWeight: 600 }}>
                 Vínculo con Socio (datos fiscales para facturar)
               </label>
               {form.id_socio_fk != null ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: 6 }}>
-                  <UserCheck size={14} style={{ color: '#0f766e', flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, color: '#0f766e', fontWeight: 500, flex: 1 }}>{socioNombreLigado || `Socio #${form.id_socio_fk}`}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#F4F5F7', border: '1px solid #E6E8EB', borderRadius: 6 }}>
+                  <UserCheck size={14} style={{ color: '#62666E', flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, color: '#126B63', fontWeight: 500, flex: 1 }}>{socioNombreLigado || `Socio #${form.id_socio_fk}`}</span>
                   <button type="button" onClick={quitarSocio} title="Quitar vínculo"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2, display: 'flex' }}>
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7A7E87', padding: 2, display: 'flex' }}>
                     <X size={14} />
                   </button>
                 </div>
@@ -411,13 +411,13 @@ export default function ArrendatariosLocalesPage() {
                   <input className="input" placeholder="Buscar socio por nombre o número…" value={socioSearch}
                     onChange={e => buscarSocios(e.target.value)} style={{ width: '100%' }} />
                   {(socioResults.length > 0 || buscandoSocio) && (
-                    <div style={{ position: 'absolute', zIndex: 10, top: '100%', left: 0, right: 0, marginTop: 4, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.08)', maxHeight: 200, overflowY: 'auto' }}>
+                    <div style={{ position: 'absolute', zIndex: 10, top: '100%', left: 0, right: 0, marginTop: 4, background: '#fff', border: '1px solid #E6E8EB', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.08)', maxHeight: 200, overflowY: 'auto' }}>
                       {buscandoSocio ? (
-                        <div style={{ padding: 10, fontSize: 12, color: '#94a3b8' }}>Buscando…</div>
+                        <div style={{ padding: 10, fontSize: 12, color: '#7A7E87' }}>Buscando…</div>
                       ) : socioResults.map(s => (
                         <button key={s.id} type="button" onClick={() => ligarSocio(s)}
-                          style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', fontSize: 12, border: 'none', background: 'none', cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
-                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f8fafc'}
+                          style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', fontSize: 12, border: 'none', background: 'none', cursor: 'pointer', borderBottom: '1px solid #F4F5F7' }}
+                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FA'}
                           onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'none'}>
                           {fmtNombreSocio(s)}
                         </button>
@@ -426,7 +426,7 @@ export default function ArrendatariosLocalesPage() {
                   )}
                 </div>
               )}
-              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 5 }}>
+              <div style={{ fontSize: 11, color: '#7A7E87', marginTop: 5 }}>
                 Si el arrendatario es socio del club, vincúlalo aquí para que sus datos fiscales (RFC, régimen, uso CFDI) se precarguen
                 automáticamente al facturar. Si no tiene vínculo, se factura como Público en General.
               </div>
@@ -442,7 +442,7 @@ export default function ArrendatariosLocalesPage() {
               <label htmlFor="activo-arr" style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Activo</label>
             </div>
 
-            {err && <div style={{ gridColumn: 'span 2', fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{err}</div>}
+            {err && <div style={{ gridColumn: 'span 2', fontSize: 12, color: '#C23B3B', background: '#F4F5F7', padding: '8px 12px', borderRadius: 6 }}>{err}</div>}
           </div>
         </ModalShell>
       )}
