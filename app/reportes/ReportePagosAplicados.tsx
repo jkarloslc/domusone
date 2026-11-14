@@ -2,7 +2,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import { PrintBar } from './utils'
-import { RefreshCw, FileSpreadsheet } from 'lucide-react'
+import { RefreshCw, FileSpreadsheet, Calendar, Loader, Save } from 'lucide-react'
+import { useAuth } from '@/lib/AuthContext'
+import ModalShell from '@/components/ui/ModalShell'
+import { cambiarFechaPagoCxp } from '@/lib/editarPagoCxp'
 import * as XLSX from 'xlsx'
 
 const fmt  = (n: number) => n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })
@@ -13,6 +16,12 @@ const fmtF = (s: string | null) => {
 }
 
 export default function ReportePagosAplicados() {
+  const { authUser, canWrite } = useAuth()
+  const puedeCambiarFecha = canWrite('tesoreria')
+  // Cambio de fecha de un pago (sin tocar montos): abono + movimiento bancario + OP
+  const [fechaEdit,   setFechaEdit]   = useState<{ abono: any; fecha: string; motivo: string } | null>(null)
+  const [savingFecha, setSavingFecha] = useState(false)
+  const [errorFecha,  setErrorFecha]  = useState('')
   const [abonos,   setAbonos]   = useState<any[]>([])
   const [ops,      setOps]      = useState<any[]>([])
   const [provs,    setProvs]    = useState<any[]>([])
@@ -41,6 +50,21 @@ export default function ReportePagosAplicados() {
   }, [])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  const guardarFecha = async () => {
+    if (!fechaEdit) return
+    if (!fechaEdit.fecha) { setErrorFecha('Indica la fecha de pago'); return }
+    if (!fechaEdit.motivo.trim()) { setErrorFecha('Indica el motivo del cambio'); return }
+    setSavingFecha(true); setErrorFecha('')
+    try {
+      await cambiarFechaPagoCxp({ idAbono: fechaEdit.abono.id, fecha: fechaEdit.fecha, motivo: fechaEdit.motivo, editadoPor: authUser?.nombre ?? null })
+      setFechaEdit(null)
+      await fetchData()
+    } catch (e: any) {
+      setErrorFecha(e.message ?? 'No se pudo cambiar la fecha')
+    }
+    setSavingFecha(false)
+  }
 
   // Lookup maps
   const opMap      = useMemo(() => Object.fromEntries((ops).map(o => [o.id, o])), [ops])
@@ -184,8 +208,8 @@ export default function ReportePagosAplicados() {
             <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                  {['Fecha', 'Folio OP', 'Concepto', 'Proveedor', 'Forma Pago', 'Referencia', 'Cuenta Bancaria', 'Monto'].map(h => (
-                    <th key={h} style={{ padding: '9px 12px', textAlign: h === 'Monto' ? 'right' : 'left',
+                  {['Fecha', 'Folio OP', 'Concepto', 'Proveedor', 'Forma Pago', 'Referencia', 'Cuenta Bancaria', 'Monto', ...(puedeCambiarFecha ? ['Acciones'] : [])].map(h => (
+                    <th key={h} className={h === 'Acciones' ? 'col-acciones' : undefined} style={{ padding: '9px 12px', textAlign: h === 'Monto' ? 'right' : 'left',
                       fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)',
                       textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                       {h}
@@ -210,6 +234,14 @@ export default function ReportePagosAplicados() {
                       color: '#0f766e', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
                       {fmt(a.monto ?? 0)}
                     </td>
+                    {puedeCambiarFecha && (
+                      <td className="col-acciones" style={{ padding: '6px 12px', whiteSpace: 'nowrap' }}>
+                        <button className="btn-ghost" style={{ padding: '3px 6px' }} title="Cambiar fecha de pago"
+                          onClick={() => { setErrorFecha(''); setFechaEdit({ abono: a, fecha: a.fecha_abono ?? '', motivo: '' }) }}>
+                          <Calendar size={13} />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -220,12 +252,47 @@ export default function ReportePagosAplicados() {
                     color: '#0f766e', fontVariantNumeric: 'tabular-nums' }}>
                     {fmt(totalPagado)}
                   </td>
+                  {puedeCambiarFecha && <td className="col-acciones" />}
                 </tr>
               </tfoot>
             </table>
           </div>
         )}
       </div>
+
+      <style>{`@media print { .col-acciones { display: none !important; } }`}</style>
+
+      {fechaEdit && (
+        <ModalShell modulo="tesoreria" titulo="Cambiar fecha de pago" icono={Calendar}
+          subtitulo={`${fechaEdit.abono.folio} · ${fechaEdit.abono.proveedor} · ${fmt(fechaEdit.abono.monto ?? 0)}`}
+          size="sm" onClose={() => !savingFecha && setFechaEdit(null)}
+          footer={
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button className="btn-secondary" onClick={() => setFechaEdit(null)} disabled={savingFecha}>Cancelar</button>
+              <button className="btn-primary" onClick={guardarFecha} disabled={savingFecha}>
+                {savingFecha ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar fecha
+              </button>
+            </div>
+          }>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+            Se actualiza la fecha del pago, del movimiento bancario y de la OP. Montos y saldos no cambian.
+            {fechaEdit.abono.id_remesa_fk && <strong> Este pago es parte de una remesa: la fecha cambia para todas sus OPs.</strong>}
+          </div>
+          {errorFecha && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12, marginBottom: 10 }}>{errorFecha}</div>}
+          <div style={{ display: 'grid', gap: 10 }}>
+            <div>
+              <label className="label">Fecha de pago *</label>
+              <input className="input" type="date" value={fechaEdit.fecha}
+                onChange={e => setFechaEdit(f => f && ({ ...f, fecha: e.target.value }))} />
+            </div>
+            <div>
+              <label className="label">Motivo *</label>
+              <input className="input" value={fechaEdit.motivo} placeholder="Ej. La transferencia salió el día anterior"
+                onChange={e => setFechaEdit(f => f && ({ ...f, motivo: e.target.value }))} />
+            </div>
+          </div>
+        </ModalShell>
+      )}
     </div>
   )
 }
