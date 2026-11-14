@@ -15,7 +15,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import KpiCard from '@/components/ui/KpiCard'
 import { cerrarOCsDeOP } from '@/lib/cxpCascade'
 import { aplicarPagoRemesa, reversarPagoRemesa } from '@/lib/pagoRemesa'
-import { editarPagoCxp } from '@/lib/editarPagoCxp'
+import { editarPagoCxp, cambiarFechaPagoCxp } from '@/lib/editarPagoCxp'
 
 import Paginador from '@/components/ui/Paginador'
 import { useZonas, SelectZona } from '@/lib/zonas'
@@ -1052,8 +1052,10 @@ function PagoRemesaModal({ prov, ops, onClose, onSuccess }: { prov: any; ops: an
 // Detalle de remesa — OPs incluidas, comprobantes y reversión
 // ════════════════════════════════════════════════════════════
 function RemesaDetail({ remesa, onClose }: { remesa: any; onClose: () => void }) {
-  const { authUser, canDelete } = useAuth()
+  const { authUser, canDelete, canWrite } = useAuth()
   const [abonos, setAbonos]       = useState<any[]>([])
+  const [fechaEdit, setFechaEdit] = useState<{ fecha: string; motivo: string } | null>(null)
+  const [savingFecha, setSavingFecha] = useState(false)
   const [loading, setLoading]     = useState(true)
   const [showReversar, setShowReversar] = useState(false)
   const [motivo, setMotivo]       = useState('')
@@ -1080,6 +1082,22 @@ function RemesaDetail({ remesa, onClose }: { remesa: any; onClose: () => void })
     } catch (e: any) {
       setError(e.message ?? 'No se pudo reversar la remesa')
       setReversando(false)
+    }
+  }
+
+  const handleGuardarFecha = async () => {
+    if (!fechaEdit) return
+    const abono = abonos.find(a => a.status === 'Aplicado')
+    if (!abono) { setError('La remesa no tiene pagos vigentes'); return }
+    if (!fechaEdit.fecha) { setError('Indica la fecha de pago'); return }
+    if (!fechaEdit.motivo.trim()) { setError('Indica el motivo del cambio'); return }
+    setSavingFecha(true); setError('')
+    try {
+      await cambiarFechaPagoCxp({ idAbono: abono.id, fecha: fechaEdit.fecha, motivo: fechaEdit.motivo, editadoPor: authUser?.nombre ?? null })
+      onClose()
+    } catch (e: any) {
+      setError(e.message ?? 'No se pudo cambiar la fecha')
+      setSavingFecha(false)
     }
   }
 
@@ -1182,6 +1200,27 @@ function RemesaDetail({ remesa, onClose }: { remesa: any; onClose: () => void })
           )}
         </div>
 
+        {fechaEdit && remesa.status === 'Aplicado' && (
+          <div style={{ padding: 14, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#b45309', marginBottom: 4 }}>Cambiar fecha de pago de la remesa</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>Se actualiza en todas las OPs de la remesa, sus pagos y el movimiento bancario. Montos y saldos no cambian.</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 10, marginBottom: 10 }}>
+              <div><label className="label">Fecha de pago *</label>
+                <input className="input" type="date" value={fechaEdit.fecha} onChange={e => setFechaEdit(f => f && ({ ...f, fecha: e.target.value }))} />
+              </div>
+              <div><label className="label">Motivo *</label>
+                <input className="input" value={fechaEdit.motivo} onChange={e => setFechaEdit(f => f && ({ ...f, motivo: e.target.value }))} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button className="btn-secondary" onClick={() => { setFechaEdit(null); setError('') }} disabled={savingFecha}>Cancelar</button>
+              <button className="btn-primary" onClick={handleGuardarFecha} disabled={savingFecha}>
+                {savingFecha ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar fecha
+              </button>
+            </div>
+          </div>
+        )}
+
         {showReversar && remesa.status === 'Aplicado' && (
           <div style={{ padding: 14, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#991b1b', marginBottom: 8 }}>Motivo de la reversión *</div>
@@ -1199,6 +1238,11 @@ function RemesaDetail({ remesa, onClose }: { remesa: any; onClose: () => void })
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
           <button className="btn-secondary" onClick={imprimir}><Printer size={13} /> Imprimir Comprobante</button>
+          {remesa.status === 'Aplicado' && canWrite('tesoreria') && !fechaEdit && !showReversar && (
+            <button className="btn-secondary" onClick={() => { setError(''); setFechaEdit({ fecha: remesa.fecha_pago ?? '', motivo: '' }) }}>
+              <Calendar size={13} /> Cambiar fecha
+            </button>
+          )}
           {remesa.status === 'Aplicado' && canDelete() && !showReversar && (
             <button className="btn-secondary" style={{ color: '#dc2626', borderColor: '#fecaca' }} onClick={() => setShowReversar(true)}>
               <RotateCcw size={13} /> Reversar Remesa
@@ -1229,6 +1273,10 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
   const [formEdit, setFormEdit]         = useState<any>({})
   const [savingEdit, setSavingEdit]     = useState(false)
   const [errorEdit, setErrorEdit]       = useState('')
+  // Cambio de fecha de pago (sin tocar montos): cualquier usuario con escritura en Tesorería
+  const [fechaEdit, setFechaEdit]       = useState<{ id: number; fecha: string; motivo: string } | null>(null)
+  const [savingFecha, setSavingFecha]   = useState(false)
+  const [errorFecha, setErrorFecha]     = useState('')
 
   const [form, setForm] = useState({
     fecha_abono:          new Date().toISOString().slice(0, 10),
@@ -1415,6 +1463,23 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
     }
   }
 
+  const handleGuardarFecha = async () => {
+    if (!fechaEdit) return
+    if (!fechaEdit.fecha) { setErrorFecha('Indica la fecha de pago'); return }
+    if (!fechaEdit.motivo.trim()) { setErrorFecha('Indica el motivo del cambio'); return }
+    setSavingFecha(true); setErrorFecha('')
+    try {
+      await cambiarFechaPagoCxp({ idAbono: fechaEdit.id, fecha: fechaEdit.fecha, motivo: fechaEdit.motivo, editadoPor: authUser?.nombre ?? null })
+      setSavingFecha(false)
+      setFechaEdit(null)
+      fetchAbonos()
+      onClose()
+    } catch (e: any) {
+      setErrorFecha(e.message ?? 'No se pudo cambiar la fecha')
+      setSavingFecha(false)
+    }
+  }
+
   // Botón de adjunto genérico
   const FileBtn = ({ campo, label, accept, refEl }: {
     campo: 'comprobante' | 'complemento_pago'
@@ -1567,8 +1632,14 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
                   {/* Archivos del abono */}
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                     {puedeEditarPago && a.status !== 'Cancelada' && editando?.id !== a.id && (
-                      <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px' }} onClick={() => abrirEdicion(a)} title="Editar pago aplicado">
+                      <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px' }} onClick={() => { setFechaEdit(null); abrirEdicion(a) }} title="Editar pago aplicado">
                         <Pencil size={11} /> Editar
+                      </button>
+                    )}
+                    {!puedeEditarPago && canWrite('tesoreria') && a.status !== 'Cancelada' && fechaEdit?.id !== a.id && (
+                      <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px' }} title="Cambiar fecha de pago"
+                        onClick={() => { setErrorFecha(''); setFechaEdit({ id: a.id, fecha: a.fecha_abono ?? '', motivo: '' }) }}>
+                        <Calendar size={11} /> Cambiar fecha
                       </button>
                     )}
                     {/* Compat. con registros anteriores que tenían pdf/xml en el abono */}
@@ -1603,6 +1674,31 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
                 {a.editado_by && (
                   <div style={{ fontSize: 10, color: '#d97706', marginTop: 2 }}>
                     Editado por {a.editado_by} el {fmtFecha(a.editado_at)} — {a.motivo_edicion}
+                  </div>
+                )}
+
+                {fechaEdit?.id === a.id && (
+                  <div style={{ marginTop: 10, padding: 12, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#b45309', marginBottom: 4 }}>Cambiar fecha de pago</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
+                      Se actualiza la fecha del pago, del movimiento bancario y de la OP. Montos y saldos no cambian.
+                      {a.id_remesa_fk && <strong> Este pago es parte de una remesa: la fecha cambia para todas sus OPs.</strong>}
+                    </div>
+                    {errorFecha && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12, marginBottom: 10 }}>{errorFecha}</div>}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 10, marginBottom: 10 }}>
+                      <div><label className="label">Fecha de pago *</label>
+                        <input className="input" type="date" value={fechaEdit?.fecha ?? ''} onChange={e => setFechaEdit(f => f && ({ ...f, fecha: e.target.value }))} />
+                      </div>
+                      <div><label className="label">Motivo *</label>
+                        <input className="input" value={fechaEdit?.motivo ?? ''} onChange={e => setFechaEdit(f => f && ({ ...f, motivo: e.target.value }))} placeholder="Ej. La transferencia salió el día anterior" />
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      <button className="btn-secondary" onClick={() => setFechaEdit(null)} disabled={savingFecha}>Cancelar</button>
+                      <button className="btn-primary" onClick={handleGuardarFecha} disabled={savingFecha}>
+                        {savingFecha ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar fecha
+                      </button>
+                    </div>
                   </div>
                 )}
 
