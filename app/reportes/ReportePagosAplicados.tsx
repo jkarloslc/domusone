@@ -38,7 +38,7 @@ export default function ReportePagosAplicados() {
     setLoading(true)
     const [{ data: ab }, { data: opRows }, { data: provRows }, { data: cbRows }] = await Promise.all([
       dbComp.from('cxp_abonos').select('*').eq('status', 'Aplicado').order('fecha_abono', { ascending: false }),
-      dbComp.from('ordenes_pago').select('id, folio, concepto, id_proveedor_fk'),
+      dbComp.from('ordenes_pago').select('id, folio, concepto, id_proveedor_fk, fecha_op'),
       dbComp.from('proveedores').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('cuentas_bancarias').select('id, banco').order('banco'),
     ])
@@ -78,6 +78,7 @@ export default function ReportePagosAplicados() {
     return {
       ...a,
       folio:         op.folio      ?? '—',
+      fecha_op:      op.fecha_op   ?? null,
       concepto:      op.concepto   ?? '—',
       id_proveedor:  provId,
       proveedor:     provId ? (provMap[provId] ?? '—') : '—',
@@ -109,6 +110,7 @@ export default function ReportePagosAplicados() {
     const rows = filtered.map(a => ({
       Fecha:           a.fecha_abono ?? '',
       'Folio OP':      a.folio,
+      'Fecha OP':      a.fecha_op ?? '',
       Concepto:        a.concepto,
       Proveedor:       a.proveedor,
       'Forma de Pago': a.forma_pago ?? '—',
@@ -120,7 +122,7 @@ export default function ReportePagosAplicados() {
     }))
     const ws  = XLSX.utils.json_to_sheet(rows)
     ws['!cols'] = [
-      { wch: 12 }, { wch: 14 }, { wch: 36 }, { wch: 28 },
+      { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 36 }, { wch: 28 },
       { wch: 16 }, { wch: 20 }, { wch: 22 }, { wch: 14 },
       { wch: 30 }, { wch: 18 },
     ]
@@ -208,7 +210,7 @@ export default function ReportePagosAplicados() {
             <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                  {['Fecha', 'Folio OP', 'Concepto', 'Proveedor', 'Forma Pago', 'Referencia', 'Cuenta Bancaria', 'Monto', ...(puedeCambiarFecha ? ['Acciones'] : [])].map(h => (
+                  {['Fecha', 'Folio OP', 'Fecha OP', 'Concepto', 'Proveedor', 'Forma Pago', 'Referencia', 'Cuenta Bancaria', 'Monto', ...(puedeCambiarFecha ? ['Acciones'] : [])].map(h => (
                     <th key={h} className={h === 'Acciones' ? 'col-acciones' : undefined} style={{ padding: '9px 12px', textAlign: h === 'Monto' ? 'right' : 'left',
                       fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)',
                       textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
@@ -222,6 +224,7 @@ export default function ReportePagosAplicados() {
                   <tr key={a.id} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                     <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontSize: 12 }}>{fmtF(a.fecha_abono)}</td>
                     <td style={{ padding: '8px 12px', fontWeight: 600, whiteSpace: 'nowrap' }}>{a.folio}</td>
+                    <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontSize: 12 }}>{fmtF(a.fecha_op)}</td>
                     <td style={{ padding: '8px 12px', color: 'var(--text-secondary)', maxWidth: 280,
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={a.concepto}>{a.concepto}</td>
                     <td style={{ padding: '8px 12px', maxWidth: 200,
@@ -247,7 +250,7 @@ export default function ReportePagosAplicados() {
               </tbody>
               <tfoot>
                 <tr style={{ background: '#f0fdfa', borderTop: '2px solid #99f6e4' }}>
-                  <td colSpan={7} style={{ padding: '9px 12px', fontWeight: 700, fontSize: 13, color: '#0f766e' }}>Total</td>
+                  <td colSpan={8} style={{ padding: '9px 12px', fontWeight: 700, fontSize: 13, color: '#0f766e' }}>Total</td>
                   <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, fontSize: 14,
                     color: '#0f766e', fontVariantNumeric: 'tabular-nums' }}>
                     {fmt(totalPagado)}
