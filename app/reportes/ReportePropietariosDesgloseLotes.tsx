@@ -240,7 +240,7 @@ export default function ReportePropietariosDesgloseLotes() {
                       ? <ChevronDown  size={14} style={{ color: 'var(--blue)' }} />
                       : <ChevronRight size={14} style={{ color: 'var(--blue)' }} />}
                     <div style={{ width: 30, height: 30, borderRadius: '50%',
-                      background: '#6366f120', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      background: '#F4F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <User size={14} style={{ color: '#33363C' }} />
                     </div>
                     <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--blue)' }}>{prop}</span>

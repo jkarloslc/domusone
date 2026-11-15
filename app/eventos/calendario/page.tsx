@@ -254,8 +254,8 @@ export default function CalendarioPage() {
                               overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
                               transition: 'all 0.12s',
                             }}
-                            onMouseEnter={e => { e.currentTarget.style.background = color + '30' }}
-                            onMouseLeave={e => { e.currentTarget.style.background = color + '18' }}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#E6E8EB' }}
+                            onMouseLeave={e => { e.currentTarget.style.background = '#F4F5F7' }}
                           >
                             <span style={{ fontWeight: 600, color }}>
                               {ev.hora_inicio ? ev.hora_inicio.slice(0,5) + ' ' : ''}

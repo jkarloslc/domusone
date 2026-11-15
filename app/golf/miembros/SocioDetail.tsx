@@ -71,8 +71,8 @@ function TabFamiliares({ socioId }: { socioId: number }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {rows.map(f => (
         <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 8, background: '#F8F9FA', border: '1px solid #E6E8EB' }}>
-          <div style={{ width: 34, height: 34, borderRadius: '50%', background: (PARENTESCO_COLOR[f.parentesco] ?? '#62666E') + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <User size={15} style={{ color: PARENTESCO_COLOR[f.parentesco] ?? '#62666E' }} />
+          <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#E6E8EB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <User size={15} style={{ color: '#62666E' }} />
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: '#26282D' }}>{f.nombre}</div>

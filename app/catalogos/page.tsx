@@ -557,7 +557,7 @@ function CuotasEstandarPanel() {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#05996920',
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#F4F5F7',
               display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <DollarSign size={15} style={{ color: '#62666E' }} />
             </div>
@@ -1046,7 +1046,7 @@ function CentrosVentaPOSPanel() {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#267F5618', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#F4F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Store size={15} style={{ color: '#62666E' }} />
             </div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Centros de Venta POS</h2>
@@ -1277,17 +1277,17 @@ export default function CatalogosPage() {
                 <button onClick={() => setActiveKey(cat.key)}
                   style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10,
                     padding: '10px 14px', background: isActive ? '#E6E8EB' : 'none',
-                    border: 'none', borderLeft: `3px solid ${isActive ? cat.color : 'transparent'}`,
+                    border: 'none', borderLeft: `3px solid ${isActive ? '#19D3C5' : 'transparent'}`,
                     cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
                   onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = '#F8F9FA' }}
                   onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'none' }}>
                   <div style={{ width: 28, height: 28, borderRadius: 7,
-                    background: cat.color + (isActive ? '20' : '12'),
+                    background: isActive ? '#fff' : '#F4F5F7',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Icon size={13} style={{ color: cat.color }} />
+                    <Icon size={13} style={{ color: '#1C1D21' }} />
                   </div>
                   <div style={{ fontSize: 13, fontWeight: isActive ? 600 : 400,
-                    color: isActive ? cat.color : 'var(--text-primary)',
+                    color: 'var(--text-primary)',
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {cat.label}
                   </div>

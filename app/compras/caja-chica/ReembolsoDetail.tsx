@@ -266,8 +266,7 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
     .meta-label { font-size: 9px; font-weight: 700; color: #7A7E87; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 3px; }
     .meta-value { font-size: 13px; font-weight: 600; color: #26282D; }
     .status-badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
-      color: ${statusColor[r.status] ?? '#62666E'}; background: ${(statusColor[r.status] ?? '#62666E') + '18'};
-      border: 1px solid ${(statusColor[r.status] ?? '#62666E') + '40'}; }
+      color: #fff; background: ${statusColor[r.status] ?? '#62666E'}; }
     table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
     thead th { background: #F4F5F7; font-size: 10px; text-transform: uppercase; letter-spacing: .05em;
       padding: 8px 10px; border: 1px solid #E6E8EB; text-align: left; color: #4A4D54; }

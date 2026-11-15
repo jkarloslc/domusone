@@ -123,7 +123,7 @@ export default function ReporteEstadoCuenta() {
             {/* Encabezado de cuenta */}
             <div style={{ padding: '20px 24px', borderBottom: '2px solid #E6E8EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: '#126B6318', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: '#F4F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Building2 size={18} style={{ color: '#62666E' }} />
                 </div>
                 <div>

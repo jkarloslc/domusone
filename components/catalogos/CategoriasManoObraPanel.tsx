@@ -85,7 +85,7 @@ export default function CategoriasManoObraPanel({ onBack }: { onBack?: () => voi
           )}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: '#96600F18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: '#F4F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <HardHat size={15} style={{ color: '#62666E' }} />
               </div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Categorías Mano de Obra</h2>

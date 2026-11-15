@@ -446,7 +446,7 @@ export default function SalidasCarritosPage() {
         <>
           {/* Stats */}
           <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
-            <div className="card" style={{ flex: '1 1 160px', maxWidth: 220, padding: '14px 18px', background: '#F4F5F7', border: '1px solid #1C1D2122' }}>
+            <div className="card" style={{ flex: '1 1 160px', maxWidth: 220, padding: '14px 18px', background: '#F4F5F7', border: '1px solid #E6E8EB' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <BookOpen size={14} style={{ color: '#1C1D21' }} />
                 <span style={{ fontSize: 11, color: '#62666E' }}>Registros</span>

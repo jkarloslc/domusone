@@ -54,7 +54,7 @@ function ModuloCard({ m }: { m: typeof MODULOS[number] }) {
       <div className="icon-chip" style={{
         width: 40, height: 40, borderRadius: 10,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0, color: m.color,
+        flexShrink: 0,
       }}>
         <Icon size={18} />
       </div>

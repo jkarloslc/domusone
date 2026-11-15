@@ -137,7 +137,7 @@ export default function CuotasConfigPanel({ puedeEscribir }: { puedeEscribir: bo
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#6B4E7918', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#F4F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <DollarSign size={15} style={{ color: '#62666E' }} />
             </div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Cuotas de Membresía</h2>
