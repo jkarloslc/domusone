@@ -26,6 +26,24 @@ por permisos del sistema de archivos montado. Si el push falla con "index.lock e
 - Supabase (múltiples clientes: `dbCtrl`, `dbComp`, `dbCfg`)
 - CSS-in-JS con estilos inline y clases globales (`card`, `btn-primary`, `btn-ghost`, etc.)
 
+## UI de marca — obligatoria en todo desarrollo (2026-11-14)
+Toda página, modal, reporte, plantilla de impresión o componente nuevo (y lo que se modifique) usa la identidad Carbón / Plata / Turquesa. Tokens en `app/globals.css`.
+
+- **Marca (60-30-10)**: Carbón `#1C1D21` (`#26282D`, `#33363C`), Plata `#C9CCD3` (`#E6E8EB`, `#F4F5F7`), Turquesa `#19D3C5` (hover `#3EDDD1`). Variables `--carbon*`, `--plata*`, `--turq*`; `--blue*` y `--gold*` son alias de carbón. Fuente Geist; no hay fuente monoespaciada.
+- **Turquesa**: nunca como texto sobre fondo claro. Solo botón primario (`btn-primary`, texto carbón), subrayado de pestaña activa (2px), ítem activo e indicadores. Un `btn-primary` con `background` inline lleva texto blanco.
+- **Neutros**: `#1C1D21 #26282D #33363C #4A4D54 #62666E #7A7E87 #9A9EA7 #C9CCD3 #E6E8EB #F4F5F7 #F8F9FA`. No usar los hex por defecto de Tailwind (slate, blue, indigo, emerald…).
+- **Estados (sólidos)**: verde `#1F7A50`, rojo `#C23B3B`, ámbar `#B5761A`, naranja `#A8501F`, ciruela `#6B4E79` (en lugar de morado/lila), teal `#126B63`, cielo `#32789A`. Variables `--success`, `--danger`, `--warning`.
+- **Sin pasteles**: ningún fondo ni borde con tinte de color (tampoco `color + '18'`, `#RRGGBBAA` ni `rgba()` de color). Paneles y filas desplegables `#F4F5F7` / `#E6E8EB`; fila seleccionada `#E6E8EB`; bordes `#E6E8EB` / `#C9CCD3`.
+- **Etiquetas de estado**: fondo sólido del color de estado con texto blanco.
+- **Avisos y errores**: fondo `#F4F5F7`, `border: '1px solid #E6E8EB'`, `borderLeft: '3px solid <color de estado>'`, texto en ese color.
+- **KPI**: tarjeta blanca con borde plata, punto de color junto a la etiqueta, cifra en carbón (`components/ui/KpiCard.tsx`).
+- **Cifras, totales y folios**: Geist peso 700 con `fontVariantNumeric: 'tabular-nums'`, como la columna Total del grid de OP.
+- **Modales**: `components/ui/ModalShell.tsx` (encabezado carbón; pestaña activa con línea turquesa). Dentro del encabezado, píldoras `rgba(255,255,255,0.15)` con texto blanco.
+- **Tarjetas de hub**: icono dentro de `className="icon-chip"` sin color propio (plata; turquesa al pasar el cursor).
+- **Iconos**: lucide. Decorativos en `#62666E` o carbón; solo los de estado (check, alerta, reloj, eliminar) llevan color. Sin emojis.
+- **Texto sobre fondo oscuro** (filas de total, encabezados carbón): blanco o plata; positivo/negativo con `#7CC9A3` / `#EBB5B5` / `#F0D9A8`. Esos tonos claros no se usan sobre fondo claro.
+- **Sin degradados** ni sombras de color. En impresión, misma paleta; si no hay logotipo no se pinta recuadro.
+
 ## Dominios (middleware.ts)
 - `domusone.app` = Fraccionamiento; `golf-one.mx` = Club (golf, hipico, hospitality, polo, locales). Tenant por subdominio (`balvanera.`).
 - `middleware.ts` redirige (307) rutas fuera de su dominio, conservando tenant y path. **Apagado por defecto**: se activa con `DOMAIN_SPLIT=on` en Vercel.
@@ -228,7 +246,7 @@ Archivo: `ReporteOrdenesPago.tsx`. Registrado en los grupos `tesoreria` y `compr
 - **Columnas del detalle**: Folio, Proveedor, Concepto, Tipo Gasto, Fecha, Vencimiento (rojo si vencido y Pendiente), Monto, Pagado, Saldo, Status (badge con color).
 - **Export Excel** (`xlsx` ^0.18.5, instalado como dep): botón `Exportar Excel` genera `Ordenes-de-Pago-CC-Area_YYYY-MM-DD.xlsx` con 3 hojas: `Resumen` (fila por CC+Área + total), `Detalle` (todas las OPs con CC, Área, proveedor, fechas, montos) y `Matriz CC x Area` (pivote completo).
 - **Datos**: `dbComp.ordenes_pago` (campos: `monto`, `saldo`, `fecha_op`, `fecha_vencimiento`, `id_centro_costo_fk`, `id_area_fk`, `id_proveedor_fk`, `concepto`, `tipo_gasto`, `status`).
-- **Status color map**: Pagada `#15803d`, Pendiente `#d97706`, Pendiente Auth `#7c3aed`, Rechazada `#dc2626`, Cancelada `#64748b`.
+- **Status color map**: Pagada `#1F7A50`, Pendiente `#B5761A`, Pendiente Auth `#6B4E79`, Pendiente Auth Finanzas `#5C4268`, Rechazada `#C23B3B`, Cancelada `#62666E`.
 
 #### Reporte de Antigüedad de OPs por CC/Área (2026-04-17)
 Archivo: `ReporteAntiguedadOPporCC.tsx`. Registrado en los grupos `tesoreria` y `compras` con id `antiguedad-op-cc`.
