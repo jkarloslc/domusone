@@ -693,7 +693,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
               <div className="org-header">
                 {orgLogo
                   ? <img src={orgLogo} style={{ height: 52, maxWidth: 160, objectFit: 'contain' }} alt="" />
-                  : <div style={{ width: 52, height: 52, background: '#E6E8EB', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: '#7A7E87' }}></div>
+                  : null
                 }
                 <div>
                   <div className="org-nombre">{orgNombre}</div>

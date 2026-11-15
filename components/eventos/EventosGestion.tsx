@@ -878,7 +878,7 @@ export default function EventosGestion({ modulo }: { modulo: 'hipico' | 'hospita
     } catch {}
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
+      : ''
     const win = window.open('', '_blank', 'width=800,height=1050')
     if (!win) return
     win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
@@ -1089,7 +1089,7 @@ ${form.justificacion_gasto_personal || form.notas_personal ? `
     } catch {}
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
+      : ''
     const win = window.open('', '_blank', 'width=700,height=900')
     if (!win) return
     win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
@@ -1189,7 +1189,7 @@ ${ing.notas ? `<p style="font-size:12px;color:#62666E;margin-bottom:20px;"><stro
     } catch {}
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
+      : ''
 
     const montItems: [string, boolean | undefined][] = [
       ['Carpas', viewEvt.montaje_carpas], ['Escenario', viewEvt.montaje_escenario],

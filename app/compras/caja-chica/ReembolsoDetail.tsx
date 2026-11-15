@@ -222,7 +222,7 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
 
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:48px;height:48px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;"></div>`
+      : ''
 
     const statusLabel: Record<string, string> = {
       'Borrador': 'BORRADOR', 'Pendiente Auth': 'PENDIENTE AUTORIZACIÓN',

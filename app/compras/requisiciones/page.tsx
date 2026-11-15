@@ -312,7 +312,7 @@ async function imprimirRequisicion(req: any, det: any[]) {
   } catch {}
   const logoHtml = orgLogo
     ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-    : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
+    : ''
 
   const prioridadColor = req.prioridad === 'Crítica' ? '#C23B3B' : req.prioridad === 'Urgente' ? '#B5761A' : '#62666E'
   const filasDet = det.map(d =>

@@ -1130,7 +1130,7 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
 
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;"></div>`
+      : ''
 
     const seccion = ot.id_area_fk ? areaMap[ot.id_area_fk] ?? '—' : '—'
 
@@ -1798,7 +1798,7 @@ function ReporteSemanal({ empresa, modulo, areas, areaMap, onClose }: {
     } catch {}
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
-      : `<div style="width:52px;height:52px;background:#E6E8EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7A7E87;"></div>`
+      : ''
 
     const fechaReporte = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })
     const seccionNombre = filterArea ? (areaMap[Number(filterArea)] ?? 'Todas') : 'Mantenimiento Fraccionamiento'
