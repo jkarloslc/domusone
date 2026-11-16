@@ -1,7 +1,7 @@
 'use client'
 import {
   Landmark, FileText, Building2, ChevronRight,
-  Clock
+  Clock, FileCode2
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
@@ -21,6 +21,13 @@ const MODULOS = [
     icon:  Building2,
     color: '#126B63',
     desc:  'Saldos, movimientos y administración de cuentas bancarias',
+  },
+  {
+    key:   'cfdi-sat',
+    label: 'CFDI del SAT',
+    icon:  FileCode2,
+    color: '#1C1D21',
+    desc:  'Descarga masiva de XML recibidos y emitidos con la e.firma, PDF y Excel',
   },
   // Flujo de Caja oculto del hub (se trabaja por fuera); la ruta /tesoreria/flujo-caja sigue existiendo.
 ]

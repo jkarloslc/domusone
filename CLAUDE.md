@@ -84,6 +84,14 @@ Vehículos y Maquinaria, Equipo y Herramienta (con combustible, bitácoras, pré
 ### Vista Árbol compartida (2026-11-13)
 `app/presupuestos/arbolPartidas.tsx` (`construirArbol`, `useArbolUI`, `ControlesArbol`, `EtiquetaNodo`) arma el árbol Rubro → Centro de ingreso / Tipo de gasto → Partida / CC · Área para **Resumen** (ArbolResumen), **Mensual** (GridMensual, `vista='arbol'`) y **Por unidad** (MatrizUnidades) en Comparativo y Flujo. El nivel Zona de egresos (filasConZona / prorrateo por lotes) solo existe en Resumen. Mensual se ordena por el Real del año. Por unidad desplaza dentro de su contenedor (maxHeight 70vh, encabezado y columna Concepto fijos).
 
+## Tesorería › CFDI del SAT: descarga masiva (2026-11-16, fase 1)
+- Ruta `/tesoreria/cfdi-sat` (permiso `tesoreria`). Pestañas: Comprobantes (filtro tipo/año/mes, XML, PDF, Excel), Solicitudes al SAT, e.firma.
+- Servicio oficial de Descarga Masiva v1.5 vía `@nodecfdi/sat-ws-descarga-masiva` (solo servidor): `app/api/sat/{efirma,solicitar,verificar}`. Las rutas exigen sesión (`fetchConAuth`) y rol de `ROLES_DESCARGA` (`lib/satServidor.ts`, copia en la página); la e.firma solo la carga superadmin y debe ser del RFC `cfg.configuracion.org_rfc` (BPCC).
+- **e.firma** en `ctrl.sat_efirma`: `.key` y contraseña cifradas AES-256-GCM con la variable de Vercel **`SAT_EFIRMA_SECRET`** (≥32 caracteres). Tabla sin GRANT a anon/authenticated. Si se cambia la variable hay que volver a cargar la e.firma.
+- Flujo asíncrono: Solicitar → (minutos/horas) → Verificar descarga los ZIP y guarda en `ctrl.cfdi_sat` (datos) y `ctrl.cfdi_sat_xml` (XML). Presupuesto de 45 s por llamada; si quedan paquetes, se vuelve a pulsar Verificar (`paquetes_descargados`). Recibidos solo vigentes (el SAT no entrega XML de cancelados).
+- El SAT no da PDF: `lib/cfdiPdf.ts` arma la representación impresa con jsPDF + QR de verificación. Lectura del XML compartida servidor/navegador: `lib/cfdiXml.ts` (`extraerCfdi`).
+- Migración `20261116120000_sat_descarga_masiva.sql`. **Pendiente**: fase 2 conciliación CFDI ↔ OP (`folio_factura`, `xml_factura`), estatus de cancelados vía Metadata, emitidos vs POS, sincronización automática.
+
 ## Ramas
 - Rama principal: `main`
 - Repositorio: https://github.com/jkarloslc/domusone.git
