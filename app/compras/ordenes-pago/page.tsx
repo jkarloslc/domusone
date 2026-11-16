@@ -979,6 +979,8 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
       soporte_url:       form.soporte_url || null,
       id_servicio_fk:    form.id_servicio_fk ? Number(form.id_servicio_fk) : null,
     }
+    // Si cambió el XML, el UUID se vuelve a leer en la conciliación con el SAT
+    if ((form.xml_factura || '') !== (isEdit ? (opEdit?.xml_factura ?? '') : '')) payload.uuid_factura = null
 
     // EDITAR
     if (isEdit) {

@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   FileCode2, FileText, Download, RefreshCw, Plus, Loader, KeyRound, ShieldCheck,
-  Search, FileSpreadsheet, AlertTriangle, CheckCircle, Clock, Receipt, Upload,
+  Search, FileSpreadsheet, AlertTriangle, CheckCircle, Clock, Receipt, Upload, Link2,
 } from 'lucide-react'
 import PageHeader from '@/components/layout/PageHeader'
 import KpiCard from '@/components/ui/KpiCard'
@@ -12,6 +12,7 @@ import { dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { fetchConAuth } from '@/lib/authFetch'
 import { TIPO_COMPROBANTE } from '@/lib/cfdiXml'
+import Conciliacion from './Conciliacion'
 
 // Debe coincidir con ROLES_DESCARGA de lib/satServidor.ts (el servidor es quien valida)
 const ROLES_DESCARGA = new Set([
@@ -38,6 +39,7 @@ type Cfdi = {
   rfc_receptor: string; nombre_receptor: string | null; metodo_pago: string | null; forma_pago: string | null
   uso_cfdi: string | null; moneda: string | null; subtotal: number | null; descuento: number | null
   iva_trasladado: number | null; iva_retenido: number | null; isr_retenido: number | null; total: number | null
+  estatus_sat: string; tiene_xml: boolean
 }
 
 function Aviso({ color, children }: { color: string; children: React.ReactNode }) {
@@ -59,12 +61,13 @@ export default function CfdiSatPage() {
   const rol = authUser?.rolReal ?? ''
   const puede = ROLES_DESCARGA.has(rol)
   const esSuper = rol === 'superadmin'
-  const [tab, setTab] = useState<'cfdi' | 'solicitudes' | 'efirma'>('cfdi')
+  const [tab, setTab] = useState<'cfdi' | 'conciliacion' | 'solicitudes' | 'efirma'>('cfdi')
   const [modalNueva, setModalNueva] = useState(false)
   const [recarga, setRecarga] = useState(0)
 
   const tabs = [
     { key: 'cfdi', label: 'Comprobantes', icon: Receipt },
+    { key: 'conciliacion', label: 'Conciliación con OP', icon: Link2 },
     { key: 'solicitudes', label: 'Solicitudes al SAT', icon: Clock },
     { key: 'efirma', label: 'e.firma', icon: KeyRound },
   ] as const
@@ -100,6 +103,7 @@ export default function CfdiSatPage() {
       </div>
 
       {tab === 'cfdi' && <TabComprobantes />}
+      {tab === 'conciliacion' && <Conciliacion puede={puede} />}
       {tab === 'solicitudes' && <TabSolicitudes puede={puede} recarga={recarga} />}
       {tab === 'efirma' && <TabEfirma esSuper={esSuper} />}
 
@@ -139,7 +143,7 @@ function TabComprobantes() {
     const todos: Cfdi[] = []
     for (let desde = 0; ; desde += 1000) {
       const { data, error } = await dbCtrl.from('cfdi_sat')
-        .select('id, uuid, tipo_descarga, serie, folio, fecha_emision, tipo_comprobante, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, metodo_pago, forma_pago, uso_cfdi, moneda, subtotal, descuento, iva_trasladado, iva_retenido, isr_retenido, total')
+        .select('id, uuid, tipo_descarga, serie, folio, fecha_emision, tipo_comprobante, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, metodo_pago, forma_pago, uso_cfdi, moneda, subtotal, descuento, iva_trasladado, iva_retenido, isr_retenido, total, estatus_sat, tiene_xml')
         .eq('tipo_descarga', tipo).gte('fecha_emision', ini).lt('fecha_emision', fin)
         .order('fecha_emision', { ascending: false }).range(desde, desde + 999)
       if (error) { setError(error.message); break }
@@ -159,7 +163,7 @@ function TabComprobantes() {
 
   const tot = useMemo(() => filtrados.reduce((a, r) => {
     const s = r.tipo_comprobante === 'E' ? -1 : 1   // notas de crédito restan
-    const cuenta = r.tipo_comprobante === 'I' || r.tipo_comprobante === 'E'
+    const cuenta = (r.tipo_comprobante === 'I' || r.tipo_comprobante === 'E') && r.estatus_sat !== 'Cancelado'
     if (cuenta) { a.sub += s * (r.subtotal ?? 0) - s * (r.descuento ?? 0); a.iva += s * (r.iva_trasladado ?? 0); a.total += s * (r.total ?? 0) }
     return a
   }, { sub: 0, iva: 0, total: 0 }), [filtrados])
@@ -284,13 +288,16 @@ function TabComprobantes() {
                       <div style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nombre || '—'}</div>
                       <div style={{ fontSize: 11, color: '#62666E' }}>{rfc}</div>
                     </td>
-                    <td>{TIPO_COMPROBANTE[r.tipo_comprobante ?? ''] ?? r.tipo_comprobante}</td>
+                    <td>
+                      {TIPO_COMPROBANTE[r.tipo_comprobante ?? ''] ?? r.tipo_comprobante}
+                      {r.estatus_sat === 'Cancelado' && <div><span className="badge" style={{ background: '#C23B3B', color: '#fff' }}>Cancelado</span></div>}
+                    </td>
                     <td>{r.metodo_pago ?? '—'}</td>
                     <td style={num}>{fmt(r.subtotal)}</td>
                     <td style={num}>{fmt(r.iva_trasladado)}</td>
                     <td style={num}>{fmt(r.total)}</td>
                     <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                      {busy === r.uuid ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} /> : (
+                      {!r.tiene_xml ? <span style={{ fontSize: 11, color: '#9A9EA7' }} title="Solo metadata: el SAT no entrega el XML">Sin XML</span> : busy === r.uuid ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} /> : (
                         <>
                           <button className="btn-ghost" style={{ padding: '4px 6px' }} title="Descargar XML" onClick={() => xml(r.uuid)}><FileCode2 size={15} /></button>
                           <button className="btn-ghost" style={{ padding: '4px 6px' }} title="Descargar PDF" onClick={() => pdf(r.uuid)}><FileText size={15} /></button>
@@ -390,7 +397,7 @@ function TabSolicitudes({ puede, recarga }: { puede: boolean; recarga: number })
               ) : rows.map(r => (
                 <tr key={r.id}>
                   <td style={{ whiteSpace: 'nowrap' }}>{fmtFH(r.created_at)}</td>
-                  <td style={{ textTransform: 'capitalize' }}>{r.tipo}</td>
+                  <td style={{ textTransform: 'capitalize' }}>{r.tipo}<div style={{ fontSize: 11, color: '#62666E', textTransform: 'none' }}>{r.tipo_solicitud === 'metadata' ? 'Metadata (estatus)' : 'XML'}</div></td>
                   <td style={{ whiteSpace: 'nowrap' }}>{fmtF(r.fecha_desde)} – {fmtF(r.fecha_hasta)}</td>
                   <td style={{ textAlign: 'center' }}><Badge s={r.status} /></td>
                   <td style={num}>{r.num_cfdis == null ? '—' : `${r.cfdis_guardados.toLocaleString('es-MX')} / ${r.num_cfdis.toLocaleString('es-MX')}`}</td>
@@ -525,6 +532,7 @@ function ModalNueva({ onClose, onCreada }: { onClose: () => void; onCreada: () =
   const finPrev = new Date(h.getFullYear(), h.getMonth(), 0)
   const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   const [tipo, setTipo] = useState<'recibidos' | 'emitidos' | 'ambos'>('recibidos')
+  const [solicitud, setSolicitud] = useState<'xml' | 'metadata'>('xml')
   const [desde, setDesde] = useState(iso(iniPrev))
   const [hasta, setHasta] = useState(iso(finPrev))
   const [saving, setSaving] = useState(false)
@@ -535,7 +543,7 @@ function ModalNueva({ onClose, onCreada }: { onClose: () => void; onCreada: () =
     const tipos = tipo === 'ambos' ? ['recibidos', 'emitidos'] : [tipo]
     const errores: string[] = []
     for (const t of tipos) {
-      const r = await fetchConAuth('/api/sat/solicitar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tipo: t, desde, hasta }) })
+      const r = await fetchConAuth('/api/sat/solicitar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tipo: t, desde, hasta, solicitud }) })
       const j = await r.json().catch(() => ({}))
       if (!r.ok) errores.push(`${t}: ${j.error ?? 'error'}`)
     }
@@ -554,6 +562,13 @@ function ModalNueva({ onClose, onCreada }: { onClose: () => void; onCreada: () =
       </>}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div>
+          <label className="label">Qué descargar</label>
+          <select className="select" value={solicitud} onChange={e => setSolicitud(e.target.value as any)}>
+            <option value="xml">XML de los comprobantes</option>
+            <option value="metadata">Metadata: estatus vigente / cancelado</option>
+          </select>
+        </div>
+        <div>
           <label className="label">Comprobantes</label>
           <select className="select" value={tipo} onChange={e => setTipo(e.target.value as any)}>
             <option value="recibidos">Recibidos (facturas de proveedores)</option>
@@ -566,7 +581,7 @@ function ModalNueva({ onClose, onCreada }: { onClose: () => void; onCreada: () =
           <div><label className="label">Hasta</label><input className="input" type="date" value={hasta} onChange={e => setHasta(e.target.value)} /></div>
         </div>
         <Aviso color="#32789A">
-          <span>De los recibidos el SAT solo entrega en XML los comprobantes vigentes. Se recomienda pedir un mes a la vez.</span>
+          <span>De los recibidos el SAT solo entrega en XML los vigentes. Para saber cuáles se cancelaron, pide también la Metadata del mismo periodo. Se recomienda pedir un mes a la vez.</span>
         </Aviso>
         {error && <Aviso color="#C23B3B"><AlertTriangle size={14} /> {error}</Aviso>}
       </div>

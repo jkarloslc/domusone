@@ -90,7 +90,12 @@ Vehículos y Maquinaria, Equipo y Herramienta (con combustible, bitácoras, pré
 - **e.firma** en `ctrl.sat_efirma`: `.key` y contraseña cifradas AES-256-GCM con la variable de Vercel **`SAT_EFIRMA_SECRET`** (≥32 caracteres). Tabla sin GRANT a anon/authenticated. Si se cambia la variable hay que volver a cargar la e.firma.
 - Flujo asíncrono: Solicitar → (minutos/horas) → Verificar descarga los ZIP y guarda en `ctrl.cfdi_sat` (datos) y `ctrl.cfdi_sat_xml` (XML). Presupuesto de 45 s por llamada; si quedan paquetes, se vuelve a pulsar Verificar (`paquetes_descargados`). Recibidos solo vigentes (el SAT no entrega XML de cancelados).
 - El SAT no da PDF: `lib/cfdiPdf.ts` arma la representación impresa con jsPDF + QR de verificación. Lectura del XML compartida servidor/navegador: `lib/cfdiXml.ts` (`extraerCfdi`).
-- Migración `20261116120000_sat_descarga_masiva.sql`. **Pendiente**: fase 2 conciliación CFDI ↔ OP (`folio_factura`, `xml_factura`), estatus de cancelados vía Metadata, emitidos vs POS, sincronización automática.
+- Migración `20261116120000_sat_descarga_masiva.sql`.
+- **Fase 2 (conciliación CFDI ↔ OP, migr. `20261116150000`)**: pestaña "Conciliación con OP". `lib/satConciliacion.ts` + `/api/sat/conciliar` y `/api/sat/vinculo`. Vínculo N:M en `ctrl.cfdi_sat_op` (`estado` confirmado / sugerido / descartado; lo descartado no se vuelve a sugerir).
+  - Reglas: **uuid** (`comp.ordenes_pago.uuid_factura`, leído del XML subido a la OP; `''` = revisado sin UUID; la OP lo pone en NULL al cambiar el XML) → **folio** (RFC proveedor = RFC emisor + folio; confirmado si el total cuadra ±$1/0.5 %) → **monto** (solo sugerencia, candidato único). Solo CFDI tipo I recibidos; OP Cancelada/Rechazada no cuentan.
+  - "OP sin CFDI" omite tipos de gasto con `cfg.tipos_gasto.requiere_cfdi = false` (nómina, IMSS, ISR, IVA, ISN, PTU, Fonacot, finiquitos, comisiones bancarias, depósitos en garantía, impuestos municipales).
+  - Solicitud de **Metadata** (`sat_solicitudes.tipo_solicitud`) actualiza `cfdi_sat.estatus_sat`/`fecha_cancelacion` y da de alta sin XML (`tiene_xml=false`) los cancelados; la sección "Cancelados con OP" los muestra.
+  - **Pendiente**: emitidos vs POS/recibos, sincronización automática, ligar un CFDI desde el modal de la OP.
 
 ## Ramas
 - Rama principal: `main`

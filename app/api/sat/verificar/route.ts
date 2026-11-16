@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { DOMParser } from '@xmldom/xmldom'
-import { CfdiPackageReader } from '@nodecfdi/sat-ws-descarga-masiva'
+import { CfdiPackageReader, MetadataPackageReader } from '@nodecfdi/sat-ws-descarga-masiva'
 import { admin, respuestaError, servicioSat, usuarioSat, HttpError } from '@/lib/satServidor'
 import { extraerCfdi } from '@/lib/cfdiXml'
 
@@ -65,7 +65,14 @@ export async function POST(req: NextRequest) {
       if (Date.now() - t0 > PRESUPUESTO_MS) { cortado = true; break }
       const d = await service.download(pk)
       if (!d.getStatus().isAccepted()) { errores.push(`Paquete ${pk}: ${d.getStatus().getMessage()}`); continue }
-      const reader = await CfdiPackageReader.createFromContents(Buffer.from(d.getPackageContent(), 'base64').toString('binary'))
+      const zip = Buffer.from(d.getPackageContent(), 'base64').toString('binary')
+      if (sol.tipo_solicitud === 'metadata') {
+        guardados += await guardarMetadata(db, await MetadataPackageReader.createFromContents(zip), tipoDescarga, sol.id)
+        hechos.add(pk)
+        await guardar({ paquetes_descargados: Array.from(hechos), cfdis_guardados: guardados })
+        continue
+      }
+      const reader = await CfdiPackageReader.createFromContents(zip)
 
       let filas: any[] = [], xmls: any[] = []
       const vaciar = async () => {
@@ -93,7 +100,7 @@ export async function POST(req: NextRequest) {
               metodo_pago: x.metodo_pago, forma_pago: x.forma_pago, moneda: x.moneda, tipo_cambio: x.tipo_cambio,
               subtotal: x.subtotal, descuento: x.descuento, iva_trasladado: x.iva_trasladado,
               iva_retenido: x.iva_retenido, isr_retenido: x.isr_retenido, ieps: x.ieps, total: x.total,
-              id_solicitud_fk: sol.id,
+              id_solicitud_fk: sol.id, tiene_xml: true,
             })
             xmls.push({ uuid: x.uuid, xml })
             if (filas.length >= LOTE) await vaciar()
@@ -121,4 +128,49 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     const r = respuestaError(e); return NextResponse.json(r.body, { status: r.status })
   }
+}
+
+// Metadata: actualiza el estatus (vigente/cancelado) de los CFDI que ya existen y da
+// de alta, sin XML, los que no se descargaron (p. ej. recibidos cancelados).
+async function guardarMetadata(db: ReturnType<typeof admin>, reader: MetadataPackageReader, tipoDescarga: string, idSol: number) {
+  const items: any[] = []
+  for await (const it of reader.metadata()) {
+    const g = (k: string) => String(it.get(k) ?? '').trim()
+    const uuid = g('uuid').toUpperCase()
+    if (!uuid) continue
+    const cancelado = g('estatus') === '0'
+    items.push({
+      uuid, cancelado, fecha_cancelacion: cancelado && g('fechaCancelacion') ? g('fechaCancelacion').replace(' ', 'T') : null,
+      fila: {
+        uuid, tipo_descarga: tipoDescarga, tipo_comprobante: g('efectoComprobante') || null,
+        rfc_emisor: g('rfcEmisor').toUpperCase(), nombre_emisor: g('nombreEmisor') || null,
+        rfc_receptor: g('rfcReceptor').toUpperCase(), nombre_receptor: g('nombreReceptor') || null,
+        fecha_emision: g('fechaEmision').replace(' ', 'T') || null, fecha_timbrado: g('fechaCertificacionSat').replace(' ', 'T') || null,
+        total: g('monto') ? Number(g('monto')) : null, tiene_xml: false, id_solicitud_fk: idSol,
+      },
+    })
+  }
+  const t = () => db.schema('ctrl' as any).from('cfdi_sat')
+  const existentes = new Set<string>()
+  for (let i = 0; i < items.length; i += 300) {
+    const { data, error } = await t().select('uuid').in('uuid', items.slice(i, i + 300).map(x => x.uuid))
+    if (error) throw new Error(error.message)
+    for (const r of data ?? []) existentes.add((r as any).uuid)
+  }
+  const vigentes = items.filter(x => existentes.has(x.uuid) && !x.cancelado).map(x => x.uuid)
+  for (let i = 0; i < vigentes.length; i += 300) {
+    const { error } = await t().update({ estatus_sat: 'Vigente', fecha_cancelacion: null }).in('uuid', vigentes.slice(i, i + 300))
+    if (error) throw new Error(error.message)
+  }
+  for (const x of items.filter(x => existentes.has(x.uuid) && x.cancelado)) {
+    const { error } = await t().update({ estatus_sat: 'Cancelado', fecha_cancelacion: x.fecha_cancelacion }).eq('uuid', x.uuid)
+    if (error) throw new Error(error.message)
+  }
+  const nuevos = Array.from(new Map(items.filter(x => !existentes.has(x.uuid))
+    .map(x => [x.uuid, { ...x.fila, estatus_sat: x.cancelado ? 'Cancelado' : 'Vigente', fecha_cancelacion: x.fecha_cancelacion }])).values())
+  for (let i = 0; i < nuevos.length; i += 500) {
+    const { error } = await t().insert(nuevos.slice(i, i + 500))
+    if (error) throw new Error(error.message)
+  }
+  return items.length
 }

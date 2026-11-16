@@ -16,11 +16,13 @@ function horaMxHace(min: number) {
   return d.toLocaleString('sv-SE', { timeZone: 'America/Mexico_City' }).replace('T', ' ').slice(0, 19)
 }
 
-// POST { tipo: 'recibidos' | 'emitidos', desde: 'YYYY-MM-DD', hasta: 'YYYY-MM-DD' }
+// POST { tipo: 'recibidos' | 'emitidos', desde: 'YYYY-MM-DD', hasta: 'YYYY-MM-DD', solicitud?: 'xml' | 'metadata' }
+// Metadata: listado con estatus (vigente/cancelado) de todos los CFDI, incluidos los cancelados.
 export async function POST(req: NextRequest) {
   try {
     const u = await usuarioSat(req, 'descarga')
-    const { tipo, desde, hasta } = await req.json()
+    const { tipo, desde, hasta, solicitud } = await req.json()
+    const meta = solicitud === 'metadata'
     if (tipo !== 'recibidos' && tipo !== 'emitidos') throw new HttpError(400, 'Tipo no válido.')
     if (!ISO.test(desde ?? '') || !ISO.test(hasta ?? '') || desde > hasta) throw new HttpError(400, 'Revisa el rango de fechas.')
     const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
@@ -33,15 +35,15 @@ export async function POST(req: NextRequest) {
     let params = QueryParameters.create()
       .withPeriod(DateTimePeriod.createFromValues(`${desde} 00:00:00`, hasta >= hoy ? horaMxHace(5) : `${hasta} 23:59:59`))
       .withDownloadType(new DownloadType(tipo === 'recibidos' ? 'received' : 'issued'))
-      .withRequestType(new RequestType('xml'))
-    if (tipo === 'recibidos') params = params.withDocumentStatus(new DocumentStatus('active'))
+      .withRequestType(new RequestType(meta ? 'metadata' : 'xml'))
+    if (tipo === 'recibidos' && !meta) params = params.withDocumentStatus(new DocumentStatus('active'))
     const errores = params.validate()
     if (errores.length) throw new HttpError(400, errores.join(' · '))
 
     const query = await service.query(params)
     const st = query.getStatus()
     const fila: any = {
-      rfc, tipo, fecha_desde: desde, fecha_hasta: hasta,
+      rfc, tipo, tipo_solicitud: meta ? 'metadata' : 'xml', fecha_desde: desde, fecha_hasta: hasta,
       id_solicitud_sat: query.getRequestId() || null,
       status: st.isAccepted() ? 'Solicitada' : 'Rechazada',
       mensaje_sat: `${st.getCode()} · ${st.getMessage()}`,
