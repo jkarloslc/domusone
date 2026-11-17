@@ -397,7 +397,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Golf',            href: '/golf',                icon: Flag      },
       { label: 'Administración',  href: '/golf/administracion', icon: Users     },
       { label: 'Locales Comerciales', href: '/locales', icon: Building2 },
-      { label: 'Mantto. Club',    href: '/golf/mantto-campo',   icon: Leaf      },
       { label: 'Hípico', href: '/hipico', icon: HorseIcon },
       { label: 'Eventos', href: '/eventos', icon: CalendarDays },
       { label: 'Polo',             href: '/polo',                icon: PoloIcon  },
@@ -424,9 +423,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      { label: 'Mantenimiento',      href: '/residencial/mantenimiento',        icon: Wrench        },
-      { label: 'Servicios',           href: '/residencial/mantenimiento/servicios', icon: Zap           },
-      { label: 'Capex',               href: '/residencial/mantenimiento/capex',     icon: Building2     },
       RPT('residencial,mantenimiento,vigilancia'),
     ]},
     { section: 'Compras', items: [

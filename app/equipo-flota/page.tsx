@@ -7,7 +7,7 @@ import EquipoFlotaTab from './EquipoFlotaTab'
 import PageHeader from '@/components/layout/PageHeader'
 import { AmbitoProvider } from '@/lib/AmbitoContext'
 
-const ROLES_PERMITIDOS = ['superadmin', 'usuarioadmin', 'usuariomantto', 'mantenimiento', 'compras']
+const ROLES_PERMITIDOS = ['superadmin', 'mantenimiento', 'compras']
 
 export default function EquipoFlotaPage() {
   const { authUser } = useAuth()

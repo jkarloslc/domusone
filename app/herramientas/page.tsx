@@ -7,7 +7,7 @@ import HerramientasTab from './HerramientasTab'
 import PageHeader from '@/components/layout/PageHeader'
 import { AmbitoProvider } from '@/lib/AmbitoContext'
 
-const ROLES_PERMITIDOS = ['superadmin', 'usuarioadmin', 'usuariomantto', 'mantenimiento', 'compras']
+const ROLES_PERMITIDOS = ['superadmin', 'mantenimiento', 'compras']
 
 export default function HerramientasPage() {
   const { authUser } = useAuth()

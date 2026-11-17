@@ -93,8 +93,6 @@ const ACCESOS: Record<Rol, Acceso[]> = {
   ],
   usuariomantto: [
     { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#126B63', bg: '#F4F5F7' },
-    { label: 'Mantenimiento',    href: '/residencial/mantenimiento',       icon: Wrench,          color: '#96600F', bg: '#F4F5F7' },
-    { label: 'Vehículos',        href: '/equipo-flota',        icon: Truck,           color: '#62666E', bg: '#F8F9FA' },
     { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#26282D', bg: '#F4F5F7' },
     { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#1C1D21', bg: '#E6E8EB' },
   ],

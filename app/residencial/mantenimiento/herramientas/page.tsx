@@ -7,7 +7,7 @@ import HerramientasTab from '@/app/herramientas/HerramientasTab'
 import PageHeader from '@/components/layout/PageHeader'
 
 // Mismos roles que la versión de Golf (/herramientas). Datos: tablas *_mantto.
-const ROLES_PERMITIDOS = ['superadmin', 'usuariomantto', 'mantenimiento']
+const ROLES_PERMITIDOS = ['superadmin', 'mantenimiento']
 
 export default function HerramientasManttoPage() {
   const { authUser } = useAuth()

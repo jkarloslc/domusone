@@ -229,10 +229,20 @@ const HOSPITALITY_MODULOS = [
   'golf', 'golf-torneos',
   ...HIPICO_MODULOS,
 ]
+// Roles admin*, usuarioadmin y usuariomantto (no superadmin) sin Mantenimiento, Servicios,
+// Capex, HR ni Mantto. Club (2026-11-17)
+const MODS_SIN_ADMIN = [
+  'mantenimiento', 'capex', 'hr',
+  'golf-mantto-campo', 'golf-riego', 'golf-mantenimiento-campo', 'golf-estatus-campo',
+  'equipo-flota', 'herramientas',
+]
+const sinManttoAdmin = (mods: string[]) => mods.filter(m => !MODS_SIN_ADMIN.includes(m))
+const ADMIN_ROL_MODULOS = sinManttoAdmin(ADMIN_MODULOS)
+
 // usuarioadmin: igual que admin pero sin mantenimiento
-const USUARIOADMIN_MODULOS = ADMIN_MODULOS.filter(m => m !== 'mantenimiento')
+const USUARIOADMIN_MODULOS = sinManttoAdmin(ADMIN_MODULOS)
 // usuariomantto: igual que admin pero sin tesoreria ni golf
-const USUARIOMANTTO_MODULOS = ADMIN_MODULOS.filter(m => m !== 'tesoreria' && m !== 'cxp' && m !== 'golf' && !m.startsWith('golf-'))
+const USUARIOMANTTO_MODULOS = sinManttoAdmin(ADMIN_MODULOS).filter(m => m !== 'tesoreria' && m !== 'cxp' && m !== 'golf' && !m.startsWith('golf-'))
 
 // Módulo Compras completo (todas las sub-secciones del hub)
 const COMPRAS_MODULOS = [
@@ -245,16 +255,6 @@ const ADMIN_ORGANISMO_MODULOS = [
   ...COMPRAS_MODULOS, 'mantenimiento', 'equipo-flota', 'herramientas', 'capex',
   'tesoreria', 'cxp', 'ingresos', 'presupuestos', 'catalogos',
 ]
-
-// Roles admin* (no superadmin) sin Mantenimiento, Servicios, Capex, HR ni Mantto. Club
-// (2026-11-17). usuarioadmin/usuariomantto siguen derivando de ADMIN_MODULOS completo.
-const MODS_SIN_ADMIN = [
-  'mantenimiento', 'capex', 'hr',
-  'golf-mantto-campo', 'golf-riego', 'golf-mantenimiento-campo', 'golf-estatus-campo',
-  'equipo-flota', 'herramientas',
-]
-const sinManttoAdmin = (mods: string[]) => mods.filter(m => !MODS_SIN_ADMIN.includes(m))
-const ADMIN_ROL_MODULOS = sinManttoAdmin(ADMIN_MODULOS)
 
 // ── Lectura (visibilidad sidebar) ─────────────────────────────────────────────
 const LEER: Record<RolBase, string[] | '*'> = {

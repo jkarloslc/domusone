@@ -7,7 +7,7 @@ import EquipoFlotaTab from '@/app/equipo-flota/EquipoFlotaTab'
 import PageHeader from '@/components/layout/PageHeader'
 
 // Mismos roles que la versión de Golf (/equipo-flota). Datos: tablas *_mantto.
-const ROLES_PERMITIDOS = ['superadmin', 'usuariomantto', 'mantenimiento', 'compras']
+const ROLES_PERMITIDOS = ['superadmin', 'mantenimiento', 'compras']
 
 export default function VehiculosManttoPage() {
   const { authUser } = useAuth()
