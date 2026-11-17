@@ -2,7 +2,7 @@
 import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/AuthContext'
-import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList, Building2, Wallet, Clock, Star, Droplets, CloudRain, Tag } from 'lucide-react'
+import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList, Building2, Wallet, Clock, Star, Droplets, CloudRain, Tag, Zap } from 'lucide-react'
 import PageHeader from '@/components/layout/PageHeader'
 import ReporteColaboradores from './ReporteColaboradores'
 import ReporteLotes from './ReporteLotes'
@@ -77,6 +77,7 @@ import ReporteCancelaciones from './ReporteCancelaciones'
 import ReporteComposicionIngresoCuotas from './ReporteComposicionIngresoCuotas'
 import ReporteVigilanciaNovedades from './ReporteVigilanciaNovedades'
 import ReporteValesCombustible from './ReporteValesCombustible'
+import ReporteServiciosCCAreaFrente from './ReporteServiciosCCAreaFrente'
 
 const GRUPOS = [
   {
@@ -217,6 +218,7 @@ const GRUPOS = [
       { id: 'golf-cuadre-formas-pago',  label: 'Cuadre de Formas de Pago (Pre-Corte)', icon: Wallet, desc: 'Ventas de todos los centros por forma de pago, sin importar si ya se cortaron — para cuadrar contra TPV/caja antes del corte' },
       { id: 'golf-auditoria-slots',     label: 'Auditoría de Slots',          icon: ClipboardList, desc: 'Comparativo sistema vs. físico de cajones asignados, vacantes y diferencias por categoría' },
       { id: 'golf-slots-ocupacion',     label: 'Ocupación de Slots / Cajones', icon: BarChart3, desc: 'Porcentaje de ocupación y disponibilidad de cajones por categoría y período' },
+      { id: 'golf-servicios-cc-area-frente', label: 'Servicios del Club por CC / Área / Frente', icon: Zap, desc: 'CFE, Agua y Gas LP de Mantto. Campo agrupados por centro de costo, área, frente y servicio: periodos, consumo (kWh, m³, L) y monto, con detalle por periodo y OP. Exporta a Excel' },
       { id: 'golf-riego-consumo',       label: 'Consumo de Agua — Riego',     icon: Droplets,  desc: 'Consumo real vs. programado por origen de agua, semana y período con análisis de gap' },
       { id: 'golf-estatus-campo',       label: 'Estatus del Campo',           icon: CloudRain, desc: 'Días de apertura, cierre y cierre parcial del campo y de los caminos en el período' },
       { id: 'cancelaciones',            label: 'Bitácora de Cancelaciones',   icon: AlertTriangle, desc: 'Recibos cancelados (Golf, Hípico, Locales, Fraccionamiento): folio, cuotas liberadas, monto, motivo y usuario' },
@@ -415,6 +417,7 @@ function ReportesContent() {
       {active === 'golf-cuadre-formas-pago'  && <ReporteGolfCuadreFormasPago />}
       {active === 'golf-auditoria-slots'     && <ReporteGolfAuditoriaSlots />}
       {active === 'golf-slots-ocupacion'     && <ReporteGolfSlotsOcupacion />}
+      {active === 'golf-servicios-cc-area-frente' && <ReporteServiciosCCAreaFrente />}
       {active === 'golf-riego-consumo'       && <ReporteRiegoConsumo />}
       {active === 'golf-estatus-campo'       && <ReporteEstatusCampo />}
 
