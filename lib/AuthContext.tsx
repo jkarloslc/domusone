@@ -246,14 +246,24 @@ const ADMIN_ORGANISMO_MODULOS = [
   'tesoreria', 'cxp', 'ingresos', 'presupuestos', 'catalogos',
 ]
 
+// Roles admin* (no superadmin) sin Mantenimiento, Servicios, Capex, HR ni Mantto. Club
+// (2026-11-17). usuarioadmin/usuariomantto siguen derivando de ADMIN_MODULOS completo.
+const MODS_SIN_ADMIN = [
+  'mantenimiento', 'capex', 'hr',
+  'golf-mantto-campo', 'golf-riego', 'golf-mantenimiento-campo', 'golf-estatus-campo',
+  'equipo-flota', 'herramientas',
+]
+const sinManttoAdmin = (mods: string[]) => mods.filter(m => !MODS_SIN_ADMIN.includes(m))
+const ADMIN_ROL_MODULOS = sinManttoAdmin(ADMIN_MODULOS)
+
 // ── Lectura (visibilidad sidebar) ─────────────────────────────────────────────
 const LEER: Record<RolBase, string[] | '*'> = {
   superadmin:          '*',
-  admin:               [...ADMIN_MODULOS, 'hr'],
-  admin_lector:        ADMIN_MODULOS,   // igual que admin, solo lectura
-  admin_finanzas:      ADMIN_MODULOS,   // igual que admin + 2da autorización de OP
-  admin_low_level:     [...ADMIN_MODULOS, 'hr'],  // igual que admin, se le irán quitando permisos puntuales
-  admin_tesoreria:     [...ADMIN_MODULOS, 'hr'],  // igual que admin + permisos financieros ampliados (ver puntos hardcoded de rol)
+  admin:               ADMIN_ROL_MODULOS,
+  admin_lector:        ADMIN_ROL_MODULOS,   // igual que admin, solo lectura
+  admin_finanzas:      ADMIN_ROL_MODULOS,   // igual que admin + 2da autorización de OP
+  admin_low_level:     ADMIN_ROL_MODULOS,  // igual que admin, se le irán quitando permisos puntuales
+  admin_tesoreria:     ADMIN_ROL_MODULOS,  // igual que admin + permisos financieros ampliados (ver puntos hardcoded de rol)
   usuarioadmin:        USUARIOADMIN_MODULOS,
   usuariomantto:       USUARIOMANTTO_MODULOS,
   atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
@@ -277,7 +287,7 @@ const LEER: Record<RolBase, string[] | '*'> = {
   usuariohospitality:  HOSPITALITY_MODULOS,
   usuario_nomina:      ['compras', 'ordenes-pago'],
   usuario_organismo:   ['lotes', 'propietarios', 'reportes'],
-  admin_organismo:     ADMIN_ORGANISMO_MODULOS,
+  admin_organismo:     sinManttoAdmin(ADMIN_ORGANISMO_MODULOS),
   caja_organismo:      ['ingresos', 'compras', 'requisiciones', 'transferencias'],
   aux_organismo:       ['mantenimiento', 'compras', 'requisiciones', 'transferencias'],
 }
@@ -285,11 +295,11 @@ const LEER: Record<RolBase, string[] | '*'> = {
 // ── Escritura (Nuevo / Editar) ─────────────────────────────────────────────────
 const ESCRIBIR: Record<RolBase, string[] | '*'> = {
   superadmin:          '*',
-  admin:               [...ADMIN_MODULOS, 'hr'],
+  admin:               ADMIN_ROL_MODULOS,
   admin_lector:        [],              // sin escritura
-  admin_finanzas:      ADMIN_MODULOS,   // igual que admin + 2da autorización de OP
-  admin_low_level:     [...ADMIN_MODULOS, 'hr'],  // igual que admin, se le irán quitando permisos puntuales
-  admin_tesoreria:     [...ADMIN_MODULOS, 'hr'],  // igual que admin + permisos financieros ampliados (ver puntos hardcoded de rol)
+  admin_finanzas:      ADMIN_ROL_MODULOS,   // igual que admin + 2da autorización de OP
+  admin_low_level:     ADMIN_ROL_MODULOS,  // igual que admin, se le irán quitando permisos puntuales
+  admin_tesoreria:     ADMIN_ROL_MODULOS,  // igual que admin + permisos financieros ampliados (ver puntos hardcoded de rol)
   usuarioadmin:        USUARIOADMIN_MODULOS,
   usuariomantto:       USUARIOMANTTO_MODULOS,
   atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
@@ -313,7 +323,7 @@ const ESCRIBIR: Record<RolBase, string[] | '*'> = {
   usuariohospitality:  HOSPITALITY_MODULOS,
   usuario_nomina:      ['ordenes-pago'],
   usuario_organismo:   [],
-  admin_organismo:     ADMIN_ORGANISMO_MODULOS,
+  admin_organismo:     sinManttoAdmin(ADMIN_ORGANISMO_MODULOS),
   caja_organismo:      ['ingresos', 'requisiciones', 'transferencias'],
   aux_organismo:       ['mantenimiento', 'requisiciones', 'transferencias'],
 }

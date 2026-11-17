@@ -178,6 +178,9 @@ Reglas de derivación actuales:
 - Al agregar un módulo exclusivo de un lado, añadirlo a `MODS_SOLO_FRACC` (o dejar que `esModuloClub` lo cubra) **y** a `SOLO_CLUB`/`SOLO_FRACC` de `middleware.ts`.
 - Un rol base nuevo con variante por lado requiere entrada en `ROLES_LADO`, `app/usuarios/page.tsx`, `ROL_LABEL` y el CHECK de `cfg.usuarios`.
 
+### Roles admin* sin Mantenimiento (2026-11-17)
+`admin`, `admin_lector`, `admin_finanzas`, `admin_low_level`, `admin_tesoreria`, `admin_organismo` (y sus variantes `admin_golf*`/`admin_fracc*`) **no** ven Mantenimiento, Servicios, Capex, HR ni Mantto. Club: `MODS_SIN_ADMIN` en `lib/AuthContext.tsx` (`ADMIN_ROL_MODULOS`), fuera de `NAV_POR_ROL` y de los `ROLES_PERMITIDOS` de `/equipo-flota`, `/herramientas` y `/residencial/mantenimiento/{vehiculos,herramientas}`. `superadmin`, `usuarioadmin` y `usuariomantto` conservan el acceso.
+
 ### Roles existentes (2026-05-11)
 
 | Valor | Label | Acceso |
