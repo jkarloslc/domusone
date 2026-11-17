@@ -45,7 +45,7 @@ type Movimiento = {
   motivo: string | null
   created_at: string
   created_by: string | null
-  ctrl_accesos?: { fecha_entrada: string } | null
+  ctrl_accesos?: { fecha_entrada: string; observaciones: string | null } | null
 }
 
 const hoy = new Date().toISOString().split('T')[0]
@@ -158,7 +158,7 @@ export default function PasesPage() {
     setLoadingMov(socioId)
     const { data } = await dbGolf
       .from('ctrl_pases_movimientos')
-      .select('id, tipo, cantidad, motivo, created_at, created_by, ctrl_accesos(fecha_entrada)')
+      .select('id, tipo, cantidad, motivo, created_at, created_by, ctrl_accesos(fecha_entrada, observaciones)')
       .eq('id_socio_fk', socioId)
       .order('created_at', { ascending: false })
       .limit(20)
@@ -396,7 +396,7 @@ export default function PasesPage() {
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                                   <thead>
                                     <tr style={{ borderBottom: '1px solid #E6E8EB' }}>
-                                      {['Tipo', 'Cantidad', 'Motivo', 'Fecha', 'Registrado por'].map(h => (
+                                      {['Tipo', 'Cantidad', 'Motivo', 'Observaciones de la salida', 'Fecha', 'Registrado por'].map(h => (
                                         <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                                       ))}
                                     </tr>
@@ -409,6 +409,7 @@ export default function PasesPage() {
                                           {m.cantidad > 0 ? `+${m.cantidad}` : m.cantidad}
                                         </td>
                                         <td style={{ padding: '6px 10px', color: '#62666E' }}>{m.motivo ?? '—'}</td>
+                                        <td style={{ padding: '6px 10px', color: '#62666E', maxWidth: 280 }}>{m.ctrl_accesos?.observaciones || '—'}</td>
                                         <td style={{ padding: '6px 10px', color: '#7A7E87', whiteSpace: 'nowrap' }}>
                                           {new Date(m.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
                                         </td>

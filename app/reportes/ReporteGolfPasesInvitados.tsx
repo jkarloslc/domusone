@@ -46,7 +46,7 @@ type Movimiento = {
   created_at: string
   created_by: string | null
   id_acceso_fk: number | null
-  ctrl_accesos: { fecha_entrada: string } | null
+  ctrl_accesos: { fecha_entrada: string; observaciones: string | null } | null
 }
 
 type Acomp = { id_pase_mov_fk: number; nombre: string; id_invitado_fk: number | null }
@@ -192,7 +192,7 @@ export default function ReporteGolfPasesInvitados() {
       const hasta = new Date(fechaHasta + 'T23:59:59').toISOString()
       const movsData = await fetchAll<Movimiento>((from, to) =>
         dbGolf.from('ctrl_pases_movimientos')
-          .select('id, id_pase_fk, id_socio_fk, tipo, cantidad, motivo, created_at, created_by, id_acceso_fk, ctrl_accesos(fecha_entrada)')
+          .select('id, id_pase_fk, id_socio_fk, tipo, cantidad, motivo, created_at, created_by, id_acceso_fk, ctrl_accesos(fecha_entrada, observaciones)')
           .gte('created_at', desde).lte('created_at', hasta)
           .order('created_at', { ascending: false }).order('id').range(from, to)
       )
@@ -374,18 +374,18 @@ export default function ReporteGolfPasesInvitados() {
     XLSX.utils.book_append_sheet(wb, wsAsig, 'Asignaciones')
 
     const wsUso = XLSX.utils.aoa_to_sheet([
-      ['Fecha', 'No. Socio', 'Socio anfitrión', 'Categoría', 'Invitado', 'Tipo de pase', 'Periodo del lote', 'Registró'],
+      ['Fecha', 'No. Socio', 'Socio anfitrión', 'Categoría', 'Invitado', 'Tipo de pase', 'Periodo del lote', 'Observaciones de la salida', 'Registró'],
       ...consumos.map(m => {
         const l = loteMap.get(m.id_pase_fk)
         const s = socioMap.get(m.id_socio_fk)
         return [
           fmtFecha(m.ctrl_accesos?.fecha_entrada ?? m.created_at), s?.numero_socio ?? '', nombreSocio(s),
           catMap.get(s?.id_categoria_fk ?? -1) ?? 'Sin categoría', nombreInvitado(m),
-          l?.cat_pases_config?.nombre ?? '—', l?.periodo ?? '', m.created_by ?? '',
+          l?.cat_pases_config?.nombre ?? '—', l?.periodo ?? '', m.ctrl_accesos?.observaciones ?? '', m.created_by ?? '',
         ]
       }),
     ])
-    wsUso['!cols'] = [{ wch: 13 }, { wch: 10 }, { wch: 34 }, { wch: 22 }, { wch: 34 }, { wch: 26 }, { wch: 14 }, { wch: 22 }]
+    wsUso['!cols'] = [{ wch: 13 }, { wch: 10 }, { wch: 34 }, { wch: 22 }, { wch: 34 }, { wch: 26 }, { wch: 14 }, { wch: 40 }, { wch: 22 }]
     XLSX.utils.book_append_sheet(wb, wsUso, 'Uso')
 
     const wsInv = XLSX.utils.aoa_to_sheet([
@@ -650,7 +650,7 @@ export default function ReporteGolfPasesInvitados() {
               ) : (
                 <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
                   <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    {thead([['Fecha'], ['Socio anfitrión'], ['Categoría'], ['Invitado'], ['Tipo de pase'], ['Periodo lote'], ['Registró']])}
+                    {thead([['Fecha'], ['Socio anfitrión'], ['Categoría'], ['Invitado'], ['Tipo de pase'], ['Periodo lote'], ['Observaciones de la salida'], ['Registró']])}
                     <tbody>
                       {consumos.map((m, i) => {
                         const l = loteMap.get(m.id_pase_fk)
@@ -663,6 +663,7 @@ export default function ReporteGolfPasesInvitados() {
                             <td style={{ ...TD, color: 'var(--text-primary)' }}>{nombreInvitado(m) || '—'}</td>
                             <td style={TD}>{l?.cat_pases_config?.nombre ?? '—'}</td>
                             <td style={TD}>{l?.periodo ?? '—'}</td>
+                            <td style={{ ...TD, fontSize: 11, maxWidth: 280, whiteSpace: 'normal' }}>{m.ctrl_accesos?.observaciones || '—'}</td>
                             <td style={{ ...TD, fontSize: 11 }}>{m.created_by ?? '—'}</td>
                           </tr>
                         )
