@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { Leaf, Droplets, CloudRain, ChevronRight } from 'lucide-react'
+import { Leaf, Droplets, CloudRain, ChevronRight, Truck, Hammer, Zap } from 'lucide-react'
 import PageHeader from '@/components/layout/PageHeader'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -29,6 +29,30 @@ const MODULOS = [
     color: '#6B4E79',
     href: '/golf/estatus-campo',
   },
+  {
+    key: 'equipo-flota',
+    label: 'Vehículos y Maquinaria',
+    desc: 'Flota, maquinaria, combustible y bitácoras',
+    icon: Truck,
+    color: '#4A4D54',
+    href: '/equipo-flota',
+  },
+  {
+    key: 'herramientas',
+    label: 'Equipo y Herramienta',
+    desc: 'Inventario de equipo, herramienta y préstamos',
+    icon: Hammer,
+    color: '#4A4D54',
+    href: '/herramientas',
+  },
+  {
+    key: 'servicios',
+    label: 'Servicios Club',
+    desc: 'CFE, agua y gas LP del Club',
+    icon: Zap,
+    color: '#4A4D54',
+    href: '/golf/servicios',
+  },
 ] as { key: string; label: string; desc: string; icon: any; color: string; href: string; perm?: string }[]
 
 export default function GolfManttoCampoPage() {
@@ -41,8 +65,8 @@ export default function GolfManttoCampoPage() {
         variant="xl"
         icon={Leaf}
         eyebrowLabel="Módulo"
-        title="Mantto. Campo"
-        subtitle="Riego, mantenimiento y estatus del campo"
+        title="Mantto. Club"
+        subtitle="Campo, vehículos y maquinaria, equipo y herramienta y servicios del Club"
       />
 
       {/* Grid de módulos */}

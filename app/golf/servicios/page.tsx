@@ -12,7 +12,7 @@ export default function ServiciosGolfPage() {
         <PageHeader backHref="/golf/mantto-campo"
           variant="xl"
           icon={Zap}
-          eyebrowLabel="Mantto. Campo"
+          eyebrowLabel="Mantto. Club"
           title="Servicios"
           subtitle="Medidores de CFE, Agua y Gas LP: consumo y facturación por periodo"
         />

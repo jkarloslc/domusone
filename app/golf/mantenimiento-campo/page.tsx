@@ -317,7 +317,7 @@ export default function MantenimientoCampoPage() {
         backHref="/golf/mantto-campo"
         icon={Leaf}
         color="#267F56"
-        eyebrowLabel="Mantto. Campo"
+        eyebrowLabel="Mantto. Club"
         title="Mantenimiento — Campo de Golf"
         subtitle="Club de Golf · Campo de Golf · Áreas Verdes y Jardinería"
         actions={esLluvias ? (
