@@ -1052,8 +1052,6 @@ function CatalogoModal({ row, onClose, onSaved }: {
   const [internos,        setInternos]        = useState<{ id: number; nombre: string }[]>([])
   const [centrosCosto,    setCentrosCosto]    = useState<any[]>([])
   const [areas,           setAreas]           = useState<any[]>([])
-  const [frentes,         setFrentes]         = useState<any[]>([])
-  const [relAreaFrente,   setRelAreaFrente]   = useState<any[]>([])
 
   // Puntos de conexión
   const [puntos,          setPuntos]          = useState<any[]>([])
@@ -1074,14 +1072,10 @@ function CatalogoModal({ row, onClose, onSaved }: {
       dbComp.from('proveedores').select('id, nombre').eq('interno', true).eq('activo', true).order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
-      dbCfg.from('frentes').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('rel_area_frente').select('id_area, id_frente'),
-    ]).then(([{ data: provs }, { data: ccs }, { data: ars }, { data: frs }, { data: rel }]) => {
+    ]).then(([{ data: provs }, { data: ccs }, { data: ars }]) => {
       setInternos(provs ?? [])
       setCentrosCosto(ccs ?? [])
       setAreas(ars ?? [])
-      setFrentes(frs ?? [])
-      setRelAreaFrente(rel ?? [])
     })
   }, [])
 
@@ -1135,7 +1129,6 @@ function CatalogoModal({ row, onClose, onSaved }: {
     titular:             row?.titular                       ?? '',
     id_centro_costo_fk:  row?.id_centro_costo_fk?.toString() ?? '',
     id_area_fk:          row?.id_area_fk?.toString()         ?? '',
-    id_frente_fk:        row?.id_frente_fk?.toString()       ?? '',
     tarifa:              row?.tarifa                         ?? '',
     medidor:             row?.medidor                        ?? '',
     carga_kw:            row?.carga_kw?.toString()           ?? '',
@@ -1149,19 +1142,6 @@ function CatalogoModal({ row, onClose, onSaved }: {
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
       setForm(f => ({ ...f, [k]: e.target.value }))
 
-  // Frentes ligados al Área (cfg.rel_area_frente); sin Área o sin relaciones se muestran todos
-  const frentesDelArea = (() => {
-    if (!form.id_area_fk) return frentes
-    const ids = new Set(relAreaFrente.filter((r: any) => String(r.id_area) === form.id_area_fk).map((r: any) => r.id_frente))
-    const lista = ids.size ? frentes.filter((f: any) => ids.has(f.id)) : frentes
-    // Conserva el frente guardado aunque ya no esté ligado al Área
-    if (form.id_frente_fk && !lista.some((f: any) => String(f.id) === form.id_frente_fk)) {
-      const actual = frentes.find((f: any) => String(f.id) === form.id_frente_fk)
-      if (actual) return [...lista, actual]
-    }
-    return lista
-  })()
-
   const handleSave = async () => {
     if (!form.no_servicio.trim()) { setError('El número de servicio es obligatorio'); return }
     setSaving(true); setError('')
@@ -1172,7 +1152,6 @@ function CatalogoModal({ row, onClose, onSaved }: {
       titular:            form.titular.trim() || null,
       id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
       id_area_fk:         form.id_area_fk ? Number(form.id_area_fk) : null,
-      id_frente_fk:       form.id_frente_fk ? Number(form.id_frente_fk) : null,
       tarifa:             form.tarifa.trim() || null,
       medidor:            form.medidor.trim() || null,
       carga_kw:           form.carga_kw !== '' ? Number(form.carga_kw) : null,
@@ -1256,15 +1235,6 @@ function CatalogoModal({ row, onClose, onSaved }: {
             {areas
               .filter((a: any) => !form.id_centro_costo_fk || String(a.id_centro_costo_fk) === form.id_centro_costo_fk)
               .map((a: any) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
-          </select>
-        </div>
-
-        <div>
-          <label className="label" style={{ fontSize: 11 }}>Frente</label>
-          <select className="select" style={{ fontSize: 13 }}
-            value={form.id_frente_fk} onChange={setF('id_frente_fk')}>
-            <option value="">— Sin asignar —</option>
-            {frentesDelArea.map((f: any) => <option key={f.id} value={f.id}>{f.nombre}</option>)}
           </select>
         </div>
 
