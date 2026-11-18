@@ -162,6 +162,18 @@ type CobroRow = {
   cliente: string
 }
 
+// Supabase devuelve 1,000 filas como máximo: sin paginar, un rango de varios
+// meses (Golf: ~3,300 pagos ene–nov) dejaba las tarjetas cortas.
+async function todasLasFilas(q: () => any): Promise<{ data: any[]; error: any }> {
+  const out: any[] = []
+  for (let desde = 0; ; desde += 1000) {
+    const { data, error } = await q().range(desde, desde + 999)
+    if (error) return { data: out, error }
+    out.push(...(data ?? []))
+    if (!data || data.length < 1000) return { data: out, error: null }
+  }
+}
+
 const montoPagado = (c: CobroRow) =>
   c.status === 'PAGADO' ? c.monto_final : c.monto_final - (c.saldo ?? 0)
 
@@ -211,25 +223,25 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
     const selectCols = `id, tipo, concepto, periodo, monto_final, saldo, status, fecha_pago, fecha_vencimiento, ${cfg.selectJoin}`
 
     const [{ data: dCobros }, { data: dVencidos }, { data: dCorte }] = await Promise.all([
-      cfg.db.from(cfg.tabla).select(selectCols)
+      todasLasFilas(() => cfg.db.from(cfg.tabla).select(selectCols)
         .in('tipo', cfg.tipos)
         .neq('status', 'CANCELADO')
         .gte('fecha_pago', inicio)
         .lte('fecha_pago', fin)
-        .order('fecha_pago'),
-      cfg.db.from(cfg.tabla).select(selectCols)
+        .order('fecha_pago').order('id')),
+      todasLasFilas(() => cfg.db.from(cfg.tabla).select(selectCols)
         .in('tipo', cfg.tipos)
         .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
         .lt('fecha_vencimiento', hoyStr)
-        .order('fecha_vencimiento'),
+        .order('fecha_vencimiento').order('id')),
       // Vencidas al corte: vencimiento <= fin de mes y que a esa fecha seguían
       // sin cobrar — hoy pendientes/parciales, o pagadas DESPUÉS del corte.
-      cfg.db.from(cfg.tabla).select(selectCols)
+      todasLasFilas(() => cfg.db.from(cfg.tabla).select(selectCols)
         .in('tipo', cfg.tipos)
         .neq('status', 'CANCELADO')
         .lte('fecha_vencimiento', fin)
         .or(`status.in.(PENDIENTE,PAGO_PARCIAL),fecha_pago.gt.${fin}`)
-        .order('fecha_vencimiento'),
+        .order('fecha_vencimiento').order('id')),
     ])
 
     const normalizar = (rows: any[]): CobroRow[] => rows.map(r => ({
@@ -256,14 +268,14 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const { data } = await cfg.db
+    const { data } = await todasLasFilas(() => cfg.db
       .from(cfg.tabla)
       .select(`id, tipo, concepto, periodo, monto_original, descuento, monto_final, saldo,
         status, fecha_vencimiento, fecha_pago, forma_pago, ${cfg.selectJoin}`)
       .eq('periodo', mes)
       .in('tipo', cfg.tipos)
       .neq('status', 'CANCELADO')
-      .order('status')
+      .order('status').order('id'))
 
     const rows = (data as any[]) ?? []
 
@@ -317,32 +329,45 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
     return true
   })
 
+  // Fecha de corte = cierre del «Al mes» del flujo (por default sigue al
+  // «Período (mes)»). Las tarjetas generales se calculan A ESA FECHA: lo cobrado
+  // después del corte cuenta como por cobrar. No hay historial de abonos por
+  // cuota, así que una cuota con abono parcial antes del corte y liquidada
+  // después se toma como no cobrada al corte (mismo criterio que la cartera).
+  const corteFin   = rangoMes(flujoHasta).fin
+  const corteTxt   = new Date(corteFin + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+  const corteFuturo = corteFin >= new Date().toLocaleDateString('en-CA')
+  const cobradoCorte = (f: Fila) => (f.fecha_pago && f.fecha_pago <= corteFin ? f.cobrado : 0)
+  const pagadaCorte  = (f: Fila) => f.status === 'PAGADO' && !!f.fecha_pago && f.fecha_pago <= corteFin
+
   // KPIs sobre el total sin filtro de status/tipo para mostrar el panorama completo
   const totalCargo    = filas.reduce((a, f) => a + f.monto_cargo,  0)
-  const totalCobrado  = filas.reduce((a, f) => a + f.cobrado,      0)
-  const totalPendiente= filas.reduce((a, f) => a + f.por_cobrar,   0)
-  const countPagadas  = filas.filter(f => f.status === 'PAGADO').length
-  const countPend     = filas.filter(f => f.status !== 'PAGADO').length
+  const totalCobrado  = filas.reduce((a, f) => a + cobradoCorte(f), 0)
+  const totalPendiente= totalCargo - totalCobrado
+  const countPagadas  = filas.filter(pagadaCorte).length
+  const countPend     = filas.length - countPagadas
   const avancePct     = pct(totalCobrado, totalCargo)
 
-  // KPIs por tipo
-  const porTipo = cfg.tiposResumen.map(t => ({
-    tipo:      t,
-    label:     cfg.tipoLabels[t] ?? t,
-    cargo:     filas.filter(f => f.tipo === t).reduce((a, f) => a + f.monto_cargo, 0),
-    cobrado:   filas.filter(f => f.tipo === t).reduce((a, f) => a + f.cobrado,     0),
-    pendiente: filas.filter(f => f.tipo === t).reduce((a, f) => a + f.por_cobrar,  0),
-    total:     filas.filter(f => f.tipo === t).length,
-    pagadas:   filas.filter(f => f.tipo === t && f.status === 'PAGADO').length,
-  }))
+  // KPIs por tipo (también al corte)
+  const porTipo = cfg.tiposResumen.map(t => {
+    const ft = filas.filter(f => f.tipo === t)
+    const cargo = ft.reduce((a, f) => a + f.monto_cargo, 0)
+    const cobrado = ft.reduce((a, f) => a + cobradoCorte(f), 0)
+    return {
+      tipo: t, label: cfg.tipoLabels[t] ?? t, cargo, cobrado,
+      pendiente: cargo - cobrado,
+      total: ft.length,
+      pagadas: ft.filter(pagadaCorte).length,
+    }
+  })
 
   // Del "Cobrado" del período, cuánto entró de banco EN este mes vs cuánto ya
   // se había cobrado antes (pago anualizado/adelantado hecho en meses previos:
   // ej. un cliente paga en enero varios meses por adelantado — esas cuotas de
   // meses futuros quedan PAGADAS pero el banco no recibe nada nuevo cuando
   // llega ese mes).
-  const cobradoEnMesRows = filas.filter(f => f.cobrado > 0 && f.fecha_pago && f.fecha_pago.slice(0, 7) === mes)
-  const cobradoAntesRows = filas.filter(f => f.cobrado > 0 && f.fecha_pago && f.fecha_pago.slice(0, 7) < mes)
+  const cobradoEnMesRows = filas.filter(f => cobradoCorte(f) > 0 && f.fecha_pago!.slice(0, 7) === mes)
+  const cobradoAntesRows = filas.filter(f => cobradoCorte(f) > 0 && f.fecha_pago!.slice(0, 7) < mes)
   const totalCobradoEnMes = cobradoEnMesRows.reduce((a, f) => a + f.cobrado, 0)
   const totalCobradoAntes = cobradoAntesRows.reduce((a, f) => a + f.cobrado, 0)
 
@@ -364,9 +389,6 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
   // Ojo: este es un SALDO a hoy (stock de cartera), no un flujo del mes — no
   // suma con los anteriores. Va rotulado como tal en la UI.
   const totalVencidoFlujo = vencidos.reduce((a, c) => a + (c.saldo ?? c.monto_final), 0)
-  const corteFin   = rangoMes(flujoHasta).fin
-  const corteTxt   = new Date(corteFin + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
-  const corteFuturo = corteFin >= new Date().toLocaleDateString('en-CA')
   const totalVencidoCorte = vencidosCorte.reduce((a, c) => a + c.saldo_corte, 0)
 
   const porDia = cobrosMes.reduce((acc, c) => {
@@ -492,9 +514,9 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             {[
               { label: 'Total cargado',   value: fmt$(totalCargo),    sub: `${filas.length} cuota${filas.length !== 1 ? 's' : ''}`, color: '#1C1D21', bg: '#F4F5F7', icon: CreditCard  },
-              { label: 'Cobrado',         value: fmt$(totalCobrado),  sub: `${countPagadas} pagada${countPagadas !== 1 ? 's' : ''}`, color: '#1F7A50', bg: '#F4F5F7', icon: CheckCircle },
-              { label: 'Por cobrar',      value: fmt$(totalPendiente),sub: `${countPend} pendiente${countPend !== 1 ? 's' : ''}`,  color: '#B5761A', bg: '#F4F5F7', icon: Clock        },
-              { label: 'Avance',          value: `${avancePct}%`,     sub: 'del total cargado',                                     color: '#6B4E79', bg: '#F4F5F7', icon: TrendingUp   },
+              { label: corteFuturo ? 'Cobrado' : `Cobrado al ${corteTxt}`,    value: fmt$(totalCobrado),  sub: `${countPagadas} pagada${countPagadas !== 1 ? 's' : ''}`, color: '#1F7A50', bg: '#F4F5F7', icon: CheckCircle },
+              { label: corteFuturo ? 'Por cobrar' : `Por cobrar al ${corteTxt}`, value: fmt$(totalPendiente),sub: `${countPend} pendiente${countPend !== 1 ? 's' : ''}`,  color: '#B5761A', bg: '#F4F5F7', icon: Clock        },
+              { label: 'Avance',          value: `${avancePct}%`,     sub: corteFuturo ? 'del total cargado' : `del total cargado, al ${corteTxt}`, color: '#6B4E79', bg: '#F4F5F7', icon: TrendingUp   },
             ].map(k => {
               const Icon = k.icon
               return (
