@@ -12,6 +12,7 @@ import ModalCarga from './bancos/ModalCarga'
 import TabMovimientos from './bancos/TabMovimientos'
 import TabCargas from './bancos/TabCargas'
 import TabReglas from './bancos/TabReglas'
+import TabFlujoCuenta from './bancos/TabFlujoCuenta'
 import {
   CONCEPTOS, GRUPOS, GCOLOR, CPT, ConceptoId, GrupoId,
   CentroCosto, Matriz, Ingresos, ConfigPeriodo, DiaCalc, SemanaCalc,
@@ -1089,9 +1090,10 @@ const lbl: React.CSSProperties = { display: 'block', fontSize: 11, letterSpacing
 // ══════════════════════════════════════════════════════════════
 // Pestañas: Proyección (periodos) + estados de cuenta bancarios
 // ══════════════════════════════════════════════════════════════
-type TabFlujo = 'proyeccion' | 'movimientos' | 'cargas' | 'reglas'
+type TabFlujo = 'proyeccion' | 'flujo' | 'movimientos' | 'cargas' | 'reglas'
 const TABS_FLUJO: { key: TabFlujo; label: string; icon: LucideIcon }[] = [
   { key: 'proyeccion', label: 'Proyección', icon: CalendarRange },
+  { key: 'flujo', label: 'Flujo por cuenta', icon: Wallet },
   { key: 'movimientos', label: 'Movimientos bancarios', icon: Landmark },
   { key: 'cargas', label: 'Cargas', icon: FileStack },
   { key: 'reglas', label: 'Reglas y layouts', icon: Wand2 },
@@ -1150,6 +1152,7 @@ function EstadosCuenta({ tab, tabsBar }: { tab: Exclude<TabFlujo, 'proyeccion'>;
       )}
       {!cat.listo ? <div>Cargando…</div> : (
         <>
+          {tab === 'flujo' && <TabFlujoCuenta cat={cat} puedeEditar={puedeEditar} puedeBorrar={puedeBorrar} usuario={authUser?.nombre ?? null} recarga={recarga} />}
           {tab === 'movimientos' && <TabMovimientos cat={cat} puedeEditar={puedeEditar} recarga={recarga} />}
           {tab === 'cargas' && <TabCargas cat={cat} puedeBorrar={puedeBorrar} recarga={recarga} onCambio={() => setRecarga(r => r + 1)} />}
           {tab === 'reglas' && <TabReglas cat={cat} puedeEditar={puedeEditar} puedeBorrar={puedeBorrar} />}
