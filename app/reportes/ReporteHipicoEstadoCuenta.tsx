@@ -11,6 +11,9 @@ type Arrendatario = {
   apellido_paterno: string | null
   razon_social: string | null
   tipo_persona: string
+  telefono: string | null
+  telefono_alt: string | null
+  email: string | null
 }
 
 const fmtNombre = (a: Arrendatario) => {
@@ -40,7 +43,7 @@ export default function ReporteHipicoEstadoCuenta() {
 
   useEffect(() => {
     dbHip.from('cat_arrendatarios')
-      .select('id, nombre, apellido_paterno, razon_social, tipo_persona')
+      .select('id, nombre, apellido_paterno, razon_social, tipo_persona, telefono, telefono_alt, email')
       .eq('activo', true).order('apellido_paterno')
       .then(({ data }: any) => setArrendatarios(data ?? []))
   }, [])
@@ -128,7 +131,11 @@ export default function ReporteHipicoEstadoCuenta() {
           <EstadoCuentaBancario
             titulo="Estado de Cuenta — Hípico"
             titular={fmtNombre(arrendatarioSel)}
-            campos={[{ label: 'Tipo de persona', value: arrendatarioSel.tipo_persona ?? '' }]}
+            campos={[
+              { label: 'Teléfono', value: [arrendatarioSel.telefono, arrendatarioSel.telefono_alt].filter(Boolean).join(' / ') },
+              { label: 'Correo', value: arrendatarioSel.email ?? '' },
+              { label: 'Tipo de persona', value: arrendatarioSel.tipo_persona ?? '' },
+            ]}
             desde={fechaDesde} hasta={fechaHasta} ec={ec}
           />
         </div>

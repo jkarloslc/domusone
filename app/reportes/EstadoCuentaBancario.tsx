@@ -62,7 +62,7 @@ export default function EstadoCuentaBancario({ titulo, titular, campos, desde, h
               {campos.filter(c => c.value).map(c => (
                 <div key={c.label}>
                   <div style={ETQ}>{c.label}</div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#33363C', fontVariantNumeric: 'tabular-nums' }}>{c.value}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#33363C', fontVariantNumeric: 'tabular-nums', overflowWrap: 'anywhere' }}>{c.value}</div>
                 </div>
               ))}
               <div>
