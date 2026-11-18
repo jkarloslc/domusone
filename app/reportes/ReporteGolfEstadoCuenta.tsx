@@ -2,6 +2,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { PrintBar } from './utils'
+import EstadoCuentaBancario from './EstadoCuentaBancario'
+import { construirEstadoCuenta, type CuotaLibro, type ReciboLibro, type EstadoCuenta } from '@/lib/estadoCuentaLibro'
 
 type Socio = {
   id: number
@@ -12,55 +14,14 @@ type Socio = {
   cat_categorias_socios?: { nombre: string }
 }
 
-type Cuota = {
-  id: number
-  tipo: string
-  concepto: string
-  periodo: string | null
-  monto_original: number
-  descuento: number
-  monto_final: number
-  status: string
-  fecha_emision: string
-  fecha_vencimiento: string | null
-  fecha_pago: string | null
-  id_recibo_fk: number | null
-}
-
-type Recibo = {
-  id: number
-  folio: string
-  fecha_recibo: string
-  subtotal: number
-  descuento: number
-  total: number
-  forma_pago_nombre: string | null
-  referencia_pago: string | null
-  status: string
-  folio_fiscal: string | null
-  recibos_golf_det?: { concepto: string; tipo: string | null; monto_final: number }[]
-}
-
-const fmtNombre = (s: Socio) =>
-  [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')
-
-const fmtFecha = (d: string | null) =>
-  d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
-
-const fmt$ = (v: number) => '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 })
-
-const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
-  'PENDIENTE':  { bg: '#E6E8EB', color: '#A8821A' },
-  'PAGADO':     { bg: '#E6E8EB', color: '#267F56' },
-  'CANCELADO':  { bg: '#F8F9FA', color: '#62666E' },
-  'VIGENTE':    { bg: '#E6E8EB', color: '#267F56' },
-}
-
 const TIPO_LABEL: Record<string, string> = {
   INSCRIPCION:     'Inscripción',
   MENSUALIDAD:     'Mensualidad',
   PENSION_CARRITO: 'Pensión Carrito',
 }
+
+const fmtNombre = (s: Socio) =>
+  [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')
 
 export default function ReporteGolfEstadoCuenta() {
   const hoy = new Date()
@@ -72,10 +33,10 @@ export default function ReporteGolfEstadoCuenta() {
   const [fechaDesde, setFechaDesde] = useState(inicioAnio)
   const [fechaHasta, setFechaHasta] = useState(hoyStr)
 
-  const [cuotas, setCuotas] = useState<Cuota[]>([])
-  const [recibos, setRecibos] = useState<Recibo[]>([])
+  const [ec, setEc] = useState<EstadoCuenta | null>(null)
   const [loading, setLoading] = useState(false)
   const [buscado, setBuscado] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     dbGolf.from('cat_socios')
@@ -88,33 +49,27 @@ export default function ReporteGolfEstadoCuenta() {
 
   const fetchData = useCallback(async () => {
     if (idSocio === '') return
-    setLoading(true); setBuscado(true)
-
-    const [{ data: cuotasData }, { data: recibosData }] = await Promise.all([
+    setLoading(true); setBuscado(true); setError('')
+    // Historial completo hasta la fecha de corte: el saldo anterior se calcula
+    // con los movimientos previos a "Desde".
+    const [{ data: cuotasData, error: e1 }, { data: recibosData, error: e2 }] = await Promise.all([
       dbGolf.from('cxc_golf')
-        .select('id, tipo, concepto, periodo, monto_original, descuento, monto_final, status, fecha_emision, fecha_vencimiento, fecha_pago, id_recibo_fk')
+        .select('id, tipo, concepto, periodo, monto_final, saldo, status, fecha_emision, fecha_vencimiento, fecha_pago, id_recibo_fk')
         .eq('id_socio_fk', idSocio)
-        .gte('fecha_emision', fechaDesde)
-        .lte('fecha_emision', fechaHasta)
         .order('fecha_emision', { ascending: true }),
       dbGolf.from('recibos_golf')
-        .select('id, folio, fecha_recibo, subtotal, descuento, total, forma_pago_nombre, referencia_pago, status, folio_fiscal, recibos_golf_det(concepto, tipo, monto_final)')
+        .select('id, folio, fecha_recibo, total, forma_pago_nombre, referencia_pago, recibos_golf_det(id_cuota_fk, concepto, monto_final)')
         .eq('id_socio_fk', idSocio)
-        .gte('fecha_recibo', fechaDesde)
+        .eq('status', 'VIGENTE')
         .lte('fecha_recibo', fechaHasta)
         .order('fecha_recibo', { ascending: true }),
     ])
-
-    setCuotas((cuotasData as Cuota[]) ?? [])
-    setRecibos((recibosData as Recibo[]) ?? [])
+    if (e1 || e2) { setError((e1 ?? e2)!.message); setEc(null); setLoading(false); return }
+    const recibos: ReciboLibro[] = ((recibosData ?? []) as any[]).map(r => ({ ...r, det: r.recibos_golf_det ?? [] }))
+    setEc(construirEstadoCuenta((cuotasData ?? []) as CuotaLibro[], recibos, fechaDesde, fechaHasta,
+      c => TIPO_LABEL[c.tipo ?? ''] ?? (c.tipo ?? '')))
     setLoading(false)
   }, [idSocio, fechaDesde, fechaHasta])
-
-  // KPIs
-  const totalCargado   = cuotas.reduce((s, c) => s + c.monto_final, 0)
-  const totalCobrado   = recibos.filter(r => r.status === 'VIGENTE').reduce((s, r) => s + r.total, 0)
-  const saldoPendiente = cuotas.filter(c => c.status === 'PENDIENTE').reduce((s, c) => s + c.monto_final, 0)
-  const totalVencido   = cuotas.filter(c => c.status === 'PENDIENTE' && c.fecha_vencimiento && new Date(c.fecha_vencimiento) < new Date()).reduce((s, c) => s + c.monto_final, 0)
 
   return (
     <div>
@@ -137,7 +92,7 @@ export default function ReporteGolfEstadoCuenta() {
           <input className="input" type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} style={{ fontSize: 12 }} />
         </div>
         <div>
-          <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Hasta</label>
+          <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Hasta (corte)</label>
           <input className="input" type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} style={{ fontSize: 12 }} />
         </div>
       </div>
@@ -146,7 +101,7 @@ export default function ReporteGolfEstadoCuenta() {
         <button className="btn-primary" onClick={fetchData} disabled={idSocio === '' || loading} style={{ fontSize: 13 }}>
           {loading ? 'Consultando…' : 'Consultar'}
         </button>
-        {buscado && !loading && <PrintBar title={`Estado-Cuenta-Golf-${socioSel ? [socioSel.nombre, socioSel.apellido_paterno].filter(Boolean).join('-') : 'socio'}`} count={cuotas.length + recibos.length} reportTitle="Estado de Cuenta — Club Golf" />}
+        {buscado && !loading && ec && <PrintBar title={`Estado-Cuenta-Golf-${socioSel ? [socioSel.nombre, socioSel.apellido_paterno].filter(Boolean).join('-') : 'socio'}`} count={ec.movimientos.length} reportTitle="Estado de Cuenta — Club Golf" />}
       </div>
 
       {!buscado && (
@@ -155,161 +110,23 @@ export default function ReporteGolfEstadoCuenta() {
         </div>
       )}
 
-      {buscado && !loading && (
+      {error && (
+        <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', color: '#C23B3B', padding: '10px 14px', fontSize: 13, borderRadius: 6 }}>
+          {error}
+        </div>
+      )}
+
+      {buscado && !loading && ec && socioSel && (
         <div id="reporte-print-area">
-          {/* Encabezado impresión */}
-          <div className="print-only" style={{ marginBottom: 16 }}>
-            <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Estado de Cuenta — Club Golf</h2>
-            <p style={{ fontSize: 12, margin: '4px 0 0' }}>
-              {socioSel ? fmtNombre(socioSel) : ''}
-              {socioSel?.cat_categorias_socios?.nombre ? ` · ${socioSel.cat_categorias_socios.nombre}` : ''}
-              &nbsp;·&nbsp; {fmtFecha(fechaDesde)} al {fmtFecha(fechaHasta)}
-            </p>
-          </div>
-
-          {/* Info socio */}
-          {socioSel && (
-            <div className="card" style={{ padding: '12px 18px', marginBottom: 16, display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 13 }}>
-              <div>
-                <span style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em' }}>Socio</span>
-                <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{fmtNombre(socioSel)}</div>
-              </div>
-              {socioSel.numero_socio && (
-                <div>
-                  <span style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em' }}>Núm. Socio</span>
-                  <div style={{ fontWeight: 600, color: 'var(--gold-light)', fontVariantNumeric: 'tabular-nums' }}>{socioSel.numero_socio}</div>
-                </div>
-              )}
-              {socioSel.cat_categorias_socios?.nombre && (
-                <div>
-                  <span style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em' }}>Categoría</span>
-                  <div style={{ fontWeight: 600 }}>{socioSel.cat_categorias_socios.nombre}</div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* KPIs */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-            {[
-              { label: 'Total Cargado',    value: fmt$(totalCargado),   color: '#1C1D21', bg: '#F4F5F7' },
-              { label: 'Total Cobrado',    value: fmt$(totalCobrado),   color: '#267F56', bg: '#F4F5F7' },
-              { label: 'Saldo Pendiente',  value: fmt$(saldoPendiente), color: saldoPendiente > 0 ? '#C23B3B' : '#267F56', bg: '#F4F5F7' },
-              { label: 'Vencido',          value: fmt$(totalVencido),   color: '#C23B3B', bg: '#F4F5F7' },
-            ].map(k => (
-              <div key={k.label} className="card" style={{ flex: '1 1 140px', padding: '12px 16px' }}>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>{k.label}</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: k.color }}>{k.value}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Tabla cuotas */}
-          <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10, marginTop: 0 }}>
-            Cuotas ({cuotas.length})
-          </h3>
-          {cuotas.length === 0
-            ? <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20 }}>Sin cuotas en el período</p>
-            : (
-              <div className="card" style={{ overflow: 'hidden', padding: 0, marginBottom: 24 }}>
-                <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                  <thead>
-                    <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
-                      {['Tipo', 'Concepto', 'Período', 'Emisión', 'Vencimiento', 'Monto', 'Descuento', 'Total', 'Status'].map(h => (
-                        <th key={h} style={{ padding: '9px 12px', textAlign: 'left', fontWeight: 600, fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cuotas.map((c, i) => {
-                      const sc = STATUS_COLOR[c.status] ?? { bg: '#F8F9FA', color: '#62666E' }
-                      const vencida = c.status === 'PENDIENTE' && c.fecha_vencimiento && new Date(c.fecha_vencimiento) < new Date()
-                      return (
-                        <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
-                          <td style={{ padding: '9px 12px' }}>
-                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, background: '#F4F5F7', color: '#4A4D54', fontWeight: 600 }}>
-                              {TIPO_LABEL[c.tipo] ?? c.tipo}
-                            </span>
-                          </td>
-                          <td style={{ padding: '9px 12px', color: 'var(--text-primary)' }}>{c.concepto}</td>
-                          <td style={{ padding: '9px 12px', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>{c.periodo ?? '—'}</td>
-                          <td style={{ padding: '9px 12px', color: 'var(--text-muted)' }}>{fmtFecha(c.fecha_emision)}</td>
-                          <td style={{ padding: '9px 12px', color: vencida ? '#C23B3B' : 'var(--text-muted)', fontWeight: vencida ? 600 : 400 }}>{fmtFecha(c.fecha_vencimiento)}</td>
-                          <td style={{ padding: '9px 12px', color: 'var(--text-secondary)' }}>{fmt$(c.monto_original)}</td>
-                          <td style={{ padding: '9px 12px', color: c.descuento > 0 ? '#267F56' : 'var(--text-muted)' }}>
-                            {c.descuento > 0 ? `-${fmt$(c.descuento)}` : '—'}
-                          </td>
-                          <td style={{ padding: '9px 12px', fontWeight: 700, color: 'var(--text-primary)' }}>{fmt$(c.monto_final)}</td>
-                          <td style={{ padding: '9px 12px' }}>
-                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 600, background: sc.color, color: '#fff'}}>{c.status}</span>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                    <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
-                      <td colSpan={7} style={{ padding: '9px 12px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>TOTAL</td>
-                      <td style={{ padding: '9px 12px', fontWeight: 700, color: 'var(--text-primary)' }}>{fmt$(totalCargado)}</td>
-                      <td></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )
-          }
-
-          {/* Tabla recibos */}
-          <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10, marginTop: 0 }}>
-            Recibos emitidos ({recibos.length})
-          </h3>
-          {recibos.length === 0
-            ? <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Sin recibos en el período</p>
-            : (
-              <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                  <thead>
-                    <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
-                      {['Folio', 'Fecha', 'Forma Pago', 'Referencia', 'Conceptos', 'Descuento', 'Total', 'Status', 'Fiscal'].map(h => (
-                        <th key={h} style={{ padding: '9px 12px', textAlign: 'left', fontWeight: 600, fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recibos.map((r, i) => {
-                      const sc = STATUS_COLOR[r.status] ?? { bg: '#F8F9FA', color: '#62666E' }
-                      return (
-                        <tr key={r.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
-                          <td style={{ padding: '9px 12px', fontWeight: 700, color: 'var(--gold-light)', fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>{r.folio}</td>
-                          <td style={{ padding: '9px 12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{fmtFecha(r.fecha_recibo)}</td>
-                          <td style={{ padding: '9px 12px', color: 'var(--text-secondary)' }}>{r.forma_pago_nombre ?? '—'}</td>
-                          <td style={{ padding: '9px 12px', color: 'var(--text-muted)', fontSize: 11 }}>{r.referencia_pago ?? '—'}</td>
-                          <td style={{ padding: '9px 12px', color: 'var(--text-muted)', fontSize: 11, maxWidth: 200 }}>
-                            {(r.recibos_golf_det ?? []).map((d, j) => (
-                              <span key={j}>{d.concepto}{j < (r.recibos_golf_det?.length ?? 0) - 1 ? ', ' : ''}</span>
-                            ))}
-                          </td>
-                          <td style={{ padding: '9px 12px', color: r.descuento > 0 ? '#267F56' : 'var(--text-muted)' }}>
-                            {r.descuento > 0 ? `-${fmt$(r.descuento)}` : '—'}
-                          </td>
-                          <td style={{ padding: '9px 12px', fontWeight: 700, color: '#267F56' }}>{fmt$(r.total)}</td>
-                          <td style={{ padding: '9px 12px' }}>
-                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 600, background: sc.color, color: '#fff'}}>{r.status}</span>
-                          </td>
-                          <td style={{ padding: '9px 12px', fontSize: 11, color: r.folio_fiscal ? '#267F56' : 'var(--text-muted)' }}>
-                            {r.folio_fiscal ? '✓ ' + r.folio_fiscal.slice(0, 8) + '…' : '—'}
-                          </td>
-                        </tr>
-                      )
-                    })}
-                    <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
-                      <td colSpan={6} style={{ padding: '9px 12px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>TOTAL COBRADO</td>
-                      <td style={{ padding: '9px 12px', fontWeight: 700, color: '#267F56' }}>{fmt$(totalCobrado)}</td>
-                      <td colSpan={2}></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )
-          }
+          <EstadoCuentaBancario
+            titulo="Estado de Cuenta — Club Golf"
+            titular={fmtNombre(socioSel)}
+            campos={[
+              { label: 'Núm. socio', value: socioSel.numero_socio ?? '' },
+              { label: 'Categoría', value: socioSel.cat_categorias_socios?.nombre ?? '' },
+            ]}
+            desde={fechaDesde} hasta={fechaHasta} ec={ec}
+          />
         </div>
       )}
     </div>

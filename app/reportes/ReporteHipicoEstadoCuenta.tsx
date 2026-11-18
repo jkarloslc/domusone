@@ -1,7 +1,9 @@
 'use client'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { dbHip } from '@/lib/supabase'
 import { PrintBar } from './utils'
+import EstadoCuentaBancario from './EstadoCuentaBancario'
+import { construirEstadoCuenta, type CuotaLibro, type ReciboLibro, type EstadoCuenta } from '@/lib/estadoCuentaLibro'
 
 type Arrendatario = {
   id: number
@@ -11,59 +13,31 @@ type Arrendatario = {
   tipo_persona: string
 }
 
-type Cargo = {
-  id: number
-  concepto: string
-  periodo: string | null
-  monto_final: number
-  saldo: number | null
-  fecha_vencimiento: string | null
-  fecha_emision: string | null
-  status: string
-}
-
-type Pago = {
-  id: number
-  folio: string
-  fecha_recibo: string
-  total: number
-  forma_pago_nombre: string | null
-  referencia_pago: string | null
-  recibos_hip_det?: { concepto: string; monto_final: number }[]
-}
-
 const fmtNombre = (a: Arrendatario) => {
   if (a.tipo_persona === 'Moral' && a.razon_social) return a.razon_social
   return [a.nombre, a.apellido_paterno].filter(Boolean).join(' ')
 }
-const fmtFecha = (d: string | null) =>
-  d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
-const fmt$ = (v: number) => '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 })
 
-const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
-  'PENDIENTE':    { bg: '#E6E8EB', color: '#A8821A' },
-  'PAGO_PARCIAL': { bg: '#F4F5F7', color: '#B5761A' },
-  'PAGADO':       { bg: '#E6E8EB', color: '#267F56' },
-  'CANCELADO':    { bg: '#F8F9FA', color: '#62666E' },
-}
+const fmtMes = (p: string | null) =>
+  p && /^\d{4}-\d{2}$/.test(p)
+    ? new Date(p + '-01T12:00:00').toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })
+    : (p ?? '')
 
 export default function ReporteHipicoEstadoCuenta() {
   const hoy = new Date()
-  const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0]
-  const hoyIso       = hoy.toISOString().split('T')[0]
+  const inicioAnio = `${hoy.getFullYear()}-01-01`
+  const hoyIso     = hoy.toISOString().split('T')[0]
 
   const [arrendatarios, setArrendatarios] = useState<Arrendatario[]>([])
   const [idArr, setIdArr] = useState<number | ''>('')
-  const [fechaDesde, setFechaDesde] = useState(primerDiaMes)
+  const [fechaDesde, setFechaDesde] = useState(inicioAnio)
   const [fechaHasta, setFechaHasta] = useState(hoyIso)
 
-  const [cargos, setCargos] = useState<Cargo[]>([])
-  const [pagos, setPagos] = useState<Pago[]>([])
-  const [saldoPendienteTotal, setSaldoPendienteTotal] = useState(0)
+  const [ec, setEc] = useState<EstadoCuenta | null>(null)
   const [loading, setLoading] = useState(false)
   const [buscado, setBuscado] = useState(false)
+  const [error, setError] = useState('')
 
-  // Cargar arrendatarios
   useEffect(() => {
     dbHip.from('cat_arrendatarios')
       .select('id, nombre, apellido_paterno, razon_social, tipo_persona')
@@ -75,57 +49,27 @@ export default function ReporteHipicoEstadoCuenta() {
 
   const fetchData = useCallback(async () => {
     if (idArr === '') return
-    setLoading(true); setBuscado(true)
-
-    // Cargos del período — filtra por fecha_vencimiento (campo más confiable)
-    const { data: cargosData } = await dbHip
-      .from('cxc_hip')
-      .select('id, concepto, periodo, monto_final, saldo, fecha_vencimiento, fecha_emision, status')
-      .eq('id_arrendatario_fk', idArr)
-      .gte('fecha_vencimiento', fechaDesde)
-      .lte('fecha_vencimiento', fechaHasta)
-      .neq('status', 'CANCELADO')
-      .order('fecha_vencimiento', { ascending: true })
-
-    // Pagos del período
-    const { data: pagosData } = await dbHip
-      .from('recibos_hip')
-      .select('id, folio, fecha_recibo, total, forma_pago_nombre, referencia_pago, recibos_hip_det(concepto, monto_final)')
-      .eq('id_arrendatario_fk', idArr)
-      .eq('status', 'VIGENTE')
-      .gte('fecha_recibo', fechaDesde)
-      .lte('fecha_recibo', fechaHasta)
-      .order('fecha_recibo', { ascending: true })
-
-    // Saldo pendiente REAL a la fecha "Hasta" — no solo el de los cargos con
-    // vencimiento dentro del rango, sino todo el adeudo acumulado (incluye
-    // cargos vencidos antes de "Desde" que siguen sin pagarse).
-    const { data: pendData } = await dbHip
-      .from('cxc_hip')
-      .select('saldo, monto_final, status')
-      .eq('id_arrendatario_fk', idArr)
-      .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
-      .lte('fecha_vencimiento', fechaHasta)
-    const totalPendiente = ((pendData ?? []) as { saldo: number | null; monto_final: number; status: string }[])
-      .reduce((s, c) => s + (c.saldo ?? c.monto_final), 0)
-
-    setCargos((cargosData as unknown as Cargo[]) ?? [])
-    setPagos((pagosData as unknown as Pago[]) ?? [])
-    setSaldoPendienteTotal(totalPendiente)
+    setLoading(true); setBuscado(true); setError('')
+    // Historial completo hasta la fecha de corte: el saldo anterior se calcula
+    // con los movimientos previos a "Desde".
+    const [{ data: cargosData, error: e1 }, { data: pagosData, error: e2 }] = await Promise.all([
+      dbHip.from('cxc_hip')
+        .select('id, tipo, concepto, periodo, monto_final, saldo, status, fecha_emision, fecha_vencimiento, fecha_pago')
+        .eq('id_arrendatario_fk', idArr)
+        .order('fecha_vencimiento', { ascending: true }),
+      dbHip.from('recibos_hip')
+        .select('id, folio, fecha_recibo, total, forma_pago_nombre, referencia_pago, recibos_hip_det(id_cuota_fk, concepto, monto_final)')
+        .eq('id_arrendatario_fk', idArr)
+        .eq('status', 'VIGENTE')
+        .lte('fecha_recibo', fechaHasta)
+        .order('fecha_recibo', { ascending: true }),
+    ])
+    if (e1 || e2) { setError((e1 ?? e2)!.message); setEc(null); setLoading(false); return }
+    const recibos: ReciboLibro[] = ((pagosData ?? []) as any[]).map(r => ({ ...r, det: r.recibos_hip_det ?? [] }))
+    setEc(construirEstadoCuenta((cargosData ?? []) as CuotaLibro[], recibos, fechaDesde, fechaHasta,
+      c => fmtMes(c.periodo)))
     setLoading(false)
   }, [idArr, fechaDesde, fechaHasta])
-
-  const hoyStr = new Date().toISOString().split('T')[0]
-  const saldoCargo = (c: Cargo) => c.saldo ?? (c.status === 'PAGADO' ? 0 : c.monto_final)
-
-  // KPIs
-  const totalCargos          = cargos.reduce((s, c) => s + c.monto_final, 0)
-  const totalPagado          = pagos.reduce((s, p) => s + p.total, 0)
-  // Saldo pendiente de solo los cargos mostrados en la tabla (dentro del rango de fechas) —
-  // se usa para el total al pie de esa tabla, no como KPI de adeudo real (ver saldoPendienteTotal).
-  const saldoPendientePeriodo = cargos.filter(c => c.status !== 'PAGADO').reduce((s, c) => s + saldoCargo(c), 0)
-  const adeudoAnterior        = Math.max(0, parseFloat((saldoPendienteTotal - saldoPendientePeriodo).toFixed(2)))
-  const cargosVencidos       = cargos.filter(c => c.status === 'PENDIENTE' && c.fecha_vencimiento && c.fecha_vencimiento < hoyStr)
 
   return (
     <div>
@@ -145,7 +89,7 @@ export default function ReporteHipicoEstadoCuenta() {
             style={{ fontSize: 13, height: 36, width: 150 }} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <label style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>Hasta</label>
+          <label style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>Hasta (corte)</label>
           <input className="input" type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)}
             style={{ fontSize: 13, height: 36, width: 150 }} />
         </div>
@@ -153,9 +97,9 @@ export default function ReporteHipicoEstadoCuenta() {
           style={{ fontSize: 13, height: 36, padding: '0 20px', alignSelf: 'flex-end' }}>
           {loading ? 'Consultando…' : 'Consultar'}
         </button>
-        {buscado && !loading && (
+        {buscado && !loading && ec && (
           <div style={{ alignSelf: 'flex-end' }}>
-            <PrintBar title={`Estado-Cuenta-Hipico-${arrendatarioSel ? fmtNombre(arrendatarioSel).replace(/\s+/g,'-') : 'arrendatario'}`} count={cargos.length + pagos.length} reportTitle="Estado de Cuenta — Módulo Hípico" />
+            <PrintBar title={`Estado-Cuenta-Hipico-${arrendatarioSel ? fmtNombre(arrendatarioSel).replace(/\s+/g, '-') : 'arrendatario'}`} count={ec.movimientos.length} reportTitle="Estado de Cuenta — Módulo Hípico" />
           </div>
         )}
       </div>
@@ -166,122 +110,20 @@ export default function ReporteHipicoEstadoCuenta() {
         </div>
       )}
 
-      {buscado && !loading && (
+      {error && (
+        <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', color: '#C23B3B', padding: '10px 14px', fontSize: 13, borderRadius: 6 }}>
+          {error}
+        </div>
+      )}
+
+      {buscado && !loading && ec && arrendatarioSel && (
         <div id="reporte-print-area">
-          {/* Encabezado impresión */}
-          <div className="print-only" style={{ marginBottom: 16 }}>
-            <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Estado de Cuenta — Módulo Hípico</h2>
-            <p style={{ fontSize: 12, margin: '4px 0 0' }}>
-              {arrendatarioSel ? fmtNombre(arrendatarioSel) : ''} &nbsp;·&nbsp;
-              {fmtFecha(fechaDesde)} al {fmtFecha(fechaHasta)}
-            </p>
-          </div>
-
-          {/* KPIs */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-            {[
-              { label: 'Total Cargos',     value: fmt$(totalCargos),          color: '#1C1D21', bg: '#F4F5F7', sub: null as string | null },
-              { label: 'Total Pagado',     value: fmt$(totalPagado),          color: '#267F56', bg: '#F4F5F7', sub: null },
-              {
-                label: 'Saldo Pendiente',  value: fmt$(saldoPendienteTotal),  color: saldoPendienteTotal > 0 ? '#C23B3B' : '#267F56', bg: '#F4F5F7',
-                sub: adeudoAnterior > 0 ? `incluye ${fmt$(adeudoAnterior)} de antes de "Desde"` : null,
-              },
-              { label: 'Cargos Vencidos',  value: cargosVencidos.length.toString(), color: '#C23B3B', bg: '#F4F5F7', sub: null },
-            ].map(k => (
-              <div key={k.label} className="card" style={{ flex: '1 1 140px', padding: '12px 16px' }}>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>{k.label}</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: k.color }}>{k.value}</div>
-                {k.sub && <div style={{ fontSize: 10, color: '#7A4B0C', marginTop: 2 }}>{k.sub}</div>}
-              </div>
-            ))}
-          </div>
-
-          {/* Tabla cargos */}
-          <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10, marginTop: 0 }}>
-            Cargos ({cargos.length})
-          </h3>
-          {cargos.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20 }}>Sin cargos en el período</p>
-          ) : (
-            <div className="card" style={{ overflow: 'hidden', padding: 0, marginBottom: 24 }}>
-              <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                <thead>
-                  <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
-                    {['Descripción', 'Mes Aplicación', 'Vencimiento', 'Monto', 'Saldo', 'Status'].map(h => (
-                      <th key={h} style={{ padding: '9px 12px', textAlign: 'left', fontWeight: 600, fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {cargos.map((c, i) => {
-                    const sc = STATUS_COLOR[c.status] ?? { bg: '#F8F9FA', color: '#62666E' }
-                    const saldo = saldoCargo(c)
-                    const vencido = c.fecha_vencimiento && c.status === 'PENDIENTE' && c.fecha_vencimiento < hoyStr
-                    return (
-                      <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
-                        <td style={{ padding: '9px 12px', color: 'var(--text-primary)' }}>{c.concepto}</td>
-                        <td style={{ padding: '9px 12px', color: 'var(--text-muted)' }}>
-                          {c.periodo ? new Date(c.periodo + '-01T12:00:00').toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }) : '—'}
-                        </td>
-                        <td style={{ padding: '9px 12px', color: vencido ? '#C23B3B' : 'var(--text-muted)', fontWeight: vencido ? 600 : 400 }}>{fmtFecha(c.fecha_vencimiento)}</td>
-                        <td style={{ padding: '9px 12px', fontWeight: 600, color: 'var(--text-primary)' }}>{fmt$(c.monto_final)}</td>
-                        <td style={{ padding: '9px 12px', fontWeight: 600, color: saldo > 0 ? '#C23B3B' : '#267F56' }}>{fmt$(saldo)}</td>
-                        <td style={{ padding: '9px 12px' }}>
-                          <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 600, background: sc.color, color: '#fff'}}>{c.status.replace('_', ' ')}</span>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                  <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
-                    <td colSpan={3} style={{ padding: '9px 12px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>TOTAL</td>
-                    <td style={{ padding: '9px 12px', fontWeight: 700, color: '#1C1D21' }}>{fmt$(totalCargos)}</td>
-                    <td style={{ padding: '9px 12px', fontWeight: 700, color: saldoPendientePeriodo > 0 ? '#C23B3B' : '#267F56' }}>{fmt$(saldoPendientePeriodo)}</td>
-                    <td></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Tabla pagos */}
-          <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10, marginTop: 0 }}>
-            Pagos / Recibos ({pagos.length})
-          </h3>
-          {pagos.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Sin pagos registrados en el período</p>
-          ) : (
-            <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                <thead>
-                  <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
-                    {['Folio', 'Fecha', 'Forma de Pago', 'Referencia', 'Cargos cubiertos', 'Total'].map(h => (
-                      <th key={h} style={{ padding: '9px 12px', textAlign: 'left', fontWeight: 600, fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {pagos.map((p, i) => (
-                    <tr key={p.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
-                      <td style={{ padding: '9px 12px', fontWeight: 700, color: 'var(--gold-light)', fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>{p.folio}</td>
-                      <td style={{ padding: '9px 12px', color: 'var(--text-muted)' }}>{fmtFecha(p.fecha_recibo)}</td>
-                      <td style={{ padding: '9px 12px', color: 'var(--text-secondary)' }}>{p.forma_pago_nombre ?? '—'}</td>
-                      <td style={{ padding: '9px 12px', color: 'var(--text-muted)' }}>{p.referencia_pago ?? '—'}</td>
-                      <td style={{ padding: '9px 12px', color: 'var(--text-muted)', fontSize: 11 }}>
-                        {(p.recibos_hip_det ?? []).map((d, j) => (
-                          <span key={j}>{d.concepto}{j < (p.recibos_hip_det?.length ?? 0) - 1 ? ', ' : ''}</span>
-                        ))}
-                      </td>
-                      <td style={{ padding: '9px 12px', fontWeight: 700, color: '#267F56' }}>{fmt$(p.total)}</td>
-                    </tr>
-                  ))}
-                  <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
-                    <td colSpan={5} style={{ padding: '9px 12px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>TOTAL PAGADO</td>
-                    <td style={{ padding: '9px 12px', fontWeight: 700, color: '#267F56' }}>{fmt$(totalPagado)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
+          <EstadoCuentaBancario
+            titulo="Estado de Cuenta — Hípico"
+            titular={fmtNombre(arrendatarioSel)}
+            campos={[{ label: 'Tipo de persona', value: arrendatarioSel.tipo_persona ?? '' }]}
+            desde={fechaDesde} hasta={fechaHasta} ec={ec}
+          />
         </div>
       )}
     </div>
