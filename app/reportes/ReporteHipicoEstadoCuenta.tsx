@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbHip } from '@/lib/supabase'
 import { PrintBar } from './utils'
-import EstadoCuentaBancario from './EstadoCuentaBancario'
+import EstadoCuentaBancario, { SelectorMes } from './EstadoCuentaBancario'
 import { construirEstadoCuenta, type CuotaLibro, type ReciboLibro, type EstadoCuenta } from '@/lib/estadoCuentaLibro'
 
 type Arrendatario = {
@@ -71,6 +71,9 @@ export default function ReporteHipicoEstadoCuenta() {
     setLoading(false)
   }, [idArr, fechaDesde, fechaHasta])
 
+  // Ya consultado: al cambiar de mes o de titular se actualiza solo
+  useEffect(() => { if (buscado) fetchData() }, [fetchData]) // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div>
       {/* Filtros */}
@@ -82,6 +85,10 @@ export default function ReporteHipicoEstadoCuenta() {
             <option value="">— Seleccionar —</option>
             {arrendatarios.map(a => <option key={a.id} value={a.id}>{fmtNombre(a)}</option>)}
           </select>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>Mes</label>
+          <SelectorMes desde={fechaDesde} hasta={fechaHasta} onChange={(d, h) => { setFechaDesde(d); setFechaHasta(h) }} style={{ height: 36 }} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <label style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>Desde</label>

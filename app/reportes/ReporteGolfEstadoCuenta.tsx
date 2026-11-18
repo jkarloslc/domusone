@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { PrintBar } from './utils'
-import EstadoCuentaBancario from './EstadoCuentaBancario'
+import EstadoCuentaBancario, { SelectorMes } from './EstadoCuentaBancario'
 import { construirEstadoCuenta, type CuotaLibro, type ReciboLibro, type EstadoCuenta } from '@/lib/estadoCuentaLibro'
 
 type Socio = {
@@ -71,6 +71,9 @@ export default function ReporteGolfEstadoCuenta() {
     setLoading(false)
   }, [idSocio, fechaDesde, fechaHasta])
 
+  // Ya consultado: al cambiar de mes o de titular se actualiza solo
+  useEffect(() => { if (buscado) fetchData() }, [fetchData]) // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div>
       {/* Filtros */}
@@ -86,6 +89,10 @@ export default function ReporteGolfEstadoCuenta() {
               </option>
             ))}
           </select>
+        </div>
+        <div>
+          <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Mes</label>
+          <SelectorMes desde={fechaDesde} hasta={fechaHasta} onChange={(d, h) => { setFechaDesde(d); setFechaHasta(h) }} style={{ height: 34 }} />
         </div>
         <div>
           <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Desde</label>

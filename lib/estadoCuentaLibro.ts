@@ -47,6 +47,17 @@ export type Movimiento = {
   saldo: number // saldo corrido, se llena al ordenar
 }
 
+// Un renglón por mes del periodo: el saldo final de cada mes es el inicial del
+// siguiente (el adeudo se arrastra).
+export type ResumenMes = {
+  mes: string            // 'YYYY-MM'
+  saldoInicial: number
+  cargos: number         // cuotas + consumos + ajustes de cargo
+  pagos: number
+  bonificaciones: number
+  saldoFinal: number
+}
+
 export type CuotaAlCorte = CuotaLibro & { saldoCorte: number; vencida: boolean }
 
 export type EstadoCuenta = {
@@ -57,6 +68,7 @@ export type EstadoCuenta = {
   bonificaciones: number          // abonos no monetarios (neto de ajustes de cargo)
   ajustesCargo: number
   saldoFinal: number
+  meses: ResumenMes[]
   pendientes: CuotaAlCorte[]      // cuotas con saldo al corte
   vencido: number
   porVencer: number
@@ -156,6 +168,26 @@ export function construirEstadoCuenta(
   let corrido = saldoAnterior
   for (const m of movimientos) { corrido = r2(corrido + m.cargo - m.abono); m.saldo = corrido }
 
+  // Resumen mensual con saldo arrastrado (incluye meses sin movimientos)
+  const meses: ResumenMes[] = []
+  {
+    let [y, mo] = desde.slice(0, 7).split('-').map(Number)
+    const ultimo = hasta.slice(0, 7)
+    let inicial = saldoAnterior
+    for (let guard = 0; guard < 240; guard++) {
+      const mes = `${y}-${String(mo).padStart(2, '0')}`
+      if (mes > ultimo) break
+      const delMes = movimientos.filter(m => m.fecha.slice(0, 7) === mes)
+      const cargosM = r2(delMes.reduce((a, m) => a + m.cargo, 0))
+      const pagosM = r2(delMes.reduce((a, m) => a + (m.clase === 'pago' ? m.abono : 0), 0))
+      const bonifM = r2(delMes.reduce((a, m) => a + (m.clase !== 'pago' ? m.abono : 0), 0))
+      const final = r2(inicial + cargosM - pagosM - bonifM)
+      meses.push({ mes, saldoInicial: inicial, cargos: cargosM, pagos: pagosM, bonificaciones: bonifM, saldoFinal: final })
+      inicial = final
+      mo++; if (mo > 12) { mo = 1; y++ }
+    }
+  }
+
   const sum = (f: (m: Movimiento) => number) => r2(movimientos.reduce((s, m) => s + f(m), 0))
   const cargos = sum(m => (m.clase === 'cuota' || m.clase === 'consumo') ? m.cargo : 0)
   const ajustesCargo = sum(m => m.clase === 'ajuste' ? m.cargo : 0)
@@ -180,6 +212,7 @@ export function construirEstadoCuenta(
   return {
     saldoAnterior, movimientos, cargos, pagos, bonificaciones, ajustesCargo,
     saldoFinal: corrido,
+    meses,
     pendientes,
     vencido: r2(pendientes.filter(p => p.vencida).reduce((s, p) => s + p.saldoCorte, 0)),
     porVencer: r2(pendientes.filter(p => !p.vencida).reduce((s, p) => s + p.saldoCorte, 0)),

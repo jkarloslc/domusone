@@ -1,12 +1,16 @@
 'use client'
 // Formato de estado de cuenta tipo bancario, compartido por Golf e Hípico.
 // Datos: lib/estadoCuentaLibro.ts (construirEstadoCuenta).
+import { Fragment } from 'react'
 import type { EstadoCuenta } from '@/lib/estadoCuentaLibro'
 
 const fmtFecha = (d: string | null) =>
   d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 const fmt$ = (v: number) =>
   (v < 0 ? '−' : '') + '$' + Math.abs(v).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+const fmtMes = (ym: string) =>
+  new Date(ym + '-01T12:00:00').toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })
 
 const NUM: React.CSSProperties = { fontWeight: 700, fontVariantNumeric: 'tabular-nums', textAlign: 'right', whiteSpace: 'nowrap' }
 const TH: React.CSSProperties = { padding: '9px 12px', fontWeight: 600, fontSize: 10, color: '#C9CCD3', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'left' }
@@ -27,6 +31,7 @@ export default function EstadoCuentaBancario({ titulo, titular, campos, desde, h
 }) {
   const saldoColor = (v: number) => v > 0.009 ? '#C23B3B' : v < -0.009 ? '#1F7A50' : '#1C1D21'
   const saldoTxt = (v: number) => v < -0.009 ? `${fmt$(-v)} a favor` : fmt$(v)
+  const variosMeses = ec.meses.length > 1
 
   const resumen: { label: string; value: number; signo: string; fuerte?: boolean }[] = [
     { label: 'Saldo anterior', value: ec.saldoAnterior, signo: '' },
@@ -99,6 +104,47 @@ export default function EstadoCuentaBancario({ titulo, titular, campos, desde, h
         </div>
       </div>
 
+      {/* Resumen por mes: el saldo final de cada mes es el inicial del siguiente */}
+      {variosMeses && (
+        <>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: '#1C1D21', margin: '0 0 8px' }}>Resumen por mes</h3>
+          <div className="card" style={{ padding: 0, overflowX: 'auto', marginBottom: 20 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 640 }}>
+              <thead>
+                <tr style={{ background: '#1C1D21' }}>
+                  <th style={TH}>Mes</th>
+                  <th style={{ ...TH, textAlign: 'right' }}>Saldo inicial</th>
+                  <th style={{ ...TH, textAlign: 'right' }}>(+) Cargos</th>
+                  <th style={{ ...TH, textAlign: 'right' }}>(−) Pagos</th>
+                  <th style={{ ...TH, textAlign: 'right' }}>(−) Bonificaciones</th>
+                  <th style={{ ...TH, textAlign: 'right' }}>(=) Saldo final</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ec.meses.map(r => (
+                  <tr key={r.mes}>
+                    <td style={{ ...TD, fontWeight: 600, color: '#1C1D21', textTransform: 'capitalize' }}>{fmtMes(r.mes)}</td>
+                    <td style={{ ...TD, ...NUM, color: saldoColor(r.saldoInicial) }}>{fmt$(r.saldoInicial)}</td>
+                    <td style={{ ...TD, ...NUM, color: '#1C1D21' }}>{r.cargos ? fmt$(r.cargos) : '—'}</td>
+                    <td style={{ ...TD, ...NUM, color: '#1F7A50' }}>{r.pagos ? fmt$(r.pagos) : '—'}</td>
+                    <td style={{ ...TD, ...NUM, color: '#1F7A50' }}>{r.bonificaciones ? fmt$(r.bonificaciones) : '—'}</td>
+                    <td style={{ ...TD, ...NUM, color: saldoColor(r.saldoFinal) }}>{saldoTxt(r.saldoFinal)}</td>
+                  </tr>
+                ))}
+                <tr style={{ background: '#26282D' }}>
+                  <td style={{ padding: '10px 12px', fontWeight: 700, color: '#fff' }}>Periodo</td>
+                  <td style={{ ...NUM, padding: '10px 12px', color: '#fff' }}>{fmt$(ec.saldoAnterior)}</td>
+                  <td style={{ ...NUM, padding: '10px 12px', color: '#fff' }}>{fmt$(ec.cargos + ec.ajustesCargo)}</td>
+                  <td style={{ ...NUM, padding: '10px 12px', color: '#7CC9A3' }}>{fmt$(ec.pagos)}</td>
+                  <td style={{ ...NUM, padding: '10px 12px', color: '#7CC9A3' }}>{fmt$(ec.bonificaciones)}</td>
+                  <td style={{ ...NUM, padding: '10px 12px', color: ec.saldoFinal > 0.009 ? '#EBB5B5' : '#7CC9A3' }}>{saldoTxt(ec.saldoFinal)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
       {/* Movimientos */}
       <h3 style={{ fontSize: 13, fontWeight: 700, color: '#1C1D21', margin: '0 0 8px' }}>
         Detalle de movimientos ({ec.movimientos.length})
@@ -127,8 +173,11 @@ export default function EstadoCuentaBancario({ titulo, titular, campos, desde, h
             {ec.movimientos.length === 0 && (
               <tr><td colSpan={6} style={{ ...TD, textAlign: 'center', color: '#7A7E87', padding: 20 }}>Sin movimientos en el periodo</td></tr>
             )}
-            {ec.movimientos.map(m => (
-              <tr key={m.key}>
+            {ec.movimientos.map((m, i) => {
+              const mes = m.fecha.slice(0, 7)
+              const cierraMes = variosMeses && (i === ec.movimientos.length - 1 || ec.movimientos[i + 1].fecha.slice(0, 7) !== mes)
+              return (<Fragment key={m.key}>
+              <tr>
                 <td style={{ ...TD, color: '#62666E', whiteSpace: 'nowrap' }}>{fmtFecha(m.fecha)}</td>
                 <td style={{ ...TD, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: '#33363C', fontSize: 11, whiteSpace: 'nowrap' }}>{m.referencia || '—'}</td>
                 <td style={{ ...TD, color: '#1C1D21' }}>
@@ -144,7 +193,16 @@ export default function EstadoCuentaBancario({ titulo, titular, campos, desde, h
                 <td style={{ ...TD, ...NUM, color: '#1F7A50' }}>{m.abono ? fmt$(m.abono) : ''}</td>
                 <td style={{ ...TD, ...NUM, color: saldoColor(m.saldo) }}>{fmt$(m.saldo)}</td>
               </tr>
-            ))}
+              {cierraMes && (
+                <tr style={{ background: '#E6E8EB' }}>
+                  <td colSpan={5} style={{ ...TD, borderBottom: '1px solid #C9CCD3', fontWeight: 700, color: '#33363C', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                    Saldo al cierre de {fmtMes(mes)} · pasa al mes siguiente
+                  </td>
+                  <td style={{ ...TD, ...NUM, borderBottom: '1px solid #C9CCD3', color: saldoColor(m.saldo) }}>{fmt$(m.saldo)}</td>
+                </tr>
+              )}
+              </Fragment>)
+            })}
             <tr style={{ background: '#26282D' }}>
               <td colSpan={3} style={{ padding: '10px 12px', fontWeight: 700, color: '#fff', fontSize: 12 }}>Totales del periodo · Saldo al corte</td>
               <td style={{ ...NUM, padding: '10px 12px', color: '#fff' }}>{fmt$(ec.cargos + ec.ajustesCargo)}</td>
@@ -200,6 +258,47 @@ export default function EstadoCuentaBancario({ titulo, titular, campos, desde, h
           </table>
         </div>
       )}
+    </div>
+  )
+}
+
+// Selector rápido de mes: fija Desde/Hasta al primer y último día del mes.
+// El saldo anterior se calcula solo, así que al pasar de un mes al siguiente
+// el adeudo se arrastra.
+export function SelectorMes({ desde, hasta, onChange, style }: {
+  desde: string; hasta: string
+  onChange: (desde: string, hasta: string) => void
+  style?: React.CSSProperties
+}) {
+  const hoy = new Date()
+  const opciones: string[] = []
+  for (let i = -24; i <= 2; i++) {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1)
+    opciones.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+  }
+  const finMes = (ym: string) => {
+    const [y, m] = ym.split('-').map(Number)
+    return `${ym}-${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`
+  }
+  const ym = desde.slice(0, 7)
+  const valor = desde === `${ym}-01` && hasta === finMes(ym) ? ym : ''
+  const mover = (delta: number) => {
+    const base = valor || ym
+    const [y, m] = base.split('-').map(Number)
+    const d = new Date(y, m - 1 + delta, 1)
+    const n = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    onChange(`${n}-01`, finMes(n))
+  }
+  const btn: React.CSSProperties = { padding: '0 10px', border: '1px solid #C9CCD3', background: '#fff', borderRadius: 8, cursor: 'pointer', color: '#33363C', fontSize: 14 }
+  return (
+    <div style={{ display: 'flex', gap: 4, alignItems: 'stretch', ...style }}>
+      <button type="button" style={btn} onClick={() => mover(-1)} title="Mes anterior">‹</button>
+      <select className="input" value={valor} onChange={e => e.target.value && onChange(`${e.target.value}-01`, finMes(e.target.value))}
+        style={{ fontSize: 12, minWidth: 160, textTransform: 'capitalize' }}>
+        <option value="">Rango personalizado</option>
+        {opciones.map(o => <option key={o} value={o}>{fmtMes(o)}</option>)}
+      </select>
+      <button type="button" style={btn} onClick={() => mover(1)} title="Mes siguiente">›</button>
     </div>
   )
 }
