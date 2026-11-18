@@ -228,3 +228,26 @@ export function rutaConcepto(id: number | null, conceptos: Concepto[]): string {
   const p = c.id_padre_fk ? conceptos.find(x => x.id === c.id_padre_fk) : null
   return p ? `${p.nombre} › ${c.nombre}` : c.nombre
 }
+
+/** Nombre de banco comparable: «BanBajío», «Bajio» → bajio; «Scotia Bank», «Scotiabank» → scotia. */
+export function claveBanco(s: string | null | undefined): string {
+  return normalizar(s ?? '').replace(/\s+/g, '').replace(/bank|banco/g, '').replace(/^ban(?=b)/, '')
+}
+
+/**
+ * Cuenta a la que pertenece un archivo: números de 7+ dígitos del nombre del
+ * archivo y, si no basta, del encabezado (primeras 8 filas; BanBajío pone
+ * «Número cliente»), comparados contra el número de cuenta. Solo devuelve
+ * algo si hay una sola coincidencia.
+ */
+export function cuentaDelArchivo(nombre: string, filas: unknown[][], cuentas: Cuenta[]): Cuenta | null {
+  const buscar = (textos: string[]) => {
+    const numeros = Array.from(new Set(textos.flatMap(t => t.match(/\d{7,}/g) ?? [])))
+    const hallaz = cuentas.filter(c => {
+      const nc = (c.numero_cuenta ?? '').replace(/\D/g, '')
+      return nc.length >= 7 && numeros.some(n => nc.includes(n) || n.includes(nc))
+    })
+    return hallaz.length === 1 ? hallaz[0] : null
+  }
+  return buscar([nombre]) ?? buscar(filas.slice(0, 8).flat().map(c => (c == null ? '' : String(c))))
+}

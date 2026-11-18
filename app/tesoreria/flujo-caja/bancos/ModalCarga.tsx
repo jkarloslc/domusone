@@ -5,7 +5,7 @@ import { Upload, CheckCircle2, AlertTriangle } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import { dbComp } from '@/lib/supabase'
 import {
-  MovParseado, clasificar, cuadra, huellas, mxn, nombreCuenta, parsearFilas, rutaConcepto, saldosDelArchivo,
+  MovParseado, claveBanco, clasificar, cuadra, cuentaDelArchivo, huellas, mxn, nombreCuenta, parsearFilas, rutaConcepto, saldosDelArchivo,
 } from '@/lib/flujoBanco'
 import { Aviso, CatalogosBanco, leerTodo, num, td, th } from './comun'
 
@@ -28,9 +28,9 @@ export default function ModalCarga({ cat, usuario, onClose, onCargado }: Props) 
   function elegirCuenta(v: string) {
     setIdCuenta(v)
     const c = cuentas.find(x => x.id === Number(v))
-    if (!c || idLayout) return
+    if (!c) return
     const propio = layoutsActivos.find(l => l.id_cuenta_fk === c.id)
-      ?? layoutsActivos.find(l => l.banco && c.banco && l.banco.toLowerCase().slice(0, 4) === c.banco.toLowerCase().slice(0, 4))
+      ?? layoutsActivos.find(l => !l.id_cuenta_fk && l.banco && claveBanco(l.banco) === claveBanco(c.banco))
     if (propio) setIdLayout(String(propio.id))
   }
 
@@ -40,6 +40,12 @@ export default function ModalCarga({ cat, usuario, onClose, onCargado }: Props) 
       const buf = await file.arrayBuffer()
       const libro = XLSX.read(buf, { type: 'array', cellDates: true, codepage: 65001 })
       setArchivo({ nombre: file.name, libro })
+      if (!idCuenta) {
+        const hoja = libro.Sheets[libro.SheetNames[0]]
+        const filas = XLSX.utils.sheet_to_json<unknown[]>(hoja, { header: 1, raw: true, defval: null })
+        const c = cuentaDelArchivo(file.name, filas, cuentas)
+        if (c) elegirCuenta(String(c.id))
+      }
     } catch (e: unknown) {
       setError('No se pudo leer el archivo: ' + (e instanceof Error ? e.message : String(e))); setArchivo(null)
     }
