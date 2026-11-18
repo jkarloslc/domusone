@@ -118,6 +118,7 @@ export function resumenMensual(movs: MovFlujo[], portadas: Portada[], cuentas: C
     let ultimoCierre: number | null = null
     // Cierre previo al primer mes pedido (los movimientos pueden incluir meses anteriores)
     for (const d of dias) if (mesDe(d.fecha) < meses[0] && d.cierre != null) ultimoCierre = d.cierre
+    let mesPrevioConDatos = ultimoCierre != null
     for (const mes of meses) {
       const dm = dias.filter(d => mesDe(d.fecha) === mes)
       const portada = portadas.find(p => p.id_cuenta_fk === cta.id && p.periodo.slice(0, 7) === mes) ?? null
@@ -125,7 +126,8 @@ export function resumenMensual(movs: MovFlujo[], portadas: Portada[], cuentas: C
       const abonos = r2(dm.reduce((s, d) => s + d.abonos, 0)), cargos = r2(dm.reduce((s, d) => s + d.cargos, 0))
       if (dm.length) {
         apertura = dm[0].apertura; cierre = dm[dm.length - 1].cierre
-        let prev = ultimoCierre
+        // Un mes anterior sin cargar no se cuenta como hueco de este mes (ese mes ya sale como «–»)
+        let prev = mesPrevioConDatos ? ultimoCierre : null
         for (const d of dm) {
           if (prev != null && d.apertura != null && !casi(prev, d.apertura, 0.05)) huecos++
           if (d.cierre != null) prev = d.cierre
@@ -136,6 +138,7 @@ export function resumenMensual(movs: MovFlujo[], portadas: Portada[], cuentas: C
       } else {
         apertura = ultimoCierre; cierre = ultimoCierre
       }
+      mesPrevioConDatos = dm.length > 0 || portada != null
       const cuadraInterno = !dm.length ? null
         : apertura == null || cierre == null ? false
         : casi(apertura + abonos - cargos, cierre, 0.05) && huecos === 0

@@ -1,4 +1,5 @@
 import { dbCtrl, dbComp } from '@/lib/supabase'
+import { diasDeCuenta } from '@/lib/flujoCuenta'
 
 /**
  * Saldos de efectivo para Flujo de Efectivo (migración 20261113150000).
@@ -69,12 +70,25 @@ function saldoDiarioPorCuenta(rows: { id_cuenta_fk: number | null; fecha: string
   return porDia
 }
 
+/** Movimientos de banco del año, en bloques de 1000 (límite de PostgREST). */
+async function leerBanco(ini: string, fin: string): Promise<{ data: any[] }> {
+  const data: any[] = []
+  for (let i = 0; i < 100000; i += 1000) {
+    const { data: lote, error } = await dbComp.from('flujo_mov_banco').select('id, id_cuenta_fk, fecha, saldo, cargo, abono')
+      .gte('fecha', ini).lte('fecha', fin).order('id').range(i, i + 999)
+    if (error || !lote) break
+    data.push(...lote)
+    if (lote.length < 1000) break
+  }
+  return { data }
+}
+
 export async function cargarSaldos(anio: number): Promise<SaldosFuente> {
   const ini = `${anio}-01-01`, fin = `${anio}-12-31`
   const [{ data: cap }, { data: banco }, tes] = await Promise.all([
     dbCtrl.from('flujo_saldos').select('id, tipo, fecha, monto, notas')
       .is('id_cuenta_bancaria_fk', null).gte('fecha', ini).lte('fecha', fin).order('fecha'),
-    dbComp.from('flujo_mov_banco').select('id, id_cuenta_fk, fecha, saldo').gte('fecha', ini).lte('fecha', fin),
+    leerBanco(ini, fin),
     TESORERIA_LISTA
       ? dbComp.from('movimientos_bancarios').select('id, id_cuenta_fk, fecha_movimiento, saldo_despues')
           .gte('fecha_movimiento', ini).lte('fecha_movimiento', fin)
@@ -95,8 +109,17 @@ export async function cargarSaldos(anio: number): Promise<SaldosFuente> {
   const bancoRows = (banco ?? []) as any[]
   if (bancoRows.length) {
     fuentesActivas.push('banco')
-    saldoDiarioPorCuenta(bancoRows.map(r => ({ id_cuenta_fk: r.id_cuenta_fk, fecha: String(r.fecha).slice(0, 10), saldo: r.saldo, orden: r.id })))
-      .forEach((v, f) => real.set(f, { monto: v, fuente: 'banco' }))
+    // Cierre de cada día por cuenta encadenando el saldo del banco (el orden de
+    // carga no es cronológico: hay archivos del más reciente al más antiguo).
+    const porCuenta = new Map<number, any[]>()
+    for (const r of bancoRows) porCuenta.set(r.id_cuenta_fk, [...(porCuenta.get(r.id_cuenta_fk) ?? []), r])
+    const cierres: { id_cuenta_fk: number | null; fecha: string; saldo: number | null; orden: number }[] = []
+    porCuenta.forEach((rows, cta) => {
+      diasDeCuenta(rows.map(r => ({ ...r, fecha: String(r.fecha).slice(0, 10), cargo: Number(r.cargo), abono: Number(r.abono),
+        saldo: r.saldo == null ? null : Number(r.saldo), descripcion: '', id_concepto_fk: null, id_centro_costo_fk: null, id_tipo_gasto_fk: null })))
+        .forEach((d, i) => cierres.push({ id_cuenta_fk: cta, fecha: d.fecha, saldo: d.cierre, orden: i }))
+    })
+    saldoDiarioPorCuenta(cierres).forEach((v, f) => real.set(f, { monto: v, fuente: 'banco' }))
   }
   return { capturados, real, fuentesActivas }
 }
