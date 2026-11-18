@@ -300,8 +300,19 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
       } as any)
     }
 
+    // Si un paso posterior falla, el recibo no puede quedar VIGENTE: al reintentar
+    // se generaba otro recibo por el mismo cobro (10 duplicados jun–jul 2026).
+    const abortarRecibo = async (msg: string) => {
+      await dbGolf.from('recibos_golf').update({
+        status: 'CANCELADO',
+        observaciones: `Guardado incompleto, cancelado automáticamente: ${msg}`.slice(0, 500),
+      }).eq('id', reciboId)
+      setError(`${msg} — el recibo ${folioFinal} se canceló; vuelve a intentar el cobro.`)
+      setSaving(false)
+    }
+
     const { error: e2 } = await dbGolf.from('recibos_golf_det').insert(detRows)
-    if (e2) { setError(e2.message); setSaving(false); return }
+    if (e2) { await abortarRecibo(e2.message); return }
 
     // 4. Insertar formas de pago del recibo (tabla multi-pago)
     const { error: ePagos } = await dbGolf.from('recibos_golf_pagos').insert(
@@ -313,7 +324,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         referencia:       p.referencia || null,
       }))
     )
-    if (ePagos) { setError(ePagos.message); setSaving(false); return }
+    if (ePagos) { await abortarRecibo(ePagos.message); return }
 
     // 5. Aplicar pago greedy a cuotas (lo cobrado del cargo adicional no reduce saldo de ninguna cuota).
     // El descuento adicional (descExtra) también debe extinguir saldo de las cuotas — de lo contrario
