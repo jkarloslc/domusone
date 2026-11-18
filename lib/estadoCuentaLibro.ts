@@ -65,12 +65,10 @@ export type EstadoCuenta = {
 const r2 = (n: number) => Math.round(n * 100) / 100
 const num = (v: unknown) => Number(v ?? 0) || 0
 
-// Fecha del cargo: la más temprana entre emisión y vencimiento (las cargas
-// históricas tienen emisión posterior al vencimiento).
-const fechaCargo = (c: CuotaLibro) => {
-  const e = c.fecha_emision, v = c.fecha_vencimiento
-  return e && v ? (e < v ? e : v) : (e ?? v)
-}
+// Fecha del cargo: el vencimiento. La emisión no sirve: las cuotas se generan
+// meses por adelantado (Hípico ago–dic emitidas el 14-jun, 2027 el 4-nov) y
+// las cargas históricas tienen emisión posterior al vencimiento.
+const fechaCargo = (c: CuotaLibro) => c.fecha_vencimiento ?? c.fecha_emision
 
 const ORDEN_CLASE: Record<Movimiento['clase'], number> = {
   cuota: 0, consumo: 1, ajuste: 2, pago: 3, bonificacion: 4,
