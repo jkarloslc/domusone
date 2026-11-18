@@ -40,7 +40,11 @@ const pad = (n: number) => String(n).padStart(2, '0')
 export const fechaISO = (y: number, m: number, d: number) => `${y}-${pad(m)}-${pad(d)}`
 export const diasDelMes = (y: number, m: number) => new Date(y, m, 0).getDate()
 
-/** Último saldo de cada día por cuenta, sumado entre cuentas. */
+/**
+ * Último saldo de cada día por cuenta, sumado entre cuentas. Una cuenta sin
+ * movimientos ese día aporta su último saldo conocido (si no, el día saldría
+ * solo con las cuentas que se movieron).
+ */
 function saldoDiarioPorCuenta(rows: { id_cuenta_fk: number | null; fecha: string; saldo: number | null; orden: number }[]) {
   const ultimo = new Map<string, { saldo: number; orden: number }>()   // `${cuenta}|${fecha}`
   for (const r of rows) {
@@ -49,8 +53,19 @@ function saldoDiarioPorCuenta(rows: { id_cuenta_fk: number | null; fecha: string
     const prev = ultimo.get(k)
     if (!prev || r.orden >= prev.orden) ultimo.set(k, { saldo: Number(r.saldo), orden: r.orden })
   }
+  const porFecha = new Map<string, { cuenta: string; saldo: number }[]>()
+  ultimo.forEach((v, k) => {
+    const [cuenta, f] = k.split('|')
+    porFecha.set(f, [...(porFecha.get(f) ?? []), { cuenta, saldo: v.saldo }])
+  })
+  const vigente = new Map<string, number>()   // cuenta → último saldo conocido
   const porDia = new Map<string, number>()
-  ultimo.forEach((v, k) => { const f = k.split('|')[1]; porDia.set(f, (porDia.get(f) ?? 0) + v.saldo) })
+  Array.from(porFecha.keys()).sort().forEach(f => {
+    porFecha.get(f)!.forEach(x => vigente.set(x.cuenta, x.saldo))
+    let suma = 0
+    vigente.forEach(s => { suma += s })
+    porDia.set(f, suma)
+  })
   return porDia
 }
 

@@ -1,12 +1,17 @@
 'use client'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import PageHeader from '@/components/layout/PageHeader'
 import ModalShell from '@/components/ui/ModalShell'
 import {
-  Wallet, Plus, Copy, Trash2, Eraser, AlertTriangle, ChevronDown,
+  Wallet, Plus, Copy, Trash2, Eraser, AlertTriangle, ChevronDown, Landmark, Upload, FileStack, Wand2, CalendarRange, type LucideIcon,
 } from 'lucide-react'
+import { useCatalogosBanco } from './bancos/comun'
+import ModalCarga from './bancos/ModalCarga'
+import TabMovimientos from './bancos/TabMovimientos'
+import TabCargas from './bancos/TabCargas'
+import TabReglas from './bancos/TabReglas'
 import {
   CONCEPTOS, GRUPOS, GCOLOR, CPT, ConceptoId, GrupoId,
   CentroCosto, Matriz, Ingresos, ConfigPeriodo, DiaCalc, SemanaCalc,
@@ -39,7 +44,7 @@ function ultimoDiaMesISO(anio: number, mes1a12: number): string {
   return isoOf(d.getTime())
 }
 
-export default function FlujoCajaPage() {
+function ProyeccionCaja({ tabsBar }: { tabsBar: React.ReactNode }) {
   const { authUser, canWrite, canDelete } = useAuth()
   const puedeEditar = canWrite('tesoreria')
 
@@ -159,7 +164,7 @@ export default function FlujoCajaPage() {
   }
 
   if (loading) {
-    return <div style={{ padding: '32px 36px' }}>Cargando…</div>
+    return <div style={{ padding: '32px 36px' }}>{tabsBar}Cargando…</div>
   }
 
   return (
@@ -176,6 +181,7 @@ export default function FlujoCajaPage() {
           </button>
         ) : undefined}
       />
+      {tabsBar}
 
       {!periodo ? (
         <div className="card" style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -1079,3 +1085,80 @@ function ModalPeriodo({ periodos, onClose, onCreado }: {
   )
 }
 const lbl: React.CSSProperties = { display: 'block', fontSize: 11, letterSpacing: '.05em', textTransform: 'uppercase', color: '#7A7E87', fontWeight: 700, marginBottom: 6 }
+
+// ══════════════════════════════════════════════════════════════
+// Pestañas: Proyección (periodos) + estados de cuenta bancarios
+// ══════════════════════════════════════════════════════════════
+type TabFlujo = 'proyeccion' | 'movimientos' | 'cargas' | 'reglas'
+const TABS_FLUJO: { key: TabFlujo; label: string; icon: LucideIcon }[] = [
+  { key: 'proyeccion', label: 'Proyección', icon: CalendarRange },
+  { key: 'movimientos', label: 'Movimientos bancarios', icon: Landmark },
+  { key: 'cargas', label: 'Cargas', icon: FileStack },
+  { key: 'reglas', label: 'Reglas y layouts', icon: Wand2 },
+]
+
+export default function FlujoCajaPage() {
+  const [tab, setTab] = useState<TabFlujo>('proyeccion')
+  const bar = (
+    <div style={{ display: 'flex', gap: 4, borderBottom: '2px solid #E6E8EB', marginBottom: 20, flexWrap: 'wrap' }}>
+      {TABS_FLUJO.map(t => {
+        const active = tab === t.key, I = t.icon
+        return (
+          <button key={t.key} onClick={() => setTab(t.key)}
+            style={{ padding: '10px 18px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 13,
+              fontWeight: active ? 700 : 500, color: active ? '#1C1D21' : '#62666E',
+              borderBottom: active ? '2px solid #19D3C5' : '2px solid transparent', marginBottom: -2,
+              display: 'flex', alignItems: 'center', gap: 6 }}>
+            <I size={14} /> {t.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+  if (tab === 'proyeccion') return <ProyeccionCaja tabsBar={bar} />
+  return <EstadosCuenta tab={tab} tabsBar={bar} />
+}
+
+function EstadosCuenta({ tab, tabsBar }: { tab: Exclude<TabFlujo, 'proyeccion'>; tabsBar: React.ReactNode }) {
+  const { authUser, canWrite, canDelete } = useAuth()
+  const puedeEditar = canWrite('tesoreria')
+  const puedeBorrar = canDelete()
+  const cat = useCatalogosBanco()
+  const [modalCarga, setModalCarga] = useState(false)
+  const [recarga, setRecarga] = useState(0)
+
+  return (
+    <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
+      <PageHeader
+        icon={Wallet}
+        eyebrowLabel="Tesorería"
+        title="Flujo de Caja"
+        subtitle="Estados de cuenta por cuenta bancaria: carga desde Excel y clasificación por concepto, segmento y tipo de gasto"
+        backHref="/tesoreria"
+        actions={puedeEditar ? (
+          <button className="btn-primary" onClick={() => setModalCarga(true)} disabled={!cat.listo}>
+            <Upload size={14} /> Cargar estado de cuenta
+          </button>
+        ) : undefined}
+      />
+      {tabsBar}
+      {cat.error && (
+        <div style={{ background: '#F4F5F7', border: '1px solid #E6E8EB', borderLeft: '3px solid #C23B3B', color: '#C23B3B',
+          borderRadius: 8, padding: '10px 14px', fontSize: 12.5, marginBottom: 14 }}>
+          Error al leer catálogos: {cat.error}
+        </div>
+      )}
+      {!cat.listo ? <div>Cargando…</div> : (
+        <>
+          {tab === 'movimientos' && <TabMovimientos cat={cat} puedeEditar={puedeEditar} recarga={recarga} />}
+          {tab === 'cargas' && <TabCargas cat={cat} puedeBorrar={puedeBorrar} recarga={recarga} onCambio={() => setRecarga(r => r + 1)} />}
+          {tab === 'reglas' && <TabReglas cat={cat} puedeEditar={puedeEditar} puedeBorrar={puedeBorrar} />}
+        </>
+      )}
+      {modalCarga && (
+        <ModalCarga cat={cat} usuario={authUser?.nombre ?? null} onClose={() => setModalCarga(false)}
+          onCargado={() => { setModalCarga(false); setRecarga(r => r + 1) }} />
+      )}
+    </div>
+  )
+}
