@@ -1,7 +1,7 @@
 'use client'
 import {
   Landmark, FileText, Building2, ChevronRight,
-  Clock, FileCode2
+  Clock, FileCode2, Wallet
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
@@ -29,7 +29,13 @@ const MODULOS = [
     color: '#1C1D21',
     desc:  'Descarga masiva de XML recibidos y emitidos con la e.firma, PDF y Excel',
   },
-  // Flujo de Caja oculto del hub (se trabaja por fuera); la ruta /tesoreria/flujo-caja sigue existiendo.
+  {
+    key:   'flujo-caja',
+    label: 'Flujo de Caja',
+    icon:  Wallet,
+    color: '#1C1D21',
+    desc:  'Estados de cuenta bancarios: carga de Excel, clasificación por reglas y proyección',
+  },
 ]
 
 export default function TesoreriaPage() {
