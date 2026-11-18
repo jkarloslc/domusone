@@ -231,23 +231,26 @@ export default function POSPage() {
   const fetchStats = useCallback(async () => {
     const hoy = fechaLocal()
     const iniMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toLocaleDateString('en-CA')
+    // Las tarjetas responden al centro de venta seleccionado
+    const idC = centroActivo?.id ?? null
+    const porCentro = <T,>(q: T): T => (idC != null ? (q as any).eq('id_centro_fk', idC) : q)
     const [{ data, error }, { count: pendCorteCount }, { data: ventasMes }] = await Promise.all([
-      dbGolf.from('ctrl_ventas')
+      porCentro(dbGolf.from('ctrl_ventas')
         .select('id, total, status, id_corte_fk')
         .eq('status', 'PAGADA')
         .gte('fecha', inicioDelDia(hoy))
-        .lte('fecha', finDelDia(hoy)),
+        .lte('fecha', finDelDia(hoy))),
       // Backlog completo de ventas sin cortar, sin importar la fecha en que ocurrieron
-      dbGolf.from('ctrl_ventas')
+      porCentro(dbGolf.from('ctrl_ventas')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'PAGADA')
-        .is('id_corte_fk', null),
+        .is('id_corte_fk', null)),
       // Por fecha real de venta (no fecha de corte) — cortada o no
-      dbGolf.from('ctrl_ventas')
+      porCentro(dbGolf.from('ctrl_ventas')
         .select('total')
         .eq('status', 'PAGADA')
         .gte('fecha', inicioDelDia(iniMes))
-        .lte('fecha', finDelDia(hoy)),
+        .lte('fecha', finDelDia(hoy))),
     ])
     if (error) { console.error('[POS] fetchStats:', error); return }
     const rows = data ?? []
@@ -257,7 +260,7 @@ export default function POSPage() {
       pendCorte: pendCorteCount ?? 0,
     })
     setIngresosMes((ventasMes ?? []).reduce((a: number, v: any) => a + (v.total ?? 0), 0))
-  }, [])
+  }, [centroActivo?.id])
 
   // ── Fetch ventas ─────────────────────────────────────────
   const fetchVentas = useCallback(async () => {
@@ -1215,13 +1218,18 @@ ${facturasCorte.length > 0 ? `
         </div>
       )}
 
-      {/* Stats del día */}
+      {/* Stats del día (del centro de venta seleccionado) */}
+      {centroActivo && (
+        <div style={{ fontSize: 11, color: '#62666E', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
+          {centroActivo.nombre}
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
         {[
           { label: 'Ventas hoy',       value: statsHoy.ventas,          color: '#267F56', bg: '#F4F5F7' },
           { label: 'Total del día',    value: fmt$(statsHoy.total),     color: '#1C1D21', bg: '#F4F5F7' },
           { label: 'Por cortar',       value: statsHoy.pendCorte,       color: statsHoy.pendCorte > 0 ? '#B5761A' : '#267F56', bg: '#F4F5F7' },
-          { label: 'Ingresos POS este mes', value: fmt$(ingresosMes),  color: '#6B4E79', bg: '#F4F5F7' },
+          { label: 'Ingresos del mes', value: fmt$(ingresosMes),       color: '#6B4E79', bg: '#F4F5F7' },
         ].map(c => (
           <div key={c.label} className="card" style={{ flex: '1 1 140px', maxWidth: 220, padding: '12px 16px', background: '#fff', border: '1px solid #E6E8EB' }}>
             <div style={{ fontSize: 11, color: '#62666E', marginBottom: 4 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: c.color, marginRight: 6, verticalAlign: 'middle' }} />{c.label}</div>
@@ -1259,7 +1267,7 @@ ${facturasCorte.length > 0 ? `
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {centros.map(c => (
                 <button key={c.id} onClick={() => setCentroActivo(c)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 20px', border: `2px solid ${centroActivo?.id === c.id ? '#19D3C5' : '#E6E8EB'}`, borderRadius: 12, background: centroActivo?.id === c.id ? 'rgba(25,211,197,0.08)' : '#fff', cursor: 'pointer', transition: 'all 0.15s' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 20px', border: `2px solid ${centroActivo?.id === c.id ? '#19D3C5' : '#E6E8EB'}`, borderRadius: 12, background: centroActivo?.id === c.id ? '#E6E8EB' : '#fff', cursor: 'pointer', transition: 'all 0.15s' }}>
                   <Store size={16} style={{ color: centroActivo?.id === c.id ? '#1C1D21' : '#7A7E87' }} />
                   <div style={{ textAlign: 'left' }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#1C1D21' }}>{c.nombre}</div>
