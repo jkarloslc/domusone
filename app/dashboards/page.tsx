@@ -1,6 +1,6 @@
 'use client'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { LayoutDashboard, RefreshCw, AlertTriangle } from 'lucide-react'
+import { LayoutDashboard, RefreshCw, AlertTriangle, Filter, X } from 'lucide-react'
 import PageHeader from '@/components/layout/PageHeader'
 import FiltroAgrupadorCentro from '@/components/ui/FiltroAgrupadorCentro'
 import { useAuth } from '@/lib/AuthContext'
@@ -551,15 +551,35 @@ export default function DashboardsPage() {
         }
       />
 
-      {/* Filtros */}
-      <div className="card" style={{ background: '#fff', border: `1px solid ${C.borde}`, padding: '12px 14px', marginBottom: 24, display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: C.gris, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Ingresos</span>
-        <FiltroAgrupadorCentro centros={centros} agrupadores={agrupadores}
-          filtroAgr={filtroAgr} setFiltroAgr={setFiltroAgr} filtroCentro={filtroCentro} setFiltroCentro={setFiltroCentro} />
-        <span style={{ width: 1, height: 24, background: C.borde, margin: '0 4px' }} />
-        <span style={{ fontSize: 12, color: C.gris }}>
-          Egresos, CXP y nómina: <b style={{ color: C.carbon }}>{!ccIds ? 'todos los centros de costo' : ccNombres.length ? 'CC ' + ccNombres.join(', ') : '—'}</b>
-        </span>
+      {/* Filtros: punto de partida del análisis */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 20, background: C.carbon, borderRadius: 12, borderLeft: `4px solid ${C.turq}`,
+        padding: '16px 20px', marginBottom: 24, color: '#fff' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+          <Filter size={16} style={{ color: C.turq, flexShrink: 0 }} />
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '0.02em' }}>Empieza aquí: ¿qué quieres analizar?</div>
+            <div style={{ fontSize: 12, color: C.plata, marginTop: 2 }}>
+              Elige un agrupador o centro de ingreso; todo el dashboard (egresos, CXP, nómina, Golf y Hípico) se ajusta a tu selección.
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+          <FiltroAgrupadorCentro centros={centros} agrupadores={agrupadores} minWidth={240}
+            filtroAgr={filtroAgr} setFiltroAgr={setFiltroAgr} filtroCentro={filtroCentro} setFiltroCentro={setFiltroCentro} />
+          {(filtroAgr || filtroCentro) && (
+            <button onClick={() => { setFiltroAgr(''); setFiltroCentro('') }}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: `1px solid ${C.gris}`, color: C.plata,
+                borderRadius: 8, padding: '6px 10px', fontSize: 12, cursor: 'pointer' }}>
+              <X size={12} /> Limpiar
+            </button>
+          )}
+          <span style={{ marginLeft: 'auto', fontSize: 12, color: C.plata, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            Egresos, CXP y nómina:
+            <span style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', fontWeight: 600, borderRadius: 999, padding: '3px 10px' }}>
+              {!ccIds ? 'Todos los centros de costo' : ccNombres.length ? 'CC ' + ccNombres.join(', ') : 'Sin centro de costo'}
+            </span>
+          </span>
+        </div>
       </div>
 
       {ccIds && ccIds.size === 0 && (
