@@ -243,7 +243,7 @@ const GRUPOS: Grupo[] = [
       { titulo: 'Punto de venta', ids: ['ventas-pos', 'golf-ventas-historicas', 'golf-cuadre-formas-pago'] },
       { titulo: 'Campo', ids: ['golf-accesos', 'golf-acompanantes', 'golf-pases-invitados', 'golf-estatus-campo'] },
       { titulo: 'Carritos y cajones', ids: ['golf-slots-ocupacion', 'golf-auditoria-slots'] },
-      { titulo: 'Servicios y consumos', ids: ['golf-servicios-cc-area', 'golf-riego-consumo', 'golf-caballos-servicios'] },
+      { titulo: 'Servicios', ids: ['golf-servicios-cc-area'] },
     ],
   },
   {
