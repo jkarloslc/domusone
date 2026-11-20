@@ -57,7 +57,6 @@ const HorseIcon = ({ size = 15, ...props }: { size?: number } & SVGProps<SVGSVGE
 
 const ACCESOS: Record<Rol, Acceso[]> = {
   superadmin: [
-    { label: 'Dashboard',       href: '/dashboards',           icon: LayoutDashboard, color: '#1C1D21', bg: '#E6E8EB' },
     { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#126B63', bg: '#F4F5F7' },
     { label: 'Golf',             href: '/golf',                icon: Flag,            color: '#267F56', bg: '#F4F5F7' },
     { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#6B4E79', bg: '#F4F5F7' },
@@ -67,7 +66,6 @@ const ACCESOS: Record<Rol, Acceso[]> = {
     { label: 'Usuarios',         href: '/usuarios',            icon: Users,           color: '#62666E', bg: '#F8F9FA' },
   ],
   admin: [
-    { label: 'Dashboard',       href: '/dashboards',           icon: LayoutDashboard, color: '#1C1D21', bg: '#E6E8EB' },
     { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#126B63', bg: '#F4F5F7' },
     { label: 'Golf',             href: '/golf',                icon: Flag,            color: '#267F56', bg: '#F4F5F7' },
     { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#6B4E79', bg: '#F4F5F7' },
@@ -76,7 +74,6 @@ const ACCESOS: Record<Rol, Acceso[]> = {
     { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#C23B3B', bg: '#F4F5F7' },
   ],
   admin_lector: [
-    { label: 'Dashboard',       href: '/dashboards',           icon: LayoutDashboard, color: '#1C1D21', bg: '#E6E8EB' },
     { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#126B63', bg: '#F4F5F7' },
     { label: 'Golf',             href: '/golf',                icon: Flag,            color: '#267F56', bg: '#F4F5F7' },
     { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#26282D', bg: '#F4F5F7' },
@@ -89,12 +86,10 @@ const ACCESOS: Record<Rol, Acceso[]> = {
     { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#6B4E79', bg: '#F4F5F7' },
     { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#26282D', bg: '#F4F5F7' },
     { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#126B63', bg: '#F4F5F7' },
-    { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#1C1D21', bg: '#E6E8EB' },
   ],
   usuariomantto: [
     { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#126B63', bg: '#F4F5F7' },
     { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#26282D', bg: '#F4F5F7' },
-    { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#1C1D21', bg: '#E6E8EB' },
   ],
   atencion_residentes: [
     { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#126B63', bg: '#F4F5F7' },
@@ -131,13 +126,11 @@ const ACCESOS: Record<Rol, Acceso[]> = {
     { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#126B63', bg: '#F4F5F7' },
     { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#26282D', bg: '#F4F5F7' },
     { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#126B63', bg: '#F4F5F7' },
-    { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#1C1D21', bg: '#E6E8EB' },
     { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#C23B3B', bg: '#F4F5F7' },
   ],
   tesoreria: [
     { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#126B63', bg: '#F4F5F7' },
     { label: 'Ingresos',         href: '/ingresos',            icon: DollarSign,      color: '#267F56', bg: '#F4F5F7' },
-    { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#1C1D21', bg: '#E6E8EB' },
     { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#C23B3B', bg: '#F4F5F7' },
   ],
   seguridad: [
@@ -151,7 +144,6 @@ const ACCESOS: Record<Rol, Acceso[]> = {
   ],
   ingresos: [
     { label: 'Ingresos',         href: '/ingresos',            icon: DollarSign,      color: '#267F56', bg: '#F4F5F7' },
-    { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#1C1D21', bg: '#E6E8EB' },
     { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#C23B3B', bg: '#F4F5F7' },
   ],
   usuariogolf: [
@@ -172,7 +164,7 @@ const ACCESOS: Record<Rol, Acceso[]> = {
 }
 
 export default function InicioPage() {
-  const { authUser } = useAuth()
+  const { authUser, can } = useAuth()
   const { config } = useConfig()
   const router = useRouter()
   const hoy = fechaLocal()
@@ -187,7 +179,11 @@ export default function InicioPage() {
     admin_finanzas: 'admin', admin_low_level: 'admin', admin_tesoreria: 'admin',
     admin_organismo: 'compras', caja_organismo: 'ingresos', aux_organismo: 'mantenimiento', usuario_organismo: 'fraccionamiento',
   }
-  const accesos = ACCESOS[rol] ?? ACCESOS[ALIAS_ACCESOS[rol as string]] ?? []
+  const accesosRol = ACCESOS[rol] ?? ACCESOS[ALIAS_ACCESOS[rol as string]] ?? []
+  // Dashboard primero para todo rol con permiso de verlo
+  const accesos: Acceso[] = can('dashboards')
+    ? [{ label: 'Dashboard', href: '/dashboards', icon: LayoutDashboard, color: '#1C1D21', bg: '#E6E8EB' }, ...accesosRol]
+    : accesosRol
 
   useEffect(() => {
     async function cargarPendientes() {

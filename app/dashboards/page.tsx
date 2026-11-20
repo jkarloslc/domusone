@@ -89,7 +89,7 @@ type LineaConc = { id_recibo_fk: number; id_concepto_fk: number | null; nombre_c
 type LineaSecc = { id_recibo_fk: number; id_seccion_fk: number | null; nombre_seccion: string | null; monto: number | null }
 type OP = { id: number; fecha_op: string; monto: number | null; id_centro_costo_fk: number | null; id_tipo_gasto_fk: number | null; tipo_gasto: string | null; id_area_fk: number | null; id_cuadrante_fk: number | null }
 type OPPend = { id: number; status: string; monto: number | null; saldo: number | null; fecha_vencimiento: string | null; id_centro_costo_fk: number | null }
-type Abono = { fecha_abono: string; monto: number | null; ordenes_pago: { id_centro_costo_fk: number | null } | null }
+type Abono = { fecha_abono: string; monto: number | null; ordenes_pago: { id: number; id_centro_costo_fk: number | null; id_tipo_gasto_fk: number | null; tipo_gasto: string | null; id_area_fk: number | null; id_cuadrante_fk: number | null } | null }
 type Cab = { id: number; status: string | null }
 type Asig = { id_arrendatario_fk: number | null; id_caballeriza_fk: number | null; monto_mensual: number | null; fecha_inicio: string | null; fecha_fin: string | null; activo: boolean | null }
 type CxcHip = { id_arrendatario_fk: number | null; saldo: number | null; fecha_vencimiento: string | null }
@@ -153,7 +153,7 @@ function CardPeriodo({ p, ing, ingAnt, egr, egrAnt, pag, nRec }: {
         {entero(nRec)} recibo{nRec === 1 ? '' : 's'}{p.anterior && <> · <Delta v={delta(ing, ingAnt)} /> {p.leyendaAnt}</>}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.gris }}><Punto color={C.rojo} /> Egresos (OP emitidas)</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.gris }}><Punto color={C.rojo} /> Egresos (pagado)</div>
       <div style={{ ...NUM, fontSize: 20, margin: '2px 0 2px' }}>{money(egr)}</div>
       <div style={{ fontSize: 11, color: C.muted, marginBottom: 12 }}>
         {p.anterior ? <><Delta v={delta(egr, egrAnt)} invertir /> {p.leyendaAnt}</> : <>&nbsp;</>}
@@ -167,7 +167,7 @@ function CardPeriodo({ p, ing, ingAnt, egr, egrAnt, pag, nRec }: {
           </div>
         </div>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.gris }}><Punto color={C.teal} /> Pagado</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.gris }}><Punto color={C.teal} /> OP emitidas</div>
           <div style={{ ...NUM, fontSize: 15 }}>{money(pag)}</div>
         </div>
       </div>
@@ -208,7 +208,7 @@ function CardZona({ nombre, ing, gas, nOp, totIng, lotes, gasGral, pctLotes }: {
       <div style={{ fontSize: 11, color: C.muted, marginBottom: 10, fontVariantNumeric: 'tabular-nums' }}>{totIng ? ((ing / totIng) * 100).toFixed(1) : '0.0'}% del ingreso del centro</div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.gris }}><Punto color={C.rojo} /> Gasto directo</div>
       <div style={{ ...NUM, fontSize: 16, margin: '2px 0 2px' }}>{money(gas)}</div>
-      <div style={{ fontSize: 11, color: C.muted, marginBottom: 10 }}>{entero(nOp)} OP{nOp === 1 ? '' : 's'}</div>
+      <div style={{ fontSize: 11, color: C.muted, marginBottom: 10 }}>{entero(nOp)} pago{nOp === 1 ? '' : 's'}</div>
       {gasGral !== 0 && <>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.gris }}><Punto color={C.ambar} /> Gasto general prorrateado</div>
         <div style={{ ...NUM, fontSize: 16, margin: '2px 0 2px' }}>{money(gasGral)}</div>
@@ -336,7 +336,7 @@ export default function DashboardsPage() {
           .not('status', 'in', '("Cancelada","Rechazada")').gte('fecha_op', desde).lte('fecha_op', h).order('id')),
         todo<OPPend>(() => dbComp.from('ordenes_pago').select('id, status, monto, saldo, fecha_vencimiento, id_centro_costo_fk')
           .in('status', ['Pendiente', 'Pago Parcial', 'Pendiente Auth', 'Pendiente Auth Finanzas']).order('id')),
-        todo<Abono>(() => dbComp.from('cxp_abonos').select('fecha_abono, monto, ordenes_pago!inner(id_centro_costo_fk)')
+        todo<Abono>(() => dbComp.from('cxp_abonos').select('fecha_abono, monto, ordenes_pago!inner(id, id_centro_costo_fk, id_tipo_gasto_fk, tipo_gasto, id_area_fk, id_cuadrante_fk)')
           .eq('status', 'Aplicado').gte('fecha_abono', desde).lte('fecha_abono', h).order('id')),
         ladoClub
           ? todo<any>(() => dbGolf.from('ctrl_accesos').select('id, fecha_entrada, id_familiar_fk, ctrl_acceso_acomp(origen_pago, es_externo)')
@@ -385,6 +385,13 @@ export default function DashboardsPage() {
 
   const sumaRec = (r: Rango) => recFilt.reduce((a, x) => enRango(x.fecha, r) ? a + Number(x.monto_total ?? 0) : a, 0)
   const cuentaRec = (r: Rango) => recFilt.reduce((a, x) => enRango(x.fecha, r) ? a + 1 : a, 0)
+  // Egresos = lo PAGADO (abonos aplicados por fecha de pago), con la clasificación de su OP.
+  // fecha_op toma la fecha del abono para reutilizar los mismos filtros por periodo.
+  const pagosFilt = useMemo<OP[]>(() => abFilt.map(a => ({
+    id: a.ordenes_pago?.id ?? 0, fecha_op: a.fecha_abono, monto: a.monto,
+    id_centro_costo_fk: a.ordenes_pago?.id_centro_costo_fk ?? null, id_tipo_gasto_fk: a.ordenes_pago?.id_tipo_gasto_fk ?? null,
+    tipo_gasto: a.ordenes_pago?.tipo_gasto ?? null, id_area_fk: a.ordenes_pago?.id_area_fk ?? null, id_cuadrante_fk: a.ordenes_pago?.id_cuadrante_fk ?? null,
+  })), [abFilt])
   const sumaOp = (r: Rango) => opsFilt.reduce((a, x) => enRango(x.fecha_op, r) ? a + Number(x.monto ?? 0) : a, 0)
   const sumaAb = (r: Rango) => abFilt.reduce((a, x) => enRango(x.fecha_abono, r) ? a + Number(x.monto ?? 0) : a, 0)
 
@@ -398,7 +405,7 @@ export default function DashboardsPage() {
   const desgZona = useMemo(() => {
     if (!modoZona) return []
     const recEnPer = new Set(recFilt.filter(r => enRango(r.fecha, pDesg.actual)).map(r => r.id))
-    const opsPer = opsFilt.filter(o => enRango(o.fecha_op, pDesg.actual))
+    const opsPer = pagosFilt.filter(o => enRango(o.fecha_op, pDesg.actual))
     const filas = zonasCat.zonas.map(z => {
       let ing = 0, gas = 0, nOp = 0
       lSecc.forEach(l => { if (recEnPer.has(l.id_recibo_fk) && zonasCat.seccionEnZona(z.id, l.id_seccion_fk)) ing += Number(l.monto ?? 0) })
@@ -421,7 +428,7 @@ export default function DashboardsPage() {
     if (Math.abs(ingSin) >= 0.5 || Math.abs(gasSinFila) >= 0.5)
       filas.push({ id: -1, nombre: 'Sin zona (generales)', ing: ingSin, gas: gasSinFila, nOp: gasSinFila ? nSin : 0, lotes: 0, gasGral: 0, pctLotes: 0 })
     return filas
-  }, [modoZona, recFilt, opsFilt, pDesg, lSecc, zonasCat, lotesPorZona])
+  }, [modoZona, recFilt, pagosFilt, pDesg, lSecc, zonasCat, lotesPorZona])
   const gasGralZona = desgZona.reduce((a, z) => a + z.gasGral, 0)
   const desgIng = useMemo(() => {
     const m = new Map<string, { monto: number; n: number }>()
@@ -442,13 +449,13 @@ export default function DashboardsPage() {
   // ── Desglose de egresos por tipo de gasto ─────────────────
   const desgEgr = useMemo(() => {
     const m = new Map<string, { monto: number; n: number }>()
-    opsFilt.forEach(o => {
+    pagosFilt.forEach(o => {
       if (!enRango(o.fecha_op, pDesg.actual)) return
       const k = (o.id_tipo_gasto_fk && tiposGasto.get(o.id_tipo_gasto_fk)) || o.tipo_gasto || 'Sin tipo de gasto'
       const x = m.get(k) ?? { monto: 0, n: 0 }; x.monto += Number(o.monto ?? 0); x.n += 1; m.set(k, x)
     })
     return topN(m)
-  }, [opsFilt, pDesg, tiposGasto])
+  }, [pagosFilt, pDesg, tiposGasto])
   const totDesgEgr = desgEgr.reduce((a, x) => a + x.monto, 0)
 
   // ── Por pagar ─────────────────────────────────────────────
@@ -531,15 +538,15 @@ export default function DashboardsPage() {
     })
     nomCargas.forEach(c => { if (c.mes === mesAct) cargasMes++ })
     const lista = Array.from(g.entries()).map(([nombre, v]) => ({ nombre, ...v })).sort((a, b) => b.monto - a.monto || b.ant - a.ant)
-    const opAnio = opsFilt.filter(o => o.id_tipo_gasto_fk && IDS_TG_NOMINA.includes(o.id_tipo_gasto_fk) && o.fecha_op >= hoy.slice(0, 4) + '-01-01')
+    const opAnio = pagosFilt.filter(o => o.id_tipo_gasto_fk && IDS_TG_NOMINA.includes(o.id_tipo_gasto_fk) && o.fecha_op >= hoy.slice(0, 4) + '-01-01')
       .reduce((a, o) => a + Number(o.monto ?? 0), 0)
     return { lista, tot, totAnt, hc: hcTot.size, cargasMes, opAnio, porCC }
-  }, [areas, ccs, nomCargas, nomDet, ccIds, mesAct, mesAnt, opsFilt, hoy]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [areas, ccs, nomCargas, nomDet, ccIds, mesAct, mesAnt, pagosFilt, hoy]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Vistas (botones de sección) ───────────────────────────
   const pMes = pers.find(p => p.key === 'mes')!
   const vistas: { key: Vista; label: string; valor: string; nota: string }[] = [
-    { key: 'resumen', label: 'Ingresos y egresos', valor: money(sumaRec(pMes.actual) - sumaOp(pMes.actual)), nota: 'Neto del mes' },
+    { key: 'resumen', label: 'Ingresos y egresos', valor: money(sumaRec(pMes.actual) - sumaAb(pMes.actual)), nota: 'Neto del mes' },
     { key: 'ingresos', label: modoZona ? 'Ingresos y gastos por zona' : 'Ingresos desglosados', valor: money(modoZona ? desgZona.reduce((a, z) => a + z.ing, 0) : totDesgIng), nota: pDesg.label },
     { key: 'egresos', label: 'Egresos por tipo de gasto', valor: money(totDesgEgr), nota: pDesg.label },
     { key: 'cxp', label: 'Cuentas por pagar', valor: money(suma(porPagar)), nota: `Vencido ${money(suma(vencidas))}` },
@@ -628,13 +635,13 @@ export default function DashboardsPage() {
 
       {/* 1. Resumen por periodo */}
       {vistaEf === 'resumen' && (<>
-      <Seccion titulo="Ingresos y egresos" nota="Ingresos = recibos confirmados. Egresos = órdenes de pago emitidas por fecha de OP (sin canceladas ni rechazadas). Pagado = abonos aplicados.">
+      <Seccion titulo="Ingresos y egresos" nota="Ingresos = recibos confirmados. Egresos = pagos aplicados a OP, por fecha de pago. OP emitidas = órdenes de pago capturadas en el periodo (sin canceladas ni rechazadas), como referencia de lo comprometido.">
         <Grid min={240}>
           {pers.map(p => (
             <CardPeriodo key={p.key} p={p}
               ing={sumaRec(p.actual)} ingAnt={p.anterior ? sumaRec(p.anterior) : 0}
-              egr={sumaOp(p.actual)} egrAnt={p.anterior ? sumaOp(p.anterior) : 0}
-              pag={sumaAb(p.actual)} nRec={cuentaRec(p.actual)} />
+              egr={sumaAb(p.actual)} egrAnt={p.anterior ? sumaAb(p.anterior) : 0}
+              pag={sumaOp(p.actual)} nRec={cuentaRec(p.actual)} />
           ))}
         </Grid>
       </Seccion>
@@ -644,7 +651,7 @@ export default function DashboardsPage() {
       {vistaEf === 'ingresos' && (<>
       {modoZona ? (
         <Seccion titulo="Ingresos y gastos por zona"
-          nota={`${pDesg.label} · ingreso por sección de la zona; gasto directo = OP con zona capturada o, si no tiene, la zona de su área${gasGralZona ? `; gasto general (${money(gasGralZona)}, OP sin zona) prorrateado por número de lotes` : ''}.`}
+          nota={`${pDesg.label} · ingreso por sección de la zona; gasto directo = pagos de OP con zona capturada o, si no tiene, la zona de su área${gasGralZona ? `; gasto general (${money(gasGralZona)}, pagos sin zona) prorrateado por número de lotes` : ''}.`}
           derecha={selectorPeriodo}>
           <Grid min={240}>
             {desgZona.map(z => <CardZona key={z.id} {...z} totIng={desgZona.reduce((a, x) => a + x.ing, 0)} />)}
@@ -667,12 +674,12 @@ export default function DashboardsPage() {
 
       {/* 3. Desglose de egresos */}
       {vistaEf === 'egresos' && (<>
-      <Seccion titulo="Egresos por tipo de gasto" nota={`${pDesg.label} · ${money(totDesgEgr)}`} derecha={selectorPeriodo}>
+      <Seccion titulo="Egresos por tipo de gasto" nota={`${pDesg.label} · ${money(totDesgEgr)} pagado`} derecha={selectorPeriodo}>
         {desgEgr.length === 0
-          ? <div style={{ fontSize: 12, color: C.muted, padding: '14px 0' }}>Sin órdenes de pago en el periodo.</div>
+          ? <div style={{ fontSize: 12, color: C.muted, padding: '14px 0' }}>Sin pagos en el periodo.</div>
           : <Grid>{desgEgr.map((x, i) => (
               <CardDesglose key={x.nombre} nombre={x.nombre} monto={x.monto} total={totDesgEgr} color={PALETA_DESG[i % PALETA_DESG.length]}
-                extra={`${entero(x.n)} OP${x.n === 1 ? '' : 's'}`} />
+                extra={`${entero(x.n)} pago${x.n === 1 ? '' : 's'}`} />
             ))}</Grid>}
       </Seccion>
       </>)}
@@ -698,7 +705,7 @@ export default function DashboardsPage() {
             <Kpi label={`Nómina ${nombreMes(mesAct)} (en curso)`} valor={money(nom.tot)} color={C.ciruela} nota={<><Delta v={delta(nom.tot, nom.totAnt)} invertir /> vs. {nombreMes(mesAnt)} completo</>} />
             <Kpi label={`Nómina ${nombreMes(mesAnt)}`} valor={money(nom.totAnt)} color={C.gris} />
             <Kpi label="Plantilla" valor={`${entero(nom.hc)} colaboradores`} color={C.carbon} nota={nom.hc ? `${money(nom.totAnt / nom.hc)} neto por colaborador en ${nombreMes(mesAnt)}` : undefined} />
-            <Kpi label={`Acumulado ${hoy.slice(0, 4)} (OP de nómina)`} valor={money(nom.opAnio)} color={C.teal} nota="OP tipo Nómina emitidas en el año" />
+            <Kpi label={`Pagado ${hoy.slice(0, 4)} (nómina)`} valor={money(nom.opAnio)} color={C.teal} nota="Pagos de OP tipo Nómina en el año" />
           </Grid>
         </div>
         {nom.lista.length === 0
