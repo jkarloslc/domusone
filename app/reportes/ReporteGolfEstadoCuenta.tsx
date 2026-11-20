@@ -11,6 +11,8 @@ type Socio = {
   nombre: string
   apellido_paterno: string | null
   apellido_materno: string | null
+  telefono: string | null
+  email: string | null
   cat_categorias_socios?: { nombre: string }
 }
 
@@ -40,7 +42,7 @@ export default function ReporteGolfEstadoCuenta() {
 
   useEffect(() => {
     dbGolf.from('cat_socios')
-      .select('id, numero_socio, nombre, apellido_paterno, apellido_materno, cat_categorias_socios(nombre)')
+      .select('id, numero_socio, nombre, apellido_paterno, apellido_materno, telefono, email, cat_categorias_socios(nombre)')
       .eq('activo', true).order('apellido_paterno')
       .then(({ data }: any) => setSocios(data ?? []))
   }, [])
@@ -131,6 +133,8 @@ export default function ReporteGolfEstadoCuenta() {
             campos={[
               { label: 'Núm. socio', value: socioSel.numero_socio ?? '' },
               { label: 'Categoría', value: socioSel.cat_categorias_socios?.nombre ?? '' },
+              { label: 'Teléfono', value: socioSel.telefono ?? '' },
+              { label: 'Correo', value: socioSel.email ?? '' },
             ]}
             desde={fechaDesde} hasta={fechaHasta} ec={ec}
           />

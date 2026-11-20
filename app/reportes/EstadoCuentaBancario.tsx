@@ -6,6 +6,12 @@ import type { EstadoCuenta } from '@/lib/estadoCuentaLibro'
 
 const fmtFecha = (d: string | null) =>
   d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
+// Fecha corta para las tablas de detalle (dd/mm/aa): cabe en un renglón
+const fmtFechaCorta = (d: string | null) => {
+  if (!d) return '—'
+  const [y, m, dd] = d.slice(0, 10).split('-')
+  return `${dd}/${m}/${y.slice(2)}`
+}
 const fmt$ = (v: number) =>
   (v < 0 ? '−' : '') + '$' + Math.abs(v).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
@@ -25,6 +31,8 @@ table.ec-detalle, table.ec-detalle *,
 table.ec-detalle th, table.ec-detalle td,
 #reporte-print-area table.ec-detalle th, #reporte-print-area table.ec-detalle td { padding: 2px 6px !important; }
 table.ec-detalle .ec-pill { padding: 0 5px !important; }
+table.ec-detalle .ec-nw, #reporte-print-area table.ec-detalle .ec-nw,
+#reporte-print-area table.ec-detalle td[style*="text-align: right"] { white-space: nowrap !important; }
 `
 
 const CLASE_LABEL: Record<string, string> = {
@@ -174,7 +182,7 @@ export default function EstadoCuentaBancario({ titulo, titular, campos, desde, h
           </thead>
           <tbody>
             <tr style={{ background: '#F4F5F7' }}>
-              <td style={{ ...TD, color: '#62666E', whiteSpace: 'nowrap' }}>{fmtFecha(desde)}</td>
+              <td className="ec-nw" style={{ ...TD, color: '#62666E', whiteSpace: 'nowrap' }}>{fmtFechaCorta(desde)}</td>
               <td style={TD}></td>
               <td style={{ ...TD, fontWeight: 600, color: '#33363C' }}>Saldo anterior</td>
               <td style={TD}></td>
@@ -189,8 +197,8 @@ export default function EstadoCuentaBancario({ titulo, titular, campos, desde, h
               const cierraMes = variosMeses && (i === ec.movimientos.length - 1 || ec.movimientos[i + 1].fecha.slice(0, 7) !== mes)
               return (<Fragment key={m.key}>
               <tr>
-                <td style={{ ...TD, color: '#62666E', whiteSpace: 'nowrap' }}>{fmtFecha(m.fecha)}</td>
-                <td style={{ ...TD, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: '#33363C', fontSize: 11, whiteSpace: 'nowrap' }}>{m.referencia || '—'}</td>
+                <td className="ec-nw" style={{ ...TD, color: '#62666E', whiteSpace: 'nowrap' }}>{fmtFechaCorta(m.fecha)}</td>
+                <td className="ec-nw" style={{ ...TD, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: '#33363C', fontSize: 11, whiteSpace: 'nowrap' }}>{m.referencia || '—'}</td>
                 <td style={{ ...TD, color: '#1C1D21' }}>
                   <div>
                     <span style={{ fontSize: 10, fontWeight: 600, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '.04em', marginRight: 6 }}>{CLASE_LABEL[m.clase]}</span>
@@ -250,11 +258,11 @@ export default function EstadoCuentaBancario({ titulo, titular, campos, desde, h
                 <tr key={p.id}>
                   <td style={{ ...TD, color: '#1C1D21' }}>{p.concepto}</td>
                   <td style={{ ...TD, color: '#62666E', fontVariantNumeric: 'tabular-nums' }}>{p.periodo ?? '—'}</td>
-                  <td style={{ ...TD, color: p.vencida ? '#C23B3B' : '#62666E', fontWeight: p.vencida ? 600 : 400, whiteSpace: 'nowrap' }}>{fmtFecha(p.fecha_vencimiento)}</td>
+                  <td style={{ ...TD, color: p.vencida ? '#C23B3B' : '#62666E', fontWeight: p.vencida ? 600 : 400, whiteSpace: 'nowrap' }} className="ec-nw">{fmtFechaCorta(p.fecha_vencimiento)}</td>
                   <td style={{ ...TD, ...NUM, color: '#33363C' }}>{fmt$(p.monto_final)}</td>
                   <td style={{ ...TD, ...NUM, color: '#1C1D21' }}>{fmt$(p.saldoCorte)}</td>
                   <td style={TD}>
-                    <span className="ec-pill" style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, fontWeight: 600, color: '#fff', background: p.vencida ? '#C23B3B' : '#B5761A' }}>
+                    <span className="ec-pill ec-nw" style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, fontWeight: 600, color: '#fff', background: p.vencida ? '#C23B3B' : '#B5761A' }}>
                       {p.vencida ? 'VENCIDA' : 'POR VENCER'}
                     </span>
                   </td>
