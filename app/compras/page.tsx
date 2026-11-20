@@ -4,6 +4,7 @@ import {
   FileText, Truck, ArrowLeftRight, ChevronRight,
   Layers, Wallet, Fuel
 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/AuthContext'
 import PageHeader from '@/components/layout/PageHeader'
@@ -24,9 +25,33 @@ const MODULOS = [
   { key: 'combustible',  label: 'Combustible',             icon: Fuel,          color: '#267F56', desc: 'Kardex de Magna, Premium y Diesel' },
 ]
 
+const PESTANAS = [
+  { key: 'pagos',       label: 'Órdenes de Pago', modulos: ['ordenes-pago', 'caja-chica', 'combustible'] },
+  { key: 'compras',     label: 'Compras',         modulos: ['requisiciones', 'cotizaciones', 'ordenes'] },
+  { key: 'inventarios', label: 'Inventarios',     modulos: ['recepciones', 'transferencias', 'inventario'] },
+  { key: 'catalogos',   label: 'Catálogos',       modulos: ['articulos', 'proveedores', 'almacenes', 'areas'] },
+] as const
+
+const LS_TAB = 'compras-hub-tab'
+
 export default function ComprasPage() {
   const router = useRouter()
   const { canCompras } = useAuth()
+  const [tab, setTab] = useState<string>('pagos')
+
+  useEffect(() => {
+    try { const t = localStorage.getItem(LS_TAB); if (t) setTab(t) } catch {}
+  }, [])
+
+  const cambiarTab = (k: string) => {
+    setTab(k)
+    try { localStorage.setItem(LS_TAB, k) } catch {}
+  }
+
+  const visibles = PESTANAS
+    .map(p => ({ ...p, items: p.modulos.map(k => MODULOS.find(m => m.key === k)!).filter(m => m && canCompras(m.key)) }))
+    .filter(p => p.items.length > 0)
+  const activa = visibles.find(p => p.key === tab) ?? visibles[0]
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -38,9 +63,27 @@ export default function ComprasPage() {
         subtitle="Gestión P2P — Requisición hasta Inventario Lógico"
       />
 
+      {/* Pestañas */}
+      <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid #E6E8EB', marginBottom: 16, overflowX: 'auto' }}>
+        {visibles.map(p => {
+          const on = p.key === activa?.key
+          return (
+            <button key={p.key} onClick={() => cambiarTab(p.key)}
+              style={{
+                padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+                borderBottom: `2px solid ${on ? '#19D3C5' : 'transparent'}`, marginBottom: -1,
+                fontSize: 13, fontWeight: on ? 700 : 500, color: on ? '#1C1D21' : '#62666E',
+              }}>
+              {p.label}
+              <span style={{ marginLeft: 6, fontSize: 11, color: '#9A9EA7', fontVariantNumeric: 'tabular-nums' }}>{p.items.length}</span>
+            </button>
+          )
+        })}
+      </div>
+
       {/* Grid de módulos */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
-        {MODULOS.filter(m => canCompras(m.key)).map(m => {
+        {(activa?.items ?? []).map(m => {
           const Icon = m.icon
           return (
             <button key={m.key}
