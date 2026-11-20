@@ -69,6 +69,7 @@ Vehículos y Maquinaria, Equipo y Herramienta (con combustible, bitácoras, pré
   - Al cambiar de centro se limpia la Zona. Páginas sin filtro de CC (Consumo por Sección/Frente, Combustible) muestran Zona directo.
 - Captura (Requisición, OC, OP encabezado y líneas de distribución de un solo CC): **CC → Zona → Área** con `<CampoZonaCaptura>`. La Zona **se guarda** en `id_cuadrante_fk` de `comp.requisiciones`, `ordenes_compra`, `ordenes_pago`, `ordenes_pago_det` (migr. `20261110140000`). OC hereda de la Requisición; OP con OC hereda de la OC. En OP modo "CC distintos" no hay Zona por línea.
 - Filtros/reportes de costos usan `zonasCat.docEnZona(zona, doc)` / `orDocEnZona(zona)`: zona guardada del documento y, si es NULL (documentos viejos), la del área.
+- **Gasto general prorrateado por lotes** (2026-11-20): OP de un CC con zonas, sin zona y con área sin zona (Operación Mantto Residencial, Vigilancia, Circuito, Acceso Zona Norte) se reparte entre las zonas activas según sus lotes (`cat.lotes.id_cuadrante_fk`). Solo vista, no modifica OPs. Reportes con filtro de Zona: `zonasCat.filtrarZona(lista, zona, prorratear, campos)` / `factorZona` + `<ChkProrrateoZona>` (activo por defecto) y `<EtiquetaProrrateo>` junto al folio. Mismo criterio en Dashboard (Ingresos y gastos por zona) y Árbol de Presupuestos. Los listados (OP, CXP) no prorratean.
 - **Lotes con zona propia** (`cat.lotes.id_cuadrante_fk`): si su sección está en una sola zona, se asigna sola; si la sección está repartida (ej. Fairway), se elige en el modal del lote o en Catálogos › Zonas › Lotes. Al quitar una sección de una zona, sus lotes se liberan de esa zona. Los ingresos siguen siendo por sección (una sección en 2 zonas cuenta en ambas).
 - Al crear una página nueva con filtro o captura de Sección o Área, seguir esta jerarquía.
 
@@ -121,7 +122,7 @@ Controla **qué puede hacer** el usuario (permisos funcionales):
 | Elemento | Qué define |
 |---|---|
 | `type Rol` | Lista de valores válidos — agregar el nuevo rol aquí |
-| `getHomeRouteByRole()` | Ruta inicial al hacer login |
+| `getHomeRouteByRole()` | Ruta inicial al hacer login (hoy siempre `/inicio` para todos los roles, 2026-11-20) |
 | `LEER: Record<Rol, …>` | Módulos visibles en sidebar (`can()`) |
 | `ESCRIBIR: Record<Rol, …>` | Módulos donde aparecen botones Nuevo/Editar (`canWrite()`) |
 | `ROLES_DELETE` | Roles que pueden eliminar registros |
