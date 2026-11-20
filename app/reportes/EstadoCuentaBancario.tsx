@@ -17,6 +17,16 @@ const TH: React.CSSProperties = { padding: '9px 12px', fontWeight: 600, fontSize
 const TD: React.CSSProperties = { padding: '8px 12px', borderBottom: '1px solid #E6E8EB', verticalAlign: 'top' }
 const ETQ: React.CSSProperties = { fontSize: 10, color: '#7A7E87', textTransform: 'uppercase', letterSpacing: '.06em' }
 
+// Detalle compacto: tamaño máximo 6.5 pt en pantalla e impresión. El selector
+// con #reporte-print-area gana a las reglas de impresión de PrintBar (10px/8px).
+const CSS_DETALLE = `
+table.ec-detalle, table.ec-detalle *,
+#reporte-print-area table.ec-detalle, #reporte-print-area table.ec-detalle * { font-size: 6.5pt !important; line-height: 1.25 !important; }
+table.ec-detalle th, table.ec-detalle td,
+#reporte-print-area table.ec-detalle th, #reporte-print-area table.ec-detalle td { padding: 2px 6px !important; }
+table.ec-detalle .ec-pill { padding: 0 5px !important; }
+`
+
 const CLASE_LABEL: Record<string, string> = {
   cuota: 'Cargo', consumo: 'Consumo', pago: 'Pago', bonificacion: 'Bonificación', ajuste: 'Ajuste',
 }
@@ -43,6 +53,7 @@ export default function EstadoCuentaBancario({ titulo, titular, campos, desde, h
 
   return (
     <div>
+      <style>{CSS_DETALLE}</style>
       {/* Encabezado: titular + periodo */}
       <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
         <div style={{ background: '#1C1D21', color: '#fff', padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
@@ -109,7 +120,7 @@ export default function EstadoCuentaBancario({ titulo, titular, campos, desde, h
         <>
           <h3 style={{ fontSize: 13, fontWeight: 700, color: '#1C1D21', margin: '0 0 8px' }}>Resumen por mes</h3>
           <div className="card" style={{ padding: 0, overflowX: 'auto', marginBottom: 20 }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 640 }}>
+            <table className="ec-detalle" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 480 }}>
               <thead>
                 <tr style={{ background: '#1C1D21' }}>
                   <th style={TH}>Mes</th>
@@ -150,15 +161,15 @@ export default function EstadoCuentaBancario({ titulo, titular, campos, desde, h
         Detalle de movimientos ({ec.movimientos.length})
       </h3>
       <div className="card" style={{ padding: 0, overflowX: 'auto', marginBottom: 20 }}>
-        <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 720 }}>
+        <table id="reporte-table" className="ec-detalle" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 520 }}>
           <thead>
             <tr style={{ background: '#1C1D21' }}>
-              <th style={{ ...TH, width: 96 }}>Fecha</th>
-              <th style={{ ...TH, width: 110 }}>Referencia</th>
+              <th style={{ ...TH, width: 62 }}>Fecha</th>
+              <th style={{ ...TH, width: 72 }}>Referencia</th>
               <th style={TH}>Concepto</th>
-              <th style={{ ...TH, textAlign: 'right', width: 120 }}>Cargos</th>
-              <th style={{ ...TH, textAlign: 'right', width: 120 }}>Abonos</th>
-              <th style={{ ...TH, textAlign: 'right', width: 130 }}>Saldo</th>
+              <th style={{ ...TH, textAlign: 'right', width: 78 }}>Cargos</th>
+              <th style={{ ...TH, textAlign: 'right', width: 78 }}>Abonos</th>
+              <th style={{ ...TH, textAlign: 'right', width: 84 }}>Saldo</th>
             </tr>
           </thead>
           <tbody>
@@ -223,15 +234,15 @@ export default function EstadoCuentaBancario({ titulo, titular, campos, desde, h
         </div>
       ) : (
         <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 600 }}>
+          <table className="ec-detalle" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 440 }}>
             <thead>
               <tr style={{ background: '#1C1D21' }}>
                 <th style={TH}>Concepto</th>
-                <th style={{ ...TH, width: 100 }}>Periodo</th>
-                <th style={{ ...TH, width: 110 }}>Vencimiento</th>
-                <th style={{ ...TH, textAlign: 'right', width: 120 }}>Importe</th>
-                <th style={{ ...TH, textAlign: 'right', width: 120 }}>Saldo</th>
-                <th style={{ ...TH, width: 100 }}>Estado</th>
+                <th style={{ ...TH, width: 52 }}>Periodo</th>
+                <th style={{ ...TH, width: 62 }}>Vencimiento</th>
+                <th style={{ ...TH, textAlign: 'right', width: 78 }}>Importe</th>
+                <th style={{ ...TH, textAlign: 'right', width: 78 }}>Saldo</th>
+                <th style={{ ...TH, width: 60 }}>Estado</th>
               </tr>
             </thead>
             <tbody>
@@ -243,7 +254,7 @@ export default function EstadoCuentaBancario({ titulo, titular, campos, desde, h
                   <td style={{ ...TD, ...NUM, color: '#33363C' }}>{fmt$(p.monto_final)}</td>
                   <td style={{ ...TD, ...NUM, color: '#1C1D21' }}>{fmt$(p.saldoCorte)}</td>
                   <td style={TD}>
-                    <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, fontWeight: 600, color: '#fff', background: p.vencida ? '#C23B3B' : '#B5761A' }}>
+                    <span className="ec-pill" style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, fontWeight: 600, color: '#fff', background: p.vencida ? '#C23B3B' : '#B5761A' }}>
                       {p.vencida ? 'VENCIDA' : 'POR VENCER'}
                     </span>
                   </td>
