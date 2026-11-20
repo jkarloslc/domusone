@@ -41,6 +41,7 @@ const fmtCorta = (f: string) => {
   return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', timeZone: 'UTC' })
 }
 
+type Vista = 'resumen' | 'ingresos' | 'egresos' | 'cxp' | 'nomina' | 'hipico' | 'golf'
 type PeriodoKey = 'hoy' | 'semana' | 'mes' | 'anio'
 type Rango = { desde: string; hasta: string }
 type Periodo = { key: PeriodoKey; label: string; actual: Rango; anterior: Rango | null; leyendaAnt: string }
@@ -297,6 +298,7 @@ export default function DashboardsPage() {
   const [filtroAgr, setFiltroAgr] = useState('')
   const [filtroCentro, setFiltroCentro] = useState('')
   const [perDesg, setPerDesg] = useState<PeriodoKey>('mes')
+  const [vista, setVista] = useState<Vista>('resumen')
 
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
@@ -534,6 +536,19 @@ export default function DashboardsPage() {
     return { lista, tot, totAnt, hc: hcTot.size, cargasMes, opAnio, porCC }
   }, [areas, ccs, nomCargas, nomDet, ccIds, mesAct, mesAnt, opsFilt, hoy]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Vistas (botones de sección) ───────────────────────────
+  const pMes = pers.find(p => p.key === 'mes')!
+  const vistas: { key: Vista; label: string; valor: string; nota: string }[] = [
+    { key: 'resumen', label: 'Ingresos y egresos', valor: money(sumaRec(pMes.actual) - sumaOp(pMes.actual)), nota: 'Neto del mes' },
+    { key: 'ingresos', label: modoZona ? 'Ingresos y gastos por zona' : 'Ingresos desglosados', valor: money(modoZona ? desgZona.reduce((a, z) => a + z.ing, 0) : totDesgIng), nota: pDesg.label },
+    { key: 'egresos', label: 'Egresos por tipo de gasto', valor: money(totDesgEgr), nota: pDesg.label },
+    { key: 'cxp', label: 'Cuentas por pagar', valor: money(suma(porPagar)), nota: `Vencido ${money(suma(vencidas))}` },
+    { key: 'nomina', label: 'Nómina', valor: money(nom.tot), nota: `${nombreMes(mesAct)} en curso · ${entero(nom.hc)} colab.` },
+    ...(verHip ? [{ key: 'hipico' as Vista, label: 'Hípico', valor: cabTotal ? `${((cabOcupadas / cabTotal) * 100).toFixed(1)}% ocupación` : '—', nota: `${entero(cabOcupadas)} de ${entero(cabTotal)} caballerizas` }] : []),
+    ...(verGolf ? [{ key: 'golf' as Vista, label: 'Golf', valor: `${entero(golf(pMes.actual).total)} jugadores`, nota: 'Salidas del mes' }] : []),
+  ]
+  const vistaEf: Vista = vistas.some(v => v.key === vista) ? vista : 'resumen'
+
   const selectorPeriodo = <ChipsPeriodo valor={perDesg} setValor={setPerDesg} lista={pers} />
 
   return (
@@ -594,7 +609,25 @@ export default function DashboardsPage() {
         </div>
       )}
 
+      {/* Botones de sección: cada vista se despliega sola, sin scroll largo */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 10, marginBottom: 16 }}>
+        {vistas.map(v => {
+          const act = vistaEf === v.key
+          return (
+            <button key={v.key} onClick={() => setVista(v.key)}
+              style={{ textAlign: 'left', cursor: 'pointer', background: act ? C.carbon : '#fff', color: act ? '#fff' : C.carbon,
+                border: `1px solid ${act ? C.carbon : C.plata}`, borderBottom: `3px solid ${act ? C.turq : C.plata}`,
+                borderRadius: 10, padding: '10px 14px' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: act ? '#fff' : C.carbon }}>{v.label}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums', margin: '3px 0 1px', color: act ? '#fff' : C.carbon }}>{v.valor}</div>
+              <div style={{ fontSize: 11, color: act ? C.plata : C.muted }}>{v.nota}</div>
+            </button>
+          )
+        })}
+      </div>
+
       {/* 1. Resumen por periodo */}
+      {vistaEf === 'resumen' && (<>
       <Seccion titulo="Ingresos y egresos" nota="Ingresos = recibos confirmados. Egresos = órdenes de pago emitidas por fecha de OP (sin canceladas ni rechazadas). Pagado = abonos aplicados.">
         <Grid min={240}>
           {pers.map(p => (
@@ -605,8 +638,10 @@ export default function DashboardsPage() {
           ))}
         </Grid>
       </Seccion>
+      </>)}
 
       {/* 2. Desglose de ingresos */}
+      {vistaEf === 'ingresos' && (<>
       {modoZona ? (
         <Seccion titulo="Ingresos y gastos por zona"
           nota={`${pDesg.label} · ingreso por sección de la zona; gasto directo = OP con zona capturada o, si no tiene, la zona de su área${gasGralZona ? `; gasto general (${money(gasGralZona)}, OP sin zona) prorrateado por número de lotes` : ''}.`}
@@ -628,8 +663,10 @@ export default function DashboardsPage() {
             ))}</Grid>}
       </Seccion>
       )}
+      </>)}
 
       {/* 3. Desglose de egresos */}
+      {vistaEf === 'egresos' && (<>
       <Seccion titulo="Egresos por tipo de gasto" nota={`${pDesg.label} · ${money(totDesgEgr)}`} derecha={selectorPeriodo}>
         {desgEgr.length === 0
           ? <div style={{ fontSize: 12, color: C.muted, padding: '14px 0' }}>Sin órdenes de pago en el periodo.</div>
@@ -638,8 +675,10 @@ export default function DashboardsPage() {
                 extra={`${entero(x.n)} OP${x.n === 1 ? '' : 's'}`} />
             ))}</Grid>}
       </Seccion>
+      </>)}
 
       {/* 4. Cuentas por pagar */}
+      {vistaEf === 'cxp' && (<>
       <Seccion titulo="Cuentas por pagar" nota="Saldo vigente a hoy, sin importar la fecha de la OP.">
         <Grid>
           <Kpi label="Saldo por pagar" valor={money(suma(porPagar))} color={C.ambar} nota={`${entero(porPagar.length)} OP pendientes de pago`} />
@@ -648,8 +687,10 @@ export default function DashboardsPage() {
           <Kpi label="Por autorizar" valor={money(suma(porAutorizar))} color={C.ciruela} nota={`${entero(porAutorizar.length)} OP en Pendiente Auth`} />
         </Grid>
       </Seccion>
+      </>)}
 
       {/* 5. Nómina */}
+      {vistaEf === 'nomina' && (<>
       <Seccion titulo={`Nómina por ${nom.porCC ? 'área' : 'centro de costo'}`}
         nota={`Neto a pagar de las cargas de HR › Nómina. ${nombreMes(mesAct)} en curso: ${nom.cargasMes} carga${nom.cargasMes === 1 ? '' : 's'}. Plantilla = última carga semanal y quincenal del mes, sin ajustes.`}>
         <div style={{ marginBottom: 12 }}>
@@ -667,9 +708,10 @@ export default function DashboardsPage() {
                 extra={`${entero(x.hc.size)} colab. · ${nombreMes(mesAnt)} ${money(x.ant)}`} />
             ))}</Grid>}
       </Seccion>
+      </>)}
 
       {/* 6. Hípico */}
-      {verHip && (
+      {verHip && vistaEf === 'hipico' && (
         <Seccion titulo="Hípico" nota="Ocupación, arrendatarios y cartera a hoy; cobranza, altas y bajas del periodo elegido." derecha={selectorPeriodo}>
           <Grid min={200}>
             <Kpi label="Caballerizas ocupadas" valor={`${entero(cabOcupadas)} de ${entero(cabTotal)}`} color={C.ciruela}
@@ -687,7 +729,7 @@ export default function DashboardsPage() {
       )}
 
       {/* 7. Golf */}
-      {verGolf && (
+      {verGolf && vistaEf === 'golf' && (
         <>
           <Seccion titulo="Golf · salidas al campo" nota="Jugadores registrados en Control de Accesos (titular o familiar + acompañantes).">
             <Grid>
