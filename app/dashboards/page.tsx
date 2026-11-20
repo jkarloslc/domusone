@@ -4,7 +4,7 @@ import { LayoutDashboard, RefreshCw, AlertTriangle } from 'lucide-react'
 import PageHeader from '@/components/layout/PageHeader'
 import FiltroAgrupadorCentro from '@/components/ui/FiltroAgrupadorCentro'
 import { useAuth } from '@/lib/AuthContext'
-import { dbCtrl, dbComp, dbCfg, dbGolf } from '@/lib/supabase'
+import { dbCtrl, dbComp, dbCfg, dbGolf, dbHip } from '@/lib/supabase'
 import { fechaLocal, inicioDelDia } from '@/lib/dateUtils'
 import {
   cargarCentrosAgrupados, idsCentrosFiltro,
@@ -87,6 +87,12 @@ type LineaSecc = { id_recibo_fk: number; id_seccion_fk: number | null; nombre_se
 type OP = { id: number; fecha_op: string; monto: number | null; id_centro_costo_fk: number | null; id_tipo_gasto_fk: number | null; tipo_gasto: string | null }
 type OPPend = { id: number; status: string; monto: number | null; saldo: number | null; fecha_vencimiento: string | null; id_centro_costo_fk: number | null }
 type Abono = { fecha_abono: string; monto: number | null; ordenes_pago: { id_centro_costo_fk: number | null } | null }
+type Cab = { id: number; status: string | null }
+type Asig = { id_arrendatario_fk: number | null; id_caballeriza_fk: number | null; monto_mensual: number | null; fecha_inicio: string | null; fecha_fin: string | null; activo: boolean | null }
+type CxcHip = { id_arrendatario_fk: number | null; saldo: number | null; fecha_vencimiento: string | null }
+type RecHip = { fecha_recibo: string; total: number | null; id_arrendatario_fk: number | null }
+type NomCarga = { id: number; tipo: string; mes: string; periodo: number; fecha_fin: string | null }
+type NomDet = { id_carga_fk: number; no_empleado: string | null; nombre: string | null; id_area_fk: number | null; neto: number | null; es_ajuste: boolean | null }
 type Acceso = { fecha: string; familiar: boolean; acomp: { origen_pago: string | null; es_externo: boolean | null }[] }
 
 // ── Componentes visuales ─────────────────────────────────────
@@ -216,6 +222,9 @@ function ChipsPeriodo({ valor, setValor, lista }: { valor: PeriodoKey; setValor:
 const PALETA_DESG = [C.verde, C.teal, C.cielo, C.ciruela, C.ambar, C.naranja, C.carbon, C.gris]
 const MAX_CARDS = 11 // el resto se agrupa en "Otros"
 const ID_CI_GREEN_FEES = 1 // cfg.centros_ingreso 'Green Fees'
+const ID_AGR_GOLF = 1       // cfg.agrupadores_ingreso 'Club de Golf'
+const ID_AGR_HIPICO = 2     // cfg.agrupadores_ingreso 'Club Hípico'
+const IDS_TG_NOMINA = [23, 24] // cfg.tipos_gasto Nómina / Nómina Quincenal
 
 function topN(m: Map<string, { monto: number; n: number }>) {
   const arr = Array.from(m.entries()).map(([nombre, v]) => ({ nombre, ...v })).filter(x => Math.abs(x.monto) >= 0.5).sort((a, b) => b.monto - a.monto)
@@ -229,7 +238,7 @@ function topN(m: Map<string, { monto: number; n: number }>) {
 // ══════════════════════════════════════════════════════════════
 export default function DashboardsPage() {
   const { authUser } = useAuth()
-  const verGolf = authUser?.lado !== 'fracc'
+  const ladoClub = authUser?.lado !== 'fracc'
   const [hoy, setHoy] = useState(fechaLocal())
   const pers = useMemo(() => periodos(hoy), [hoy])
 
@@ -237,6 +246,7 @@ export default function DashboardsPage() {
   const [centros, setCentros] = useState<CentroIngresoAgr[]>([])
   const [agrupadores, setAgrupadores] = useState<AgrupadorIngreso[]>([])
   const [ccs, setCcs] = useState<{ id: number; nombre: string }[]>([])
+  const [areas, setAreas] = useState<{ id: number; nombre: string; id_centro_costo_fk: number | null }[]>([])
   const [tiposGasto, setTiposGasto] = useState<Map<number, string>>(new Map())
 
   // Datos
@@ -247,11 +257,13 @@ export default function DashboardsPage() {
   const [opsPend, setOpsPend] = useState<OPPend[]>([])
   const [abonos, setAbonos] = useState<Abono[]>([])
   const [accesos, setAccesos] = useState<Acceso[]>([])
+  const [hip, setHip] = useState<{ cabs: Cab[]; asig: Asig[]; cxc: CxcHip[]; rec: RecHip[]; caballos: number; arrCat: number }>({ cabs: [], asig: [], cxc: [], rec: [], caballos: 0, arrCat: 0 })
+  const [nomCargas, setNomCargas] = useState<NomCarga[]>([])
+  const [nomDet, setNomDet] = useState<NomDet[]>([])
 
   // Filtros
   const [filtroAgr, setFiltroAgr] = useState('')
   const [filtroCentro, setFiltroCentro] = useState('')
-  const [filtroCC, setFiltroCC] = useState('')
   const [perDesg, setPerDesg] = useState<PeriodoKey>('mes')
 
   const [cargando, setCargando] = useState(true)
@@ -266,15 +278,18 @@ export default function DashboardsPage() {
     const desde = [ps[3].actual.desde, ...ps.map(p => p.anterior?.desde ?? '9999')].sort()[0]
     try {
       const [cat, ccRes, tgRes] = await Promise.all([
-        cargarCentrosAgrupados('tipo_desglose, activo'),
+        cargarCentrosAgrupados('tipo_desglose, activo, id_centro_costo_fk'),
         dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
         dbCfg.from('tipos_gasto').select('id, nombre'),
       ])
+      const arRes = await dbCfg.from('areas').select('id, nombre, id_centro_costo_fk')
+      setAreas((arRes.data ?? []) as any)
       setCentros(cat.centros); setAgrupadores(cat.agrupadores)
       setCcs((ccRes.data ?? []) as any)
       setTiposGasto(new Map(((tgRes.data ?? []) as any[]).map(t => [t.id, t.nombre])))
 
-      const [rec, lc, ls, op, opp, ab, acc] = await Promise.all([
+      const anio = h.slice(0, 4)
+      const [rec, lc, ls, op, opp, ab, acc, cabs, asig, cxc, rh, cab, arr, ncar] = await Promise.all([
         todo<Recibo>(() => dbCtrl.from('recibos_ingreso').select('id, fecha, id_centro_ingreso_fk, monto_total')
           .eq('status', 'Confirmado').gte('fecha', desde).lte('fecha', h).order('id')),
         todo<LineaConc>(() => dbCtrl.from('recibos_ingreso_conceptos')
@@ -289,11 +304,24 @@ export default function DashboardsPage() {
           .in('status', ['Pendiente', 'Pago Parcial', 'Pendiente Auth', 'Pendiente Auth Finanzas']).order('id')),
         todo<Abono>(() => dbComp.from('cxp_abonos').select('fecha_abono, monto, ordenes_pago!inner(id_centro_costo_fk)')
           .eq('status', 'Aplicado').gte('fecha_abono', desde).lte('fecha_abono', h).order('id')),
-        verGolf
+        ladoClub
           ? todo<any>(() => dbGolf.from('ctrl_accesos').select('id, fecha_entrada, id_familiar_fk, ctrl_acceso_acomp(origen_pago, es_externo)')
               .gte('fecha_entrada', inicioDelDia(desde)).order('id'))
           : Promise.resolve([]),
+        ladoClub ? todo<Cab>(() => dbHip.from('cat_caballerizas').select('id, status').eq('activo', true).order('id')) : Promise.resolve([]),
+        ladoClub ? todo<Asig>(() => dbHip.from('ctrl_asignaciones').select('id_arrendatario_fk, id_caballeriza_fk, monto_mensual, fecha_inicio, fecha_fin, activo').order('id')) : Promise.resolve([]),
+        ladoClub ? todo<CxcHip>(() => dbHip.from('cxc_hip').select('id_arrendatario_fk, saldo, fecha_vencimiento').in('status', ['PENDIENTE', 'PAGO_PARCIAL']).order('id')) : Promise.resolve([]),
+        ladoClub ? todo<RecHip>(() => dbHip.from('recibos_hip').select('fecha_recibo, total, id_arrendatario_fk').eq('status', 'VIGENTE').gte('fecha_recibo', desde).order('id')) : Promise.resolve([]),
+        ladoClub ? dbHip.from('cat_caballos').select('id', { count: 'exact', head: true }).eq('activo', true) : Promise.resolve({ count: 0 }),
+        ladoClub ? dbHip.from('cat_arrendatarios').select('id', { count: 'exact', head: true }).eq('activo', true) : Promise.resolve({ count: 0 }),
+        todo<NomCarga>(() => dbCtrl.from('nomina_cargas').select('id, tipo, mes, periodo, fecha_fin').gte('mes', `${Number(anio) - 1}-12-01`).order('id')),
       ])
+      const nd = ncar.length
+        ? await todo<NomDet>(() => dbCtrl.from('nomina_cargas_det').select('id_carga_fk, no_empleado, nombre, id_area_fk, neto, es_ajuste')
+            .in('id_carga_fk', ncar.map(c => c.id)).order('id'))
+        : []
+      setHip({ cabs, asig, cxc, rec: rh, caballos: (cab as any).count ?? 0, arrCat: (arr as any).count ?? 0 })
+      setNomCargas(ncar); setNomDet(nd)
       setRecibos(rec); setLConc(lc); setLSecc(ls); setOps(op); setOpsPend(opp); setAbonos(ab)
       setAccesos((acc as any[]).map(a => ({ fecha: diaMx(a.fecha_entrada), familiar: !!a.id_familiar_fk, acomp: a.ctrl_acceso_acomp ?? [] })))
       setActualizado(new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', timeZone: TZ }))
@@ -301,17 +329,25 @@ export default function DashboardsPage() {
       setError(e?.message ?? String(e))
     }
     setCargando(false)
-  }, [verGolf])
+  }, [ladoClub])
 
   useEffect(() => { if (authUser) cargar() }, [authUser, cargar])
 
   // ── Filtros aplicados ─────────────────────────────────────
   const idsCentros = useMemo(() => idsCentrosFiltro(centros, filtroAgr, filtroCentro), [centros, filtroAgr, filtroCentro])
   const recFilt = useMemo(() => recibos.filter(r => !idsCentros || (r.id_centro_ingreso_fk != null && idsCentros.has(r.id_centro_ingreso_fk))), [recibos, idsCentros])
-  const ccId = filtroCC ? Number(filtroCC) : null
-  const opsFilt = useMemo(() => ops.filter(o => !ccId || o.id_centro_costo_fk === ccId), [ops, ccId])
-  const abFilt = useMemo(() => abonos.filter(a => !ccId || a.ordenes_pago?.id_centro_costo_fk === ccId), [abonos, ccId])
-  const pendFilt = useMemo(() => opsPend.filter(o => !ccId || o.id_centro_costo_fk === ccId), [opsPend, ccId])
+  // Centros de costo ligados a los centros de ingreso elegidos (cfg.centros_ingreso.id_centro_costo_fk)
+  const ccIds = useMemo<Set<number> | null>(() => {
+    if (!idsCentros) return null
+    const s = new Set<number>()
+    centros.forEach(c => { const cc = (c as any).id_centro_costo_fk; if (idsCentros.has(c.id) && cc) s.add(cc) })
+    return s
+  }, [idsCentros, centros])
+  const enCC = (cc: number | null | undefined) => !ccIds || (cc != null && ccIds.has(cc))
+  const ccNombres = ccIds ? ccs.filter(c => ccIds.has(c.id)).map(c => c.nombre) : []
+  const opsFilt = useMemo(() => ops.filter(o => enCC(o.id_centro_costo_fk)), [ops, ccIds]) // eslint-disable-line react-hooks/exhaustive-deps
+  const abFilt = useMemo(() => abonos.filter(a => enCC(a.ordenes_pago?.id_centro_costo_fk)), [abonos, ccIds]) // eslint-disable-line react-hooks/exhaustive-deps
+  const pendFilt = useMemo(() => opsPend.filter(o => enCC(o.id_centro_costo_fk)), [opsPend, ccIds]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const sumaRec = (r: Rango) => recFilt.reduce((a, x) => enRango(x.fecha, r) ? a + Number(x.monto_total ?? 0) : a, 0)
   const cuentaRec = (r: Rango) => recFilt.reduce((a, x) => enRango(x.fecha, r) ? a + 1 : a, 0)
@@ -381,6 +417,61 @@ export default function DashboardsPage() {
   const gfMonto = ingresoGF(pDesg.actual)
   const diasPer = diasEntre(pDesg.actual.desde, pDesg.actual.hasta)
 
+  // ── Qué apartados mostrar según la selección ─────────────
+  const agrSel = filtroCentro ? (centroSel?.id_agrupador_fk ?? null) : filtroAgr ? Number(filtroAgr) : null
+  const verGolf = ladoClub && agrSel === ID_AGR_GOLF
+  const verHip = ladoClub && agrSel === ID_AGR_HIPICO
+
+  // ── Hípico ────────────────────────────────────────────────
+  const asigVig = hip.asig.filter(a => a.activo && (!a.fecha_fin || a.fecha_fin >= hoy))
+  const cabOcupadas = new Set(asigVig.map(a => a.id_caballeriza_fk).filter(Boolean)).size
+  const cabTotal = hip.cabs.length
+  const arrActivos = new Set(asigVig.map(a => a.id_arrendatario_fk).filter(Boolean)).size
+  const rentaMensual = asigVig.reduce((a, x) => a + Number(x.monto_mensual ?? 0), 0)
+  const cxcVenc = hip.cxc.filter(c => c.fecha_vencimiento && c.fecha_vencimiento < hoy)
+  const cxcPorVencer = hip.cxc.filter(c => !c.fecha_vencimiento || c.fecha_vencimiento >= hoy)
+  const sumSaldo = (l: CxcHip[]) => l.reduce((a, c) => a + Number(c.saldo ?? 0), 0)
+  const arrConAdeudo = new Set(cxcVenc.filter(c => Number(c.saldo ?? 0) > 0).map(c => c.id_arrendatario_fk)).size
+  const recHipPer = hip.rec.filter(x => enRango(x.fecha_recibo, pDesg.actual))
+  const altasPer = hip.asig.filter(a => a.fecha_inicio && enRango(a.fecha_inicio, pDesg.actual)).length
+  const bajasPer = hip.asig.filter(a => a.fecha_fin && enRango(a.fecha_fin, pDesg.actual)).length
+
+  // ── Nómina por centro de costo ────────────────────────────
+  const mesAct = hoy.slice(0, 8) + '01'
+  const mesAnt = sumarDias(mesAct, -1).slice(0, 8) + '01'
+  const nombreMes = (m: string) => new Date(m + 'T12:00:00Z').toLocaleDateString('es-MX', { month: 'long', timeZone: 'UTC' })
+  const nom = useMemo(() => {
+    const areaMap = new Map(areas.map(a => [a.id, a]))
+    const ccNom = new Map(ccs.map(c => [c.id, c.nombre]))
+    const cargaMap = new Map(nomCargas.map(c => [c.id, c]))
+    // Última carga de cada tipo en el mes en curso → plantilla
+    const ultima = new Map<string, NomCarga>()
+    nomCargas.filter(c => c.mes === mesAct).forEach(c => { const u = ultima.get(c.tipo); if (!u || c.periodo > u.periodo) ultima.set(c.tipo, c) })
+    const idsUlt = new Set(Array.from(ultima.values()).map(c => c.id))
+    const porCC = !!ccIds // con filtro: por área; sin filtro: por centro de costo
+    const g = new Map<string, { monto: number; ant: number; hc: Set<string>; n: number }>()
+    let tot = 0, totAnt = 0, cargasMes = 0
+    const hcTot = new Set<string>()
+    nomDet.forEach(d => {
+      const car = cargaMap.get(d.id_carga_fk); if (!car) return
+      const area = d.id_area_fk ? areaMap.get(d.id_area_fk) : undefined
+      const cc = area?.id_centro_costo_fk ?? null
+      if (!enCC(cc)) return
+      if (car.mes !== mesAct && car.mes !== mesAnt) return
+      const k = porCC ? (area?.nombre ?? 'Sin área') : (cc ? ccNom.get(cc) ?? 'CC ' + cc : 'Sin centro de costo')
+      const x = g.get(k) ?? { monto: 0, ant: 0, hc: new Set<string>(), n: 0 }
+      const neto = Number(d.neto ?? 0)
+      if (car.mes === mesAct) { x.monto += neto; tot += neto } else { x.ant += neto; totAnt += neto }
+      if (idsUlt.has(car.id) && !d.es_ajuste) { const id = d.no_empleado || d.nombre || ''; x.hc.add(id); hcTot.add(id) }
+      g.set(k, x)
+    })
+    nomCargas.forEach(c => { if (c.mes === mesAct) cargasMes++ })
+    const lista = Array.from(g.entries()).map(([nombre, v]) => ({ nombre, ...v })).sort((a, b) => b.monto - a.monto || b.ant - a.ant)
+    const opAnio = opsFilt.filter(o => o.id_tipo_gasto_fk && IDS_TG_NOMINA.includes(o.id_tipo_gasto_fk) && o.fecha_op >= hoy.slice(0, 4) + '-01-01')
+      .reduce((a, o) => a + Number(o.monto ?? 0), 0)
+    return { lista, tot, totAnt, hc: hcTot.size, cargasMes, opAnio, porCC }
+  }, [areas, ccs, nomCargas, nomDet, ccIds, mesAct, mesAnt, opsFilt, hoy]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const selectorPeriodo = <ChipsPeriodo valor={perDesg} setValor={setPerDesg} lista={pers} />
 
   return (
@@ -404,12 +495,16 @@ export default function DashboardsPage() {
         <FiltroAgrupadorCentro centros={centros} agrupadores={agrupadores}
           filtroAgr={filtroAgr} setFiltroAgr={setFiltroAgr} filtroCentro={filtroCentro} setFiltroCentro={setFiltroCentro} />
         <span style={{ width: 1, height: 24, background: C.borde, margin: '0 4px' }} />
-        <span style={{ fontSize: 11, fontWeight: 700, color: C.gris, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Egresos</span>
-        <select className="select" style={{ width: 'auto', minWidth: 200 }} value={filtroCC} onChange={e => setFiltroCC(e.target.value)}>
-          <option value="">Todos los centros de costo</option>
-          {ccs.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-        </select>
+        <span style={{ fontSize: 12, color: C.gris }}>
+          Egresos, CXP y nómina: <b style={{ color: C.carbon }}>{!ccIds ? 'todos los centros de costo' : ccNombres.length ? 'CC ' + ccNombres.join(', ') : '—'}</b>
+        </span>
       </div>
+
+      {ccIds && ccIds.size === 0 && (
+        <div style={{ background: C.panel, border: `1px solid ${C.borde}`, borderLeft: `3px solid ${C.ambar}`, color: C.ambar, padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 20, display: 'flex', gap: 8, alignItems: 'center' }}>
+          <AlertTriangle size={14} /> El centro de ingreso elegido no tiene centro de costo ligado; egresos, CXP y nómina salen en cero. Se liga en Ingresos › Centros de Ingreso.
+        </div>
+      )}
 
       {error && (
         <div style={{ background: C.panel, border: `1px solid ${C.borde}`, borderLeft: `3px solid ${C.rojo}`, color: C.rojo, padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 20, display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -462,7 +557,45 @@ export default function DashboardsPage() {
         </Grid>
       </Seccion>
 
-      {/* 5. Golf */}
+      {/* 5. Nómina */}
+      <Seccion titulo={`Nómina por ${nom.porCC ? 'área' : 'centro de costo'}`}
+        nota={`Neto a pagar de las cargas de HR › Nómina. ${nombreMes(mesAct)} en curso: ${nom.cargasMes} carga${nom.cargasMes === 1 ? '' : 's'}. Plantilla = última carga semanal y quincenal del mes, sin ajustes.`}>
+        <div style={{ marginBottom: 12 }}>
+          <Grid>
+            <Kpi label={`Nómina ${nombreMes(mesAct)} (en curso)`} valor={money(nom.tot)} color={C.ciruela} nota={<><Delta v={delta(nom.tot, nom.totAnt)} invertir /> vs. {nombreMes(mesAnt)} completo</>} />
+            <Kpi label={`Nómina ${nombreMes(mesAnt)}`} valor={money(nom.totAnt)} color={C.gris} />
+            <Kpi label="Plantilla" valor={`${entero(nom.hc)} colaboradores`} color={C.carbon} nota={nom.hc ? `${money(nom.totAnt / nom.hc)} neto por colaborador en ${nombreMes(mesAnt)}` : undefined} />
+            <Kpi label={`Acumulado ${hoy.slice(0, 4)} (OP de nómina)`} valor={money(nom.opAnio)} color={C.teal} nota="OP tipo Nómina emitidas en el año" />
+          </Grid>
+        </div>
+        {nom.lista.length === 0
+          ? <div style={{ fontSize: 12, color: C.muted, padding: '14px 0' }}>Sin cargas de nómina en {nombreMes(mesAnt)} ni {nombreMes(mesAct)}.</div>
+          : <Grid>{nom.lista.map((x, i) => (
+              <CardDesglose key={x.nombre} nombre={x.nombre} monto={x.monto} total={nom.tot} color={PALETA_DESG[i % PALETA_DESG.length]}
+                extra={`${entero(x.hc.size)} colab. · ${nombreMes(mesAnt)} ${money(x.ant)}`} />
+            ))}</Grid>}
+      </Seccion>
+
+      {/* 6. Hípico */}
+      {verHip && (
+        <Seccion titulo="Hípico" nota="Ocupación, arrendatarios y cartera a hoy; cobranza, altas y bajas del periodo elegido." derecha={selectorPeriodo}>
+          <Grid min={200}>
+            <Kpi label="Caballerizas ocupadas" valor={`${entero(cabOcupadas)} de ${entero(cabTotal)}`} color={C.ciruela}
+              nota={cabTotal ? `${((cabOcupadas / cabTotal) * 100).toFixed(1)}% de ocupación` : undefined} />
+            <Kpi label="Caballerizas libres" valor={entero(Math.max(0, cabTotal - cabOcupadas))} color={C.gris} />
+            <Kpi label="Arrendatarios activos" valor={entero(arrActivos)} color={C.carbon} nota={`Con caballeriza asignada · ${entero(hip.arrCat)} en catálogo`} />
+            <Kpi label="Caballos activos" valor={entero(hip.caballos)} color={C.cielo} />
+            <Kpi label="Renta mensual comprometida" valor={money(rentaMensual)} color={C.verde}
+              nota={cabOcupadas ? `${money(rentaMensual / cabOcupadas)} promedio por caballeriza` : undefined} />
+            <Kpi label="Cartera vencida" valor={money(sumSaldo(cxcVenc))} color={C.rojo} nota={`${entero(cxcVenc.length)} cargos · ${entero(arrConAdeudo)} arrendatario${arrConAdeudo === 1 ? '' : 's'}`} />
+            <Kpi label="Por vencer" valor={money(sumSaldo(cxcPorVencer))} color={C.ambar} nota={`${entero(cxcPorVencer.length)} cargos emitidos`} />
+            <Kpi label={`Cobrado · ${pDesg.label}`} valor={money(recHipPer.reduce((a, x) => a + Number(x.total ?? 0), 0))} color={C.teal} nota={`${entero(recHipPer.length)} recibo${recHipPer.length === 1 ? '' : 's'} de Hípico`} />
+            <Kpi label={`Altas / bajas · ${pDesg.label}`} valor={`${entero(altasPer)} / ${entero(bajasPer)}`} color={C.naranja} nota="Asignaciones de caballeriza iniciadas / terminadas" />
+          </Grid>
+        </Seccion>
+      )}
+
+      {/* 7. Golf */}
       {verGolf && (
         <>
           <Seccion titulo="Golf · salidas al campo" nota="Jugadores registrados en Control de Accesos (titular o familiar + acompañantes).">

@@ -16,6 +16,7 @@ type Centro = {
   activo: boolean
   notas: string | null
   id_agrupador_fk?: number | null
+  id_centro_costo_fk?: number | null
   created_at: string
 }
 
@@ -28,9 +29,12 @@ function CentroModal({ centro, onClose, onSaved }: { centro: Centro | null; onCl
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
   const [agrupadores, setAgrupadores] = useState<{ id: number; nombre: string }[]>([])
+  const [ccs, setCcs] = useState<{ id: number; nombre: string }[]>([])
   useEffect(() => {
     dbCfg.from('agrupadores_ingreso').select('id, nombre').eq('activo', true).order('orden').order('nombre')
       .then(({ data }) => setAgrupadores(data ?? []))
+    dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setCcs(data ?? []))
   }, [])
 
   const set = (k: keyof Centro, v: any) => setForm(f => ({ ...f, [k]: v }))
@@ -44,6 +48,7 @@ function CentroModal({ centro, onClose, onSaved }: { centro: Centro | null; onCl
       tipo_desglose: form.tipo_desglose || 'unico',
       activo:        form.activo ?? true,
       notas:         form.notas?.trim() || null,
+      id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
       // Solo se envía si hay (o había) agrupador: tolera migración pendiente
       ...((form.id_agrupador_fk || centro?.id_agrupador_fk) ? { id_agrupador_fk: form.id_agrupador_fk ? Number(form.id_agrupador_fk) : null } : {}),
     }
@@ -86,6 +91,15 @@ function CentroModal({ centro, onClose, onSaved }: { centro: Centro | null; onCl
               <option value="">Sin agrupador</option>
               {agrupadores.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
             </select>
+          </div>
+
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#33363C', display: 'block', marginBottom: 4 }}>Centro de costo</label>
+            <select className="select" value={form.id_centro_costo_fk ?? ''} onChange={e => set('id_centro_costo_fk', e.target.value)}>
+              <option value="">Sin centro de costo</option>
+              {ccs.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </select>
+            <div style={{ fontSize: 11, color: '#7A7E87', marginTop: 4 }}>En el Dashboard, al elegir este centro se muestran los egresos y CXP de este centro de costo.</div>
           </div>
 
           <div>
@@ -134,9 +148,12 @@ export default function CentrosIngresoPage() {
   const [editing, setEditing] = useState<Centro | null>(null)
 
   const [agrNombre, setAgrNombre] = useState<Record<number, string>>({})
+  const [ccNombre, setCcNombre] = useState<Record<number, string>>({})
   useEffect(() => {
     dbCfg.from('agrupadores_ingreso').select('id, nombre')
       .then(({ data }) => setAgrNombre(Object.fromEntries((data ?? []).map((a: any) => [a.id, a.nombre]))))
+    dbCfg.from('centros_costo').select('id, nombre')
+      .then(({ data }) => setCcNombre(Object.fromEntries((data ?? []).map((a: any) => [a.id, a.nombre]))))
   }, [])
 
   const fetch = useCallback(async () => {
@@ -217,6 +234,9 @@ export default function CentrosIngresoPage() {
                           : 'Monto único'
                         }
                       </span>
+                      {c.id_centro_costo_fk && ccNombre[c.id_centro_costo_fk] && (
+                        <span style={{ fontSize: 11, color: '#62666E' }}>· CC {ccNombre[c.id_centro_costo_fk]}</span>
+                      )}
                       {c.notas && <span style={{ fontSize: 11, color: '#7A7E87' }}>· {c.notas}</span>}
                     </div>
                   </div>
