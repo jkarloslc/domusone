@@ -574,7 +574,7 @@ export default function FlujoEfectivoPage() {
     // En TODOS el Real manual se guarda en el presupuesto del año cuyo módulo es el de la partida.
     if (!manualPid || !selId) return
     const destino = pptoDestinoManual(manualPid)
-    if (!destino) { alert('No hay un presupuesto de este año para el módulo de la partida. Créalo en Captura.'); return }
+    if (!destino) { alert('No hay un presupuesto de este año para el módulo de la partida. Créalo en Captura Flujo.'); return }
     const monto = parseFloat(manualMonto.replace(/,/g, '')) || 0
     if (monto <= 0) return
     setSavingManual(true)
@@ -849,7 +849,7 @@ export default function FlujoEfectivoPage() {
 
   if (presupuestos.length === 0) return (
     <div style={{ padding: 32, textAlign: 'center', color: '#7A7E87' }}>
-      <p>No hay presupuestos. Crea uno en la pestaña <strong>Captura</strong>.</p>
+      <p>No hay presupuestos. Crea uno en la pestaña <strong>Captura Flujo</strong>.</p>
     </div>
   )
 
@@ -1168,7 +1168,7 @@ export default function FlujoEfectivoPage() {
 
             {esTodos(selPpto) && !pptoDestinoManual(manualPid) ? (
               <p style={{ fontSize: 12, color: '#96600F', margin: 0 }}>
-                No hay un presupuesto de este año para el módulo de esta partida; créalo en Captura para poder registrar Real manual.
+                No hay un presupuesto de este año para el módulo de esta partida; créalo en Captura Flujo para poder registrar Real manual.
               </p>
             ) : (
             <div style={{ borderTop: manualEntries.length > 0 ? '1px solid #F4F5F7' : undefined, paddingTop: manualEntries.length > 0 ? 14 : 0 }}>

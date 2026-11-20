@@ -339,7 +339,7 @@ export default function PartidasPage() {
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       <PageHeader
-        backHref="/presupuestos/captura"
+        backHref="/presupuestos/flujo"
         title="Catálogo de Partidas Presupuestales"
         subtitle="Define las partidas y su fuente de datos real automático"
         actions={<>
