@@ -3,6 +3,7 @@ import {
   MapPin, MapPinned, Users, FileText, Receipt, Shield,
   AlertTriangle, Building2, Home, ChevronRight, MessageSquare, ShieldCheck, HardHat, Scale, ClipboardList,
 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '@/lib/AuthContext'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
@@ -20,16 +21,41 @@ const MODULOS = [
   { key: 'escrituras',   permKey: 'escrituras',   label: 'Escrituras',   icon: Building2,     color: '#B5761A', desc: 'Documentos notariales y escrituración',         href: '/escrituras'   },
   { key: 'construcciones', permKey: 'construcciones', label: 'Construcciones', icon: HardHat, color: '#B5761A', desc: 'Expedientes de obra: checklist, avances e incidencias', href: '/construcciones' },
   { key: 'afectaciones', permKey: 'afectaciones', label: 'Servidumbres y Afectaciones', icon: Scale, color: '#32789A', desc: 'Servidumbres, pasos y afectaciones sobre lotes', href: '/afectaciones' },
+  { key: 'expediente',   permKey: 'lotes',        label: 'Expedientes',  icon: MapPinned,     color: '#1C1D21', desc: 'Vista unificada por lote: documentos, propietario, cobranza e historial', href: '/lotes/expediente' },
   { key: 'comunicados',  permKey: 'comunicados',  label: 'Comunicados',  icon: MessageSquare, color: '#178A80', desc: 'Avisos y comunicados a residentes',             href: '/comunicados'  },
 ]
+
+const PESTANAS = [
+  { key: 'administracion', label: 'Administración',        modulos: ['lotes', 'propietarios', 'expediente'] },
+  { key: 'cobranza',       label: 'Cobranza',              modulos: ['cobranza', 'facturas'] },
+  { key: 'vigilancia',     label: 'Vigilancia',            modulos: ['accesos', 'vigilancia-extras', 'vigilancia-novedades'] },
+  { key: 'atencion',       label: 'Atención a Residentes', modulos: ['incidencias', 'comunicados'] },
+  { key: 'proyectos',      label: 'Proyectos',             modulos: ['construcciones', 'afectaciones'] },
+  { key: 'docs',           label: 'Docs.',                 modulos: ['contratos', 'escrituras'] },
+] as const
+
+const LS_TAB = 'fracc-hub-tab'
 
 export default function ResidencialPage() {
   const { can } = useAuth()
   const router  = useRouter()
+  const [tab, setTab] = useState<string>('administracion')
 
-  const visibles = MODULOS.filter(m => can(m.permKey))
+  useEffect(() => {
+    try { const t = localStorage.getItem(LS_TAB); if (t) setTab(t) } catch {}
+  }, [])
 
-  if (visibles.length === 0) {
+  const cambiarTab = (k: string) => {
+    setTab(k)
+    try { localStorage.setItem(LS_TAB, k) } catch {}
+  }
+
+  const pestanas = PESTANAS
+    .map(p => ({ ...p, items: p.modulos.map(k => MODULOS.find(m => m.key === k)!).filter(m => m && can(m.permKey)) }))
+    .filter(p => p.items.length > 0)
+  const activa = pestanas.find(p => p.key === tab) ?? pestanas[0]
+
+  if (pestanas.length === 0) {
     return (
       <div style={{ padding: '48px 36px', textAlign: 'center', color: 'var(--text-muted)' }}>
         Sin acceso a módulos del fraccionamiento.
@@ -48,9 +74,27 @@ export default function ResidencialPage() {
         subtitle="Gestión de lotes, propietarios y servicios del fraccionamiento"
       />
 
+      {/* Pestañas */}
+      <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid #E6E8EB', marginBottom: 16, overflowX: 'auto' }}>
+        {pestanas.map(p => {
+          const on = p.key === activa.key
+          return (
+            <button key={p.key} onClick={() => cambiarTab(p.key)}
+              style={{
+                padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+                borderBottom: `2px solid ${on ? '#19D3C5' : 'transparent'}`, marginBottom: -1,
+                fontSize: 13, fontWeight: on ? 700 : 500, color: on ? '#1C1D21' : '#62666E',
+              }}>
+              {p.label}
+              <span style={{ marginLeft: 6, fontSize: 11, color: '#9A9EA7', fontVariantNumeric: 'tabular-nums' }}>{p.items.length}</span>
+            </button>
+          )
+        })}
+      </div>
+
       {/* Grid de módulos */}
-      {visibles.length > 0 && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12, marginBottom: 24 }}>
-        {visibles.map(m => {
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12, marginBottom: 24 }}>
+        {activa.items.map(m => {
           const Icon = m.icon
           return (
             <button key={m.key}
@@ -68,36 +112,7 @@ export default function ResidencialPage() {
             </button>
           )
         })}
-      </div>}
-
-      {/* Expediente — acceso rápido separado */}
-      {can('lotes') && (
-        <>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>
-            Acceso Rápido
-          </div>
-          <button
-            onClick={() => router.push('/lotes/expediente')}
-            className="card card-hover"
-            style={{ width: '100%', padding: '16px 20px', textAlign: 'left', background: '#fff', border: '1px solid #E6E8EB', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: '#F4F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <MapPinned size={18} style={{ color: '#1C1D21' }} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Expedientes</span>
-                <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#F4F5F7', color: '#1C1D21', border: '1px solid #E6E8EB' }}>
-                  Vista unificada por lote
-                </span>
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                Documentos, propietario, cobranza e historial de un lote en una sola vista
-              </div>
-            </div>
-            <ChevronRight size={14} style={{ color: '#C9CCD3', flexShrink: 0 }} />
-          </button>
-        </>
-      )}
+      </div>
     </div>
   )
 }
