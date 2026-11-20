@@ -182,7 +182,12 @@ export default function InicioPage() {
 
   const rol     = (authUser?.rol ?? 'vigilancia') as Rol
   const nombre  = authUser?.nombre ?? ''
-  const accesos = ACCESOS[rol] ?? []
+  // Roles sin lista propia usan la de su rol equivalente
+  const ALIAS_ACCESOS: Record<string, Rol> = {
+    admin_finanzas: 'admin', admin_low_level: 'admin', admin_tesoreria: 'admin',
+    admin_organismo: 'compras', caja_organismo: 'ingresos', aux_organismo: 'mantenimiento', usuario_organismo: 'fraccionamiento',
+  }
+  const accesos = ACCESOS[rol] ?? ACCESOS[ALIAS_ACCESOS[rol as string]] ?? []
 
   useEffect(() => {
     async function cargarPendientes() {
@@ -191,8 +196,8 @@ export default function InicioPage() {
 
       try {
         // OPs vencidas — visible para roles con acceso a compras financiero
-        const rolesFinanzas: Rol[] = ['superadmin', 'admin', 'admin_lector', 'usuarioadmin', 'usuariomantto', 'fraccionamiento', 'tesoreria', 'compras_supervisor']
-        if (rolesFinanzas.includes(rol)) {
+        const rolesFinanzas = ['superadmin', 'admin', 'admin_lector', 'admin_finanzas', 'admin_low_level', 'admin_tesoreria', 'usuarioadmin', 'usuariomantto', 'fraccionamiento', 'tesoreria', 'compras_supervisor']
+        if ((rolesFinanzas as string[]).includes(rol)) {
           const { count } = await dbComp.from('ordenes_pago')
             .select('id', { count: 'exact', head: true })
             .in('status', ['Pendiente', 'Pendiente Auth', 'Pendiente Auth Finanzas'])

@@ -90,60 +90,12 @@ type AuthUser = {
   lado:    Lado | null
 }
 
-export function getHomeRouteByRole(rol?: Rol): string {
-  switch (rol) {
-    case 'superadmin':
-    case 'admin':
-    case 'admin_lector':
-    case 'admin_finanzas':
-    case 'admin_low_level':
-    case 'admin_tesoreria':
-    case 'usuarioadmin':
-    case 'usuariomantto':
-    case 'fraccionamiento':
-    case 'atencion_residentes':
-    case 'cobranza':
-    case 'vigilancia':
-    case 'mantenimiento':
-    case 'seguridad':
-    case 'usuario_organismo':
-      return '/residencial'
-    case 'compras':
-    case 'compras_supervisor':
-    case 'almacen':
-    case 'usuario_solicitante':
-    case 'admin_organismo':
-      return '/compras'
-    case 'usuario_nomina':
-      return '/inicio'
-    case 'tesoreria':
-      return '/tesoreria'
-    case 'ingresos':
-      return '/ingresos'
-    case 'caja_organismo':
-      return '/ingresos'
-    case 'aux_organismo':
-      return '/residencial/mantenimiento'
-    case 'usuariogolf':
-    case 'admin_golf':
-    case 'admin_golf_lector':
-    case 'admin_golf_finanzas':
-    case 'admin_golf_tesoreria':
-    case 'admin_golf_low_level':
-      return '/golf'
-    case 'admin_fracc':
-    case 'admin_fracc_lector':
-    case 'admin_fracc_finanzas':
-    case 'admin_fracc_tesoreria':
-    case 'admin_fracc_low_level':
-      return '/residencial'
-    case 'usuariohipico':
-      return '/hipico'
-    case 'usuariohospitality':
-      return '/hipico'
-    default:
-      return '/residencial'
-  }
+// Todos los roles entran a Inicio (2026-11-20). /inicio no pasa por can() (NO_CHECK en
+// RootDashWrapper) y se sirve en ambos dominios, así que también es el destino seguro
+// cuando AuthGuard saca a un usuario de una página sin permiso.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function getHomeRouteByRole(_rol?: Rol): string {
+  return '/inicio'
 }
 
 type AuthCtx = {
