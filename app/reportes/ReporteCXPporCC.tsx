@@ -3,7 +3,7 @@ import { Fragment, useState, useEffect, useCallback, useMemo } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import { PrintBar } from './utils'
 import { RefreshCw, Filter, ChevronDown, ChevronRight } from 'lucide-react'
-import { useZonas, SelectZona } from '@/lib/zonas'
+import { useZonas, SelectZona, ChkProrrateoZona, EtiquetaProrrateo } from '@/lib/zonas'
 
 // Cuentas por pagar = OPs con saldo > 0 y status vivo (ya autorizadas, igual que Tesorería > CXP). Se agrupan CC → Área → Frente.
 type OP = {
@@ -62,6 +62,7 @@ export default function ReporteCXPporCC() {
   const [filtroArea, setFiltroArea]     = useState('')
   const [filtroZona, setFiltroZona] = useState('')
   const zonasCat = useZonas()
+  const [prorrZona, setProrrZona] = useState(true)
   // Zona es un nivel intermedio solo bajo el centro que la usa
   useEffect(() => { if (!zonasCat.ccUsaZonas(filtroCC)) setFiltroZona('') }, [filtroCC, zonasCat])
   const [filtroFrente, setFiltroFrente] = useState('')
@@ -110,17 +111,16 @@ export default function ReporteCXPporCC() {
   const frenteMap = useMemo(() => Object.fromEntries(frentes.map(f => [f.id, f.nombre])), [frentes])
   const areasDelCC = useMemo(() => filtroCC ? areas.filter(a => a.id_centro_costo_fk === Number(filtroCC)) : areas, [areas, filtroCC])
 
-  const opsFiltradas = useMemo(() => ops.filter(op => {
+  const opsFiltradas = useMemo(() => zonasCat.filtrarZona(ops, filtroZona, prorrZona).filter(op => {
     if (saldoDe(op) <= 0) return false
     if (filtroCC     && op.id_centro_costo_fk !== Number(filtroCC)) return false
-    if (filtroZona && !zonasCat.docEnZona(filtroZona, op)) return false
     if (filtroArea   && op.id_area_fk !== Number(filtroArea)) return false
     if (filtroFrente && op.id_frente_fk !== Number(filtroFrente)) return false
     const f = op[campoFecha]
     if (desde && (!f || f < desde)) return false
     if (hasta && (!f || f > hasta)) return false
     return true
-  }), [ops, filtroCC, filtroArea, filtroZona, zonasCat, filtroFrente, campoFecha, desde, hasta])
+  }), [ops, filtroCC, filtroArea, filtroZona, prorrZona, zonasCat, filtroFrente, campoFecha, desde, hasta])
 
   const grupos = useMemo(() => {
     const res: Record<string, CCBucket> = {}
@@ -181,6 +181,7 @@ export default function ReporteCXPporCC() {
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
         {zonasCat.ccUsaZonas(filtroCC) && <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFiltroArea('') }} />}
+        {zonasCat.ccUsaZonas(filtroCC) && <ChkProrrateoZona zonasCat={zonasCat} zona={filtroZona} value={prorrZona} onChange={setProrrZona} />}
         <select className="select" style={{ width: 190 }} value={filtroArea} onChange={e => setFiltroArea(e.target.value)} disabled={areasDelCC.length === 0}>
           <option value="">Todas las áreas{filtroCC ? ' del CC' : ''}</option>
           {areasDelCC.filter(a => zonasCat.areaEnZona(filtroZona, a.id)).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
@@ -287,7 +288,7 @@ export default function ReporteCXPporCC() {
                               </tr>
                               {fr.ops.map(op => (
                                 <tr key={`op-${op.id}${op._detIdx != null ? `-${op._detIdx}` : ''}`}>
-                                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600, paddingLeft: 72 }}>{op.folio}</td>
+                                  <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600, paddingLeft: 72 }}>{op.folio}<EtiquetaProrrateo f={(op as any)._prorrateo} /></td>
                                   <td style={{ fontSize: 12 }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? `#${op.id_proveedor_fk}`) : '—'}</td>
                                   <td style={{ fontSize: 12, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
                                   <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{fmtF(op.fecha_op)}</td>

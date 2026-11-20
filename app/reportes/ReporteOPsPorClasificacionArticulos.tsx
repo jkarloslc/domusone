@@ -6,7 +6,7 @@ import { resolverCategoriasPorOp } from '@/lib/pptoOcCategoria'
 import { useCatalogoTiposGasto } from '@/lib/tiposGasto'
 import { RefreshCw, Filter, ChevronDown, ChevronRight, FileSpreadsheet, LayoutList, Grid3x3 } from 'lucide-react'
 import * as XLSX from 'xlsx'
-import { useZonas, SelectZona } from '@/lib/zonas'
+import { useZonas, SelectZona, ChkProrrateoZona, EtiquetaProrrateo } from '@/lib/zonas'
 
 const STATUS_OP = ['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente', 'Pagada', 'Rechazada', 'Sustituida', 'Cancelada'] as const
 
@@ -68,6 +68,7 @@ export default function ReporteOPsPorClasificacionArticulos() {
   const [filtroArea, setFiltroArea]           = useState<string>('')
   const [filtroZona, setFiltroZona] = useState('')
   const zonasCat = useZonas()
+  const [prorrZona, setProrrZona] = useState(true)
   // Zona es un nivel intermedio solo bajo el centro que la usa
   useEffect(() => { if (!zonasCat.ccUsaZonas(filtroCC)) setFiltroZona('') }, [filtroCC, zonasCat])
   const [filtroProv, setFiltroProv]           = useState<string>('')
@@ -144,10 +145,9 @@ export default function ReporteOPsPorClasificacionArticulos() {
   )
 
   const opsFiltradas = useMemo(() => {
-    return opsCat.filter(op => {
+    return zonasCat.filtrarZona(opsCat, filtroZona, prorrZona).filter(op => {
       if (filtroStatus    && op.status !== filtroStatus) return false
       if (filtroCC        && op.id_centro_costo_fk !== Number(filtroCC)) return false
-      if (filtroZona && !zonasCat.docEnZona(filtroZona, op)) return false
       if (filtroArea       && op.id_area_fk !== Number(filtroArea)) return false
       if (filtroProv       && op.id_proveedor_fk !== Number(filtroProv)) return false
       if (filtroCategoria  && (filtroCategoria === SIN_CATEGORIA ? op.id_categoria != null : String(op.id_categoria) !== filtroCategoria)) return false
@@ -155,7 +155,7 @@ export default function ReporteOPsPorClasificacionArticulos() {
       if (filtroA          && (!op.fecha_op || op.fecha_op > filtroA))  return false
       return true
     })
-  }, [opsCat, filtroStatus, filtroCC, filtroArea, filtroZona, zonasCat, filtroProv, filtroCategoria, filtroDe, filtroA])
+  }, [opsCat, filtroStatus, filtroCC, filtroArea, filtroZona, prorrZona, zonasCat, filtroProv, filtroCategoria, filtroDe, filtroA])
 
   // Agrupar por Categoría (clasificación de artículo)
   const grupos = useMemo(() => {
@@ -223,16 +223,15 @@ export default function ReporteOPsPorClasificacionArticulos() {
   // categoría), para no duplicar el conteo de una OP que reparte su monto
   // entre varias categorías. Ignora el filtro de status, respeta el resto.
   const opsParaKPIs = useMemo(() => {
-    return opsConOC.filter(op => {
+    return zonasCat.filtrarZona(opsConOC, filtroZona, prorrZona).filter(op => {
       if (filtroCC   && op.id_centro_costo_fk !== Number(filtroCC)) return false
-      if (filtroZona && !zonasCat.docEnZona(filtroZona, op)) return false
       if (filtroArea && op.id_area_fk !== Number(filtroArea)) return false
       if (filtroProv && op.id_proveedor_fk !== Number(filtroProv)) return false
       if (filtroDe   && (!op.fecha_op || op.fecha_op < filtroDe)) return false
       if (filtroA    && (!op.fecha_op || op.fecha_op > filtroA))  return false
       return true
     })
-  }, [opsConOC, filtroCC, filtroArea, filtroZona, zonasCat, filtroProv, filtroDe, filtroA])
+  }, [opsConOC, filtroCC, filtroArea, filtroZona, prorrZona, zonasCat, filtroProv, filtroDe, filtroA])
 
   const exportExcel = () => {
     const wb = XLSX.utils.book_new()
@@ -319,6 +318,7 @@ export default function ReporteOPsPorClasificacionArticulos() {
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
         {zonasCat.ccUsaZonas(filtroCC) && <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFiltroArea('') }} />}
+        {zonasCat.ccUsaZonas(filtroCC) && <ChkProrrateoZona zonasCat={zonasCat} zona={filtroZona} value={prorrZona} onChange={setProrrZona} />}
         <select className="select" style={{ fontSize: 12, padding: '5px 8px', width: 140, flex: '0 0 auto' }} value={filtroArea} onChange={e => setFiltroArea(e.target.value)} disabled={areasDelCC.length === 0}>
           <option value="">Todas las áreas</option>
           {areasDelCC.filter(a => zonasCat.areaEnZona(filtroZona, a.id)).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
@@ -466,7 +466,7 @@ export default function ReporteOPsPorClasificacionArticulos() {
                       const ccNom = op.id_centro_costo_fk != null ? (ccMap[op.id_centro_costo_fk] ?? `Centro #${op.id_centro_costo_fk}`) : '—'
                       return (
                         <tr key={`op-${op.id}-${op._catIdx}`}>
-                          <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600, paddingLeft: 32 }}>{op.folio}</td>
+                          <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600, paddingLeft: 32 }}>{op.folio}<EtiquetaProrrateo f={(op as any)._prorrateo} /></td>
                           <td style={{ fontSize: 12 }}>{ccNom}</td>
                           <td style={{ fontSize: 12 }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? `#${op.id_proveedor_fk}`) : '—'}</td>
                           <td style={{ fontSize: 12, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>

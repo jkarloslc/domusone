@@ -5,7 +5,7 @@ import { useCatalogoTiposGasto } from '@/lib/tiposGasto'
 import { PrintBar } from './utils'
 import { RefreshCw, Filter, ChevronDown, ChevronRight, FileSpreadsheet, LayoutList, Grid3x3 } from 'lucide-react'
 import * as XLSX from 'xlsx'
-import { useZonas, SelectZona } from '@/lib/zonas'
+import { useZonas, SelectZona, ChkProrrateoZona, EtiquetaProrrateo } from '@/lib/zonas'
 
 // Status conocidos en comp.ordenes_pago
 const STATUS_OP = ['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente', 'Pagada', 'Rechazada', 'Sustituida', 'Cancelada'] as const
@@ -102,6 +102,7 @@ export default function ReporteOrdenesPago() {
   const [filtroArea, setFiltroArea]     = useState<string>('')
   const [filtroZona, setFiltroZona] = useState('')
   const zonasCat = useZonas()
+  const [prorrZona, setProrrZona] = useState(true)
   // Zona es un nivel intermedio solo bajo el centro que la usa
   useEffect(() => { if (!zonasCat.ccUsaZonas(filtroCC)) setFiltroZona('') }, [filtroCC, zonasCat])
   const [filtroProv, setFiltroProv]     = useState<string>('')
@@ -168,10 +169,9 @@ export default function ReporteOrdenesPago() {
 
   // Aplicar filtros
   const opsFiltradas = useMemo(() => {
-    return ops.filter(op => {
+    return zonasCat.filtrarZona(ops, filtroZona, prorrZona).filter(op => {
       if (filtroStatus && op.status !== filtroStatus) return false
       if (filtroCC     && op.id_centro_costo_fk !== Number(filtroCC)) return false
-      if (filtroZona && !zonasCat.docEnZona(filtroZona, op)) return false
       if (filtroArea   && op.id_area_fk !== Number(filtroArea)) return false
       if (filtroProv   && op.id_proveedor_fk !== Number(filtroProv)) return false
       if (filtroTipo   && String(op.id_tipo_gasto_fk ?? '') !== filtroTipo) return false
@@ -179,7 +179,7 @@ export default function ReporteOrdenesPago() {
       if (filtroA      && (!op.fecha_op || op.fecha_op > filtroA))  return false
       return true
     })
-  }, [ops, filtroStatus, filtroCC, filtroArea, filtroZona, zonasCat, filtroProv, filtroTipo, filtroDe, filtroA])
+  }, [ops, filtroStatus, filtroCC, filtroArea, filtroZona, prorrZona, zonasCat, filtroProv, filtroTipo, filtroDe, filtroA])
 
   // Agrupar CC → Área → OPs
   const grupos = useMemo(() => {
@@ -278,9 +278,8 @@ export default function ReporteOrdenesPago() {
 
   // KPIs por status (sobre OPs filtradas, ignorando el filtro de status)
   const opsParaKPIs = useMemo(() => {
-    return ops.filter(op => {
+    return zonasCat.filtrarZona(ops, filtroZona, prorrZona).filter(op => {
       if (filtroCC   && op.id_centro_costo_fk !== Number(filtroCC)) return false
-      if (filtroZona && !zonasCat.docEnZona(filtroZona, op)) return false
       if (filtroArea && op.id_area_fk !== Number(filtroArea)) return false
       if (filtroProv && op.id_proveedor_fk !== Number(filtroProv)) return false
       if (filtroTipo && String(op.id_tipo_gasto_fk ?? '') !== filtroTipo) return false
@@ -288,7 +287,7 @@ export default function ReporteOrdenesPago() {
       if (filtroA    && (!op.fecha_op || op.fecha_op > filtroA))  return false
       return true
     })
-  }, [ops, filtroCC, filtroArea, filtroZona, zonasCat, filtroProv, filtroTipo, filtroDe, filtroA])
+  }, [ops, filtroCC, filtroArea, filtroZona, prorrZona, zonasCat, filtroProv, filtroTipo, filtroDe, filtroA])
 
   // Export Excel (3 hojas: Resumen, Detalle, Matriz)
   const exportExcel = () => {
@@ -385,6 +384,7 @@ export default function ReporteOrdenesPago() {
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
         {zonasCat.ccUsaZonas(filtroCC) && <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFiltroArea('') }} />}
+        {zonasCat.ccUsaZonas(filtroCC) && <ChkProrrateoZona zonasCat={zonasCat} zona={filtroZona} value={prorrZona} onChange={setProrrZona} />}
         <select className="select" style={{ width: 'auto', minWidth: 180 }} value={filtroArea} onChange={e => setFiltroArea(e.target.value)} disabled={areasDelCC.length === 0}>
           <option value="">Todas las áreas{filtroCC ? ' del CC' : ''}</option>
           {areasDelCC.filter(a => zonasCat.areaEnZona(filtroZona, a.id)).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
@@ -575,7 +575,7 @@ export default function ReporteOrdenesPago() {
                             const vencido = op.fecha_vencimiento && op.status === 'Pendiente' && new Date(op.fecha_vencimiento) < new Date()
                             return (
                               <tr key={`op-${op.id}${op._detIdx != null ? `-${op._detIdx}` : ''}`}>
-                                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600, paddingLeft: 48 }}>{op.folio}</td>
+                                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600, paddingLeft: 48 }}>{op.folio}<EtiquetaProrrateo f={(op as any)._prorrateo} /></td>
                                 <td style={{ fontSize: 12 }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? `#${op.id_proveedor_fk}`) : '—'}</td>
                                 <td style={{ fontSize: 12, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
                                 <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{catTG.nombre(op.id_tipo_gasto_fk) ?? '—'}</td>

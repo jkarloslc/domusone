@@ -9,7 +9,7 @@ import { RefreshCw, FileText, AlertTriangle, Clock, Calendar, ChevronRight, Chev
 import { fmt, fmtFecha, StatusBadge } from '../compras/types'
 import KpiCard from '@/components/ui/KpiCard'
 import { PrintBar } from './utils'
-import { useZonas, SelectZona } from '@/lib/zonas'
+import { useZonas, SelectZona, ChkProrrateoZona } from '@/lib/zonas'
 
 // ── Mismas reglas que la página de CXP ─────────────────────
 const diasVencido = (fecha: string | null) => {
@@ -65,6 +65,7 @@ export default function ReporteCXPTesoreria() {
   const [filterArea, setFilterArea]     = useState('')
   const [filtroZona, setFiltroZona] = useState('')
   const zonasCat = useZonas()
+  const [prorrZona, setProrrZona] = useState(true)
   // Zona es un nivel intermedio solo bajo el centro que la usa
   useEffect(() => { if (!zonasCat.ccUsaZonas(filterCC)) setFiltroZona('') }, [filterCC, zonasCat])
   const [filterFrente, setFilterFrente] = useState('')
@@ -137,21 +138,22 @@ export default function ReporteCXPTesoreria() {
   // Fracción del saldo que corresponde a los filtros CC/Área/Frente (igual que la página CXP)
   const fraccionOP = useCallback((o: any) => {
     if (!filterCC && !filtroZona && !filterArea && !filterFrente) return 1
+    // Con zona: 1 si el documento está en ella; gasto general (sin zona) → parte por lotes si se prorratea
     const ok = (cc: number | null | undefined, area: number | null, frente: number | null, zona?: number | null) =>
-      (!filterCC || cc === Number(filterCC)) &&
-      (!filtroZona || zonasCat.docEnZona(filtroZona, { id_cuadrante_fk: zona, id_area_fk: area })) &&
+      ((!filterCC || cc === Number(filterCC)) &&
       (!filterArea || area === Number(filterArea)) &&
-      (!filterFrente || frente === Number(filterFrente))
+      (!filterFrente || frente === Number(filterFrente)))
+        ? zonasCat.factorZona(filtroZona, { id_cuadrante_fk: zona, id_area_fk: area, id_centro_costo_fk: cc }, prorrZona) : 0
     const lineas = lineasOP[o.id] ?? []
     if (lineas.length === 0) {
-      return ok(o.id_centro_costo_fk ?? (o.id_area_fk ? areaCC[o.id_area_fk] : null), o.id_area_fk, o.id_frente_fk, o.id_cuadrante_fk) ? 1 : 0
+      return ok(o.id_centro_costo_fk ?? (o.id_area_fk ? areaCC[o.id_area_fk] : null), o.id_area_fk, o.id_frente_fk, o.id_cuadrante_fk)
     }
     const total = lineas.reduce((a, l) => a + l.monto, 0) || Number(o.monto ?? 0) || 1
     return lineas.reduce((a, l) => {
       const cc = l.id_area_fk != null ? (areaCC[l.id_area_fk] ?? o.id_centro_costo_fk) : o.id_centro_costo_fk
-      return ok(cc, l.id_area_fk, l.id_frente_fk, l.id_cuadrante_fk) ? a + l.monto / total : a
+      return a + ok(cc, l.id_area_fk, l.id_frente_fk, l.id_cuadrante_fk) * l.monto / total
     }, 0)
-  }, [filterCC, filtroZona, zonasCat, filterArea, filterFrente, areaCC, lineasOP])
+  }, [filterCC, filtroZona, prorrZona, zonasCat, filterArea, filterFrente, areaCC, lineasOP])
   const sd = useCallback((o: any) => Number(o.saldo ?? o.monto ?? 0) * fraccionOP(o), [fraccionOP])
 
   const opsFiltradas = useMemo(
@@ -216,7 +218,7 @@ export default function ReporteCXPTesoreria() {
 
   const filtrosTexto = [
     filterCC && `CC: ${centros.find(c => c.id === Number(filterCC))?.nombre}`,
-    filtroZona && `Zona: ${zonasCat.zonas.find(z => z.id === Number(filtroZona))?.nombre}`,
+    filtroZona && `Zona: ${zonasCat.zonas.find(z => z.id === Number(filtroZona))?.nombre}${prorrZona ? ` (incluye gasto general prorrateado por lotes, ${(zonasCat.pctLotesZona(filtroZona) * 100).toFixed(1)}%)` : ''}`,
     filterArea && `Área: ${areas.find(a => a.id === Number(filterArea))?.nombre}`,
     filterFrente && `Frente: ${frentes.find(f => f.id === Number(filterFrente))?.nombre}`,
     filterProv && `Proveedor: ${provNombre(Number(filterProv))}`,
@@ -300,6 +302,7 @@ export default function ReporteCXPTesoreria() {
           {centros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
         {zonasCat.ccUsaZonas(filterCC) && <SelectZona className="input" zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFilterArea('') }} />}
+        {zonasCat.ccUsaZonas(filterCC) && <ChkProrrateoZona zonasCat={zonasCat} zona={filtroZona} value={prorrZona} onChange={setProrrZona} />}
         <select className="input" style={{ width: 200 }} value={filterArea} onChange={e => setFilterArea(e.target.value)}>
           <option value="">Todas las áreas</option>
           {areasFiltro.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}

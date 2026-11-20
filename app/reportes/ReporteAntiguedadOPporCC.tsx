@@ -3,7 +3,7 @@ import { Fragment, useState, useEffect, useCallback, useMemo } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import { PrintBar } from './utils'
 import { RefreshCw, Filter, ChevronDown, ChevronRight } from 'lucide-react'
-import { useZonas, SelectZona } from '@/lib/zonas'
+import { useZonas, SelectZona, ChkProrrateoZona, EtiquetaProrrateo } from '@/lib/zonas'
 
 // Bandas de antigüedad sobre fecha_vencimiento. Se consideran OPs con saldo > 0
 // y status distinto de 'Pagada', 'Cancelada', 'Rechazada' y 'Sustituida'.
@@ -109,6 +109,7 @@ export default function ReporteAntiguedadOPporCC() {
   const [filtroArea, setFiltroArea] = useState<string>('')
   const [filtroZona, setFiltroZona] = useState('')
   const zonasCat = useZonas()
+  const [prorrZona, setProrrZona] = useState(true)
   // Zona es un nivel intermedio solo bajo el centro que la usa
   useEffect(() => { if (!zonasCat.ccUsaZonas(filtroCC)) setFiltroZona('') }, [filtroCC, zonasCat])
   const [filtroProv, setFiltroProv] = useState<string>('')
@@ -179,15 +180,14 @@ export default function ReporteAntiguedadOPporCC() {
   }, [ops])
 
   const opsFiltradas = useMemo<OPConDias[]>(() => {
-    return opsPreproc.filter(op => {
+    return zonasCat.filtrarZona(opsPreproc, filtroZona, prorrZona, ['monto', 'saldo', '_saldoReal']).filter(op => {
       if (filtroCC    && op.id_centro_costo_fk !== Number(filtroCC)) return false
-      if (filtroZona && !zonasCat.docEnZona(filtroZona, op)) return false
       if (filtroArea  && op.id_area_fk !== Number(filtroArea)) return false
       if (filtroProv  && op.id_proveedor_fk !== Number(filtroProv)) return false
       if (filtroBanda && op._banda !== filtroBanda) return false
       return true
     })
-  }, [opsPreproc, filtroCC, filtroArea, filtroZona, zonasCat, filtroProv, filtroBanda])
+  }, [opsPreproc, filtroCC, filtroArea, filtroZona, prorrZona, zonasCat, filtroProv, filtroBanda])
 
   // Agrupar CC → Área
   const grupos = useMemo(() => {
@@ -267,6 +267,7 @@ export default function ReporteAntiguedadOPporCC() {
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
         {zonasCat.ccUsaZonas(filtroCC) && <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFiltroArea('') }} />}
+        {zonasCat.ccUsaZonas(filtroCC) && <ChkProrrateoZona zonasCat={zonasCat} zona={filtroZona} value={prorrZona} onChange={setProrrZona} />}
         <select className="select" style={{ width: 'auto', minWidth: 180 }} value={filtroArea} onChange={e => setFiltroArea(e.target.value)} disabled={areasDelCC.length === 0}>
           <option value="">Todas las áreas{filtroCC ? ' del CC' : ''}</option>
           {areasDelCC.filter(a => zonasCat.areaEnZona(filtroZona, a.id)).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
@@ -395,7 +396,7 @@ export default function ReporteAntiguedadOPporCC() {
                             const c = bandaColor(op._banda)
                             return (
                               <tr key={`op-${op.id}${op._detIdx != null ? `-${op._detIdx}` : ''}`}>
-                                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600, paddingLeft: 48 }}>{op.folio}</td>
+                                <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: 'var(--blue)', fontWeight: 600, paddingLeft: 48 }}>{op.folio}<EtiquetaProrrateo f={(op as any)._prorrateo} /></td>
                                 <td style={{ fontSize: 12 }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? `#${op.id_proveedor_fk}`) : '—'}</td>
                                 <td style={{ fontSize: 12, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
                                 <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: op._dias > 0 ? '#C23B3B' : 'var(--text-secondary)', fontWeight: op._dias > 0 ? 600 : 400 }}>{fmtF(op.fecha_vencimiento)}</td>

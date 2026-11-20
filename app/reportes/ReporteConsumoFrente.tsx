@@ -4,7 +4,7 @@ import { dbComp, dbCfg } from '@/lib/supabase'
 import { useCatalogoTiposGasto } from '@/lib/tiposGasto'
 import { PrintBar } from './utils'
 import { RefreshCw, Filter } from 'lucide-react'
-import { useZonas, SelectZona } from '@/lib/zonas'
+import { useZonas, SelectZona, ChkProrrateoZona, EtiquetaProrrateo } from '@/lib/zonas'
 
 export default function ReporteConsumoFrente() {
   const catTG = useCatalogoTiposGasto()
@@ -16,6 +16,7 @@ export default function ReporteConsumoFrente() {
   const [filtroArea, setFiltroArea] = useState('')
   const [filtroZona, setFiltroZona] = useState('')
   const zonasCat = useZonas()
+  const [prorrZona, setProrrZona] = useState(true)
   const [filtroFre, setFiltroFre]   = useState('')
   const [filtroTipo, setFiltroTipo] = useState('')
   const [filtroDe, setFiltroDe]     = useState('')
@@ -47,7 +48,7 @@ export default function ReporteConsumoFrente() {
 
     // Filtrar
     let opsFiltradas = ops ?? []
-    if (filtroZona) opsFiltradas = opsFiltradas.filter((r: any) => zonasCat.docEnZona(filtroZona, r))
+    if (filtroZona) opsFiltradas = zonasCat.filtrarZona(opsFiltradas as any[], filtroZona, prorrZona)
     if (filtroArea) opsFiltradas = opsFiltradas.filter((r: any) => r.id_area_fk === Number(filtroArea))
     if (filtroFre)  opsFiltradas = opsFiltradas.filter((r: any) => r.id_frente_fk === Number(filtroFre))
     if (filtroTipo) opsFiltradas = opsFiltradas.filter((r: any) => String(r.id_tipo_gasto_fk ?? '') === filtroTipo)
@@ -82,7 +83,7 @@ export default function ReporteConsumoFrente() {
     const result = Object.values(grouped).sort((a: any, b: any) => b.total - a.total)
     setRows(result)
     setLoading(false)
-  }, [filtroArea, filtroZona, zonasCat, filtroFre, filtroTipo, filtroDe, filtroA])
+  }, [filtroArea, filtroZona, prorrZona, zonasCat, filtroFre, filtroTipo, filtroDe, filtroA])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -106,6 +107,7 @@ export default function ReporteConsumoFrente() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Filter size={13} style={{ color: 'var(--text-muted)' }} />
           <SelectZona zonas={zonasCat.zonas} value={filtroZona} onChange={v => { setFiltroZona(v); setFiltroArea('') }} />
+          <ChkProrrateoZona zonasCat={zonasCat} zona={filtroZona} value={prorrZona} onChange={setProrrZona} />
           <select className="select" style={{ width: 'auto', minWidth: 180 }} value={filtroArea}
             onChange={e => setFiltroArea(e.target.value)}>
             <option value="">Todas las áreas</option>
@@ -211,7 +213,7 @@ export default function ReporteConsumoFrente() {
                   const pagado = monto - saldo
                   return (
                     <tr key={i}>
-                      <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: '#6B4E79', fontWeight: 600 }}>{op.folio}</td>
+                      <td style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12, color: '#6B4E79', fontWeight: 600 }}>{op.folio}<EtiquetaProrrateo f={(op as any)._prorrateo} /></td>
                       <td style={{ fontSize: 12 }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? '—') : '—'}</td>
                       <td style={{ fontSize: 12, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
                       <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{catTG.nombre(op.id_tipo_gasto_fk) ?? '—'}</td>
