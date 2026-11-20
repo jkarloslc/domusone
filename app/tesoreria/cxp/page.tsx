@@ -252,7 +252,6 @@ export default function CXPPage() {
   const tabs = [
     { key: 'resumen',      label: 'Por Proveedor' },
     { key: 'antigüedad',   label: 'Antigüedad de Saldos' },
-    { key: 'remesas',      label: 'Remesas de Pago' },
   ]
 
   return (
@@ -265,16 +264,10 @@ export default function CXPPage() {
       />
 
       {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
         <KpiCard label="Total por Pagar" value={fmt(totalPorPagar)} color="#1C1D21" icon={FileText} />
         <KpiCard label="Vencido" value={fmt(totalVencido)} color="#C23B3B" icon={AlertTriangle} />
         <KpiCard label="Por Vencer" value={fmt(totalPorVencer)} color="#B5761A" icon={Clock} />
-        <KpiCard
-          label={proximoPago ? `Próx. Pago · Martes ${fmtCorta(proximoPago.fechaPago)}` : 'Próx. Pago'}
-          value={proximoPago ? fmt(proximoPago.total) : '—'}
-          color={proximoColor}
-          icon={Calendar}
-        />
       </div>
 
       {/* Filtros CC / Área / Frente (aplican a todas las vistas) */}
