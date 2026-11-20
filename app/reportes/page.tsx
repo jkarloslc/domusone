@@ -251,7 +251,6 @@ const GRUPOS: Grupo[] = [
     secciones: [
       { titulo: 'Arrendatarios', ids: ['hipico-arrendatarios', 'hipico-estado-cuenta'] },
       { titulo: 'Cobranza', ids: ['hipico-cobranza-corriente-vencida', 'hipico-proyeccion-cobranza', 'cancelaciones'] },
-      { titulo: 'Servicios', ids: ['hipico-servicios'] },
     ],
   },
   {

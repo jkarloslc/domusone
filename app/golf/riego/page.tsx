@@ -4,7 +4,6 @@ import {
   ChevronLeft, ChevronRight, CheckCircle2, Clock, XCircle, AlertCircle,
   Droplets, Calendar, Gauge, X, Save, Plus, Pencil, Trash2, BookOpen,
 } from 'lucide-react'
-import Link from 'next/link'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import PageHeader from '@/components/layout/PageHeader'
@@ -824,12 +823,6 @@ export default function RiegoPage() {
       {/* ── TAB: CONSUMO DE AGUA ────────────────────────────────────────────── */}
       {tab === 'consumo' && (
         <div>
-          <div style={{ marginBottom:16, display:'flex', alignItems:'center', gap:12 }}>
-            <Link href="/reportes?grupo=golf&id=riego-consumo" style={{ fontSize:12, color:'#1C1D21', fontWeight:600, textDecoration:'none' }}>
-              Ver reporte completo →
-            </Link>
-          </div>
-
           <div style={{ display:'flex', flexWrap:'wrap', gap:12, marginBottom:20 }}>
             {ORIGENES_ALL.map(orig=>{
               const c = consumoSemOrigen[orig]
