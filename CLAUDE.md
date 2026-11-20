@@ -103,7 +103,7 @@ Vehículos y Maquinaria, Equipo y Herramienta (con combustible, bitácoras, pré
 - **Filtro único**: agrupador / centro de ingreso. Egresos, CXP y nómina se acotan al CC ligado en `cfg.centros_ingreso.id_centro_costo_fk` (migr. `20261120120000`, editable en Ingresos › Centros de Ingreso). Corporativo y Patron's no tienen CI: solo se ven sin filtro.
 - **Ingresos** = `recibos_ingreso` Confirmado (`monto_total`, ya neto de condonación). **Egresos** = lo pagado: `cxp_abonos` Aplicado por `fecha_abono`, clasificado con CC / tipo de gasto / área / zona de su OP (desglose, zonas y nómina usan lo mismo). **OP emitidas** (por `fecha_op`, sin Cancelada/Rechazada) solo como referencia en las cards de periodo. Periodos Hoy / Semana (lunes) / Mes / Acumulado año con comparación vs. periodo anterior.
 - Desglose de ingresos: sin filtro por centro; con centro por concepto; **Cuotas Fracc. → por Zona** con ingreso (secciones), gasto directo (`docEnZona`) y gasto general sin zona prorrateado por lotes (`useLotesPorZona`, mismo criterio que Presupuestos).
-- **Nómina**: cargas de HR › Nómina (área → CC); con filtro se desglosa por área. Acumulado año = OP tipo gasto 23/24.
+- **Nómina**: 100% de las cargas de HR › Nómina (`ctrl.nomina_cargas` / `_det`, área → CC), no depende de OP; con filtro se desglosa por área. Acumulado año = neto de cargas del año (arranca en el primer mes cargado).
 - **Golf** (agrupador 1) y **Hípico** (agrupador 2) solo aparecen con su agrupador o centro elegido; ids en constantes `ID_AGR_*` del archivo.
 
 ## Ramas

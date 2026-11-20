@@ -95,7 +95,7 @@ type Asig = { id_arrendatario_fk: number | null; id_caballeriza_fk: number | nul
 type CxcHip = { id_arrendatario_fk: number | null; saldo: number | null; fecha_vencimiento: string | null }
 type RecHip = { fecha_recibo: string; total: number | null; id_arrendatario_fk: number | null }
 type NomCarga = { id: number; tipo: string; mes: string; periodo: number; fecha_fin: string | null }
-type NomDet = { id_carga_fk: number; no_empleado: string | null; nombre: string | null; id_area_fk: number | null; neto: number | null; es_ajuste: boolean | null }
+type NomDet = { id_carga_fk: number; no_empleado: string | null; nombre: string | null; id_area_fk: number | null; neto: number | null; percepciones: number | null; es_ajuste: boolean | null }
 type Acceso = { fecha: string; familiar: boolean; acomp: { origen_pago: string | null; es_externo: boolean | null }[] }
 
 // ── Componentes visuales ─────────────────────────────────────
@@ -255,7 +255,6 @@ const MAX_CARDS = 11 // el resto se agrupa en "Otros"
 const ID_CI_GREEN_FEES = 1 // cfg.centros_ingreso 'Green Fees'
 const ID_AGR_GOLF = 1       // cfg.agrupadores_ingreso 'Club de Golf'
 const ID_AGR_HIPICO = 2     // cfg.agrupadores_ingreso 'Club Hípico'
-const IDS_TG_NOMINA = [23, 24] // cfg.tipos_gasto Nómina / Nómina Quincenal
 
 function topN(m: Map<string, { monto: number; n: number }>) {
   const arr = Array.from(m.entries()).map(([nombre, v]) => ({ nombre, ...v })).filter(x => Math.abs(x.monto) >= 0.5).sort((a, b) => b.monto - a.monto)
@@ -351,7 +350,7 @@ export default function DashboardsPage() {
         todo<NomCarga>(() => dbCtrl.from('nomina_cargas').select('id, tipo, mes, periodo, fecha_fin').gte('mes', `${Number(anio) - 1}-12-01`).order('id')),
       ])
       const nd = ncar.length
-        ? await todo<NomDet>(() => dbCtrl.from('nomina_cargas_det').select('id_carga_fk, no_empleado, nombre, id_area_fk, neto, es_ajuste')
+        ? await todo<NomDet>(() => dbCtrl.from('nomina_cargas_det').select('id_carga_fk, no_empleado, nombre, id_area_fk, neto, percepciones, es_ajuste')
             .in('id_carga_fk', ncar.map(c => c.id)).order('id'))
         : []
       setHip({ cabs, asig, cxc, rec: rh, caballos: (cab as any).count ?? 0, arrCat: (arr as any).count ?? 0 })
@@ -521,13 +520,15 @@ export default function DashboardsPage() {
     const idsUlt = new Set(Array.from(ultima.values()).map(c => c.id))
     const porCC = !!ccIds // con filtro: por área; sin filtro: por centro de costo
     const g = new Map<string, { monto: number; ant: number; hc: Set<string>; n: number }>()
-    let tot = 0, totAnt = 0, cargasMes = 0
+    let tot = 0, totAnt = 0, cargasMes = 0, anioNeto = 0, anioPerc = 0
+    const iniAnio = hoy.slice(0, 4) + '-01-01'
     const hcTot = new Set<string>()
     nomDet.forEach(d => {
       const car = cargaMap.get(d.id_carga_fk); if (!car) return
       const area = d.id_area_fk ? areaMap.get(d.id_area_fk) : undefined
       const cc = area?.id_centro_costo_fk ?? null
       if (!enCC(cc)) return
+      if (car.mes >= iniAnio && car.mes <= mesAct) { anioNeto += Number(d.neto ?? 0); anioPerc += Number(d.percepciones ?? 0) }
       if (car.mes !== mesAct && car.mes !== mesAnt) return
       const k = porCC ? (area?.nombre ?? 'Sin área') : (cc ? ccNom.get(cc) ?? 'CC ' + cc : 'Sin centro de costo')
       const x = g.get(k) ?? { monto: 0, ant: 0, hc: new Set<string>(), n: 0 }
@@ -538,10 +539,10 @@ export default function DashboardsPage() {
     })
     nomCargas.forEach(c => { if (c.mes === mesAct) cargasMes++ })
     const lista = Array.from(g.entries()).map(([nombre, v]) => ({ nombre, ...v })).sort((a, b) => b.monto - a.monto || b.ant - a.ant)
-    const opAnio = pagosFilt.filter(o => o.id_tipo_gasto_fk && IDS_TG_NOMINA.includes(o.id_tipo_gasto_fk) && o.fecha_op >= hoy.slice(0, 4) + '-01-01')
-      .reduce((a, o) => a + Number(o.monto ?? 0), 0)
-    return { lista, tot, totAnt, hc: hcTot.size, cargasMes, opAnio, porCC }
-  }, [areas, ccs, nomCargas, nomDet, ccIds, mesAct, mesAnt, pagosFilt, hoy]) // eslint-disable-line react-hooks/exhaustive-deps
+    // Primer mes del año con cargas en HR › Nómina (el acumulado arranca ahí)
+    const mesesAnio = nomCargas.filter(c => c.mes >= iniAnio && c.mes <= mesAct).map(c => c.mes).sort()
+    return { lista, tot, totAnt, hc: hcTot.size, cargasMes, anioNeto, anioPerc, desdeMes: mesesAnio[0] ?? null, porCC }
+  }, [areas, ccs, nomCargas, nomDet, ccIds, mesAct, mesAnt, hoy]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Vistas (botones de sección) ───────────────────────────
   const pMes = pers.find(p => p.key === 'mes')!
@@ -705,7 +706,8 @@ export default function DashboardsPage() {
             <Kpi label={`Nómina ${nombreMes(mesAct)} (en curso)`} valor={money(nom.tot)} color={C.ciruela} nota={<><Delta v={delta(nom.tot, nom.totAnt)} invertir /> vs. {nombreMes(mesAnt)} completo</>} />
             <Kpi label={`Nómina ${nombreMes(mesAnt)}`} valor={money(nom.totAnt)} color={C.gris} />
             <Kpi label="Plantilla" valor={`${entero(nom.hc)} colaboradores`} color={C.carbon} nota={nom.hc ? `${money(nom.totAnt / nom.hc)} neto por colaborador en ${nombreMes(mesAnt)}` : undefined} />
-            <Kpi label={`Pagado ${hoy.slice(0, 4)} (nómina)`} valor={money(nom.opAnio)} color={C.teal} nota="Pagos de OP tipo Nómina en el año" />
+            <Kpi label={`Acumulado ${hoy.slice(0, 4)}`} valor={money(nom.anioNeto)} color={C.teal}
+              nota={nom.desdeMes ? `Neto de cargas desde ${nombreMes(nom.desdeMes)} · percepciones ${money(nom.anioPerc)}` : 'Sin cargas en el año'} />
           </Grid>
         </div>
         {nom.lista.length === 0
