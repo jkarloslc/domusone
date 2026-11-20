@@ -31,6 +31,8 @@ const VALE_STATUS_COLOR: Record<string, { color: string; bg: string; border: str
 
 // OP en proceso (aún sin pagar): se pueden cancelar incluso durante autorizaciones
 const MOSTRAR_REABRIR_PAGADA = false
+// Reabrir (OP Rechazada) y Reclasificar: superadmin y admin (2026-11-20)
+const ROLES_REABRIR_RECLASIFICAR = ['superadmin', 'admin']
 
 const STATUS_CANCELABLES = ['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente']
 
@@ -1340,8 +1342,8 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
             </div>
           )}
 
-          {/* Reabrir / Duplicar (solo superadmin, solo Rechazada) */}
-          {authUser?.rol === 'superadmin' && op.status === 'Rechazada' && (
+          {/* Reabrir / Duplicar (superadmin y admin, solo Rechazada) */}
+          {ROLES_REABRIR_RECLASIFICAR.includes(authUser?.rol ?? '') && op.status === 'Rechazada' && (
             <div style={{ padding: '14px 16px', background: '#F8F9FA', border: '1px dashed #C9CCD3', borderRadius: 10 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: '#4A4D54', marginBottom: 10 }}>
                 Esta OP fue rechazada — puedes reabrirla para corregirla, o duplicarla con folio nuevo
@@ -1378,9 +1380,9 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
             </div>
           )}
 
-          {/* Reclasificar (solo superadmin) — corrige CC/Área/Frente/Tipo de
+          {/* Reclasificar (superadmin y admin) — corrige CC/Área/Frente/Tipo de
               Gasto sin importar status, nunca monto/saldo/pagos. */}
-          {authUser?.rol === 'superadmin' && (
+          {ROLES_REABRIR_RECLASIFICAR.includes(authUser?.rol ?? '') && (
             <div style={{ padding: '14px 16px', background: '#F8F9FA', border: '1px dashed #C9CCD3', borderRadius: 10 }}>
               {!reclasOpen ? (
                 <button className="btn-ghost" style={{ fontSize: 12 }} onClick={abrirReclasificar}>

@@ -386,9 +386,9 @@ export function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; ca
             </div>
           )}
 
-          {/* Reclasificar (solo superadmin) — corrige CC/Área/Frente sin
+          {/* Reclasificar (superadmin y admin) — corrige CC/Área/Frente sin
               importar status, nunca total ni pagos. */}
-          {authUser?.rol === 'superadmin' && (
+          {['superadmin', 'admin'].includes(authUser?.rol ?? '') && (
             <div style={{ padding: '14px 16px', background: '#F8F9FA', border: '1px dashed #C9CCD3', borderRadius: 10 }}>
               {!reclasOpen ? (
                 <button className="btn-ghost" style={{ fontSize: 12 }} onClick={abrirReclasificar}>

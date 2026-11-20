@@ -51,7 +51,7 @@ type Tab = 'jerarquico' | 'matriz'
 
 export default function ReporteOPsPorTipoGasto() {
   const { authUser } = useAuth()
-  const esSuperadmin = authUser?.rol === 'superadmin'
+  const esSuperadmin = ['superadmin', 'admin'].includes(authUser?.rol ?? '')  // puede reclasificar
   const catTG = useCatalogoTiposGasto()
 
   const [ops, setOps]               = useState<OP[]>([])
@@ -204,7 +204,7 @@ export default function ReporteOPsPorTipoGasto() {
   const expandAll   = () => setExpandedTipo(new Set(grupos.map(g => g.nombre)))
   const collapseAll = () => setExpandedTipo(new Set())
 
-  // Reclasificar (solo superadmin) — mismo alcance y reglas que el panel del
+  // Reclasificar (superadmin y admin) — mismo alcance y reglas que el panel del
   // modal de OP en app/compras/ordenes-pago/page.tsx: corrige CC/Área/Frente/
   // Tipo de Gasto sin importar status, nunca toca monto/saldo/pagos.
   const [reclasOp, setReclasOp]         = useState<OP | null>(null)
