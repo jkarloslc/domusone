@@ -71,7 +71,7 @@ function PagoBadge({ fechaPago }: { fechaPago: Date }) {
 // ════════════════════════════════════════════════════════════
 export default function CXPPage() {
   const router = useRouter()
-  const [tab, setTab]               = useState<'programacion'|'resumen'|'antigüedad'|'remesas'>('programacion')
+  const [tab, setTab]               = useState<'programacion'|'resumen'|'antigüedad'|'remesas'>('resumen')
   const [proveedores, setProvs]     = useState<any[]>([])
   const [almMap, setAlmMap]         = useState<Record<number,string>>({})
   const [ops, setOps]               = useState<any[]>([])
@@ -250,7 +250,6 @@ export default function CXPPage() {
   })
 
   const tabs = [
-    { key: 'programacion', label: 'Programación de Pago' },
     { key: 'resumen',      label: 'Por Proveedor' },
     { key: 'antigüedad',   label: 'Antigüedad de Saldos' },
     { key: 'remesas',      label: 'Remesas de Pago' },
