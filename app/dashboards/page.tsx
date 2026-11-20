@@ -11,6 +11,7 @@ import {
   type CentroIngresoAgr, type AgrupadorIngreso,
 } from '@/lib/centrosIngreso'
 import { useZonas } from '@/lib/zonas'
+import { useLotesPorZona } from '@/app/presupuestos/zonaEgresos'
 
 // ── Paleta de marca ──────────────────────────────────────────
 const C = {
@@ -193,17 +194,24 @@ function CardDesglose({ nombre, monto, total, extra, color }: { nombre: string; 
 }
 
 /** Tarjeta de zona: ingreso, gasto y neto */
-function CardZona({ nombre, ing, gas, nOp, totIng }: { nombre: string; ing: number; gas: number; nOp: number; totIng: number }) {
-  const neto = ing - gas
+function CardZona({ nombre, ing, gas, nOp, totIng, lotes, gasGral, pctLotes }: {
+  nombre: string; ing: number; gas: number; nOp: number; totIng: number; lotes: number; gasGral: number; pctLotes: number
+}) {
+  const neto = ing - gas - gasGral
   return (
     <div className="card" style={{ background: '#fff', border: `1px solid ${C.plata}`, padding: '14px 16px' }}>
       <div style={{ fontSize: 13, fontWeight: 700, color: C.carbon, marginBottom: 10 }}>{nombre}</div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.gris }}><Punto color={C.verde} /> Ingreso</div>
       <div style={{ ...NUM, fontSize: 20, margin: '2px 0 2px' }}>{money(ing)}</div>
       <div style={{ fontSize: 11, color: C.muted, marginBottom: 10, fontVariantNumeric: 'tabular-nums' }}>{totIng ? ((ing / totIng) * 100).toFixed(1) : '0.0'}% del ingreso del centro</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.gris }}><Punto color={C.rojo} /> Gasto</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.gris }}><Punto color={C.rojo} /> Gasto directo</div>
       <div style={{ ...NUM, fontSize: 16, margin: '2px 0 2px' }}>{money(gas)}</div>
       <div style={{ fontSize: 11, color: C.muted, marginBottom: 10 }}>{entero(nOp)} OP{nOp === 1 ? '' : 's'}</div>
+      {gasGral !== 0 && <>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.gris }}><Punto color={C.ambar} /> Gasto general prorrateado</div>
+        <div style={{ ...NUM, fontSize: 16, margin: '2px 0 2px' }}>{money(gasGral)}</div>
+        <div style={{ fontSize: 11, color: C.muted, marginBottom: 10, fontVariantNumeric: 'tabular-nums' }}>{entero(lotes)} lotes · {(pctLotes * 100).toFixed(1)}%</div>
+      </>}
       <div style={{ borderTop: `1px solid ${C.borde}`, paddingTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.gris }}><Punto color={C.carbon} /> Neto</span>
         <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 15, color: neto >= 0 ? C.verde : C.rojo }}>{neto < 0 ? '−' : ''}{money(Math.abs(neto))}</span>
@@ -263,6 +271,7 @@ export default function DashboardsPage() {
   const [hoy, setHoy] = useState(fechaLocal())
   const pers = useMemo(() => periodos(hoy), [hoy])
   const zonasCat = useZonas()
+  const lotesPorZona = useLotesPorZona()
 
   // Catálogos
   const [centros, setCentros] = useState<CentroIngresoAgr[]>([])
@@ -391,15 +400,26 @@ export default function DashboardsPage() {
       let ing = 0, gas = 0, nOp = 0
       lSecc.forEach(l => { if (recEnPer.has(l.id_recibo_fk) && zonasCat.seccionEnZona(z.id, l.id_seccion_fk)) ing += Number(l.monto ?? 0) })
       opsPer.forEach(o => { if ((o.id_cuadrante_fk != null || o.id_area_fk != null) && zonasCat.docEnZona(z.id, o)) { gas += Number(o.monto ?? 0); nOp++ } })
-      return { id: z.id, nombre: z.nombre, ing, gas, nOp }
+      return { id: z.id, nombre: z.nombre, ing, gas, nOp, lotes: lotesPorZona.get(z.id) ?? 0, gasGral: 0, pctLotes: 0 }
     })
     // Lo que no cae en ninguna zona (secciones sin zona / OP generales del CC)
     let ingSin = 0, gasSin = 0, nSin = 0
     lSecc.forEach(l => { if (recEnPer.has(l.id_recibo_fk) && !zonasCat.zonas.some(z => zonasCat.seccionEnZona(z.id, l.id_seccion_fk))) ingSin += Number(l.monto ?? 0) })
     opsPer.forEach(o => { if (!zonasCat.zonas.some(z => (o.id_cuadrante_fk != null || o.id_area_fk != null) && zonasCat.docEnZona(z.id, o))) { gasSin += Number(o.monto ?? 0); nSin++ } })
-    if (Math.abs(ingSin) >= 0.5 || Math.abs(gasSin) >= 0.5) filas.push({ id: -1, nombre: 'Sin zona (generales)', ing: ingSin, gas: gasSin, nOp: nSin })
+    // Gasto general (OP del CC sin zona: operación, vigilancia, circuito…) se prorratea
+    // entre las zonas en proporción a sus lotes (cat.lotes.id_cuadrante_fk), mismo
+    // criterio que el prorrateo del Árbol de Presupuestos. Solo vista: no modifica OPs.
+    const totLotes = filas.reduce((a, f) => a + f.lotes, 0)
+    let gasSinFila = gasSin
+    if (totLotes > 0) {
+      filas.forEach(f => { f.pctLotes = f.lotes / totLotes; f.gasGral = gasSin * f.pctLotes })
+      gasSinFila = 0
+    }
+    if (Math.abs(ingSin) >= 0.5 || Math.abs(gasSinFila) >= 0.5)
+      filas.push({ id: -1, nombre: 'Sin zona (generales)', ing: ingSin, gas: gasSinFila, nOp: gasSinFila ? nSin : 0, lotes: 0, gasGral: 0, pctLotes: 0 })
     return filas
-  }, [modoZona, recFilt, opsFilt, pDesg, lSecc, zonasCat])
+  }, [modoZona, recFilt, opsFilt, pDesg, lSecc, zonasCat, lotesPorZona])
+  const gasGralZona = desgZona.reduce((a, z) => a + z.gasGral, 0)
   const desgIng = useMemo(() => {
     const m = new Map<string, { monto: number; n: number }>()
     const add = (k: string, v: number) => { const x = m.get(k) ?? { monto: 0, n: 0 }; x.monto += v; x.n += 1; m.set(k, x) }
@@ -568,7 +588,7 @@ export default function DashboardsPage() {
       {/* 2. Desglose de ingresos */}
       {modoZona ? (
         <Seccion titulo="Ingresos y gastos por zona"
-          nota={`${pDesg.label} · ingreso por sección de la zona; gasto = OP del centro de costo con zona capturada o, si no tiene, la zona de su área.`}
+          nota={`${pDesg.label} · ingreso por sección de la zona; gasto directo = OP con zona capturada o, si no tiene, la zona de su área${gasGralZona ? `; gasto general (${money(gasGralZona)}, OP sin zona) prorrateado por número de lotes` : ''}.`}
           derecha={selectorPeriodo}>
           <Grid min={240}>
             {desgZona.map(z => <CardZona key={z.id} {...z} totIng={desgZona.reduce((a, x) => a + x.ing, 0)} />)}
