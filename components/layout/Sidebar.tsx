@@ -229,7 +229,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Locales Comerciales', href: '/locales', icon: Building2 },
       { label: 'Hípico', href: '/hipico', icon: HorseIcon },
       { label: 'Eventos', href: '/eventos', icon: CalendarDays },
-      { label: 'Polo',             href: '/polo',                icon: PoloIcon  },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -264,7 +263,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Locales Comerciales', href: '/locales', icon: Building2 },
       { label: 'Hípico', href: '/hipico', icon: HorseIcon },
       { label: 'Eventos', href: '/eventos', icon: CalendarDays },
-      { label: 'Polo',             href: '/polo',                icon: PoloIcon  },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -298,7 +296,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Locales Comerciales', href: '/locales', icon: Building2 },
       { label: 'Hípico', href: '/hipico', icon: HorseIcon },
       { label: 'Eventos', href: '/eventos', icon: CalendarDays },
-      { label: 'Polo',             href: '/polo',                icon: PoloIcon  },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -332,7 +329,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Locales Comerciales', href: '/locales', icon: Building2 },
       { label: 'Hípico', href: '/hipico', icon: HorseIcon },
       { label: 'Eventos', href: '/eventos', icon: CalendarDays },
-      { label: 'Polo',             href: '/polo',                icon: PoloIcon  },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -366,7 +362,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Locales Comerciales', href: '/locales', icon: Building2 },
       { label: 'Hípico', href: '/hipico', icon: HorseIcon },
       { label: 'Eventos', href: '/eventos', icon: CalendarDays },
-      { label: 'Polo',             href: '/polo',                icon: PoloIcon  },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -399,7 +394,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Locales Comerciales', href: '/locales', icon: Building2 },
       { label: 'Hípico', href: '/hipico', icon: HorseIcon },
       { label: 'Eventos', href: '/eventos', icon: CalendarDays },
-      { label: 'Polo',             href: '/polo',                icon: PoloIcon  },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [

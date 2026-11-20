@@ -206,6 +206,7 @@ const HIPICO_MODULOS = [
   'hipico', 'hipico-arrendatarios', 'hipico-caballerizas', 'hipico-caballos',
   'hipico-contratos', 'hipico-cobranza', 'hipico-servicios', 'hipico-instalaciones', 'reportes',
   'compras', 'requisiciones', 'transferencias',
+  'polo',
 ]
 
 // Módulos Golf para rol dedicado
@@ -230,7 +231,8 @@ const HOSPITALITY_MODULOS = [
   ...HIPICO_MODULOS,
 ]
 // Roles admin*, usuarioadmin y usuariomantto (no superadmin) sin Mantenimiento, Servicios,
-// Capex, HR ni Mantto. Club (2026-11-17)
+// Capex, HR ni Mantto. Club (2026-11-17). Polo tampoco: su clave 'polo' solo está en
+// HIPICO_MODULOS (usuariogolf / usuariohipico / usuariohospitality) y superadmin
 const MODS_SIN_ADMIN = [
   'mantenimiento', 'capex', 'hr',
   'golf-mantto-campo', 'golf-riego', 'golf-mantenimiento-campo', 'golf-estatus-campo',

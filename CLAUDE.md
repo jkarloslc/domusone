@@ -161,7 +161,7 @@ Reglas de derivación actuales:
 - `/golf/{sub}` → `golf-{sub}` (excepción: `/golf/salidas-carritos` → `golf-carritos`)
 - `/compras/**`, `/ingresos/**`, `/tesoreria/**`, `/lotes/**` → primer segmento
 - `/residencial` → `lotes`, `/usuarios` → `admin`
-- Rutas sin control: `inicio`, `tablero`, `vehiculos`, `equipo-flota`, `mantenimiento`, `hipico`, `hospitality`, `polo`
+- Rutas sin control: `inicio`, `tablero`, `vehiculos`, `equipo-flota`, `mantenimiento`, `hipico`, `hospitality`
 - Default: primer segmento de la URL
 
 **Checklist al crear una página nueva** (bug vivido con `/golf/salidas-carritos`, 2026-06-10):
@@ -179,7 +179,7 @@ Reglas de derivación actuales:
 - Un rol base nuevo con variante por lado requiere entrada en `ROLES_LADO`, `app/usuarios/page.tsx`, `ROL_LABEL` y el CHECK de `cfg.usuarios`.
 
 ### Roles admin* sin Mantenimiento (2026-11-17)
-`admin`, `admin_lector`, `admin_finanzas`, `admin_low_level`, `admin_tesoreria`, `admin_organismo`, `usuarioadmin`, `usuariomantto` (y las variantes `admin_golf*`/`admin_fracc*`) **no** ven Mantenimiento, Servicios, Capex, HR ni Mantto. Club: `MODS_SIN_ADMIN` en `lib/AuthContext.tsx` (`ADMIN_ROL_MODULOS`), fuera de `NAV_POR_ROL` y de los `ROLES_PERMITIDOS` de `/equipo-flota`, `/herramientas` y `/residencial/mantenimiento/{vehiculos,herramientas}`. Solo `superadmin` (y los roles operativos `mantenimiento`, `compras`) conservan el acceso.
+`admin`, `admin_lector`, `admin_finanzas`, `admin_low_level`, `admin_tesoreria`, `admin_organismo`, `usuarioadmin`, `usuariomantto` (y las variantes `admin_golf*`/`admin_fracc*`) **no** ven Mantenimiento, Servicios, Capex, HR, Mantto. Club ni Polo (`/polo` usa la clave `polo`, solo en `HIPICO_MODULOS`): `MODS_SIN_ADMIN` en `lib/AuthContext.tsx` (`ADMIN_ROL_MODULOS`), fuera de `NAV_POR_ROL` y de los `ROLES_PERMITIDOS` de `/equipo-flota`, `/herramientas` y `/residencial/mantenimiento/{vehiculos,herramientas}`. Solo `superadmin` (y los roles operativos `mantenimiento`, `compras`) conservan el acceso.
 
 ### Roles existentes (2026-05-11)
 
