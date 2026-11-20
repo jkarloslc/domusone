@@ -100,11 +100,12 @@ type Acceso = { fecha: string; familiar: boolean; acomp: { origen_pago: string |
 // ── Componentes visuales ─────────────────────────────────────
 function Seccion({ titulo, nota, children, derecha }: { titulo: string; nota?: string; children: React.ReactNode; derecha?: React.ReactNode }) {
   return (
-    <section style={{ marginBottom: 28 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.gris }}>{titulo}</div>
-          {nota && <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{nota}</div>}
+    <section style={{ marginBottom: 20, background: C.panel, border: `1px solid ${C.borde}`, borderRadius: 12, padding: '16px 18px 18px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
+        paddingBottom: 12, marginBottom: 14, borderBottom: `1px solid ${C.plata}` }}>
+        <div style={{ borderLeft: `3px solid ${C.turq}`, paddingLeft: 10 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.carbon }}>{titulo}</div>
+          {nota && <div style={{ fontSize: 11, color: C.gris, marginTop: 3 }}>{nota}</div>}
         </div>
         {derecha}
       </div>
@@ -574,7 +575,7 @@ export default function DashboardsPage() {
       )}
 
       {/* 1. Resumen por periodo */}
-      <Seccion titulo="Ingresos y egresos" nota="Ingresos = recibos confirmados (netos de condonación). Egresos = órdenes de pago emitidas por fecha de OP (sin canceladas ni rechazadas). Pagado = abonos aplicados.">
+      <Seccion titulo="Ingresos y egresos" nota="Ingresos = recibos confirmados. Egresos = órdenes de pago emitidas por fecha de OP (sin canceladas ni rechazadas). Pagado = abonos aplicados.">
         <Grid min={240}>
           {pers.map(p => (
             <CardPeriodo key={p.key} p={p}
