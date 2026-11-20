@@ -10,6 +10,7 @@ import {
   cargarCentrosAgrupados, idsCentrosFiltro,
   type CentroIngresoAgr, type AgrupadorIngreso,
 } from '@/lib/centrosIngreso'
+import { useZonas } from '@/lib/zonas'
 
 // ── Paleta de marca ──────────────────────────────────────────
 const C = {
@@ -84,7 +85,7 @@ async function todo<T = any>(q: () => any): Promise<T[]> {
 type Recibo = { id: number; fecha: string; id_centro_ingreso_fk: number | null; monto_total: number | null }
 type LineaConc = { id_recibo_fk: number; id_concepto_fk: number | null; nombre_concepto: string | null; monto: number | null }
 type LineaSecc = { id_recibo_fk: number; id_seccion_fk: number | null; nombre_seccion: string | null; monto: number | null }
-type OP = { id: number; fecha_op: string; monto: number | null; id_centro_costo_fk: number | null; id_tipo_gasto_fk: number | null; tipo_gasto: string | null }
+type OP = { id: number; fecha_op: string; monto: number | null; id_centro_costo_fk: number | null; id_tipo_gasto_fk: number | null; tipo_gasto: string | null; id_area_fk: number | null; id_cuadrante_fk: number | null }
 type OPPend = { id: number; status: string; monto: number | null; saldo: number | null; fecha_vencimiento: string | null; id_centro_costo_fk: number | null }
 type Abono = { fecha_abono: string; monto: number | null; ordenes_pago: { id_centro_costo_fk: number | null } | null }
 type Cab = { id: number; status: string | null }
@@ -191,6 +192,26 @@ function CardDesglose({ nombre, monto, total, extra, color }: { nombre: string; 
   )
 }
 
+/** Tarjeta de zona: ingreso, gasto y neto */
+function CardZona({ nombre, ing, gas, nOp, totIng }: { nombre: string; ing: number; gas: number; nOp: number; totIng: number }) {
+  const neto = ing - gas
+  return (
+    <div className="card" style={{ background: '#fff', border: `1px solid ${C.plata}`, padding: '14px 16px' }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: C.carbon, marginBottom: 10 }}>{nombre}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.gris }}><Punto color={C.verde} /> Ingreso</div>
+      <div style={{ ...NUM, fontSize: 20, margin: '2px 0 2px' }}>{money(ing)}</div>
+      <div style={{ fontSize: 11, color: C.muted, marginBottom: 10, fontVariantNumeric: 'tabular-nums' }}>{totIng ? ((ing / totIng) * 100).toFixed(1) : '0.0'}% del ingreso del centro</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.gris }}><Punto color={C.rojo} /> Gasto</div>
+      <div style={{ ...NUM, fontSize: 16, margin: '2px 0 2px' }}>{money(gas)}</div>
+      <div style={{ fontSize: 11, color: C.muted, marginBottom: 10 }}>{entero(nOp)} OP{nOp === 1 ? '' : 's'}</div>
+      <div style={{ borderTop: `1px solid ${C.borde}`, paddingTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.gris }}><Punto color={C.carbon} /> Neto</span>
+        <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 15, color: neto >= 0 ? C.verde : C.rojo }}>{neto < 0 ? '−' : ''}{money(Math.abs(neto))}</span>
+      </div>
+    </div>
+  )
+}
+
 /** KPI simple: punto + etiqueta + cifra + nota */
 function Kpi({ label, valor, nota, color }: { label: string; valor: string; nota?: React.ReactNode; color: string }) {
   return (
@@ -241,6 +262,7 @@ export default function DashboardsPage() {
   const ladoClub = authUser?.lado !== 'fracc'
   const [hoy, setHoy] = useState(fechaLocal())
   const pers = useMemo(() => periodos(hoy), [hoy])
+  const zonasCat = useZonas()
 
   // Catálogos
   const [centros, setCentros] = useState<CentroIngresoAgr[]>([])
@@ -298,7 +320,7 @@ export default function DashboardsPage() {
         todo<LineaSecc>(() => dbCtrl.from('recibos_ingreso_secciones')
           .select('id_recibo_fk, id_seccion_fk, nombre_seccion, monto, recibos_ingreso!inner(fecha, status)')
           .eq('recibos_ingreso.status', 'Confirmado').gte('recibos_ingreso.fecha', desde).order('id')),
-        todo<OP>(() => dbComp.from('ordenes_pago').select('id, fecha_op, monto, id_centro_costo_fk, id_tipo_gasto_fk, tipo_gasto')
+        todo<OP>(() => dbComp.from('ordenes_pago').select('id, fecha_op, monto, id_centro_costo_fk, id_tipo_gasto_fk, tipo_gasto, id_area_fk, id_cuadrante_fk')
           .not('status', 'in', '("Cancelada","Rechazada")').gte('fecha_op', desde).lte('fecha_op', h).order('id')),
         todo<OPPend>(() => dbComp.from('ordenes_pago').select('id, status, monto, saldo, fecha_vencimiento, id_centro_costo_fk')
           .in('status', ['Pendiente', 'Pago Parcial', 'Pendiente Auth', 'Pendiente Auth Finanzas']).order('id')),
@@ -358,7 +380,26 @@ export default function DashboardsPage() {
 
   // ── Desglose de ingresos ───────────────────────────────────
   const centroSel = filtroCentro ? centros.find(c => c.id === Number(filtroCentro)) : null
+  // Cuotas de Fraccionamiento (desglose por sección + usa zonas) → por Zona, con su ingreso y gasto
+  const modoZona = !!centroSel && centroSel.tipo_desglose === 'secciones' && zonasCat.ciUsaZonas(centroSel.id) && zonasCat.zonas.length > 0
   const modoDesg: 'centro' | 'concepto' | 'seccion' = !centroSel ? 'centro' : centroSel.tipo_desglose === 'secciones' ? 'seccion' : 'concepto'
+  const desgZona = useMemo(() => {
+    if (!modoZona) return []
+    const recEnPer = new Set(recFilt.filter(r => enRango(r.fecha, pDesg.actual)).map(r => r.id))
+    const opsPer = opsFilt.filter(o => enRango(o.fecha_op, pDesg.actual))
+    const filas = zonasCat.zonas.map(z => {
+      let ing = 0, gas = 0, nOp = 0
+      lSecc.forEach(l => { if (recEnPer.has(l.id_recibo_fk) && zonasCat.seccionEnZona(z.id, l.id_seccion_fk)) ing += Number(l.monto ?? 0) })
+      opsPer.forEach(o => { if ((o.id_cuadrante_fk != null || o.id_area_fk != null) && zonasCat.docEnZona(z.id, o)) { gas += Number(o.monto ?? 0); nOp++ } })
+      return { id: z.id, nombre: z.nombre, ing, gas, nOp }
+    })
+    // Lo que no cae en ninguna zona (secciones sin zona / OP generales del CC)
+    let ingSin = 0, gasSin = 0, nSin = 0
+    lSecc.forEach(l => { if (recEnPer.has(l.id_recibo_fk) && !zonasCat.zonas.some(z => zonasCat.seccionEnZona(z.id, l.id_seccion_fk))) ingSin += Number(l.monto ?? 0) })
+    opsPer.forEach(o => { if (!zonasCat.zonas.some(z => (o.id_cuadrante_fk != null || o.id_area_fk != null) && zonasCat.docEnZona(z.id, o))) { gasSin += Number(o.monto ?? 0); nSin++ } })
+    if (Math.abs(ingSin) >= 0.5 || Math.abs(gasSin) >= 0.5) filas.push({ id: -1, nombre: 'Sin zona (generales)', ing: ingSin, gas: gasSin, nOp: nSin })
+    return filas
+  }, [modoZona, recFilt, opsFilt, pDesg, lSecc, zonasCat])
   const desgIng = useMemo(() => {
     const m = new Map<string, { monto: number; n: number }>()
     const add = (k: string, v: number) => { const x = m.get(k) ?? { monto: 0, n: 0 }; x.monto += v; x.n += 1; m.set(k, x) }
@@ -525,6 +566,15 @@ export default function DashboardsPage() {
       </Seccion>
 
       {/* 2. Desglose de ingresos */}
+      {modoZona ? (
+        <Seccion titulo="Ingresos y gastos por zona"
+          nota={`${pDesg.label} · ingreso por sección de la zona; gasto = OP del centro de costo con zona capturada o, si no tiene, la zona de su área.`}
+          derecha={selectorPeriodo}>
+          <Grid min={240}>
+            {desgZona.map(z => <CardZona key={z.id} {...z} totIng={desgZona.reduce((a, x) => a + x.ing, 0)} />)}
+          </Grid>
+        </Seccion>
+      ) : (
       <Seccion
         titulo={`Ingresos por ${modoDesg === 'centro' ? 'centro de ingreso' : modoDesg === 'seccion' ? 'sección' : 'concepto'}`}
         nota={`${pDesg.label} · ${money(totDesgIng)}${modoDesg === 'centro' ? ' · elige un centro de ingreso para verlo por concepto o sección' : ''}`}
@@ -536,6 +586,7 @@ export default function DashboardsPage() {
                 extra={modoDesg === 'centro' ? `${entero(x.n)} recibo${x.n === 1 ? '' : 's'}` : undefined} />
             ))}</Grid>}
       </Seccion>
+      )}
 
       {/* 3. Desglose de egresos */}
       <Seccion titulo="Egresos por tipo de gasto" nota={`${pDesg.label} · ${money(totDesgEgr)}`} derecha={selectorPeriodo}>
@@ -584,7 +635,6 @@ export default function DashboardsPage() {
               nota={cabTotal ? `${((cabOcupadas / cabTotal) * 100).toFixed(1)}% de ocupación` : undefined} />
             <Kpi label="Caballerizas libres" valor={entero(Math.max(0, cabTotal - cabOcupadas))} color={C.gris} />
             <Kpi label="Arrendatarios activos" valor={entero(arrActivos)} color={C.carbon} nota={`Con caballeriza asignada · ${entero(hip.arrCat)} en catálogo`} />
-            <Kpi label="Caballos activos" valor={entero(hip.caballos)} color={C.cielo} />
             <Kpi label="Renta mensual comprometida" valor={money(rentaMensual)} color={C.verde}
               nota={cabOcupadas ? `${money(rentaMensual / cabOcupadas)} promedio por caballeriza` : undefined} />
             <Kpi label="Cartera vencida" valor={money(sumSaldo(cxcVenc))} color={C.rojo} nota={`${entero(cxcVenc.length)} cargos · ${entero(arrConAdeudo)} arrendatario${arrConAdeudo === 1 ? '' : 's'}`} />
